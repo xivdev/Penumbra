@@ -1,6 +1,8 @@
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
+using Penumbra.Api.Enums;
 using Penumbra.Interop.PathResolving;
+using Penumbra.Mods.Editor;
 
 namespace Penumbra.UI.FileEditing;
 
@@ -8,14 +10,20 @@ public abstract class BaseFileEditorFactory(IDataManager gameData) : IFileEditor
 {
     protected readonly IDataManager GameData = gameData;
 
-    public virtual bool SupportsFile(string path)
-        => SupportsPath(path) && File.Exists(path);
+    public abstract string Identifier { get; }
 
-    public virtual IFileEditor CreateForFile(string path, bool writable, FileEditingContext? context)
-        => CreateForData(File.ReadAllBytes(path), path, writable, context);
+    public abstract string DisplayName { get; }
+
+    public abstract IEnumerable<ResourceType>? SupportedResourceTypes { get; }
+
+    public virtual bool SupportsFile(string path, string? gamePath)
+        => SupportsPath(path, gamePath) && File.Exists(path);
+
+    public virtual IFileEditor CreateForFile(string path, bool writable, string? gamePath, FileEditingContext? context)
+        => CreateForData(File.ReadAllBytes(path), path, writable, gamePath, context);
 
     public virtual bool SupportsGameFile(string path)
-        => SupportsPath(path) && GameData.FileExists(path);
+        => SupportsPath(path, path) && GameData.FileExists(path);
 
     public virtual IFileEditor CreateForGameFile(string path, FileEditingContext? context)
     {
@@ -23,17 +31,17 @@ public abstract class BaseFileEditorFactory(IDataManager gameData) : IFileEditor
         if (file is null)
             throw new Exception($"File {path} not found in game index");
 
-        return CreateForData(file.Data, path, false, context);
+        return CreateForData(file.Data, path, false, path, context);
     }
 
-    public virtual unsafe bool SupportsResourceHandle(ResourceHandle* handle)
+    public virtual unsafe bool SupportsResourceHandle(ResourceHandle* handle, string? gamePath)
     {
         PathDataHandler.Split(handle->FileName.AsSpan(), out var path, out _);
 
-        return SupportsPath(Encoding.UTF8.GetString(path)) && !handle->GetDataSpan().IsEmpty;
+        return SupportsPath(Encoding.UTF8.GetString(path), gamePath) && !handle->GetDataSpan().IsEmpty;
     }
 
-    public virtual unsafe IFileEditor CreateForResourceHandle(ResourceHandle* handle, FileEditingContext? context)
+    public virtual unsafe IFileEditor CreateForResourceHandle(ResourceHandle* handle, string? gamePath, FileEditingContext? context)
     {
         PathDataHandler.Split(handle->FileName.AsSpan(), out var path, out _);
         var pathStr = Encoding.UTF8.GetString(path);
@@ -42,13 +50,18 @@ public abstract class BaseFileEditorFactory(IDataManager gameData) : IFileEditor
         if (data.IsEmpty)
             throw new Exception($"Resource handle at 0x{(nint)handle:X} ({pathStr}) has no data");
 
-        return CreateForData(data, pathStr, false, context);
+        return CreateForData(data, pathStr, false, gamePath, context);
     }
 
-    public abstract bool SupportsPath(string path);
+    public virtual bool SupportsPath(string path, string? gamePath)
+        => SupportedResourceTypes switch
+        {
+            null          => true,
+            var supported => supported.Contains(ModFileCollection.GetPathResourceType(path)),
+        };
 
-    public abstract IFileEditor CreateForData(byte[] data, string path, bool writable, FileEditingContext? context);
+    public abstract IFileEditor CreateForData(byte[] data, string path, bool writable, string? gamePath, FileEditingContext? context);
 
-    public virtual IFileEditor CreateForData(ReadOnlySpan<byte> data, string path, bool writable, FileEditingContext? context)
-        => CreateForData(data.ToArray(), path, writable, context);
+    public virtual IFileEditor CreateForData(ReadOnlySpan<byte> data, string path, bool writable, string? gamePath, FileEditingContext? context)
+        => CreateForData(data.ToArray(), path, writable, gamePath, context);
 }

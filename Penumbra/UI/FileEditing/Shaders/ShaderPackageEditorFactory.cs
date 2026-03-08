@@ -1,4 +1,5 @@
 using Dalamud.Plugin.Services;
+using Penumbra.Api.Enums;
 using Penumbra.GameData.Files;
 using Penumbra.UI.Classes;
 
@@ -8,13 +9,20 @@ public sealed class ShaderPackageEditorFactory(
     FileDialogService fileDialog,
     IDataManager gameData) : BaseFileEditorFactory(gameData), Luna.IUiService
 {
-    public override bool SupportsPath(string path)
-        => path.EndsWith(".shpk", StringComparison.OrdinalIgnoreCase);
+    public override string Identifier
+        => typeof(ShaderPackageEditor).FullName!;
 
-    public override IFileEditor CreateForData(byte[] data, string path, bool writable, FileEditingContext? context)
-        => CreateForData((ReadOnlySpan<byte>)data, path, writable, context);
+    public override string DisplayName
+        => "Penumbra Shader Package Editor";
 
-    public override IFileEditor CreateForData(ReadOnlySpan<byte> data, string path, bool writable, FileEditingContext? context)
+    public override IEnumerable<ResourceType> SupportedResourceTypes
+        => [ResourceType.Shpk];
+
+    public override IFileEditor CreateForData(byte[] data, string path, bool writable, string? gamePath, FileEditingContext? context)
+        => CreateForData((ReadOnlySpan<byte>)data, path, writable, gamePath, context);
+
+    public override IFileEditor CreateForData(ReadOnlySpan<byte> data, string path, bool writable, string? gamePath,
+        FileEditingContext? context)
         => new ShaderPackageEditor(fileDialog, Parse(data), path);
 
     private static ShpkFile Parse(ReadOnlySpan<byte> data)

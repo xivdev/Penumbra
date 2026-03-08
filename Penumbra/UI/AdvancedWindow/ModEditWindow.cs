@@ -18,10 +18,6 @@ using Penumbra.String.Classes;
 using Penumbra.UI.AdvancedWindow.Meta;
 using Penumbra.UI.Classes;
 using Penumbra.UI.FileEditing;
-using Penumbra.UI.FileEditing.Materials;
-using Penumbra.UI.FileEditing.Models;
-using Penumbra.UI.FileEditing.Shaders;
-using Penumbra.UI.FileEditing.Skeletons;
 using Penumbra.UI.FileEditing.Textures;
 using MdlMaterialEditor = Penumbra.Mods.Editor.MdlMaterialEditor;
 
@@ -578,9 +574,7 @@ public sealed partial class ModEditWindow : IndexedWindow, IDisposable
         ActiveCollections activeCollections, ModMergeTab modMergeTab,
         CommunicatorService communicator, IDragDropManager dragDropManager,
         ResourceTreeViewerFactory resourceTreeViewerFactory, IFramework framework,
-        MetaDrawers metaDrawers, MaterialEditorFactory materialEditorFactory, ModelEditorFactory modelEditorFactory,
-        ShaderPackageEditorFactory shaderPackageEditorFactory, DeformerEditorFactory deformerEditorFactory,
-        CombiningTextureEditorFactory textureEditorFactory, int index)
+        MetaDrawers metaDrawers, FileEditorRegistry fileEditorRegistry, CombiningTextureEditorFactory textureEditorFactory, int index)
         : base(WindowBaseLabel, index)
     {
         _itemSwapTab       = itemSwapTab;
@@ -598,12 +592,12 @@ public sealed partial class ModEditWindow : IndexedWindow, IDisposable
 
         var fileEditingContext = new ModEditFileEditingContext(activeCollections, editor);
 
-        _materialTab      = CreateFileEditor("Materials", ".mtrl", ResourceType.Mtrl, materialEditorFactory);
-        _modelTab         = CreateFileEditor("Models",    ".mdl",  ResourceType.Mdl,  modelEditorFactory);
-        _shaderPackageTab = CreateFileEditor("Shaders",   ".shpk", ResourceType.Shpk, shaderPackageEditorFactory);
-        _pbdTab           = CreateFileEditor("Deformers", ".pbd",  ResourceType.Pbd,  deformerEditorFactory);
+        _materialTab      = CreateFileEditor("Materials", ".mtrl", ResourceType.Mtrl);
+        _modelTab         = CreateFileEditor("Models",    ".mdl",  ResourceType.Mdl);
+        _shaderPackageTab = CreateFileEditor("Shaders",   ".shpk", ResourceType.Shpk);
+        _pbdTab           = CreateFileEditor("Deformers", ".pbd",  ResourceType.Pbd);
 #if false
-        _newTextureTab = CreateFileEditor("Textures (2)", ".tex", ResourceType.Tex, textureEditorFactory);
+        _newTextureTab = CreateFileEditor("Textures (2)", ".tex,.atex", ResourceType.Tex);
 #endif
 
         _textureEditor = textureEditorFactory.CreateForModEditWindow(fileEditingContext);
@@ -614,10 +608,10 @@ public sealed partial class ModEditWindow : IndexedWindow, IDisposable
 
         return;
 
-        FileEditor CreateFileEditor(string tabName, string fileType, ResourceType type, IFileEditorFactory editorFactory)
+        FileEditor CreateFileEditor(string tabName, string fileType, ResourceType type)
         {
             return new FileEditor(this, communicator, config, editor.Compactor, fileDialog, framework, tabName, fileType,
-                () => PopulateIsOnPlayer(_editor.Files.GetByType(type), type), () => Mod?.ModPath.FullName ?? string.Empty, editorFactory,
+                () => PopulateIsOnPlayer(_editor.Files.GetByType(type), type), () => Mod?.ModPath.FullName ?? string.Empty, fileEditorRegistry,
                 fileEditingContext);
         }
     }

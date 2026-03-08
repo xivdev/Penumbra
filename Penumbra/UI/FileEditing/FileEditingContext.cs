@@ -70,5 +70,5 @@ public abstract class FileEditingContext
         return ret;
     }
 
-    public abstract FileRegistry? TryFindFileRegistry(ResourceType type, Mod mod, Utf8RelPath relPath);
+    public abstract FileRegistry? TryFindFileRegistry(Mod mod, Utf8RelPath relPath);
 }

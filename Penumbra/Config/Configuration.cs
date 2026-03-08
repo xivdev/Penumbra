@@ -4,6 +4,7 @@ using ImSharp;
 using Luna;
 using Luna.Generators;
 using Newtonsoft.Json;
+using Penumbra.Api.Enums;
 using Penumbra.Import.Structs;
 using Penumbra.Interop.Services;
 using Penumbra.Services;
@@ -146,6 +147,8 @@ public partial class Configuration : IPluginConfiguration, ISavable, IService
 
     public Dictionary<ColorId, uint> Colors { get; set; }
         = ColorId.Values.ToDictionary(c => c, c => c.Data().DefaultColor);
+
+    public Dictionary<ResourceType, string> PreferredEditorFactories { get; set; } = [];
 
     /// <summary>
     /// Load the current configuration.

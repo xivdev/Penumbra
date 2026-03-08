@@ -275,7 +275,7 @@ public partial class CombiningTextureEditor
     private void OpenSaveAsDialog(string defaultExtension)
     {
         var fileName = Path.GetFileNameWithoutExtension(_left.Path.Length > 0 ? _left.Path : _right.Path);
-        _fileDialog.OpenSavePicker("Save Texture as TEX, DDS, PNG or TGA...", "Textures{.png,.dds,.tex,.tga},.tex,.dds,.png,.tga", fileName,
+        _fileDialog.OpenSavePicker("Save Texture as TEX, DDS, PNG or TGA...", "Textures{.png,.dds,.tex,.atex,.tga},.tex{.tex,.atex},.dds,.png,.tga", fileName,
             defaultExtension,
             (a, b) =>
             {
@@ -315,7 +315,7 @@ public partial class CombiningTextureEditor
             return;
 
         _communicator.ModFileChanged.Invoke(new ModFileChanged.Arguments(mod, relPath,
-            _context?.TryFindFileRegistry(ResourceType.Tex, mod, relPath)));
+            _context?.TryFindFileRegistry(mod, relPath)));
     }
 
     private void DrawOverlayCollapseButton()
@@ -341,6 +341,7 @@ public partial class CombiningTextureEditor
         ".png",
         ".dds",
         ".tex",
+        ".atex",
         ".tga",
     ];
 }

@@ -79,7 +79,7 @@ public abstract class PathSelectCombo(IDataManager dataManager) : FilterComboBas
 public sealed class TextureSelectCombo(ResourceTreeFactory resources, ModEditor editor, IDataManager dataManager) : PathSelectCombo(dataManager)
 {
     protected override IEnumerable<FileRegistry> GetFiles()
-        => editor.Files.Tex;
+        => editor.Files.GetByType(ResourceType.Tex).Concat(editor.Files.GetByType(ResourceType.Atex));
 
     protected override ISet<string> GetPlayerResources()
         => ResourceTreeApiHelper.GetPlayerResourcesOfType(resources, ResourceType.Tex);

@@ -1,8 +1,10 @@
 using Dalamud.Interface.DragDrop;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
+using Penumbra.Api.Enums;
 using Penumbra.Import.Textures;
 using Penumbra.Interop.ResourceTree;
+using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
@@ -20,6 +22,15 @@ public sealed class CombiningTextureEditorFactory(
     ResourceTreeFactory resourceTreeFactory,
     IDataManager gameData) : IFileEditorFactory, Luna.IUiService
 {
+    public string Identifier
+        => typeof(CombiningTextureEditor).FullName!;
+
+    public string DisplayName
+        => "Penumbra Texture Editor and Combiner";
+
+    public IEnumerable<ResourceType> SupportedResourceTypes
+        => [ResourceType.Atex, ResourceType.Tex];
+
     private CombiningTextureEditor Create(FileEditingContext? context, bool inModEditWindow, bool writable)
     {
         var textureSelectCombo = context?.Editor is { } editor
@@ -31,10 +42,10 @@ public sealed class CombiningTextureEditorFactory(
             inModEditWindow, writable);
     }
 
-    public bool SupportsFile(string path)
+    public bool SupportsFile(string path, string? gamePath)
         => IsTexturePath(path) && File.Exists(path);
 
-    public IFileEditor CreateForFile(string path, bool writable, FileEditingContext? context)
+    public IFileEditor CreateForFile(string path, bool writable, string? gamePath, FileEditingContext? context)
     {
         var editor = Create(context, false, writable);
         editor.LoadLeft(path);
@@ -51,14 +62,14 @@ public sealed class CombiningTextureEditorFactory(
         return editor;
     }
 
-    public unsafe bool SupportsResourceHandle(ResourceHandle* handle)
+    public unsafe bool SupportsResourceHandle(ResourceHandle* handle, string? gamePath)
         => false;
 
-    public unsafe IFileEditor CreateForResourceHandle(ResourceHandle* handle, FileEditingContext? context)
+    public unsafe IFileEditor CreateForResourceHandle(ResourceHandle* handle, string? gamePath, FileEditingContext? context)
         => throw new NotSupportedException();
 
     private static bool IsTexturePath(string path)
-        => path.EndsWith(".tex", StringComparison.OrdinalIgnoreCase);
+        => ModFileCollection.GetPathResourceType(path) is ResourceType.Atex or ResourceType.Tex;
 
     public CombiningTextureEditor CreateForModEditWindow(FileEditingContext? context)
         => Create(context, true, true);
