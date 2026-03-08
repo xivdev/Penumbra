@@ -1,4 +1,5 @@
 using Luna;
+using Penumbra.Api.Enums;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Files;
 
@@ -66,7 +67,7 @@ public partial class MdlMaterialEditor(ModFileCollection files)
     public void ScanModels(Mod mod)
     {
         _modelFiles.Clear();
-        foreach (var file in files.Mdl)
+        foreach (var file in files.GetByType(ResourceType.Mdl))
         {
             try
             {

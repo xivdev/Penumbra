@@ -40,7 +40,7 @@ public sealed partial class ModelEditor : IFileEditor
     public event Action? SaveRequested;
 
     public ModelEditor(ModelManager models, ActiveCollections activeCollections, IDataManager gameData, Configuration config,
-        FileDialogService fileDialog, IDragDropManager dragDropManager, FileEditingContext? context, MdlFile mdl, string path)
+        FileDialogService fileDialog, IDragDropManager dragDropManager, FileEditingContext? context, MdlFile mdl, string path, string? gamePath)
     {
         _models            = models;
         _activeCollections = activeCollections;
@@ -52,7 +52,7 @@ public sealed partial class ModelEditor : IFileEditor
 
         Initialize(mdl);
 
-        FindGamePaths(path);
+        FindGamePaths(path, gamePath);
     }
 
     void IDisposable.Dispose()
@@ -88,8 +88,15 @@ public sealed partial class ModelEditor : IFileEditor
 
     /// <summary> Find the list of game paths that may correspond to this model. </summary>
     /// <param name="path"> Resolved path to a .mdl. </param>
-    private void FindGamePaths(string path)
+    private void FindGamePaths(string path, string? gamePath)
     {
+        Utf8GamePath.FromString(gamePath, out var utf8GamePath);
+        if (!utf8GamePath.IsEmpty)
+        {
+            GamePaths     = [utf8GamePath];
+            GamePathIndex = 0;
+        }
+
         // If there's no current mod (somehow), there's nothing to resolve the model within.
         var mod = _context?.Mod;
         if (mod == null)
@@ -98,6 +105,7 @@ public sealed partial class ModelEditor : IFileEditor
         if (!Path.IsPathRooted(path) && Utf8GamePath.FromString(path, out var p))
         {
             GamePaths = [p];
+            ApplyInitialGamePath();
             return;
         }
 
@@ -113,7 +121,30 @@ public sealed partial class ModelEditor : IFileEditor
                 .ToList();
         });
 
-        task.ContinueWith(t => { GamePaths = FinalizeIo(t); }, TaskScheduler.Default);
+        task.ContinueWith(t =>
+        {
+            GamePaths = FinalizeIo(t);
+            ApplyInitialGamePath();
+        }, TaskScheduler.Default);
+
+        return;
+
+        void ApplyInitialGamePath()
+        {
+            if (utf8GamePath.IsEmpty)
+                return;
+
+            var index = GamePaths!.IndexOf(utf8GamePath);
+            if (index >= 0)
+            {
+                GamePathIndex = index;
+            }
+            else
+            {
+                GamePaths.Insert(0, utf8GamePath);
+                GamePathIndex = 0;
+            }
+        }
     }
 
     private KeyValuePair<EstIdentifier, EstEntry>[] GetCurrentEstManipulations()

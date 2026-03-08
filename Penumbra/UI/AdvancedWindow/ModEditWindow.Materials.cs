@@ -1,5 +1,6 @@
 using ImSharp;
 using Luna;
+using Penumbra.Api.Enums;
 
 namespace Penumbra.UI.AdvancedWindow;
 
@@ -7,7 +8,7 @@ public partial class ModEditWindow
 {
     private void DrawMaterialReassignmentTab()
     {
-        if (_editor.Files.Mdl.Count is 0)
+        if (_editor.Files.GetByType(ResourceType.Mdl).Count is 0)
             return;
 
         using var tab = Im.TabBar.BeginItem("Material Reassignment"u8);
