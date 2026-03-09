@@ -88,6 +88,9 @@ public sealed partial class ModEditWindow : IndexedWindow, IDisposable
         if (mod == Mod)
             return;
 
+        if (Mod is not null && _config.Ephemeral.AdvancedEditingOpenForModPaths.Remove(Mod.Identifier))
+            _config.Ephemeral.Save();
+
         WindowName = $"{mod.Name} (LOADING){WindowBaseLabel}{Index}";
         AppendTask(() =>
         {
