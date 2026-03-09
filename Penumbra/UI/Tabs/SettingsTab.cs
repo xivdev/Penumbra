@@ -810,6 +810,10 @@ public sealed class SettingsTab : ITab<TabType>
     /// <summary> Draw all settings pertaining to advanced editing of mods. </summary>
     private void DrawModEditorSettings()
     {
+        Checkbox("Advanced Editing: Automatically Pin Mod in Editing Window"u8,
+            "Determines the default pinning behavior when opening a new Advanced Editing window.\n\nPinned: The editing window will stay on the mod it was on at the time of opening/pinning.\nUnpinned: When changing your selected mod in the main window, the editing window will follow the selection, unless a pinned window exists for the new selected mod."u8,
+            _config.DefaultEditWindowModPinned, v => _config.DefaultEditWindowModPinned = v);
+
         Checkbox("Advanced Editing: Edit Raw Tile UV Transforms"u8,
             "Edit the raw matrix components of tile UV transforms, instead of having them decomposed into scale, rotation and shear."u8,
             _config.EditRawTileTransforms, v => _config.EditRawTileTransforms = v);

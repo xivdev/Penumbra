@@ -1,4 +1,3 @@
-using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Mods;
 using Penumbra.Mods.Editor;

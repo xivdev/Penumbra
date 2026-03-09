@@ -20,11 +20,8 @@ public partial class ModEditWindow
         if (!tab)
             return;
 
-        DrawOptionSelectHeader();
-
         var setsEqual = !_editor.MetaEditor.Changes;
         var tt        = setsEqual ? "No changes staged."u8 : "Apply the currently staged changes to the option."u8;
-        Im.Line.New();
         if (ImEx.Button("Apply Changes"u8, Vector2.Zero, tt, setsEqual))
             _editor.MetaEditor.Apply(_editor.Option!);
 
