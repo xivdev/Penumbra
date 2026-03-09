@@ -38,6 +38,7 @@ public sealed partial class ModEditWindow : IndexedWindow, IDisposable
     private readonly CommunicatorService _communicator;
     private readonly IDragDropManager    _dragDropManager;
     private readonly OptionSelectCombo   _optionSelect;
+    private readonly Func<bool>          _canUnpin;
 
     private readonly FileEditor _modelTab;
     private readonly FileEditor _materialTab;
@@ -87,6 +88,9 @@ public sealed partial class ModEditWindow : IndexedWindow, IDisposable
     {
         if (mod == Mod)
             return;
+
+        if (Mod is not null && _config.Ephemeral.AdvancedEditingOpenForModPaths.Remove(Mod.Identifier))
+            _config.Ephemeral.Save();
 
         WindowName = $"{mod.Name} (LOADING){WindowBaseLabel}{Index}";
         AppendTask(() =>
@@ -489,16 +493,23 @@ public sealed partial class ModEditWindow : IndexedWindow, IDisposable
                 ret = true;
             }
 
-            Im.Line.Same();
-
-            using (ImGuiColor.Button.Push(Im.Style[ImGuiColor.ButtonActive], ModPinned))
-            {
-                if (ImEx.Icon.Button(LunaStyle.PinIcon, ModPinned
-                            ? $"Unpin {Mod?.Name} from this editing window.\nThis window will then follow your selected mod in the main window."
-                            : $"Pin {Mod?.Name} to this editing window.\nOpening Advanced Editing on another mod will then open another window.",
-                        new Vector2(frameHeight + spacingX, frameHeight)))
-                    ModPinned = !ModPinned;
-            }
+	        Im.Line.Same();
+    	    using (ImGuiColor.Button.Push(Im.Style[ImGuiColor.ButtonActive], ModPinned))
+        	{
+            	var disabled = ModPinned && !_canUnpin();
+	            if (ImEx.Icon.Button(LunaStyle.PinIcon,
+    	                (ModPinned, disabled) switch
+        	            {
+            	            (false, _) =>
+                	            $"Pin {Mod?.Name} to this editing window.\nOpening Advanced Editing on another mod will then open another window.",
+                    	    (true, false) =>
+                        	    $"Unpin {Mod?.Name} from this editing window.\nThis window will then follow your selected mod in the main window.",
+	                        (true, true) =>
+    	                        $"Cannot unpin {Mod?.Name} from this editing window.\nAnother open window is already following your selected mod in the main window.",
+        	            },
+            	        disabled, new Vector2(frameHeight)))
+                	ModPinned = !ModPinned;
+			}
         }
 
         return ret;
@@ -595,7 +606,8 @@ public sealed partial class ModEditWindow : IndexedWindow, IDisposable
         ActiveCollections activeCollections, ModMergeTab modMergeTab,
         CommunicatorService communicator, IDragDropManager dragDropManager,
         ResourceTreeViewerFactory resourceTreeViewerFactory, IFramework framework,
-        MetaDrawers metaDrawers, FileEditorRegistry fileEditorRegistry, CombiningTextureEditorFactory textureEditorFactory, int index)
+        MetaDrawers metaDrawers, FileEditorRegistry fileEditorRegistry, CombiningTextureEditorFactory textureEditorFactory,
+        Func<bool> canUnpin, int index)
         : base(WindowBaseLabel, index)
     {
         ModPinned = config.DefaultEditWindowModPinned;
@@ -612,6 +624,7 @@ public sealed partial class ModEditWindow : IndexedWindow, IDisposable
         _metaDrawers       = metaDrawers;
         _overviewTable     = new OverviewTable(_editor);
         _optionSelect      = new OptionSelectCombo(editor, this);
+        _canUnpin          = canUnpin;
 
         _materialTab      = CreateFileEditor("Materials", ".mtrl", ResourceType.Mtrl);
         _modelTab         = CreateFileEditor("Models",    ".mdl",  ResourceType.Mdl);

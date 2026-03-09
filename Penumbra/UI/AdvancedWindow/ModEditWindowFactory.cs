@@ -56,7 +56,7 @@ public sealed class ModEditWindowFactory(
         var editor = editorFactory.Create();
         return new ModEditWindow(fileDialog, itemSwapTabFactory.Create(), gameData, config, editor, resourceTreeFactory, metaFileManager,
             activeCollections, modMergerFactory.CreateTab(editor), communicator, dragDropManager, resourceTreeViewerFactory, framework,
-            CreateMetaDrawers(editor.MetaEditor), fileEditorRegistry, textureEditorFactory, index);
+            CreateMetaDrawers(editor.MetaEditor), fileEditorRegistry, textureEditorFactory, CanUnpin, index);
     }
 
     private MetaDrawers CreateMetaDrawers(ModMetaEditor metaEditor)
@@ -108,4 +108,7 @@ public sealed class ModEditWindowFactory(
         window.ChangeMod(mod);
         window.ChangeOption(mod.Default);
     }
+
+    private bool CanUnpin()
+        => Windows.All(w => w.ModPinned);
 }
