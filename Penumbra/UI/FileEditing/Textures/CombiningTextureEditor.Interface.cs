@@ -217,7 +217,9 @@ public partial class CombiningTextureEditor
                         isActive
                             ? "This saves the texture in place. This is not revertible."u8
                             : $"This saves the texture in place. This is not revertible. Hold {_config.DeleteModModifier} to save.",
-                        !isActive || !canSaveInPlace || _center.IsLeftCopy && _currentSaveAs is (int)CombinedTexture.TextureSaveType.AsIs))
+                        !isActive
+                     || !canSaveInPlace
+                     || _center.IsLeftCopy && _currentSaveAs is (int)CombinedTexture.TextureSaveType.AsIs && _left.LevelOfDetail is 0))
                     SaveRequested?.Invoke();
 
                 Im.Line.Same();
