@@ -24,7 +24,7 @@ public sealed class FileEditor(
     Func<IEnumerable<FileRegistry>> getFiles,
     Func<string> getInitialPath,
     FileEditorRegistry fileEditorRegistry,
-    FileEditingContext fileEditingContext)
+    Func<FileEditingContext> getFileEditingContext)
     : IDisposable
 {
     public void Draw()
@@ -117,7 +117,7 @@ public sealed class FileEditor(
             ClearDefaultFile(); // Avoid double disposal if an exception occurs during the parsing of the new file.
             try
             {
-                _defaultFile = fileEditorRegistry.CreateForGameFile(_defaultPath, fileEditingContext);
+                _defaultFile = fileEditorRegistry.CreateForGameFile(_defaultPath, getFileEditingContext());
             }
             catch (Exception e)
             {
@@ -197,7 +197,7 @@ public sealed class FileEditor(
         ClearCurrentFile(); // Avoid double disposal if an exception occurs during the parsing of the new file.
         try
         {
-            _currentFile = fileEditorRegistry.CreateForFile(CurrentPath.File.FullName, true, null, fileEditingContext);
+            _currentFile = fileEditorRegistry.CreateForFile(CurrentPath.File.FullName, true, null, getFileEditingContext());
         }
         catch (Exception e)
         {

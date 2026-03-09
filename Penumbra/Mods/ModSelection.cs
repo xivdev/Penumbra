@@ -118,6 +118,9 @@ public class ModSelection : EventBase<ModSelection.Arguments, ModSelection.Prior
     {
         /// <seealso cref="UI.ModsTab.ModPanel.OnSelectionChange"/>
         ModPanel = 0,
+
+        /// <seealso cref="Penumbra.UI.AdvancedWindow.ModEditWindowFactory"/>
+        ModEditWindow = 0,
     }
 
     public readonly record struct Arguments(Mod? OldSelection, Mod? NewSelection);

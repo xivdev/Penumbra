@@ -31,10 +31,28 @@ public sealed class ModEditWindowFactory(
     Logger log,
     FileEditorRegistry fileEditorRegistry,
     CombiningTextureEditorFactory textureEditorFactory,
-    ModMergerFactory modMergerFactory) : WindowFactory<ModEditWindow>(log, windowSystem), IUiService
+    ModMergerFactory modMergerFactory,
+    ModSelection modSelection) : WindowFactory<ModEditWindow>(log, windowSystem), IUiService, IDisposable
 {
+    private bool _listeningToModSelection = false;
+
+    public void Dispose()
+    {
+        if (_listeningToModSelection)
+        {
+            modSelection.Unsubscribe(OnModSelection);
+            _listeningToModSelection = false;
+        }
+    }
+
     protected override ModEditWindow CreateWindow(int index)
     {
+        if (!_listeningToModSelection)
+        {
+            modSelection.Subscribe(OnModSelection, ModSelection.Priority.ModEditWindow);
+            _listeningToModSelection = true;
+        }
+
         var editor = editorFactory.Create();
         return new ModEditWindow(fileDialog, itemSwapTabFactory.Create(), gameData, config, editor, resourceTreeFactory, metaFileManager,
             activeCollections, modMergerFactory.CreateTab(editor), communicator, dragDropManager, resourceTreeViewerFactory, framework,
@@ -66,7 +84,24 @@ public sealed class ModEditWindowFactory(
             return;
         }
 
-        window = CreateWindowInternal();
+        window = Windows.FirstOrDefault(w => !w.ModPinned) ?? CreateWindowInternal();
+        if (window is null)
+            return;
+
+        window.ChangeMod(mod);
+        window.ChangeOption(mod.Default);
+    }
+
+    private void OnModSelection(in ModSelection.Arguments args)
+    {
+        var mod = args.NewSelection;
+        if (mod is null)
+            return;
+
+        if (Windows.FirstOrDefault(window => window.Mod == mod) is not null)
+            return;
+
+        var window = Windows.FirstOrDefault(w => !w.ModPinned);
         if (window is null)
             return;
 

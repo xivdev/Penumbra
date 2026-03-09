@@ -10,7 +10,7 @@ using Penumbra.UI.FileEditing;
 
 namespace Penumbra.UI.AdvancedWindow;
 
-public sealed class ModEditFileEditingContext(ActiveCollections activeCollections, ModEditor? editor) : FileEditingContext
+public sealed class ModEditFileEditingContext(ActiveCollections activeCollections, ModEditor? editor, Mod? boundToMod) : FileEditingContext
 {
     protected override ModCollection Collection
         => activeCollections.Current;
@@ -19,10 +19,10 @@ public sealed class ModEditFileEditingContext(ActiveCollections activeCollection
         => editor;
 
     public override Mod? Mod
-        => editor?.Mod;
+        => boundToMod ?? editor?.Mod;
 
     public override IModDataContainer? Option
-        => editor?.Option;
+        => boundToMod is null || editor?.Mod == boundToMod ? editor?.Option : null;
 
     public override FileRegistry? TryFindFileRegistry(Mod mod, Utf8RelPath relPath)
         => editor is not null

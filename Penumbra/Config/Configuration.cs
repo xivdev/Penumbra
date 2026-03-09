@@ -140,6 +140,7 @@ public partial class Configuration : IPluginConfiguration, ISavable, IService
     public bool   KeepDefaultMetaChanges  { get; set; } = false;
     public string DefaultModAuthor        { get; set; } = DefaultTexToolsData.Author;
 
+    public bool DefaultEditWindowModPinned        { get; set; } = true;
     public bool EditRawTileTransforms             { get; set; } = false;
     public bool WholePairSelectorAlwaysHighlights { get; set; } = false;
 
