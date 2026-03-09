@@ -143,4 +143,19 @@ public partial class CombinedTexture : IDisposable
         SaveTask = Task.CompletedTask;
         _mode    = Mode.Empty;
     }
+
+    public bool TryGetRgbaSolidColor(out uint color, out int width, out int height)
+    {
+        if (_current is not null)
+        {
+            width  = _current.TextureWrap?.Width ?? 0;
+            height = _current.TextureWrap?.Height ?? 0;
+            return _current.TryGetRgbaSolidColor(out color);
+        }
+
+        color  = 0u;
+        width  = 0;
+        height = 0;
+        return false;
+    }
 }

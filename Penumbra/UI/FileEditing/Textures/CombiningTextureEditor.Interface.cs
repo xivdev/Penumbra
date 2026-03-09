@@ -1,7 +1,6 @@
 using ImSharp;
 using Luna;
 using OtterTex;
-using Penumbra.Api.Enums;
 using Penumbra.Communication;
 using Penumbra.Import.Textures;
 using Penumbra.String.Classes;
@@ -38,8 +37,12 @@ public partial class CombiningTextureEditor
 
     private bool _overlayCollapsed = true;
 
-    bool IFileEditor.DrawToolbar(bool disabled)
-        => false;
+    public bool DrawToolbar(bool disabled)
+    {
+        if (!_inModEditWindow)
+            DrawOverlayCollapseButton();
+        return false;
+    }
 
     public bool DrawPanel(bool disabled)
     {
@@ -58,15 +61,25 @@ public partial class CombiningTextureEditor
             var imageSize  = new Vector2(childWidth.X - Im.Style.FramePadding.X * 2);
             DrawInputChild("Input Texture"u8, _left, childWidth, imageSize);
             Im.Line.Same();
-            DrawOutputChild(childWidth, imageSize);
+            if (_inModEditWindow)
+            {
+                using var child = Im.Child.Begin("###OutputWrapper"u8, childWidth);
+                if (child)
+                {
+                    DrawOverlayCollapseButton();
+                    DrawOutputChild(new Vector2(-1), imageSize);
+                }
+            }
+            else
+            {
+                DrawOutputChild(childWidth, imageSize);
+            }
+
             if (!_overlayCollapsed)
             {
                 Im.Line.Same();
                 DrawInputChild("Overlay Texture"u8, _right, childWidth, imageSize);
             }
-
-            Im.Line.Same();
-            DrawOverlayCollapseButton();
         }
         catch (Exception e)
         {
@@ -78,14 +91,14 @@ public partial class CombiningTextureEditor
 
     private Vector2 GetChildWidth()
     {
-        var windowWidth = Im.Window.MaximumContentRegion.X - Im.Window.MinimumContentRegion.X - Im.Style.TextHeight;
+        var windowWidth = Im.Window.MaximumContentRegion.X - Im.Window.MinimumContentRegion.X;
         if (_overlayCollapsed)
         {
-            var width = windowWidth - Im.Style.FramePadding.X * 3;
+            var width = windowWidth - Im.Style.ItemSpacing.X;
             return new Vector2(width / 2, -1);
         }
 
-        return new Vector2((windowWidth - Im.Style.FramePadding.X * 5) / 3, -1);
+        return new Vector2((windowWidth - Im.Style.ItemSpacing.X * 2) / 3, -1);
     }
 
     private void DrawInputChild(ReadOnlySpan<byte> label, Texture tex, Vector2 size, Vector2 imageSize)
@@ -112,6 +125,14 @@ public partial class CombiningTextureEditor
                             _context?.Mod?.ModPath.FullName.Length + 1 ?? 0, out var newPath)
                      && newPath != tex.Path)
                         tex.Load(_textures, newPath);
+                }
+
+                if (tex.OriginalBaseImage.MipMaps > 1)
+                {
+                    Im.Item.SetNextWidthScaled(75.0f);
+                    if (Im.Drag("Scaling"u8, ref tex.LevelOfDetail, $"\u00F7 {1 << tex.LevelOfDetail}", 0, tex.OriginalBaseImage.MipMaps - 1,
+                            0.1f, SliderFlags.NoInput))
+                        tex.SelectLevelOfDetail(_textures);
                 }
 
                 if (tex == _left)
@@ -267,6 +288,27 @@ public partial class CombiningTextureEditor
 
         Im.Line.New();
 
+        if (_center.TryGetRgbaSolidColor(out var solidColor, out var width, out var height))
+        {
+            using var color = ImGuiColor.Text.Push(ImGuiColor.Text.Get().HalfBlend(Rgba32.Yellow));
+            Im.TextWrapped(
+                $"This texture is a solid surface of color #{solidColor & 0xFF:X2}{(solidColor >> 8) & 0xFF:X2}{(solidColor >> 16) & 0xFF:X2}{(solidColor >> 24 == 0xFF ? "" : $" and alpha {solidColor >> 24}")}.");
+            if (Texture.SolidTextures.TryGetValue(solidColor, out var path))
+            {
+                Im.TextWrapped($"Consider using a file swap to {path}.");
+                Im.Line.Same();
+                color.Pop();
+                if (ImEx.Icon.Button(LunaStyle.ToClipboardIcon, "Copy this path to your clipboard."u8))
+                    Im.Clipboard.Set(path);
+            }
+            else if (width > 32 || height > 32)
+            {
+                Im.TextWrapped($"Consider scaling it down to at most 32 \u00D7 32 pixels.");
+            }
+
+            Im.Line.New();
+        }
+
         using var child2 = Im.Child.Begin("image"u8);
         if (child2)
             _center.Draw(_textures, imageSize);
@@ -320,14 +362,15 @@ public partial class CombiningTextureEditor
 
     private void DrawOverlayCollapseButton()
     {
-        var (label, tooltip) = _overlayCollapsed
-            ? RefTuple.Create(">"u8,
+        var (icon, label, tooltip) = _overlayCollapsed
+            ? RefTuple.Create(LunaStyle.CollapseLeftIcon, "Show Overlay"u8,
                 "Show a third panel in which you can import an additional texture as an overlay for the primary texture."u8)
-            : RefTuple.Create("<"u8, "Hide the overlay texture panel and clear the currently loaded overlay texture, if any."u8);
-        if (Im.Button(label, Im.ContentRegion.Available with { X = Im.Style.TextHeight }))
+            : RefTuple.Create(LunaStyle.ExpandRightIcon, "Hide Overlay"u8,
+                "Hide the overlay texture panel and clear the currently loaded overlay texture, if any."u8);
+        Im.Dummy(Im.ContentRegion.Available.X - ImEx.Icon.CalculateLabeledButtonSize(icon, label).X);
+        Im.Line.NoSpacing();
+        if (ImEx.Icon.LabeledButton(icon, label, tooltip, iconAfter: !_overlayCollapsed))
             _overlayCollapsed = !_overlayCollapsed;
-
-        Im.Tooltip.OnHover(tooltip);
     }
 
     private static bool GetFirstTexture(IEnumerable<string> files, [NotNullWhen(true)] out string? file)
