@@ -3,7 +3,10 @@ using Dalamud.Plugin.Services;
 using ImSharp;
 using Luna;
 using Penumbra.Mods.Manager;
+using Penumbra.Mods.SubMods;
 using Penumbra.String;
+using Penumbra.String.Classes;
+using Penumbra.UI.ModsTab.Selector;
 
 namespace Penumbra.UI.ManagementTab;
 
@@ -31,69 +34,116 @@ public sealed class ForbiddenFilesTab(ModManager mods, IDataManager dataManager,
     public ReadOnlySpan<byte> Label
         => "Forbidden Files"u8;
 
-    private sealed class Cache(IDataManager dataManager) : BasicCache
+    private sealed class Cache(ModManager mods, IDataManager dataManager) : BasicCache
     {
-        public FrozenDictionary<uint, byte[]>? OriginalFiles;
+        public sealed class ForbiddenFileRedirection(
+            Utf8GamePath path,
+            FullPath redirection,
+            IModDataContainer container,
+            bool swap,
+            byte[]? data,
+            bool missing,
+            bool bytewiseEqual,
+            bool conceptuallyEqual)
+            : BaseScannedRedirection(path, redirection, container, swap)
+        {
+            public readonly byte[]? Data              = data;
+            public readonly bool    Missing           = missing;
+            public readonly bool    BytewiseEqual     = bytewiseEqual;
+            public readonly bool    ConceptuallyEqual = conceptuallyEqual;
+        }
+
+        public sealed class ForbiddenFileScanner(ModManager mods) : RedirectionScanner<ForbiddenFileRedirection>(mods)
+        {
+            public FrozenDictionary<uint, byte[]>? OriginalFiles;
+
+            protected override ForbiddenFileRedirection Create(Utf8GamePath path, FullPath redirection, IModDataContainer container, bool swap)
+            {
+                if (swap)
+                    return new ForbiddenFileRedirection(path, redirection, container, true, null, false, false, false);
+
+                try
+                {
+                    if (!File.Exists(redirection.FullName))
+                        return new ForbiddenFileRedirection(path, redirection, container, false, null, true, false, false);
+
+                    var data = File.ReadAllBytes(redirection.FullName);
+                    return new ForbiddenFileRedirection(path, redirection, container, false, data, false,
+                        data.SequenceEqual(OriginalFiles![(uint)path.Path.Crc32]), false);
+                }
+                catch (Exception ex)
+                {
+                    Penumbra.Log.Warning($"Could not read forbidden file redirection file {redirection}:\n{ex}");
+                    return new ForbiddenFileRedirection(path, redirection, container, false, null, false, false, false);
+                }
+            }
+
+            protected override bool DoCreateRedirection(Utf8GamePath path, FullPath redirection, IModDataContainer container, bool swap)
+                => ForbiddenFiles.ContainsKey((uint)path.Path.Crc32);
+        }
+
+
+        public readonly ForbiddenFileScanner Redirections = new(mods);
 
         public override void Update()
         {
-            OriginalFiles ??= ForbiddenFiles.ToFrozenDictionary(kvp => kvp.Key, kvp =>
+            Redirections.OriginalFiles ??= ForbiddenFiles.ToFrozenDictionary(kvp => kvp.Key, kvp =>
             {
                 var file = dataManager.GetFile(kvp.Value.ToString());
                 return file?.Data ?? throw new Exception($"Forbidden file {kvp.Value} could not be loaded from game files.");
             });
         }
+
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing);
+            Redirections.Dispose();
+        }
     }
 
     public void DrawContent()
     {
+        var cache = CacheManager.Instance.GetOrCreateCache(Im.Id.Current, () => new Cache(mods, dataManager));
+        if (Im.Button("Scan"u8))
+            cache.Redirections.ScanRedirections();
+        Im.Line.Same();
+        var running = cache.Redirections.Running;
+        if (ImEx.Button("Cancel"u8, default, StringU8.Empty, !running))
+            cache.Redirections.Cancel();
+        if (running)
+        {
+            Im.Line.Same();
+            Im.ProgressBar(cache.Redirections.Progress);
+        }
+
         using var child = Im.Child.Begin("c"u8, Im.ContentRegion.Available);
         if (!child)
             return;
 
-        Im.Text("WORK IN PROGRESS"u8);
+        using var table = Im.Table.Begin("t"u8, 7, TableFlags.RowBackground | TableFlags.SizingFixedFit);
+        if (!table)
+            return;
 
-        //using var table = Im.Table.Begin("t"u8, 6, TableFlags.RowBackground | TableFlags.SizingFixedFit);
-        //if (!table)
-        //    return;
-        //
-        //var cache = CacheManager.Instance.GetOrCreateCache(Im.Id.Current, () => new Cache(dataManager));
-        //foreach (var mod in mods)
-        //{
-        //    foreach (var option in mod.AllDataContainers)
-        //    {
-        //        foreach (var redirection in option.Files.Where(f => ForbiddenFiles.ContainsKey((uint)f.Key.Path.Crc32)))
-        //        {
-        //            table.DrawColumn($"{redirection.Key}");
-        //            table.DrawColumn(redirection.Value.FullName);
-        //            table.DrawColumn(mod.Name);
-        //            table.DrawColumn(option.GetFullName());
-        //            table.DrawColumn("R"u8);
-        //            try
-        //            {
-        //                var file = File.ReadAllBytes(redirection.Value.FullName);
-        //                if (file.SequenceEqual(cache.OriginalFiles![(uint)redirection.Key.Path.Crc32]))
-        //                    table.DrawColumn("EQUAL"u8);
-        //                else
-        //                    table.DrawColumn("DIFF"u8);
-        //            }
-        //            catch
-        //            {
-        //                table.DrawColumn("MISSING"u8);
-        //            }
-        //        }
-        //
-        //        foreach (var swap in option.FileSwaps.Where(f => ForbiddenFiles.ContainsKey((uint)f.Key.Path.Crc32)))
-        //        {
-        //            table.DrawColumn($"{swap.Key}");
-        //            table.DrawColumn(swap.Value.FullName);
-        //            table.DrawColumn(mod.Name);
-        //            table.DrawColumn(option.GetFullName());
-        //            table.DrawColumn("S"u8);
-        //            table.NextColumn();
-        //        }
-        //    }
-        //}
+        var data = cache.Redirections.GetCurrentList();
+        foreach (var redirection in data)
+        {
+            table.DrawColumn($"{redirection.GamePath}");
+            table.DrawColumn(redirection.Redirection.FullName);
+            if (redirection.Container.TryGetTarget(out var container))
+            {
+                table.DrawColumn(container.Mod.Name);
+                table.DrawColumn(container.GetFullName());
+            }
+            else
+            {
+                table.DrawColumn("MOD MISSING"u8);
+                table.NextColumn();
+            }
+
+            table.DrawColumn(redirection.FileSwap ? "S"u8 : "R"u8);
+            table.DrawColumn(redirection.BytewiseEqual ? "E"u8 : "D"u8);
+            table.DrawColumn(redirection.ConceptuallyEqual ? "E"u8 : "D"u8);
+        }
     }
 
     public ManagementTabType Identifier
