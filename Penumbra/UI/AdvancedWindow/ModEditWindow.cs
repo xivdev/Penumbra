@@ -68,7 +68,7 @@ public sealed partial class ModEditWindow : IndexedWindow, IDisposable
         }
     }
 
-    private readonly object _lock = new();
+    private readonly Lock _lock = new();
     private          Task?  _loadingMod;
 
 
@@ -121,12 +121,12 @@ public sealed partial class ModEditWindow : IndexedWindow, IDisposable
 
     public void UpdateModels()
     {
-        if (Mod != null)
+        if (Mod is not null)
             _editor.MdlMaterialEditor.ScanModels(Mod);
     }
 
     public override bool DrawConditions()
-        => Mod != null;
+        => Mod is not null;
 
     public override void PreDraw()
     {
@@ -461,7 +461,7 @@ public sealed partial class ModEditWindow : IndexedWindow, IDisposable
 
     private bool DrawOptionSelectHeader()
     {
-        var spacingX    = Im.Style.ItemSpacing.X;
+        var spacingX    = Im.Style.ItemInnerSpacing.X;
         var frameHeight = Im.Style.FrameHeight;
         var ret         = false;
 
@@ -488,17 +488,17 @@ public sealed partial class ModEditWindow : IndexedWindow, IDisposable
                 _editor.LoadOption(option.GroupIndex, option.DataIndex).Wait();
                 ret = true;
             }
-        }
 
-        Im.Line.Same();
-        using (ImGuiColor.Button.Push(Im.Style[ImGuiColor.ButtonActive], ModPinned))
-        {
-            if (ImEx.Icon.Button(FontAwesomeIcon.Thumbtack.Icon(),
-                    ModPinned
-                        ? $"Unpin {Mod?.Name} from this editing window.\nThis window will then follow your selected mod in the main window."
-                        : $"Pin {Mod?.Name} to this editing window.\nOpening Advanced Editing on another mod will then open another window.",
-                    new Vector2(frameHeight)))
-                ModPinned = !ModPinned;
+            Im.Line.Same();
+
+            using (ImGuiColor.Button.Push(Im.Style[ImGuiColor.ButtonActive], ModPinned))
+            {
+                if (ImEx.Icon.Button(LunaStyle.PinIcon, ModPinned
+                            ? $"Unpin {Mod?.Name} from this editing window.\nThis window will then follow your selected mod in the main window."
+                            : $"Pin {Mod?.Name} to this editing window.\nOpening Advanced Editing on another mod will then open another window.",
+                        new Vector2(frameHeight + spacingX, frameHeight)))
+                    ModPinned = !ModPinned;
+            }
         }
 
         return ret;
