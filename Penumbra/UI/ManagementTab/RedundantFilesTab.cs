@@ -9,18 +9,6 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.UI.ManagementTab;
 
-public sealed class TextureOptimizationTab(ModManager mods, UiNavigator navigator) : ITab<ManagementTabType>
-{
-    public ReadOnlySpan<byte> Label
-        => "Texture Optimization"u8;
-    public void               DrawContent()
-    {
-    }
-
-    public ManagementTabType Identifier
-        => ManagementTabType.TextureOptimization;
-}
-
 public sealed class RedundantFilesTab(ModManager mods, IDataManager dataManager, UiNavigator navigator) : ITab<ManagementTabType>
 {
     public ReadOnlySpan<byte> Label

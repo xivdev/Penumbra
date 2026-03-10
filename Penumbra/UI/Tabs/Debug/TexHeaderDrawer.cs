@@ -24,7 +24,7 @@ public class TexHeaderDrawer(IDragDropManager dragDrop) : Luna.IUiService
 
     private void DrawDragDrop()
     {
-        dragDrop.CreateImGuiSource("TexFileDragDrop", m => m.Files.Count == 1 && (m.Extensions.Contains(".tex") || m.Extensions.Contains(".atex")), m =>
+        dragDrop.CreateImGuiSource("TexFileDragDrop", m => m.Files.Count is 1 && (m.Extensions.Contains(".tex") || m.Extensions.Contains(".atex")), m =>
         {
             Im.Text($"Dragging {m.Files[0]}...");
             return true;
@@ -37,18 +37,18 @@ public class TexHeaderDrawer(IDragDropManager dragDrop) : Luna.IUiService
 
     private void DrawData()
     {
-        if (_path == null)
+        if (_path is null)
             return;
 
         ImEx.TextFramed(_path, default, 0, borderColor: 0xFFFFFFFF);
 
 
-        if (_exception != null)
+        if (_exception is not null)
         {
             using var color = ImGuiColor.Text.Push(Colors.RegexWarningBorder);
             Im.TextWrapped($"Failure to load file:\n{_exception}");
         }
-        else if (_tex != null)
+        else if (_tex is not null)
         {
             using var table = Im.Table.Begin("table"u8, 2, TableFlags.SizingFixedFit | TableFlags.RowBackground);
             if (!table)
