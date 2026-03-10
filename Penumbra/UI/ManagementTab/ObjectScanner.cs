@@ -15,8 +15,9 @@ public interface IScannedObject
 
 public class BaseScannedFile(string filePath, Mod mod) : IScannedObject
 {
-    public string             FilePath { get; } = filePath;
-    public WeakReference<Mod> Mod      { get; } = new(mod);
+    public string             FilePath     { get; } = filePath;
+    public string             RelativePath { get; } = Path.GetRelativePath(mod.ModPath.FullName, filePath);
+    public WeakReference<Mod> Mod          { get; } = new(mod);
 
     public virtual bool DataPredicate()
         => true;
@@ -51,7 +52,8 @@ public abstract class RedirectionScanner<T>(ModManager mods) : ObjectScanner<T>(
         var mods = Mods.ToArray();
         Scan = Task.Run(() =>
         {
-            ProgressMax = mods.Length;
+            CurrentProgress = 0;
+            ProgressMax     = mods.Length;
             Cache.Clear();
             foreach (var mod in mods)
             {
@@ -101,7 +103,8 @@ public abstract class ModFileScanner<T>(ModManager mods) : ObjectScanner<T>(mods
         var mods = Mods.ToArray();
         Scan = Task.Run(() =>
         {
-            ProgressMax = mods.Length;
+            CurrentProgress = 0;
+            ProgressMax     = mods.Length;
             Cache.Clear();
             foreach (var mod in mods)
             {

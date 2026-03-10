@@ -10,6 +10,9 @@ public enum ManagementTabType
     DuplicateMods,
     ForbiddenFiles,
     Cleanup,
+    UnusedFiles,
+    RedundantFiles,
+    TextureOptimization,
 }
 
 public sealed class ManagementTab : TabBar<ManagementTabType>, ITab<TabType>, IDisposable
@@ -27,9 +30,12 @@ public sealed class ManagementTab : TabBar<ManagementTabType>, ITab<TabType>, ID
         UnusedModsTab unusedMods,
         DuplicateModsTab duplicateMods,
         ForbiddenFilesTab forbiddenFiles,
+        UnusedFilesTab unusedFiles,
+        RedundantFilesTab redundantFiles,
+        TextureOptimizationTab textureOptimization,
         CleanupTab cleanup,
         UiNavigator navigator)
-        : base("Management", log, unusedMods, duplicateMods, forbiddenFiles, cleanup)
+        : base("Management", log, unusedMods, duplicateMods, forbiddenFiles, unusedFiles, redundantFiles, textureOptimization, cleanup)
     {
         _navigator = navigator;
         NextTab    = config.SelectedManagementTab;

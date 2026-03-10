@@ -6,11 +6,10 @@ using Penumbra.Mods.Manager;
 using Penumbra.Mods.SubMods;
 using Penumbra.String;
 using Penumbra.String.Classes;
-using Penumbra.UI.ModsTab.Selector;
 
 namespace Penumbra.UI.ManagementTab;
 
-public sealed class ForbiddenFilesTab(ModManager mods, IDataManager dataManager, Configuration config) : ITab<ManagementTabType>
+public sealed class ForbiddenFilesTab(ModManager mods, IDataManager dataManager) : ITab<ManagementTabType>
 {
     public static readonly FrozenDictionary<uint, CiByteString> ForbiddenFiles = (((uint, CiByteString)[])
     [
@@ -116,11 +115,7 @@ public sealed class ForbiddenFilesTab(ModManager mods, IDataManager dataManager,
             Im.ProgressBar(cache.Redirections.Progress);
         }
 
-        using var child = Im.Child.Begin("c"u8, Im.ContentRegion.Available);
-        if (!child)
-            return;
-
-        using var table = Im.Table.Begin("t"u8, 7, TableFlags.RowBackground | TableFlags.SizingFixedFit);
+        using var table = Im.Table.Begin("t"u8, 7, TableFlags.RowBackground | TableFlags.SizingFixedFit, Im.ContentRegion.Available);
         if (!table)
             return;
 
