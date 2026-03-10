@@ -53,7 +53,7 @@ public readonly struct BaseImage : IDisposable, IEquatable<BaseImage>, IEquality
     {
         switch (Image)
         {
-            case null: return (Array.Empty<byte>(), 0, 0);
+            case null: return ([], 0, 0);
             case ScratchImage scratch:
             {
                 var rgba = scratch.GetRGBA(out var f).ThrowIfError(f);
@@ -66,14 +66,14 @@ public readonly struct BaseImage : IDisposable, IEquatable<BaseImage>, IEquality
                 img.CopyPixelDataTo(ret);
                 return (ret, img.Width, img.Height);
             }
-            default: return (Array.Empty<byte>(), 0, 0);
+            default: return ([], 0, 0);
         }
     }
 
     public unsafe BaseImage AtLevelOfDetail(int lod)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(lod);
-        if (lod == 0)
+        if (lod is 0)
             return this;
 
         switch (Image)
