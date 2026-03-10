@@ -32,14 +32,14 @@ public partial class CombinedTexture : IDisposable
     public Task SaveTask { get; private set; } = Task.CompletedTask;
 
     public bool IsLoaded
-        => _mode != Mode.Empty;
+        => _mode is not Mode.Empty;
 
     public bool IsLeftCopy
-        => _mode == Mode.LeftCopy;
+        => _mode is Mode.LeftCopy;
 
     public void Draw(TextureManager textures, Vector2 size)
     {
-        if (_mode == Mode.Custom && !_centerStorage.IsLoaded)
+        if (_mode is Mode.Custom && !_centerStorage.IsLoaded)
         {
             var (width, height)        = CombineImage();
             _centerStorage.TextureWrap = textures.LoadTextureWrap(_centerStorage.RgbaPixels, width, height);
@@ -142,5 +142,20 @@ public partial class CombinedTexture : IDisposable
         _current = null;
         SaveTask = Task.CompletedTask;
         _mode    = Mode.Empty;
+    }
+
+    public bool TryGetRgbaSolidColor(out uint color, out int width, out int height)
+    {
+        if (_current is not null)
+        {
+            width  = _current.TextureWrap?.Width ?? 0;
+            height = _current.TextureWrap?.Height ?? 0;
+            return _current.TryGetRgbaSolidColor(out color);
+        }
+
+        color  = 0u;
+        width  = 0;
+        height = 0;
+        return false;
     }
 }

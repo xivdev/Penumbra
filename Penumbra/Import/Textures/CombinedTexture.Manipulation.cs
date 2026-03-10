@@ -180,6 +180,8 @@ public partial class CombinedTexture
                 CombineOp.CopyChannels  => ChannelMergePixelsMultiplied,
                 _                       => throw new InvalidOperationException($"Cannot combine images with operation {combineOp}"),
             });
+
+            _centerStorage.InvalidateRgbaSolidColor();
         }
         finally
         {
