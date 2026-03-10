@@ -49,7 +49,8 @@ public abstract class RedirectionScanner<T>(ModManager mods) : ObjectScanner<T>(
     {
         StableList.Clear();
         Cancel();
-        var mods = Mods.ToArray();
+        var mods  = Mods.ToArray();
+        var token = CancelSource.Token;
         Scan = Task.Run(() =>
         {
             CurrentProgress = 0;
@@ -67,7 +68,7 @@ public abstract class RedirectionScanner<T>(ModManager mods) : ObjectScanner<T>(
                             if (!DoCreateRedirection(gamePath, redirection, container, swap))
                                 continue;
 
-                            if (CancelSource.IsCancellationRequested)
+                            if (token.IsCancellationRequested)
                                 return;
 
                             var stored = Create(gamePath, redirection, container, swap);
@@ -83,7 +84,7 @@ public abstract class RedirectionScanner<T>(ModManager mods) : ObjectScanner<T>(
 
                 ++CurrentProgress;
             }
-        }, CancelSource.Token);
+        }, token);
         return Scan;
     }
 }
@@ -100,7 +101,8 @@ public abstract class ModFileScanner<T>(ModManager mods) : ObjectScanner<T>(mods
     {
         StableList.Clear();
         Cancel();
-        var mods = Mods.ToArray();
+        var mods  = Mods.ToArray();
+        var token = CancelSource.Token;
         Scan = Task.Run(() =>
         {
             CurrentProgress = 0;
@@ -117,7 +119,7 @@ public abstract class ModFileScanner<T>(ModManager mods) : ObjectScanner<T>(mods
                             if (!DoCreateFile(file.FullName, mod))
                                 continue;
 
-                            if (CancelSource.IsCancellationRequested)
+                            if (token.IsCancellationRequested)
                                 return;
 
                             var stored = Create(file.FullName, mod);
@@ -133,7 +135,7 @@ public abstract class ModFileScanner<T>(ModManager mods) : ObjectScanner<T>(mods
 
                 ++CurrentProgress;
             }
-        }, CancelSource.Token);
+        }, token);
         return Scan;
     }
 }

@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using Dalamud.Plugin.Services;
 using ImSharp;
 using Lumina.Data.Files;
@@ -15,11 +16,22 @@ namespace Penumbra.UI.ManagementTab;
 
 public sealed class TextureOptimizationTab(ModManager mods, TextureManager textures, UiNavigator navigator) : ITab<ManagementTabType>
 {
+    public static long LowerSizeLimit      = 1 << 20;
+    public static int  SmallDimensionLimit = 32;
+    public static int  LargeDimensionLimit = 4096;
+
     public ReadOnlySpan<byte> Label
         => "Texture Optimization"u8;
 
     public void DrawContent()
     {
+        Im.Item.SetNextWidthScaled(100);
+        ImEx.LogarithmicInput("Ignore Textures Below This Size"u8, FormattingFunctions.HumanReadableSize(LowerSizeLimit), ref LowerSizeLimit);
+        Im.Item.SetNextWidthScaled(100);
+        ImEx.LogarithmicInput("Ignore Textures With Smaller Dimensions"u8, ref SmallDimensionLimit);
+        Im.Item.SetNextWidthScaled(100);
+        ImEx.LogarithmicInput("Show Textures With Larger Dimensions, Even If Compressed"u8, ref LargeDimensionLimit);
+
         var cache = CacheManager.Instance.GetOrCreateCache(Im.Id.Current, () => new Cache(mods, textures));
         if (Im.Button("Scan"u8))
             cache.Scanner.ScanRedirections();
@@ -33,7 +45,9 @@ public sealed class TextureOptimizationTab(ModManager mods, TextureManager textu
             Im.ProgressBar(cache.Scanner.Progress, ImEx.ScaledVectorX(200));
         }
 
-        using var table = Im.Table.Begin("t"u8, 7, TableFlags.RowBackground | TableFlags.SizingFixedFit, Im.ContentRegion.Available);
+        using var table = Im.Table.Begin("t"u8, 7,
+            TableFlags.RowBackground | TableFlags.SizingFixedFit | TableFlags.ScrollX | TableFlags.ScrollY | TableFlags.BordersOuter,
+            Im.ContentRegion.Available);
         if (!table)
             return;
 
@@ -139,19 +153,23 @@ public sealed class TextureOptimizationTab(ModManager mods, TextureManager textu
                     var size     = fileInfo.Length;
                     if (size <= sizeof(TexFile.TexHeader))
                         return new OptimizableTextureRedirection(gamePath, redirection, container);
-
-                    var data = textures.LoadTex(fileInfo.FullName);
-                    if (data is { Width: <= 32, Height: <= 32 })
+                    if (size <= LowerSizeLimit)
                         return new OptimizableTextureRedirection(gamePath, redirection, container, true);
 
-                    var large        = data.Width >= 2048 || data.Height >= 2048;
+                    var data = textures.LoadTex(fileInfo.FullName);
+                    if (data.Width <= SmallDimensionLimit && data.Height <= SmallDimensionLimit)
+                        return new OptimizableTextureRedirection(gamePath, redirection, container, true);
+
+                    var large        = data.Width >= LargeDimensionLimit || data.Height >= LargeDimensionLimit;
                     var uncompressed = !data.Format.IsCompressed();
                     var solid        = IsSolidColor(data);
                     if (!solid.IsDefault)
-                        return new OptimizableTextureRedirection(gamePath, redirection, container, size, data.Format, solid.Color!.Value, data.Width, data.Height);
+                        return new OptimizableTextureRedirection(gamePath, redirection, container, size, data.Format, solid.Color!.Value,
+                            data.Width, data.Height);
 
                     if (large || uncompressed)
-                        return new OptimizableTextureRedirection(gamePath, redirection, container, size, data.Format, large, data.Width, data.Height);
+                        return new OptimizableTextureRedirection(gamePath, redirection, container, size, data.Format, large, data.Width,
+                            data.Height);
                 }
                 catch (Exception ex)
                 {
@@ -191,7 +209,7 @@ public sealed class TextureOptimizationTab(ModManager mods, TextureManager textu
                         return ColorParameter.Default;
                 }
 
-                return new Rgba32(startValue);
+                return new Rgba32(BinaryPrimitives.ReverseEndianness(startValue));
             }
 
             protected override bool DoCreateRedirection(Utf8GamePath gamePath, FullPath redirection, IModDataContainer container, bool swap)
