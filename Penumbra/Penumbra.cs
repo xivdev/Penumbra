@@ -16,6 +16,7 @@ using Penumbra.Interop.Hooks;
 using Penumbra.Interop.Hooks.PostProcessing;
 using Penumbra.Interop.PathResolving;
 using Penumbra.Interop.Services;
+using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.UI;
@@ -148,10 +149,14 @@ public class Penumbra : IDalamudPlugin
                     {
                         var mods              = _services.GetService<ModManager>();
                         var editWindowFactory = _services.GetService<ModEditWindowFactory>();
+                        var modFileSystem     = _services.GetService<ModFileSystem>();
                         foreach (var identifier in _config.Ephemeral.AdvancedEditingOpenForModPaths)
                         {
+                            if (identifier is ModEditWindowFactory.UnpinnedWindowLabel
+                             && modFileSystem.Selection.Selection?.GetValue<Mod>() is { } selectedMod)
+                                editWindowFactory.OpenForMod(selectedMod, true);
                             if (mods.TryGetMod(identifier, out var mod))
-                                editWindowFactory.OpenForMod(mod);
+                                editWindowFactory.OpenForMod(mod, false);
                         }
                     }
                 }

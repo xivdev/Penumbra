@@ -34,15 +34,55 @@ public sealed class ModEditWindowFactory(
     ModMergerFactory modMergerFactory,
     ModSelection modSelection) : WindowFactory<ModEditWindow>(log, windowSystem), IUiService, IDisposable
 {
-    private bool _listeningToModSelection = false;
+    public const string UnpinnedWindowLabel = "//UnpinnedWindow";
+
+    private bool           _listeningToModSelection;
+    public  ModEditWindow? UnpinnedWindow;
 
     public void Dispose()
     {
-        if (_listeningToModSelection)
+        if (!_listeningToModSelection)
+            return;
+
+        modSelection.Unsubscribe(OnModSelection);
+        _listeningToModSelection = false;
+        UnpinnedWindow           = null;
+    }
+
+    public void SaveWindows()
+    {
+        var newSet = Windows.Where(w => w.Mod is not null && w.IsOpen).Select(w => w.ModPinned ? w.Mod!.Identifier : UnpinnedWindowLabel).Distinct()
+            .ToHashSet();
+        if (newSet.SetEquals(config.Ephemeral.AdvancedEditingOpenForModPaths))
+            return;
+
+        config.Ephemeral.AdvancedEditingOpenForModPaths = newSet;
+        config.Ephemeral.Save();
+    }
+
+    public void UnpinWindow(ModEditWindow window, bool unpin = true)
+    {
+        if (!unpin)
         {
-            modSelection.Unsubscribe(OnModSelection);
+            // Unpinning the currently pinned window.
+            if (window != UnpinnedWindow)
+                return;
+
+            UnpinnedWindow = null;
+            SaveWindows();
             _listeningToModSelection = false;
+            modSelection.Unsubscribe(OnModSelection);
+            return;
         }
+
+        if (!_listeningToModSelection)
+        {
+            modSelection.Subscribe(OnModSelection, ModSelection.Priority.ModEditWindow);
+            _listeningToModSelection = true;
+        }
+
+        UnpinnedWindow = window;
+        SaveWindows();
     }
 
     protected override ModEditWindow CreateWindow(int index)
@@ -56,7 +96,7 @@ public sealed class ModEditWindowFactory(
         var editor = editorFactory.Create();
         return new ModEditWindow(fileDialog, itemSwapTabFactory.Create(), gameData, config, editor, resourceTreeFactory, metaFileManager,
             activeCollections, modMergerFactory.CreateTab(editor), communicator, dragDropManager, resourceTreeViewerFactory, framework,
-            CreateMetaDrawers(editor.MetaEditor), fileEditorRegistry, textureEditorFactory, CanUnpin, index);
+            CreateMetaDrawers(editor.MetaEditor), fileEditorRegistry, textureEditorFactory, index, this);
     }
 
     private MetaDrawers CreateMetaDrawers(ModMetaEditor metaEditor)
@@ -75,7 +115,7 @@ public sealed class ModEditWindowFactory(
         return new MetaDrawers(eqdp, eqp, est, globalEqp, gmp, imc, rsp, atch, shp, atr);
     }
 
-    public void OpenForMod(Mod mod)
+    public void OpenForMod(Mod mod, bool unpin)
     {
         var window = Windows.FirstOrDefault(window => window.Mod == mod);
         if (window is not null)
@@ -84,31 +124,28 @@ public sealed class ModEditWindowFactory(
             return;
         }
 
-        window = Windows.FirstOrDefault(w => !w.ModPinned) ?? CreateWindowInternal();
+        window = UnpinnedWindow ?? CreateWindowInternal();
         if (window is null)
             return;
 
+        UnpinWindow(window, unpin);
         window.ChangeMod(mod);
         window.ChangeOption(mod.Default);
     }
 
     private void OnModSelection(in ModSelection.Arguments args)
     {
+        if (UnpinnedWindow is null)
+            return;
+
         var mod = args.NewSelection;
         if (mod is null)
             return;
 
-        if (Windows.FirstOrDefault(window => window.Mod == mod) is not null)
+        if (Windows.Any(w => w.Mod == mod))
             return;
 
-        var window = Windows.FirstOrDefault(w => !w.ModPinned);
-        if (window is null)
-            return;
-
-        window.ChangeMod(mod);
-        window.ChangeOption(mod.Default);
+        UnpinnedWindow.ChangeMod(mod);
+        UnpinnedWindow.ChangeOption(mod.Default);
     }
-
-    private bool CanUnpin()
-        => Windows.All(w => w.ModPinned);
 }
