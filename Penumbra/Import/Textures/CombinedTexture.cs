@@ -1,3 +1,5 @@
+using ImSharp;
+
 namespace Penumbra.Import.Textures;
 
 public partial class CombinedTexture : IDisposable
@@ -144,7 +146,7 @@ public partial class CombinedTexture : IDisposable
         _mode    = Mode.Empty;
     }
 
-    public bool TryGetRgbaSolidColor(out uint color, out int width, out int height)
+    public bool TryGetRgbaSolidColor(out Rgba32 color, out int width, out int height)
     {
         if (_current is not null)
         {

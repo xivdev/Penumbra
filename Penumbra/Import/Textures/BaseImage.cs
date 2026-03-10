@@ -1,7 +1,7 @@
-using Lumina.Data.Files;
+using ImSharp;
 using OtterTex;
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
+using Rgba32 = SixLabors.ImageSharp.PixelFormats.Rgba32;
 
 namespace Penumbra.Import.Textures;
 
@@ -68,6 +68,44 @@ public readonly struct BaseImage : IDisposable, IEquatable<BaseImage>, IEquality
             }
             default: return ([], 0, 0);
         }
+    }
+
+    public ColorParameter IsSolidColor()
+    {
+        var (rgba, _, _) = GetPixelData();
+        return IsSolidColor(rgba);
+    }
+
+    public static ColorParameter IsSolidColor(Span<byte> rgba)
+    {
+        if (rgba.Length < 4 || (rgba.Length & 3) is not 0)
+            return ColorParameter.Default;
+
+        if (rgba.Length < 8)
+            return Unsafe.As<byte, ImSharp.Rgba32>(ref rgba[0]);
+
+        var startValue = Unsafe.As<byte, uint>(ref rgba[0]);
+        if ((rgba.Length & 7) is 0)
+        {
+            if (startValue != Unsafe.As<byte, uint>(ref rgba[4]))
+                return ColorParameter.Default;
+
+            rgba = rgba[8..];
+        }
+        else
+        {
+            rgba = rgba[4..];
+        }
+
+        var doubleValue = startValue | ((ulong)startValue << 32);
+        var span        = MemoryMarshal.Cast<byte, ulong>(rgba);
+        foreach (var value in span)
+        {
+            if (doubleValue != value)
+                return ColorParameter.Default;
+        }
+
+        return new ImSharp.Rgba32(startValue);
     }
 
     public unsafe BaseImage AtLevelOfDetail(int lod)

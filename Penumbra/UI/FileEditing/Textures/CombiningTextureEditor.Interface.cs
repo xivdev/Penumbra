@@ -294,7 +294,7 @@ public partial class CombiningTextureEditor
         {
             using var color = ImGuiColor.Text.Push(ImGuiColor.Text.Get().HalfBlend(Rgba32.Yellow));
             Im.TextWrapped(
-                $"This texture is a solid surface of color #{solidColor & 0xFF:X2}{(solidColor >> 8) & 0xFF:X2}{(solidColor >> 16) & 0xFF:X2}{(solidColor >> 24 == 0xFF ? "" : $" and alpha {solidColor >> 24}")}.");
+                $"This texture is a solid surface of color {solidColor}.");
             if (Texture.SolidTextures.TryGetValue(solidColor, out var path))
             {
                 Im.TextWrapped($"Consider using a file swap to {path}.");

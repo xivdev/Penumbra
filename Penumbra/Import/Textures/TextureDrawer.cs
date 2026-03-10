@@ -84,8 +84,7 @@ public static class TextureDrawer
         if (texture.TryGetRgbaSolidColor(out var color))
         {
             table.DrawColumn("Solid Color"u8);
-            table.DrawColumn(
-                $"#{color & 0xFF:X2}{(color >> 8) & 0xFF:X2}{(color >> 16) & 0xFF:X2}{(color >> 24 == 0xFF ? "" : $" / Alpha: {color >> 24}")}");
+            table.DrawColumn($"{color}");
         }
 
         switch (texture.BaseImage.Image)

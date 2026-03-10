@@ -1,7 +1,6 @@
 using System.Collections.Frozen;
 using Dalamud.Interface.Textures.TextureWraps;
 using ImSharp;
-using Lumina.Excel.Sheets;
 using OtterTex;
 
 namespace Penumbra.Import.Textures;
@@ -32,7 +31,7 @@ internal static class TextureTypeExtensions
 
 public sealed class Texture : IDisposable
 {
-    public static readonly FrozenDictionary<uint, StringU8> SolidTextures = (((uint, StringU8)[])
+    public static readonly FrozenDictionary<Rgba32, StringU8> SolidTextures = (((Rgba32, StringU8)[])
     [
         (0xFFFFFFFF, new StringU8("chara/common/texture/white.tex"u8)),
         (0xFF000000, new StringU8("chara/common/texture/black.tex"u8)),
@@ -59,8 +58,8 @@ public sealed class Texture : IDisposable
     public byte[] RgbaPixels = [];
 
     // If the main image is a solid rectangle, its color.
-    private uint? _rgbaSolidColor            = null;
-    private bool  _isRgbaSolidColorPopulated = false;
+    private ColorParameter _rgbaSolidColor = ColorParameter.Default;
+    private bool           _isRgbaSolidColorPopulated;
 
     // The ImGui wrapper to load the image.
     // null if LoadError != null or Path is empty.
@@ -90,7 +89,7 @@ public sealed class Texture : IDisposable
 
     private void Clean()
     {
-        RgbaPixels = Array.Empty<byte>();
+        RgbaPixels = [];
         InvalidateRgbaSolidColor();
         TextureWrap?.Dispose();
         TextureWrap = null;
@@ -160,37 +159,21 @@ public sealed class Texture : IDisposable
         Load(textures, path);
     }
 
-    public bool TryGetRgbaSolidColor(out uint color)
+    public bool TryGetRgbaSolidColor(out Rgba32 color)
     {
         if (!_isRgbaSolidColorPopulated)
         {
-            _rgbaSolidColor            = GetUniformValue(MemoryMarshal.Cast<byte, uint>(RgbaPixels));
+            _rgbaSolidColor            = BaseImage.IsSolidColor(RgbaPixels);
             _isRgbaSolidColorPopulated = true;
         }
 
-        color = _rgbaSolidColor.GetValueOrDefault();
-        return _rgbaSolidColor.HasValue;
+        color = _rgbaSolidColor.CheckDefault(Rgba32.Transparent);
+        return !_rgbaSolidColor.IsDefault;
     }
 
     public void InvalidateRgbaSolidColor()
     {
         _isRgbaSolidColorPopulated = false;
-        _rgbaSolidColor            = null;
-    }
-
-    /// <summary> If the given span is not empty and all its elements have the same value, gets that value. Otherwise, <c>null</c>. </summary>
-    private static uint? GetUniformValue(ReadOnlySpan<uint> span)
-    {
-        if (span.IsEmpty)
-            return null;
-
-        var first = span[0];
-        foreach (var item in span[1..])
-        {
-            if (item != first)
-                return null;
-        }
-
-        return first;
+        _rgbaSolidColor            = ColorParameter.Default;
     }
 }

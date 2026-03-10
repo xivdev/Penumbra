@@ -1,5 +1,3 @@
-using System.Buffers.Binary;
-using Dalamud.Plugin.Services;
 using ImSharp;
 using Lumina.Data.Files;
 using Luna;
@@ -10,15 +8,14 @@ using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.SubMods;
 using Penumbra.String.Classes;
-using TerraFX.Interop.Windows;
 
 namespace Penumbra.UI.ManagementTab;
 
 public sealed class TextureOptimizationTab(ModManager mods, TextureManager textures, UiNavigator navigator) : ITab<ManagementTabType>
 {
-    public static long LowerSizeLimit      = 1 << 20;
-    public static int  SmallDimensionLimit = 32;
-    public static int  LargeDimensionLimit = 4096;
+    private static long _lowerSizeLimit      = 1 << 20;
+    private static int  _smallDimensionLimit = 32;
+    private static int  _largeDimensionLimit = 4096;
 
     public ReadOnlySpan<byte> Label
         => "Texture Optimization"u8;
@@ -26,11 +23,11 @@ public sealed class TextureOptimizationTab(ModManager mods, TextureManager textu
     public void DrawContent()
     {
         Im.Item.SetNextWidthScaled(100);
-        ImEx.LogarithmicInput("Ignore Textures Below This Size"u8, FormattingFunctions.HumanReadableSize(LowerSizeLimit), ref LowerSizeLimit);
+        ImEx.LogarithmicInput("Ignore Textures Below This Size"u8, FormattingFunctions.HumanReadableSize(_lowerSizeLimit), ref _lowerSizeLimit);
         Im.Item.SetNextWidthScaled(100);
-        ImEx.LogarithmicInput("Ignore Textures With Smaller Dimensions"u8, ref SmallDimensionLimit);
+        ImEx.LogarithmicInput("Ignore Textures With Smaller Dimensions"u8, ref _smallDimensionLimit);
         Im.Item.SetNextWidthScaled(100);
-        ImEx.LogarithmicInput("Show Textures With Larger Dimensions, Even If Compressed"u8, ref LargeDimensionLimit);
+        ImEx.LogarithmicInput("Show Textures With Larger Dimensions, Even If Compressed"u8, ref _largeDimensionLimit);
 
         var cache = CacheManager.Instance.GetOrCreateCache(Im.Id.Current, () => new Cache(mods, textures));
         if (Im.Button("Scan"u8))
@@ -86,14 +83,13 @@ public sealed class TextureOptimizationTab(ModManager mods, TextureManager textu
             public readonly long           Size;
             public readonly bool           Invalid;
             public readonly bool           OptimizedTexture;
-            public readonly bool           LargeTexture;
             public readonly int            Width;
             public readonly int            Height;
             public readonly DXGIFormat     Format;
             public readonly ColorParameter SolidColor;
 
             /// <summary> Invalid.  </summary>
-            public unsafe OptimizableTextureRedirection(Utf8GamePath gamePath, FullPath redirection, IModDataContainer container)
+            public OptimizableTextureRedirection(Utf8GamePath gamePath, FullPath redirection, IModDataContainer container)
                 : base(gamePath, redirection, container, false)
             {
                 OptimizedTexture = false;
@@ -102,33 +98,31 @@ public sealed class TextureOptimizationTab(ModManager mods, TextureManager textu
             }
 
             /// <summary> Small. </summary>
-            public unsafe OptimizableTextureRedirection(Utf8GamePath gamePath, FullPath redirection, IModDataContainer container, bool small)
+            public OptimizableTextureRedirection(Utf8GamePath gamePath, FullPath redirection, IModDataContainer container, bool small)
                 : base(gamePath, redirection, container, false)
             {
                 Invalid          = false;
                 OptimizedTexture = small;
             }
 
-            public unsafe OptimizableTextureRedirection(Utf8GamePath gamePath, FullPath redirection, IModDataContainer container, long size,
-                DXGIFormat format, bool large, int width, int height)
+            public OptimizableTextureRedirection(Utf8GamePath gamePath, FullPath redirection, IModDataContainer container, long size,
+                DXGIFormat format, int width, int height)
                 : base(gamePath, redirection, container, false)
             {
                 Invalid          = false;
                 OptimizedTexture = false;
-                LargeTexture     = large;
                 Size             = size;
                 Format           = format;
                 Width            = width;
                 Height           = height;
             }
 
-            public unsafe OptimizableTextureRedirection(Utf8GamePath gamePath, FullPath redirection, IModDataContainer container, long size,
+            public OptimizableTextureRedirection(Utf8GamePath gamePath, FullPath redirection, IModDataContainer container, long size,
                 DXGIFormat format, Rgba32 solidColor, int width, int height)
                 : base(gamePath, redirection, container, false)
             {
                 Invalid          = false;
                 OptimizedTexture = false;
-                LargeTexture     = true;
                 Size             = size;
                 Format           = format;
                 SolidColor       = solidColor;
@@ -153,25 +147,25 @@ public sealed class TextureOptimizationTab(ModManager mods, TextureManager textu
                     var size     = fileInfo.Length;
                     if (size <= sizeof(TexFile.TexHeader))
                         return new OptimizableTextureRedirection(gamePath, redirection, container);
-                    if (size <= LowerSizeLimit)
+                    if (size <= _lowerSizeLimit)
                         return new OptimizableTextureRedirection(gamePath, redirection, container, true);
 
                     var data = textures.LoadTex(fileInfo.FullName);
-                    if (data.Width <= SmallDimensionLimit && data.Height <= SmallDimensionLimit)
+                    if (data.Width <= _smallDimensionLimit && data.Height <= _smallDimensionLimit)
                         return new OptimizableTextureRedirection(gamePath, redirection, container, true);
 
-                    var large        = data.Width >= LargeDimensionLimit || data.Height >= LargeDimensionLimit;
+                    var large        = data.Width >= _largeDimensionLimit || data.Height >= _largeDimensionLimit;
                     var uncompressed = !data.Format.IsCompressed();
-                    var solid        = IsSolidColor(data);
+                    var solid        = data.IsSolidColor();
                     if (!solid.IsDefault)
                         return new OptimizableTextureRedirection(gamePath, redirection, container, size, data.Format, solid.Color!.Value,
                             data.Width, data.Height);
 
                     if (large || uncompressed)
-                        return new OptimizableTextureRedirection(gamePath, redirection, container, size, data.Format, large, data.Width,
+                        return new OptimizableTextureRedirection(gamePath, redirection, container, size, data.Format, data.Width,
                             data.Height);
                 }
-                catch (Exception ex)
+                catch
                 {
                     return new OptimizableTextureRedirection(gamePath, redirection, container);
                 }
@@ -179,38 +173,6 @@ public sealed class TextureOptimizationTab(ModManager mods, TextureManager textu
                 return new OptimizableTextureRedirection(gamePath, redirection, container, true);
             }
 
-            private static ColorParameter IsSolidColor(in BaseImage image)
-            {
-                var (rgba, _, _) = image.GetPixelData();
-                if (rgba.Length < 4 || (rgba.Length & 3) is not 0)
-                    return ColorParameter.Default;
-
-                if (rgba.Length < 8)
-                    return Unsafe.As<byte, Rgba32>(ref rgba[0]);
-
-                var startValue = Unsafe.As<byte, uint>(ref rgba[0]);
-                if ((rgba.Length & 7) is 0)
-                {
-                    if (startValue != Unsafe.As<byte, uint>(ref rgba[4]))
-                        return ColorParameter.Default;
-
-                    rgba = rgba[8..];
-                }
-                else
-                {
-                    rgba = rgba[4..];
-                }
-
-                var doubleValue = startValue | ((ulong)startValue << 32);
-                var span        = MemoryMarshal.Cast<byte, ulong>(rgba);
-                foreach (var value in span)
-                {
-                    if (doubleValue != value)
-                        return ColorParameter.Default;
-                }
-
-                return new Rgba32(BinaryPrimitives.ReverseEndianness(startValue));
-            }
 
             protected override bool DoCreateRedirection(Utf8GamePath gamePath, FullPath redirection, IModDataContainer container, bool swap)
             {
