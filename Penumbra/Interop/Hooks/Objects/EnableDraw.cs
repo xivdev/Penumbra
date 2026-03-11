@@ -11,8 +11,8 @@ namespace Penumbra.Interop.Hooks.Objects;
 /// </summary>
 public sealed unsafe class EnableDraw : IHookService
 {
-    private readonly Task<Hook<Delegate>> _task;
-    private readonly GameState _state;
+    private readonly Task<Hook<Delegate>?> _task;
+    private readonly GameState             _state;
 
     public EnableDraw(HookManager hooks, GameState state)
     {
@@ -27,7 +27,7 @@ public sealed unsafe class EnableDraw : IHookService
     {
         _state.QueueGameObject(gameObject);
         Penumbra.Log.Excessive($"[Enable Draw] Invoked on 0x{(nint)gameObject:X} at {gameObject->ObjectIndex}.");
-        _task.Result.Original.Invoke(gameObject);
+        _task.Result!.Original.Invoke(gameObject);
         _state.DequeueGameObject();
     }
 
@@ -38,11 +38,11 @@ public sealed unsafe class EnableDraw : IHookService
         => _task.IsCompletedSuccessfully;
 
     public nint Address
-        => _task.Result.Address;
+        => _task.Result?.Address ?? nint.Zero;
 
     public void Enable()
-        => _task.Result.Enable();
+        => _task.Result?.Enable();
 
     public void Disable()
-        => _task.Result.Disable();
+        => _task.Result?.Disable();
 }

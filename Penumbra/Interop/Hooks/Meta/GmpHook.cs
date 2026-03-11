@@ -29,7 +29,7 @@ public sealed unsafe class GmpHook : FastHook<GmpHook.Delegate>
          && cache.Gmp.TryGetValue(new GmpIdentifier(collection.Id), out var entry))
             ret = (*outputEntry) = entry.Entry.Enabled ? entry.Entry.Value : 0ul;
         else
-            ret = Task.Result.Original(characterUtility, outputEntry, setId);
+            ret = Task.Result!.Original(characterUtility, outputEntry, setId);
 
         Penumbra.Log.Excessive(
             $"[GetGmpFlags] Invoked on 0x{(ulong)characterUtility:X} for {setId} with 0x{(ulong)outputEntry:X} (={*outputEntry:X}), returned {ret:X10}.");

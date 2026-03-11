@@ -109,6 +109,9 @@ public class Penumbra : IDalamudPlugin
                     new Notification(
                         "Penumbra seems to have been updated right now.\n\nIf you encounter any issues, please try restarting the game before reporting them.",
                         TimeSpan.FromSeconds(30), NotificationType.Info), false, true, false, true);
+
+            if (_services.GetService<HookManager>().LogExceptions(Log))
+                throw new Exception("Not all hooks could be created.");
         }
         catch (Exception ex)
         {

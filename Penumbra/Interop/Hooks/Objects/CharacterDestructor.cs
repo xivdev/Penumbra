@@ -24,16 +24,16 @@ public sealed unsafe class CharacterDestructor : EventBase<CharacterDestructor.A
         : base("Character Destructor", log)
         => _task = hooks.CreateHook<Delegate>(Name, Sigs.CharacterDestructor, Detour, !HookOverrides.Instance.Objects.CharacterDestructor);
 
-    private readonly Task<Hook<Delegate>> _task;
+    private readonly Task<Hook<Delegate>?> _task;
 
     public nint Address
-        => _task.Result.Address;
+        => _task.Result?.Address ?? nint.Zero;
 
     public void Enable()
-        => _task.Result.Enable();
+        => _task.Result?.Enable();
 
     public void Disable()
-        => _task.Result.Disable();
+        => _task.Result?.Disable();
 
     public Task Awaiter
         => _task;
@@ -47,7 +47,7 @@ public sealed unsafe class CharacterDestructor : EventBase<CharacterDestructor.A
     {
         Penumbra.Log.Excessive($"[{Name}] Triggered with 0x{(nint)character:X}.");
         Invoke(new Arguments(character));
-        _task.Result.Original(character);
+        _task.Result!.Original(character);
     }
 
     /// <summary> The arguments for a character destructor event. </summary>

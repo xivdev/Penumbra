@@ -27,23 +27,23 @@ public sealed unsafe class ResolvePathHooksBase : IDisposable
     // Kept separate from NamedResolveDelegate because the 5th parameter has out semantics here, instead of in.
     private delegate nint VfxResolveDelegate(nint drawObject, nint pathBuffer, nint pathBufferSize, uint slotIndex, nint unkOutParam);
 
-    private readonly Hook<PerSlotResolveDelegate> _resolveDecalPathHook;
-    private readonly Hook<SingleResolveDelegate>  _resolveEidPathHook;
-    private readonly Hook<PerSlotResolveDelegate> _resolveImcPathHook;
-    private readonly Hook<MPapResolveDelegate>    _resolveMPapPathHook;
-    private readonly Hook<PerSlotResolveDelegate> _resolveMdlPathHook;
-    private readonly Hook<NamedResolveDelegate>   _resolveMtrlPathHook;
-    private readonly Hook<PerSlotResolveDelegate> _resolveSkinMtrlPathHook;
-    private readonly Hook<NamedResolveDelegate>   _resolvePapPathHook;
-    private readonly Hook<PerSlotResolveDelegate> _resolveKdbPathHook;
-    private readonly Hook<PerSlotResolveDelegate> _resolvePhybPathHook;
-    private readonly Hook<PerSlotResolveDelegate> _resolveBnmbPathHook;
-    private readonly Hook<PerSlotResolveDelegate> _resolveSklbPathHook;
-    private readonly Hook<PerSlotResolveDelegate> _resolveSkpPathHook;
-    private readonly Hook<TmbResolveDelegate>     _resolveTmbPathHook;
-    private readonly Hook<VfxResolveDelegate>     _resolveVfxPathHook;
-    private readonly Hook<SkeletonVFuncDelegate>? _vFunc81Hook;
-    private readonly Hook<SkeletonVFuncDelegate>? _vFunc83Hook;
+    private readonly Hook<PerSlotResolveDelegate>? _resolveDecalPathHook;
+    private readonly Hook<SingleResolveDelegate>?  _resolveEidPathHook;
+    private readonly Hook<PerSlotResolveDelegate>? _resolveImcPathHook;
+    private readonly Hook<MPapResolveDelegate>?    _resolveMPapPathHook;
+    private readonly Hook<PerSlotResolveDelegate>? _resolveMdlPathHook;
+    private readonly Hook<NamedResolveDelegate>?   _resolveMtrlPathHook;
+    private readonly Hook<PerSlotResolveDelegate>? _resolveSkinMtrlPathHook;
+    private readonly Hook<NamedResolveDelegate>?   _resolvePapPathHook;
+    private readonly Hook<PerSlotResolveDelegate>? _resolveKdbPathHook;
+    private readonly Hook<PerSlotResolveDelegate>? _resolvePhybPathHook;
+    private readonly Hook<PerSlotResolveDelegate>? _resolveBnmbPathHook;
+    private readonly Hook<PerSlotResolveDelegate>? _resolveSklbPathHook;
+    private readonly Hook<PerSlotResolveDelegate>? _resolveSkpPathHook;
+    private readonly Hook<TmbResolveDelegate>?     _resolveTmbPathHook;
+    private readonly Hook<VfxResolveDelegate>?     _resolveVfxPathHook;
+    private readonly Hook<SkeletonVFuncDelegate>?  _vFunc81Hook;
+    private readonly Hook<SkeletonVFuncDelegate>?  _vFunc83Hook;
 
     private readonly PathState _parent;
 
@@ -77,88 +77,88 @@ public sealed unsafe class ResolvePathHooksBase : IDisposable
 
     public void Enable()
     {
-        _resolveDecalPathHook.Enable();
-        _resolveEidPathHook.Enable();
-        _resolveImcPathHook.Enable();
-        _resolveMPapPathHook.Enable();
-        _resolveMdlPathHook.Enable();
-        _resolveMtrlPathHook.Enable();
-        _resolveSkinMtrlPathHook.Enable();
-        _resolvePapPathHook.Enable();
-        _resolveKdbPathHook.Enable();
-        _resolvePhybPathHook.Enable();
-        _resolveBnmbPathHook.Enable();
-        _resolveSklbPathHook.Enable();
-        _resolveSkpPathHook.Enable();
-        _resolveTmbPathHook.Enable();
-        _resolveVfxPathHook.Enable();
+        _resolveDecalPathHook?.Enable();
+        _resolveEidPathHook?.Enable();
+        _resolveImcPathHook?.Enable();
+        _resolveMPapPathHook?.Enable();
+        _resolveMdlPathHook?.Enable();
+        _resolveMtrlPathHook?.Enable();
+        _resolveSkinMtrlPathHook?.Enable();
+        _resolvePapPathHook?.Enable();
+        _resolveKdbPathHook?.Enable();
+        _resolvePhybPathHook?.Enable();
+        _resolveBnmbPathHook?.Enable();
+        _resolveSklbPathHook?.Enable();
+        _resolveSkpPathHook?.Enable();
+        _resolveTmbPathHook?.Enable();
+        _resolveVfxPathHook?.Enable();
         _vFunc81Hook?.Enable();
         _vFunc83Hook?.Enable();
     }
 
     public void Disable()
     {
-        _resolveDecalPathHook.Disable();
-        _resolveEidPathHook.Disable();
-        _resolveImcPathHook.Disable();
-        _resolveMPapPathHook.Disable();
-        _resolveMdlPathHook.Disable();
-        _resolveMtrlPathHook.Disable();
-        _resolveSkinMtrlPathHook.Disable();
-        _resolvePapPathHook.Disable();
-        _resolveKdbPathHook.Disable();
-        _resolvePhybPathHook.Disable();
-        _resolveBnmbPathHook.Disable();
-        _resolveSklbPathHook.Disable();
-        _resolveSkpPathHook.Disable();
-        _resolveTmbPathHook.Disable();
-        _resolveVfxPathHook.Disable();
+        _resolveDecalPathHook?.Disable();
+        _resolveEidPathHook?.Disable();
+        _resolveImcPathHook?.Disable();
+        _resolveMPapPathHook?.Disable();
+        _resolveMdlPathHook?.Disable();
+        _resolveMtrlPathHook?.Disable();
+        _resolveSkinMtrlPathHook?.Disable();
+        _resolvePapPathHook?.Disable();
+        _resolveKdbPathHook?.Disable();
+        _resolvePhybPathHook?.Disable();
+        _resolveBnmbPathHook?.Disable();
+        _resolveSklbPathHook?.Disable();
+        _resolveSkpPathHook?.Disable();
+        _resolveTmbPathHook?.Disable();
+        _resolveVfxPathHook?.Disable();
         _vFunc81Hook?.Disable();
         _vFunc83Hook?.Disable();
     }
 
     public void Dispose()
     {
-        _resolveDecalPathHook.Dispose();
-        _resolveEidPathHook.Dispose();
-        _resolveImcPathHook.Dispose();
-        _resolveMPapPathHook.Dispose();
-        _resolveMdlPathHook.Dispose();
-        _resolveMtrlPathHook.Dispose();
-        _resolveSkinMtrlPathHook.Dispose();
-        _resolvePapPathHook.Dispose();
-        _resolveKdbPathHook.Dispose();
-        _resolvePhybPathHook.Dispose();
-        _resolveBnmbPathHook.Dispose();
-        _resolveSklbPathHook.Dispose();
-        _resolveSkpPathHook.Dispose();
-        _resolveTmbPathHook.Dispose();
-        _resolveVfxPathHook.Dispose();
+        _resolveDecalPathHook?.Dispose();
+        _resolveEidPathHook?.Dispose();
+        _resolveImcPathHook?.Dispose();
+        _resolveMPapPathHook?.Dispose();
+        _resolveMdlPathHook?.Dispose();
+        _resolveMtrlPathHook?.Dispose();
+        _resolveSkinMtrlPathHook?.Dispose();
+        _resolvePapPathHook?.Dispose();
+        _resolveKdbPathHook?.Dispose();
+        _resolvePhybPathHook?.Dispose();
+        _resolveBnmbPathHook?.Dispose();
+        _resolveSklbPathHook?.Dispose();
+        _resolveSkpPathHook?.Dispose();
+        _resolveTmbPathHook?.Dispose();
+        _resolveVfxPathHook?.Dispose();
         _vFunc81Hook?.Dispose();
         _vFunc83Hook?.Dispose();
     }
 
     private nint ResolveDecal(nint drawObject, nint pathBuffer, nint pathBufferSize, uint slotIndex)
-        => ResolvePath(drawObject, _resolveDecalPathHook.Original(drawObject, pathBuffer, pathBufferSize, slotIndex));
+        => ResolvePath(drawObject, _resolveDecalPathHook!.Original(drawObject, pathBuffer, pathBufferSize, slotIndex));
 
     private nint ResolveEid(nint drawObject, nint pathBuffer, nint pathBufferSize)
-        => ResolvePath(drawObject, _resolveEidPathHook.Original(drawObject, pathBuffer, pathBufferSize));
+        => ResolvePath(drawObject, _resolveEidPathHook!.Original(drawObject, pathBuffer, pathBufferSize));
 
     private nint ResolveImc(nint drawObject, nint pathBuffer, nint pathBufferSize, uint slotIndex)
-        => ResolvePath(drawObject, _resolveImcPathHook.Original(drawObject, pathBuffer, pathBufferSize, slotIndex));
+        => ResolvePath(drawObject, _resolveImcPathHook!.Original(drawObject, pathBuffer, pathBufferSize, slotIndex));
 
     private nint ResolveMPap(nint drawObject, nint pathBuffer, nint pathBufferSize, uint slotIndex, uint unkSId)
-        => ResolvePath(drawObject, _resolveMPapPathHook.Original(drawObject, pathBuffer, pathBufferSize, slotIndex, unkSId));
+        => ResolvePath(drawObject, _resolveMPapPathHook!.Original(drawObject, pathBuffer, pathBufferSize, slotIndex, unkSId));
 
     private nint ResolveMdl(nint drawObject, nint pathBuffer, nint pathBufferSize, uint slotIndex)
-        => ResolvePath(drawObject, _resolveMdlPathHook.Original(drawObject, pathBuffer, pathBufferSize, slotIndex));
+        => ResolvePath(drawObject, _resolveMdlPathHook!.Original(drawObject, pathBuffer, pathBufferSize, slotIndex));
 
     private nint ResolveMtrl(nint drawObject, nint pathBuffer, nint pathBufferSize, uint slotIndex, nint mtrlFileName)
-        => ResolvePath(drawObject, _resolveMtrlPathHook.Original(drawObject, pathBuffer, pathBufferSize, slotIndex, mtrlFileName));
+        => ResolvePath(drawObject, _resolveMtrlPathHook!.Original(drawObject, pathBuffer, pathBufferSize, slotIndex, mtrlFileName));
 
     private nint ResolveSkinMtrl(nint drawObject, nint pathBuffer, nint pathBufferSize, uint slotIndex)
     {
-        var finalPathBuffer = _resolveSkinMtrlPathHook.Original(drawObject, pathBuffer, pathBufferSize, slotIndex);
+        var finalPathBuffer = _resolveSkinMtrlPathHook!.Original(drawObject, pathBuffer, pathBufferSize, slotIndex);
         if (DebugConfiguration.UseSkinMaterialProcessing && finalPathBuffer != nint.Zero && finalPathBuffer == pathBuffer)
             SkinMtrlPathEarlyProcessing.Process(new Span<byte>((void*)pathBuffer, (int)pathBufferSize), (CharacterBase*)drawObject, slotIndex);
 
@@ -166,28 +166,28 @@ public sealed unsafe class ResolvePathHooksBase : IDisposable
     }
 
     private nint ResolvePap(nint drawObject, nint pathBuffer, nint pathBufferSize, uint unkAnimationIndex, nint animationName)
-        => ResolvePath(drawObject, _resolvePapPathHook.Original(drawObject, pathBuffer, pathBufferSize, unkAnimationIndex, animationName));
+        => ResolvePath(drawObject, _resolvePapPathHook!.Original(drawObject, pathBuffer, pathBufferSize, unkAnimationIndex, animationName));
 
     private nint ResolveKdb(nint drawObject, nint pathBuffer, nint pathBufferSize, uint partialSkeletonIndex)
-        => ResolvePath(drawObject, _resolveKdbPathHook.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
+        => ResolvePath(drawObject, _resolveKdbPathHook!.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
 
     private nint ResolvePhyb(nint drawObject, nint pathBuffer, nint pathBufferSize, uint partialSkeletonIndex)
-        => ResolvePath(drawObject, _resolvePhybPathHook.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
+        => ResolvePath(drawObject, _resolvePhybPathHook!.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
 
     private nint ResolveBnmb(nint drawObject, nint pathBuffer, nint pathBufferSize, uint partialSkeletonIndex)
-        => ResolvePath(drawObject, _resolveBnmbPathHook.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
+        => ResolvePath(drawObject, _resolveBnmbPathHook!.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
 
     private nint ResolveSklb(nint drawObject, nint pathBuffer, nint pathBufferSize, uint partialSkeletonIndex)
-        => ResolvePath(drawObject, _resolveSklbPathHook.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
+        => ResolvePath(drawObject, _resolveSklbPathHook!.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
 
     private nint ResolveSkp(nint drawObject, nint pathBuffer, nint pathBufferSize, uint partialSkeletonIndex)
-        => ResolvePath(drawObject, _resolveSkpPathHook.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
+        => ResolvePath(drawObject, _resolveSkpPathHook!.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
 
     private nint ResolveTmb(nint drawObject, nint pathBuffer, nint pathBufferSize, nint timelineName)
-        => ResolvePath(drawObject, _resolveTmbPathHook.Original(drawObject, pathBuffer, pathBufferSize, timelineName));
+        => ResolvePath(drawObject, _resolveTmbPathHook!.Original(drawObject, pathBuffer, pathBufferSize, timelineName));
 
     private nint ResolveVfx(nint drawObject, nint pathBuffer, nint pathBufferSize, uint slotIndex, nint unkOutParam)
-        => ResolvePath(drawObject, _resolveVfxPathHook.Original(drawObject, pathBuffer, pathBufferSize, slotIndex, unkOutParam));
+        => ResolvePath(drawObject, _resolveVfxPathHook!.Original(drawObject, pathBuffer, pathBufferSize, slotIndex, unkOutParam));
 
 
     private nint ResolveMdlHuman(nint drawObject, nint pathBuffer, nint pathBufferSize, uint slotIndex)
@@ -196,7 +196,7 @@ public sealed unsafe class ResolvePathHooksBase : IDisposable
         if (slotIndex < 10)
             _parent.MetaState.EqdpCollection.Push(collection);
 
-        var ret = ResolvePath(collection, _resolveMdlPathHook.Original(drawObject, pathBuffer, pathBufferSize, slotIndex));
+        var ret = ResolvePath(collection, _resolveMdlPathHook!.Original(drawObject, pathBuffer, pathBufferSize, slotIndex));
         if (slotIndex < 10)
             _parent.MetaState.EqdpCollection.Pop();
 
@@ -208,7 +208,7 @@ public sealed unsafe class ResolvePathHooksBase : IDisposable
         var collection = _parent.CollectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
         _parent.MetaState.EstCollection.Push(collection);
         var ret = ResolvePath(collection,
-            _resolvePapPathHook.Original(drawObject, pathBuffer, pathBufferSize, unkAnimationIndex, animationName));
+            _resolvePapPathHook!.Original(drawObject, pathBuffer, pathBufferSize, unkAnimationIndex, animationName));
         _parent.MetaState.EstCollection.Pop();
         return ret;
     }
@@ -217,7 +217,7 @@ public sealed unsafe class ResolvePathHooksBase : IDisposable
     {
         var collection = _parent.CollectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
         _parent.MetaState.EstCollection.Push(collection);
-        var ret = ResolvePath(collection, _resolveKdbPathHook.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
+        var ret = ResolvePath(collection, _resolveKdbPathHook!.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
         _parent.MetaState.EstCollection.Pop();
         return ret;
     }
@@ -226,7 +226,7 @@ public sealed unsafe class ResolvePathHooksBase : IDisposable
     {
         var collection = _parent.CollectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
         _parent.MetaState.EstCollection.Push(collection);
-        var ret = ResolvePath(collection, _resolvePhybPathHook.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
+        var ret = ResolvePath(collection, _resolvePhybPathHook!.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
         _parent.MetaState.EstCollection.Pop();
         return ret;
     }
@@ -235,7 +235,7 @@ public sealed unsafe class ResolvePathHooksBase : IDisposable
     {
         var collection = _parent.CollectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
         _parent.MetaState.EstCollection.Push(collection);
-        var ret = ResolvePath(collection, _resolveBnmbPathHook.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
+        var ret = ResolvePath(collection, _resolveBnmbPathHook!.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
         _parent.MetaState.EstCollection.Pop();
         return ret;
     }
@@ -244,7 +244,7 @@ public sealed unsafe class ResolvePathHooksBase : IDisposable
     {
         var collection = _parent.CollectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
         _parent.MetaState.EstCollection.Push(collection);
-        var ret = ResolvePath(collection, _resolveSklbPathHook.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
+        var ret = ResolvePath(collection, _resolveSklbPathHook!.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
         _parent.MetaState.EstCollection.Pop();
         return ret;
     }
@@ -253,7 +253,7 @@ public sealed unsafe class ResolvePathHooksBase : IDisposable
     {
         var collection = _parent.CollectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
         _parent.MetaState.EstCollection.Push(collection);
-        var ret = ResolvePath(collection, _resolveSkpPathHook.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
+        var ret = ResolvePath(collection, _resolveSkpPathHook!.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
         _parent.MetaState.EstCollection.Pop();
         return ret;
     }
@@ -333,14 +333,14 @@ public sealed unsafe class ResolvePathHooksBase : IDisposable
             Type.Human => human,
             _          => other,
         };
-        if (del == null)
+        if (del is null)
             return null;
 
         return hooks.CreateHook(name, address, del).Result;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    private static Hook<T> Create<T>(string name, Luna.HookManager hooks, nint address, T del) where T : Delegate
+    private static Hook<T>? Create<T>(string name, Luna.HookManager hooks, nint address, T del) where T : Delegate
         => hooks.CreateHook(name, address, del).Result;
 
 

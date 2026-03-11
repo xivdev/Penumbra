@@ -54,13 +54,13 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
     private delegate void ModelRendererUnkFuncDelegate(CSModelRenderer* modelRenderer, ModelRendererStructs.UnkPayload* unkPayload, uint unk2,
         uint unk3, uint unk4, uint unk5);
 
-    private readonly Hook<CharacterBaseOnRenderMaterialDelegate> _humanOnRenderMaterialHook;
+    private readonly Hook<CharacterBaseOnRenderMaterialDelegate>? _humanOnRenderMaterialHook;
 
-    private readonly Hook<ModelRendererOnRenderMaterialDelegate> _modelRendererOnRenderMaterialHook;
+    private readonly Hook<ModelRendererOnRenderMaterialDelegate>? _modelRendererOnRenderMaterialHook;
 
-    private readonly Hook<ModelRendererUnkFuncDelegate> _modelRendererUnkFuncHook;
+    private readonly Hook<ModelRendererUnkFuncDelegate>? _modelRendererUnkFuncHook;
 
-    private readonly Hook<MaterialResourceHandle.Delegates.PrepareColorTable> _prepareColorTableHook;
+    private readonly Hook<MaterialResourceHandle.Delegates.PrepareColorTable>? _prepareColorTableHook;
 
     private readonly ResourceHandleDestructor _resourceHandleDestructor;
     private readonly CommunicatorService      _communicator;
@@ -106,7 +106,7 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
         => _hairMaskState.MaterialCount;
 
     public ShaderReplacementFixer(ResourceHandleDestructor resourceHandleDestructor, CharacterUtility utility, ModelRenderer modelRenderer,
-        CommunicatorService communicator, Luna.HookManager hooks, CharacterBaseVTables vTables, HumanSetupScalingHook humanSetupScalingHook)
+        CommunicatorService communicator, HookManager hooks, CharacterBaseVTables vTables, HumanSetupScalingHook humanSetupScalingHook)
     {
         _resourceHandleDestructor = resourceHandleDestructor;
         _communicator             = communicator;
@@ -153,10 +153,10 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
 
     public void Dispose()
     {
-        _prepareColorTableHook.Dispose();
-        _modelRendererUnkFuncHook.Dispose();
-        _modelRendererOnRenderMaterialHook.Dispose();
-        _humanOnRenderMaterialHook.Dispose();
+        _prepareColorTableHook?.Dispose();
+        _modelRendererUnkFuncHook?.Dispose();
+        _modelRendererOnRenderMaterialHook?.Dispose();
+        _humanOnRenderMaterialHook?.Dispose();
         _humanSetupScalingHook.SetupReplacements -= SetupHssReplacements;
 
         _communicator.MtrlLoaded.Unsubscribe(OnMtrlLoaded);
@@ -334,14 +334,14 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
     private nint OnRenderHumanMaterial(CharacterBase* human, CSModelRenderer.OnRenderMaterialParams* param)
     {
         // If we don't have any on-screen instances of modded skin.shpk, we don't need the slow path at all.
-        if (!Enabled || GetTotalMaterialCountForHumanRender() == 0)
-            return _humanOnRenderMaterialHook.Original(human, param);
+        if (!Enabled || GetTotalMaterialCountForHumanRender() is 0)
+            return _humanOnRenderMaterialHook!.Original(human, param);
 
         var material     = param->Model->Materials[param->MaterialIndex];
         var mtrlResource = material->MaterialResourceHandle;
         var shpkState    = GetStateForHumanRender(mtrlResource);
-        if (shpkState == null || shpkState.MaterialCount == 0)
-            return _humanOnRenderMaterialHook.Original(human, param);
+        if (shpkState == null || shpkState.MaterialCount is 0)
+            return _humanOnRenderMaterialHook!.Original(human, param);
 
         shpkState.IncrementSlowPathCallDelta();
 
@@ -356,7 +356,7 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
             try
             {
                 *shpkReference = mtrlResource->ShaderPackageResourceHandle;
-                return _humanOnRenderMaterialHook.Original(human, param);
+                return _humanOnRenderMaterialHook!.Original(human, param);
             }
             finally
             {
@@ -369,13 +369,13 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
         CSModelRenderer.OnRenderModelParams* param, Material* material, uint materialIndex)
     {
         // If we don't have any on-screen instances of modded characterglass.shpk or others, we don't need the slow path at all.
-        if (!Enabled || GetTotalMaterialCountForModelRendererRender() == 0)
-            return _modelRendererOnRenderMaterialHook.Original(modelRenderer, outFlags, param, material, materialIndex);
+        if (!Enabled || GetTotalMaterialCountForModelRendererRender() is 0)
+            return _modelRendererOnRenderMaterialHook!.Original(modelRenderer, outFlags, param, material, materialIndex);
 
         var mtrlResource = material->MaterialResourceHandle;
         var shpkState    = GetStateForModelRendererRender(mtrlResource);
-        if (shpkState == null || shpkState.MaterialCount == 0)
-            return _modelRendererOnRenderMaterialHook.Original(modelRenderer, outFlags, param, material, materialIndex);
+        if (shpkState == null || shpkState.MaterialCount is 0)
+            return _modelRendererOnRenderMaterialHook!.Original(modelRenderer, outFlags, param, material, materialIndex);
 
         shpkState.IncrementSlowPathCallDelta();
 
@@ -386,7 +386,7 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
             try
             {
                 *shpkReference = mtrlResource->ShaderPackageResourceHandle;
-                return _modelRendererOnRenderMaterialHook.Original(modelRenderer, outFlags, param, material, materialIndex);
+                return _modelRendererOnRenderMaterialHook!.Original(modelRenderer, outFlags, param, material, materialIndex);
             }
             finally
             {
@@ -398,17 +398,17 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
     private void ModelRendererUnkFuncDetour(CSModelRenderer* modelRenderer, ModelRendererStructs.UnkPayload* unkPayload, uint unk2, uint unk3,
         uint unk4, uint unk5)
     {
-        if (!Enabled || GetTotalMaterialCountForModelRendererUnk() == 0)
+        if (!Enabled || GetTotalMaterialCountForModelRendererUnk() is 0)
         {
-            _modelRendererUnkFuncHook.Original(modelRenderer, unkPayload, unk2, unk3, unk4, unk5);
+            _modelRendererUnkFuncHook!.Original(modelRenderer, unkPayload, unk2, unk3, unk4, unk5);
             return;
         }
 
         var mtrlResource = GetMaterialResourceHandle(unkPayload);
         var shpkState    = GetStateForModelRendererUnk(mtrlResource);
-        if (shpkState == null || shpkState.MaterialCount == 0)
+        if (shpkState == null || shpkState.MaterialCount is 0)
         {
-            _modelRendererUnkFuncHook.Original(modelRenderer, unkPayload, unk2, unk3, unk4, unk5);
+            _modelRendererUnkFuncHook!.Original(modelRenderer, unkPayload, unk2, unk3, unk4, unk5);
             return;
         }
 
@@ -421,7 +421,7 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
             try
             {
                 *shpkReference = mtrlResource->ShaderPackageResourceHandle;
-                _modelRendererUnkFuncHook.Original(modelRenderer, unkPayload, unk2, unk3, unk4, unk5);
+                _modelRendererUnkFuncHook!.Original(modelRenderer, unkPayload, unk2, unk3, unk4, unk5);
             }
             finally
             {
@@ -436,14 +436,14 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
         var unkPointer    = *(nint*)((nint)unkPayload->ModelResourceHandle + 0xE8) + unkPayload->UnkIndex * 0x24;
         var materialIndex = *(ushort*)(unkPointer + 8);
         var material      = unkPayload->Params->Model->Materials[materialIndex];
-        if (material == null)
+        if (material is null)
             return null;
 
         var mtrlResource = material->MaterialResourceHandle;
-        if (mtrlResource == null)
+        if (mtrlResource is null)
             return null;
 
-        if (mtrlResource->ShaderPackageResourceHandle == null)
+        if (mtrlResource->ShaderPackageResourceHandle is null)
         {
             Penumbra.Log.Warning("ShaderReplacementFixer found a MaterialResourceHandle with no shader package");
             return null;
@@ -461,8 +461,8 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private static int GetDataSetExpectedSize(uint dataFlags)
-        => (dataFlags & 4) != 0
-            ? ColorTable.Size + ((dataFlags & 8) != 0 ? ColorDyeTable.Size : 0)
+        => (dataFlags & 4) is not 0
+            ? ColorTable.Size + ((dataFlags & 8) is not 0 ? ColorDyeTable.Size : 0)
             : 0;
 
     private Texture* PrepareColorTableDetour(MaterialResourceHandle* thisPtr, byte stain0Id, byte stain1Id)
@@ -472,16 +472,16 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
                 $"Material at {thisPtr->FileName} has data set of size {thisPtr->DataSetSize} bytes, but should have at least {GetDataSetExpectedSize(thisPtr->DataFlags)} bytes. This may cause crashes due to access violations.");
 
         // If we don't have any on-screen instances of modded characterlegacy.shpk, we don't need the slow path at all.
-        if (!Enabled || GetTotalMaterialCountForColorTable() == 0)
-            return _prepareColorTableHook.Original(thisPtr, stain0Id, stain1Id);
+        if (!Enabled || GetTotalMaterialCountForColorTable() is 0)
+            return _prepareColorTableHook!.Original(thisPtr, stain0Id, stain1Id);
 
         var material = thisPtr->Material;
-        if (material == null)
-            return _prepareColorTableHook.Original(thisPtr, stain0Id, stain1Id);
+        if (material is null)
+            return _prepareColorTableHook!.Original(thisPtr, stain0Id, stain1Id);
 
         var shpkState = GetStateForColorTable(thisPtr->ShpkName.AsSpan());
-        if (shpkState == null || shpkState.MaterialCount == 0)
-            return _prepareColorTableHook.Original(thisPtr, stain0Id, stain1Id);
+        if (shpkState is null || shpkState.MaterialCount is 0)
+            return _prepareColorTableHook!.Original(thisPtr, stain0Id, stain1Id);
 
         shpkState.IncrementSlowPathCallDelta();
 
@@ -492,7 +492,7 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
             try
             {
                 *shpkReference = thisPtr->ShaderPackageResourceHandle;
-                return _prepareColorTableHook.Original(thisPtr, stain0Id, stain1Id);
+                return _prepareColorTableHook!.Original(thisPtr, stain0Id, stain1Id);
             }
             finally
             {

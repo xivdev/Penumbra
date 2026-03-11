@@ -36,10 +36,10 @@ public sealed unsafe class AttributeHook : EventBase<AttributeHook.Arguments, At
         _task     = hooks.CreateHook<Delegate>(Name, Sigs.UpdateAttributes, Detour, config.EnableCustomShapes);
     }
 
-    private readonly Task<Hook<Delegate>> _task;
+    private readonly Task<Hook<Delegate>?> _task;
 
     public nint Address
-        => _task.Result.Address;
+        => _task.Result?.Address ?? nint.Zero;
 
     public void Enable()
         => SetState(true);
@@ -55,9 +55,9 @@ public sealed unsafe class AttributeHook : EventBase<AttributeHook.Arguments, At
         _config.EnableCustomShapes = enabled;
         _config.Save();
         if (enabled)
-            _task.Result.Enable();
+            _task.Result?.Enable();
         else
-            _task.Result.Disable();
+            _task.Result?.Disable();
     }
 
 
@@ -71,7 +71,7 @@ public sealed unsafe class AttributeHook : EventBase<AttributeHook.Arguments, At
 
     private void Detour(Human* human)
     {
-        _task.Result.Original(human);
+        _task.Result!.Original(human);
         var resolveData          = _resolver.IdentifyCollection((DrawObject*)human, true);
         var identifiedActor      = resolveData.AssociatedGameObject;
         var identifiedCollection = resolveData.ModCollection;
@@ -82,5 +82,5 @@ public sealed unsafe class AttributeHook : EventBase<AttributeHook.Arguments, At
     public readonly record struct Arguments(Actor Character, Model Human, ModCollection Collection);
 
     protected override void Dispose(bool disposing)
-        => _task.Result.Dispose();
+        => _task.Result?.Dispose();
 }

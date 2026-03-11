@@ -51,7 +51,7 @@ public sealed unsafe class LoadCharacterVfx : FastHook<LoadCharacterVfx.Delegate
 
         var last = _state.SetAnimationData(newData);
         _crashHandler.LogAnimation(newData.AssociatedGameObject, newData.ModCollection, AnimationInvocationType.LoadCharacterVfx);
-        var ret = Task.Result.Original(vfxPath, vfxParams, unk1, unk2, unk3, unk4);
+        var ret = Task.Result!.Original(vfxPath, vfxParams, unk1, unk2, unk3, unk4);
         Penumbra.Log.Excessive(
             $"[Load Character VFX] Invoked with {new ByteString(vfxPath)}, 0x{vfxParams->GameObjectId:X}, {vfxParams->TargetCount}, {unk1}, {unk2}, {unk3}, {unk4} -> 0x{ret:X}.");
         _state.RestoreAnimationData(last);

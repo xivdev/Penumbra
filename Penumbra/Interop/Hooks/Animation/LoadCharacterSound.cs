@@ -32,7 +32,7 @@ public sealed unsafe class LoadCharacterSound : FastHook<LoadCharacterSound.Dele
         var newData   = _collectionResolver.IdentifyCollection(character, true);
         var last      = _state.SetSoundData(newData);
         _crashHandler.LogAnimation(newData.AssociatedGameObject, newData.ModCollection, AnimationInvocationType.LoadCharacterSound);
-        var ret = Task.Result.Original(container, unk1, unk2, unk3, unk4, unk5, unk6, unk7);
+        var ret = Task.Result!.Original(container, unk1, unk2, unk3, unk4, unk5, unk6, unk7);
         Penumbra.Log.Excessive(
             $"[Load Character Sound] Invoked with {(nint)container:X} {unk1} {unk2} {unk3} {unk4} {unk5} {unk6} {unk7} -> {ret}.");
         _state.RestoreSoundData(last);

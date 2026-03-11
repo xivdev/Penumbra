@@ -25,7 +25,7 @@ public sealed unsafe class LoadMtrl : FastHook<LoadMtrl.Delegate>
         var last     = _gameState.MtrlData.Value;
         var mtrlData = _gameState.LoadSubFileHelper((nint)handle);
         _gameState.MtrlData.Value = mtrlData;
-        var ret = Task.Result.Original(handle, unk1, unk2);
+        var ret = Task.Result!.Original(handle, unk1, unk2);
         _gameState.MtrlData.Value = last;
         _communicator.MtrlLoaded.Invoke(new MtrlLoaded.Arguments((nint)handle, mtrlData.AssociatedGameObject));
         return ret;

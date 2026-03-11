@@ -32,14 +32,14 @@ public sealed unsafe class LoadActionTmb : FastHook<LoadActionTmb.Delegate>
         if (ShouldSkipCache(loadData))
         {
             _state.SkipTmbCache.Value = true;
-            ret                       = Task.Result.Original(scheduler, loadData, b, c, d, 1);
+            ret                       = Task.Result!.Original(scheduler, loadData, b, c, d, 1);
             Penumbra.Log.Verbose(
                 $"[LoadActionTMB] Called with 0x{(ulong)scheduler:X}, {loadData->Id}, {new CiByteString(loadData->Path, MetaDataComputation.None)}, 0x{b:X}, {c}, {d}, {e}, forced no-cache use, returned 0x{(ulong)ret:X} ({(ret != null && GetCachedScheduleResource.Resource(ret) != null ? GetCachedScheduleResource.Resource(ret)->FileName().ToString() : "No Path")}).");
             _state.SkipTmbCache.Value = false;
         }
         else
         {
-            ret = Task.Result.Original(scheduler, loadData, b, c, d, e);
+            ret = Task.Result!.Original(scheduler, loadData, b, c, d, e);
             Penumbra.Log.Excessive(
                 $"[LoadActionTMB] Called with 0x{(ulong)scheduler:X}, {loadData->Id}, {new CiByteString(loadData->Path)}, 0x{b:X}, {c}, {d}, {e}, returned 0x{(ulong)ret:X} ({(ret != null && GetCachedScheduleResource.Resource(ret) != null ? GetCachedScheduleResource.Resource(ret)->FileName().ToString() : "No Path")}).");
         }

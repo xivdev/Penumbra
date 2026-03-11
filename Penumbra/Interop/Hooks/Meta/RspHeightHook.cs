@@ -70,7 +70,7 @@ public sealed class RspHeightHook : FastHook<RspHeightHook.Delegate>
         }
         else
         {
-            scale = Task.Result.Original(cmpResource, clan, gender, bodyType, height);
+            scale = Task.Result!.Original(cmpResource, clan, gender, bodyType, height);
         }
 
         Penumbra.Log.Excessive(

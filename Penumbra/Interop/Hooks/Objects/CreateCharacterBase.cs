@@ -21,16 +21,16 @@ public sealed unsafe class CreateCharacterBase : EventBase<CreateCharacterBase.A
         _task      = hooks.CreateHook<Delegate>(Name, Address, Detour, !HookOverrides.Instance.Objects.CreateCharacterBase);
     }
 
-    private readonly Task<Hook<Delegate>> _task;
+    private readonly Task<Hook<Delegate>?> _task;
 
     public nint Address
         => (nint)CharacterBase.MemberFunctionPointers.Create;
 
     public void Enable()
-        => _task.Result.Enable();
+        => _task.Result?.Enable();
 
     public void Disable()
-        => _task.Result.Disable();
+        => _task.Result?.Disable();
 
     public Task Awaiter
         => _task;
@@ -45,7 +45,7 @@ public sealed unsafe class CreateCharacterBase : EventBase<CreateCharacterBase.A
         Penumbra.Log.Verbose(
             $"[{Name}] Triggered with model: {model.Id}, customize: 0x{(nint)customize:X}, equipment: 0x{(nint)equipment:X}, unk: {unk}.");
         Invoke(new Arguments(ref model, customize, equipment));
-        var ret = _task.Result.Original(model, customize, equipment, unk);
+        var ret = _task.Result!.Original(model, customize, equipment, unk);
         _postEvent.Invoke(new PostEvent.Arguments(model, customize, equipment, ret));
         return ret;
     }

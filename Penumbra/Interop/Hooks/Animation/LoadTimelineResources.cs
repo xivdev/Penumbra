@@ -41,7 +41,7 @@ public sealed unsafe class LoadTimelineResources : FastHook<LoadTimelineResource
         Penumbra.Log.Excessive($"[Load Timeline Resources] Invoked on {(nint)timeline:X}.");
         // Do not check timeline loading in cutscenes.
         if (_conditions[ConditionFlag.OccupiedInCutSceneEvent] || _conditions[ConditionFlag.WatchingCutscene78])
-            return Task.Result.Original(timeline);
+            return Task.Result!.Original(timeline);
 
         var newData = GetDataFromTimeline(_objects, _collectionResolver, timeline);
         var last    = _state.SetAnimationData(newData);
@@ -50,7 +50,7 @@ public sealed unsafe class LoadTimelineResources : FastHook<LoadTimelineResource
         // This is called far too often and spams the log too much.
         _crashHandler.LogAnimation(newData.AssociatedGameObject, newData.ModCollection, AnimationInvocationType.LoadTimelineResources);
 #endif
-        var ret = Task.Result.Original(timeline);
+        var ret = Task.Result!.Original(timeline);
         _state.RestoreAnimationData(last);
         return ret;
     }

@@ -25,7 +25,7 @@ public sealed unsafe class CalculateHeight : FastHook<CalculateHeight.Delegate>
     {
         var collection = _collectionResolver.IdentifyCollection((GameObject*)container->OwnerObject, true);
         _metaState.RspCollection.Push(collection);
-        var ret = Task.Result.Original.Invoke(container);
+        var ret = Task.Result!.Original.Invoke(container);
         Penumbra.Log.Excessive($"[Calculate Height] Invoked on {(nint)container:X} -> {ret}.");
         _metaState.RspCollection.Pop();
         return ret;

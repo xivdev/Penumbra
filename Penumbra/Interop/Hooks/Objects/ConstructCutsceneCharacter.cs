@@ -25,7 +25,7 @@ public sealed unsafe class ConstructCutsceneCharacter : EventBase<ConstructCutsc
         _task      = hooks.CreateHook<Delegate>(Name, Sigs.ConstructCutsceneCharacter, Detour, !HookOverrides.Instance.Objects.ConstructCutsceneCharacter);
     }
 
-    private readonly Task<Hook<Delegate>> _task;
+    private readonly Task<Hook<Delegate>?> _task;
 
     public delegate int Delegate(SetupPlayerNpc.SchedulerStruct* scheduler);
 
@@ -33,13 +33,13 @@ public sealed unsafe class ConstructCutsceneCharacter : EventBase<ConstructCutsc
     {
         // This is the function that actually creates the new game object
         // and fills it into the object table at a free index etc.
-        var ret       = _task.Result.Original(scheduler);
+        var ret       = _task.Result!.Original(scheduler);
         // Check for the copy state from SetupPlayerNpc.
         if (_gameState.CharacterAssociated.Value)
         {
             // If the newly created character exists, invoke the event.
             var character = _objects[ret + (int)ScreenActor.CutsceneStart].AsCharacter;
-            if (character != null)
+            if (character is not null)
             {
                 Invoke(new Arguments(character));
                 Penumbra.Log.Verbose(
@@ -51,14 +51,14 @@ public sealed unsafe class ConstructCutsceneCharacter : EventBase<ConstructCutsc
         return ret;
     }
 
-    public IntPtr Address
-        => _task.Result.Address;
+    public nint Address
+        => _task.Result?.Address ?? nint.Zero;
 
     public void Enable()
-        => _task.Result.Enable();
+        => _task.Result?.Enable();
 
     public void Disable()
-        => _task.Result.Disable();
+        => _task.Result?.Disable();
 
     public Task Awaiter
         => _task;

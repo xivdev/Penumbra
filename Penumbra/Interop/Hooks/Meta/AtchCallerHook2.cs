@@ -27,7 +27,7 @@ public sealed unsafe class AtchCallerHook2 : FastHook<AtchCallerHook2.Delegate>
     {
         var collection = _collectionResolver.IdentifyCollection(playerModel.AsDrawObject, true);
         _metaState.AtchCollection.Push(collection);
-        var ret = Task.Result.Original(data, slot, unk, playerModel, unk2);
+        var ret = Task.Result!.Original(data, slot, unk, playerModel, unk2);
         _metaState.AtchCollection.Pop();
         Penumbra.Log.Excessive(
             $"[AtchCaller2] Invoked on 0x{(ulong)data:X} with {slot}, {unk:X}, 0x{playerModel.Address:X}, {unk2} -> {ret}, identified to {collection.ModCollection.Identity.AnonymizedName}.");

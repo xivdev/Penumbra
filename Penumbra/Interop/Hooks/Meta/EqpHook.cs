@@ -30,7 +30,7 @@ public sealed unsafe class EqpHook : FastHook<EqpHook.Delegate>
         }
         else
         {
-            Task.Result.Original(utility, flags, armor);
+            Task.Result!.Original(utility, flags, armor);
         }
 
         Penumbra.Log.Excessive($"[GetEqpFlags] Invoked on 0x{(nint)utility:X} with 0x{(ulong)armor:X}, returned 0x{(ulong)*flags:X16}.");

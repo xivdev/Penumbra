@@ -24,7 +24,7 @@ public sealed unsafe class EqdpAccessoryHook : FastHook<EqdpAccessoryHook.Delega
 
     private void Detour(CharacterUtility* utility, EqdpEntry* entry, uint setId, uint raceCode)
     {
-        Task.Result.Original(utility, entry, setId, raceCode);
+        Task.Result!.Original(utility, entry, setId, raceCode);
         if (_metaState.EqdpCollection.TryPeek(out var collection)
          && collection is { Valid: true, ModCollection.MetaCache: { } cache })
             *entry = cache.Eqdp.ApplyFullEntry(new PrimaryId((ushort)setId), (GenderRace)raceCode, true, *entry);

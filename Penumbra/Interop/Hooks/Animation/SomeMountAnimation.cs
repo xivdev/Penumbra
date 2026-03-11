@@ -25,7 +25,7 @@ public sealed unsafe class SomeMountAnimation : FastHook<SomeMountAnimation.Dele
     {
         Penumbra.Log.Excessive($"[Some Mount Animation] Invoked on {(nint)drawObject:X} with {unk1}, {unk2}, {unk3}.");
         var last = _state.SetAnimationData(_collectionResolver.IdentifyCollection(drawObject, true));
-        Task.Result.Original(drawObject, unk1, unk2, unk3);
+        Task.Result!.Original(drawObject, unk1, unk2, unk3);
         _state.RestoreAnimationData(last);
     }
 }

@@ -64,7 +64,7 @@ public sealed class RspTailHook : FastHook<RspTailHook.Delegate>
         }
         else
         {
-            scale = Task.Result.Original(cmpResource, race, gender, isSecondSubRace, bodyType, tailLength);
+            scale = Task.Result!.Original(cmpResource, race, gender, isSecondSubRace, bodyType, tailLength);
         }
 
         Penumbra.Log.Excessive(

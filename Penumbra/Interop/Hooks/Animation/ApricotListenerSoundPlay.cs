@@ -37,28 +37,28 @@ public sealed unsafe class ApricotListenerSoundPlayCaller : FastHook<ApricotList
         // Short-circuiting and sanity checks done by game.
         var playTime = a1 == nint.Zero ? -1 : *(float*)(a1 + VolatileOffsets.ApricotListenerSoundPlayCaller.PlayTimeOffset);
         if (playTime < 0)
-            return Task.Result.Original(a1, unused, timeOffset);
+            return Task.Result!.Original(a1, unused, timeOffset);
 
         var someIntermediate = *(nint*)(a1 + VolatileOffsets.ApricotListenerSoundPlayCaller.SomeIntermediate);
         var flags = someIntermediate == nint.Zero
             ? (ushort)0
             : *(ushort*)(someIntermediate + VolatileOffsets.ApricotListenerSoundPlayCaller.Flags);
         if (((flags >> VolatileOffsets.ApricotListenerSoundPlayCaller.BitShift) & 1) == 0)
-            return Task.Result.Original(a1, unused, timeOffset);
+            return Task.Result!.Original(a1, unused, timeOffset);
 
         Penumbra.Log.Excessive(
             $"[Apricot Listener Sound Play Caller] Invoked on 0x{a1:X} with {unused}, {timeOffset}.");
         // Fetch the IInstanceListenner (sixth argument to inlined call of SoundPlay)
         var apricotIInstanceListenner = *(nint*)(someIntermediate + VolatileOffsets.ApricotListenerSoundPlayCaller.IInstanceListenner);
         if (apricotIInstanceListenner == nint.Zero)
-            return Task.Result.Original(a1, unused, timeOffset);
+            return Task.Result!.Original(a1, unused, timeOffset);
 
         // In some cases we can obtain the associated caster via vfunc 1.
         var newData = ResolveData.Invalid;
         var gameObject =
             (*(delegate* unmanaged<nint, GameObject*>**)apricotIInstanceListenner)[VolatileOffsets.ApricotListenerSoundPlayCaller.CasterVFunc](
                 apricotIInstanceListenner);
-        if (gameObject != null)
+        if (gameObject is not null)
         {
             newData = _collectionResolver.IdentifyCollection(gameObject, true);
         }
@@ -76,7 +76,7 @@ public sealed unsafe class ApricotListenerSoundPlayCaller : FastHook<ApricotList
 
         _crashHandler.LogAnimation(newData.AssociatedGameObject, newData.ModCollection, AnimationInvocationType.ApricotSoundPlay);
         var last = _state.SetAnimationData(newData);
-        var ret  = Task.Result.Original(a1, unused, timeOffset);
+        var ret  = Task.Result!.Original(a1, unused, timeOffset);
         _state.RestoreAnimationData(last);
         return ret;
     }

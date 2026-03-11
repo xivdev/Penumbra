@@ -34,7 +34,7 @@ public sealed unsafe class EstHook : FastHook<EstHook.Delegate>
          && cache.Est.TryGetValue(Convert(estResource, genderRace, id), out var entry))
             ret = entry.Entry;
         else
-            ret = Task.Result.Original(estResource, genderRace, id);
+            ret = Task.Result!.Original(estResource, genderRace, id);
 
         Penumbra.Log.Excessive($"[FindEstEntry] Invoked with 0x{(nint)estResource:X}, {genderRace}, {id}, returned {ret.Value}.");
         return ret;

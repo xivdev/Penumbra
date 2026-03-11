@@ -24,7 +24,7 @@ public sealed unsafe class PlayFootstep : FastHook<PlayFootstep.Delegate>
     {
         Penumbra.Log.Excessive($"[Play Footstep] Invoked on 0x{(nint)gameObject:X} with {id}, {unk}.");
         var last = _state.SetAnimationData(_collectionResolver.IdentifyCollection(gameObject, true));
-        Task.Result.Original(gameObject, id, unk);
+        Task.Result!.Original(gameObject, id, unk);
         _state.RestoreAnimationData(last);
     }
 }

@@ -25,7 +25,7 @@ public sealed unsafe class UpdateRender : FastHook<UpdateRender.Delegate>
         Penumbra.Log.Excessive($"[Human.UpdateRender] Invoked on {(nint)drawObject:X}.");
         var collection = _collectionResolver.IdentifyCollection(drawObject, true);
         _metaState.EqpCollection.Push(collection);
-        Task.Result.Original(drawObject);
+        Task.Result!.Original(drawObject);
         _metaState.EqpCollection.Pop();
     }
 }

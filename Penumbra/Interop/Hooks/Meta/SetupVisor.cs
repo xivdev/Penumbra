@@ -28,7 +28,7 @@ public sealed unsafe class SetupVisor : FastHook<SetupVisor.Delegate>
     {
         var collection = _collectionResolver.IdentifyCollection(drawObject, true);
         _metaState.GmpCollection.Push((collection, modelId));
-        var ret = Task.Result.Original.Invoke(drawObject, modelId, visorState);
+        var ret = Task.Result!.Original.Invoke(drawObject, modelId, visorState);
         Penumbra.Log.Excessive($"[Setup Visor] Invoked on {(nint)drawObject:X} with {modelId}, {visorState} -> {ret}.");
         _metaState.GmpCollection.Pop();
         return ret;

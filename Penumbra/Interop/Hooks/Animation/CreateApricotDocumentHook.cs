@@ -32,7 +32,7 @@ public sealed unsafe class CreateApricotDocumentHook(CollectionManager collectio
              && PathDataHandler.Read(additionalData, out var data)
                     ? collections.Storage.ByLocalId(data.Collection)
                     : collections.Active.Default, nint.Zero);
-        var ret = Task.Result.Original(singleton, vfxOwner, avfxPath, avfxData, avfxSize, resource, document);
+        var ret = Task.Result!.Original(singleton, vfxOwner, avfxPath, avfxData, avfxSize, resource, document);
         Penumbra.Log.Excessive(
             $"[CreateApricotDocument] Results with 0x{singleton:X}, 0x{vfxOwner:X}, 0x{(nint)avfxPath:X} ({fullPath}, {state.ApricotDocumentAvfx.ModCollection}) 0x{(nint)avfxData:X} ({avfxSize} bytes) 0x{(long)resource:X} 0x{document:X} -> 0x{ret:X}.");
         return ret;

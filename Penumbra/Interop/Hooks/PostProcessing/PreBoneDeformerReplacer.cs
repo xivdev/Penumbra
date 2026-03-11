@@ -20,7 +20,7 @@ public sealed unsafe class PreBoneDeformerReplacer : IDisposable, Luna.IRequired
     // Approximate name guess.
     private delegate void* CharacterBaseCreateDeformerDelegate(CharacterBase* drawObject, uint slotIndex);
 
-    private readonly Hook<CharacterBaseCreateDeformerDelegate> _humanCreateDeformerHook;
+    private readonly Hook<CharacterBaseCreateDeformerDelegate>? _humanCreateDeformerHook;
 
     private readonly CharacterUtility      _utility;
     private readonly CollectionResolver    _collectionResolver;
@@ -43,7 +43,7 @@ public sealed unsafe class PreBoneDeformerReplacer : IDisposable, Luna.IRequired
 
     public void Dispose()
     {
-        _humanCreateDeformerHook.Dispose();
+        _humanCreateDeformerHook?.Dispose();
         _humanSetupScalingHook.SetupReplacements -= SetupHssReplacements;
     }
 
@@ -89,7 +89,7 @@ public sealed unsafe class PreBoneDeformerReplacer : IDisposable, Luna.IRequired
         {
             if (!preBoneDeformer.IsInvalid)
                 _utility.Address->HumanPbdResource = (Structs.ResourceHandle*)preBoneDeformer.ResourceHandle;
-            return _humanCreateDeformerHook.Original(drawObject, slotIndex);
+            return _humanCreateDeformerHook!.Original(drawObject, slotIndex);
         }
         finally
         {

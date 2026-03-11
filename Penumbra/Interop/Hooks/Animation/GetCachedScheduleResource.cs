@@ -31,7 +31,7 @@ public sealed unsafe class GetCachedScheduleResource : FastHook<GetCachedSchedul
             return null;
         }
 
-        var ret = Task.Result.Original(a, b, c);
+        var ret = Task.Result!.Original(a, b, c);
         Penumbra.Log.Excessive(
             $"[GetCachedScheduleResource] Called with 0x{(ulong)a:X}, {b->Id}, {new CiByteString(b->Path, MetaDataComputation.None)}, {c}, returning 0x{(ulong)ret:X} ({(ret != null && Resource(ret) != null ? Resource(ret)->FileName().ToString() : "No Path")}).");
         return ret;

@@ -42,7 +42,7 @@ public sealed unsafe class CharacterBaseLoadAnimation : FastHook<CharacterBaseLo
         var last = _state.SetAnimationData(data);
         _crashHandler.LogAnimation(data.AssociatedGameObject, data.ModCollection, AnimationInvocationType.CharacterBaseLoadAnimation);
         Penumbra.Log.Excessive($"[CharacterBase Load Animation] Invoked on {(nint)drawObject:X}");
-        Task.Result.Original(drawObject);
+        Task.Result!.Original(drawObject);
         _state.RestoreAnimationData(last);
     }
 }

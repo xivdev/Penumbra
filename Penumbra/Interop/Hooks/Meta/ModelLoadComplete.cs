@@ -25,7 +25,7 @@ public sealed unsafe class ModelLoadComplete : FastHook<ModelLoadComplete.Delega
         var collection = _collectionResolver.IdentifyCollection(drawObject, true);
         _metaState.EqpCollection.Push(collection);
         _metaState.EqdpCollection.Push(collection);
-        Task.Result.Original(drawObject);
+        Task.Result!.Original(drawObject);
         _metaState.EqpCollection.Pop();
         _metaState.EqdpCollection.Pop();
     }

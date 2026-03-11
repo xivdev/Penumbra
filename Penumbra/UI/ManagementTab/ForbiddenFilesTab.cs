@@ -11,7 +11,7 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.UI.ManagementTab;
 
-public sealed class ForbiddenFilesTab(ModManager mods, TextureManager textures, UiNavigator navigator) : ITab<ManagementTabType>
+public sealed class ForbiddenFilesTab(ModManager mods, TextureManager textures, UiNavigator navigator, Configuration config) : ITab<ManagementTabType>
 {
     public static readonly FrozenDictionary<uint, CiByteString> ForbiddenFiles = (((uint, CiByteString)[])
     [
@@ -142,6 +142,11 @@ public sealed class ForbiddenFilesTab(ModManager mods, TextureManager textures, 
             Im.Line.Same();
             Im.ProgressBar(cache.Redirections.Progress);
         }
+
+        var active = config.DeleteModModifier.IsActive();
+
+        if (ImEx.Button("Remove All Redundant Redirections"u8, default, !active))
+            ;
 
         using var table = Im.Table.Begin("t"u8, 6,
             TableFlags.RowBackground | TableFlags.SizingFixedFit | TableFlags.BordersOuter | TableFlags.ScrollX | TableFlags.ScrollY,

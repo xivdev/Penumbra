@@ -17,16 +17,16 @@ public sealed unsafe class CopyCharacter : EventBase<CopyCharacter.Arguments, Co
         : base("Copy Character", log)
         => _task = hooks.CreateHook<Delegate>(Name, Address, Detour, !HookOverrides.Instance.Objects.CopyCharacter);
 
-    private readonly Task<Hook<Delegate>> _task;
+    private readonly Task<Hook<Delegate>?> _task;
 
     public nint Address
         => (nint)CharacterSetupContainer.MemberFunctionPointers.CopyFromCharacter;
 
     public void Enable()
-        => _task.Result.Enable();
+        => _task.Result?.Enable();
 
     public void Disable()
-        => _task.Result.Disable();
+        => _task.Result?.Disable();
 
     public Task Awaiter
         => _task;
@@ -41,7 +41,7 @@ public sealed unsafe class CopyCharacter : EventBase<CopyCharacter.Arguments, Co
         var character = target->OwnerObject;
         Penumbra.Log.Verbose($"[{Name}] Triggered with target: 0x{(nint)target:X}, source : 0x{(nint)source:X} unk: {unk}.");
         Invoke(new Arguments(character, source));
-        return _task.Result.Original(target, source, unk);
+        return _task.Result!.Original(target, source, unk);
     }
 
     /// <summary> The arguments for a copy character event. </summary>

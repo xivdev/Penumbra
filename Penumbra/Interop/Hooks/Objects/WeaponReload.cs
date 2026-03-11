@@ -21,16 +21,16 @@ public sealed unsafe class WeaponReload : EventBase<WeaponReload.Arguments, Weap
         _task      = hooks.CreateHook<Delegate>(Name, Address, Detour, !HookOverrides.Instance.Objects.WeaponReload);
     }
 
-    private readonly Task<Hook<Delegate>> _task;
+    private readonly Task<Hook<Delegate>?> _task;
 
     public nint Address
         => (nint)DrawDataContainer.MemberFunctionPointers.LoadWeapon;
 
     public void Enable()
-        => _task.Result.Enable();
+        => _task.Result?.Enable();
 
     public void Disable()
-        => _task.Result.Disable();
+        => _task.Result?.Disable();
 
     public Task Awaiter
         => _task;
@@ -45,7 +45,7 @@ public sealed unsafe class WeaponReload : EventBase<WeaponReload.Arguments, Weap
         var gameObject = drawData->OwnerObject;
         Penumbra.Log.Verbose($"[{Name}] Triggered with drawData: 0x{(nint)drawData:X}, {slot}, {weapon}, {d}, {e}, {f}, {g}, {h}.");
         Invoke(new Arguments(ref *drawData, gameObject, ref *(CharacterWeapon*)(&weapon)));
-        _task.Result.Original(drawData, slot, weapon, d, e, f, g, h);
+        _task.Result!.Original(drawData, slot, weapon, d, e, f, g, h);
         _postEvent.Invoke(new PostEvent.Arguments(ref *drawData, gameObject));
     }
 

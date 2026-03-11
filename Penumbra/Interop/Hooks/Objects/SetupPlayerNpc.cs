@@ -27,7 +27,7 @@ public sealed unsafe class SetupPlayerNpc : FastHook<SetupPlayerNpc.Delegate>
         if (setupData->CopyPlayerCustomize && npcType != null && *npcType is 8)
             _gameState.CharacterAssociated.Value = true;
 
-        var ret = Task.Result.Original.Invoke(npcType, unk, setupData);
+        var ret = Task.Result!.Original.Invoke(npcType, unk, setupData);
         Penumbra.Log.Excessive(
             $"[Setup Player NPC] Invoked for type {*npcType} with 0x{unk:X} and Copy Player Customize: {setupData->CopyPlayerCustomize}.");
         return ret;

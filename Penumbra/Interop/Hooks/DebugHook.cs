@@ -20,16 +20,16 @@ public sealed unsafe class DebugHook(CollectionStorage collections) : Luna.IHook
             _task = hooks.CreateHook<Delegate>("Debug Hook", Signature, Detour, true);
     }
 
-    private readonly Task<Hook<Delegate>>? _task;
+    private readonly Task<Hook<Delegate>?>? _task;
 
     public nint Address
-        => _task?.Result.Address ?? nint.Zero;
+        => _task?.Result?.Address ?? nint.Zero;
 
     public void Enable()
-        => _task?.Result.Enable();
+        => _task?.Result?.Enable();
 
     public void Disable()
-        => _task?.Result.Disable();
+        => _task?.Result?.Disable();
 
     public Task Awaiter
         => _task ?? Task.CompletedTask;
@@ -46,7 +46,7 @@ public sealed unsafe class DebugHook(CollectionStorage collections) : Luna.IHook
             ? collections.ByLocalId(data.Collection)
             : ModCollection.Empty;
 
-        var ret  = _task!.Result.Original(a, b, c, d, e, f, g);
+        var ret  = _task!.Result!.Original(a, b, c, d, e, f, g);
 
         
         Penumbra.Log.Information($"[Debug Hook] Results with 0x{a:X}, 0x{b:X}, 0x{c:X} ({path}, {collection}) 0x{d:X} {e} 0x{f:X} {g} -> 0x{ret:X}.");

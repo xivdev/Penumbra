@@ -60,7 +60,7 @@ public sealed unsafe class RspBustHook : FastHook<RspBustHook.Delegate>
         }
         else
         {
-            ret = Task.Result.Original(cmpResource, storage, clan, gender, bodyType, bustSize);
+            ret = Task.Result!.Original(cmpResource, storage, clan, gender, bodyType, bustSize);
         }
 
         Penumbra.Log.Excessive(

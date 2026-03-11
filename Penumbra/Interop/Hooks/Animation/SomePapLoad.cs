@@ -40,12 +40,12 @@ public sealed unsafe class SomePapLoad : FastHook<SomePapLoad.Delegate>
                 var newData = _collectionResolver.IdentifyCollection(_objects[actorIdx].AsObject, true);
                 var last = _state.SetAnimationData(newData);
                 _crashHandler.LogAnimation(newData.AssociatedGameObject, newData.ModCollection, AnimationInvocationType.PapLoad);
-                Task.Result.Original(a1, a2, a3, a4);
+                Task.Result!.Original(a1, a2, a3, a4);
                 _state.RestoreAnimationData(last);
                 return;
             }
         }
 
-        Task.Result.Original(a1, a2, a3, a4);
+        Task.Result!.Original(a1, a2, a3, a4);
     }
 }

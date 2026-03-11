@@ -33,7 +33,7 @@ public unsafe class HumanSetupScalingHook : FastHook<HumanSetupScalingHook.Deleg
 
             for (var i = 0; i < numReplacements; ++i)
                 *(nint*)replacements[i].AddressToReplace = replacements[i].ValueToSet;
-            Task.Result.Original(drawObject, slotIndex);
+            Task.Result!.Original(drawObject, slotIndex);
         }
         finally
         {
