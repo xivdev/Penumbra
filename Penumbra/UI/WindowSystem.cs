@@ -51,7 +51,6 @@ public class PenumbraWindowSystem : IDisposable, IUiService
     {
         _uiBuilder.OpenMainUi   -= Window.Toggle;
         _uiBuilder.OpenConfigUi -= Window.OpenSettings;
-        _uiBuilder.Draw         -= _windowSystem.Draw;
         _uiBuilder.Draw         -= _fileDialog.Draw;
         _uiBuilder.Draw         -= _textureArraySlicer.Tick;
     }

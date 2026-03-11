@@ -5,7 +5,7 @@ using Luna;
 
 namespace Penumbra.Services;
 
-public class ValidityChecker : Luna.IService
+public class ValidityChecker : IService
 {
     public const string Repository      = "https://raw.githubusercontent.com/xivdev/Penumbra/master/repo.json";
     public const string SeaOfStars      = "https://raw.githubusercontent.com/Ottermandias/SeaOfStars/main/repo.json";
@@ -30,6 +30,11 @@ public class ValidityChecker : Luna.IService
         }
     }
 
+    public string GetMainWindowLabel()
+        => Version.Length is 0
+            ? "Penumbra###PenumbraConfigWindow"
+            : $"Penumbra v{Version}###PenumbraConfigWindow";
+
     public ValidityChecker(IDalamudPluginInterface pi)
     {
         DevPenumbraExists      = CheckDevPluginPenumbra(pi);
@@ -44,7 +49,8 @@ public class ValidityChecker : Luna.IService
     public void LogExceptions()
     {
         if (ImcExceptions.Count > 0)
-            Penumbra.Messager.NotificationMessage($"{ImcExceptions.Count} IMC Exceptions thrown during Penumbra load. Please repair your game files.",
+            Penumbra.Messager.NotificationMessage(
+                $"{ImcExceptions.Count} IMC Exceptions thrown during Penumbra load. Please repair your game files.",
                 NotificationType.Warning);
     }
 
@@ -53,7 +59,7 @@ public class ValidityChecker : Luna.IService
     {
 #if !DEBUG
         var path = Path.Combine(pi.DalamudAssetDirectory.Parent?.FullName ?? "INVALIDPATH", "devPlugins", "Penumbra");
-        var dir  = new DirectoryInfo(path);
+        var dir = new DirectoryInfo(path);
 
         try
         {
@@ -74,7 +80,7 @@ public class ValidityChecker : Luna.IService
     {
 #if !DEBUG
         var checkedDirectory = pi.AssemblyLocation.Directory?.Parent?.Parent?.Name;
-        var ret              = checkedDirectory?.Equals("installedPlugins", StringComparison.OrdinalIgnoreCase) ?? false;
+        var ret = checkedDirectory?.Equals("installedPlugins", StringComparison.OrdinalIgnoreCase) ?? false;
         if (!ret)
             Penumbra.Log.Error($"Penumbra is not correctly installed. Application loaded from \"{pi.AssemblyLocation.Directory!.FullName}\".");
 

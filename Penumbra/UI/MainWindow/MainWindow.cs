@@ -21,7 +21,7 @@ public sealed class MainWindow : Window
 
     public MainWindow(IDalamudPluginInterface pi, Configuration config, ValidityChecker checker,
         TutorialService tutorial, GlobalModImporter globalModImporter, UiNavigator navigator)
-        : base(GetLabel(checker))
+        : base(checker.GetMainWindowLabel())
     {
         _pluginInterface   = pi;
         _config            = config;
@@ -128,10 +128,7 @@ public sealed class MainWindow : Window
         }
     }
 
-    private static string GetLabel(ValidityChecker checker)
-        => checker.Version.Length == 0
-            ? "Penumbra###PenumbraConfigWindow"
-            : $"Penumbra v{checker.Version}###PenumbraConfigWindow";
+   
 
     private void DrawProblemWindow(Utf8StringHandler<TextStringHandlerBuffer> text)
     {

@@ -32,27 +32,42 @@ using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManage
 
 namespace Penumbra;
 
+public sealed class PenumbraErrorWindow(IDalamudPluginInterface pi)
+    : ErrorWindow(pi, GetLabel(), "Penumbra")
+{
+    private static string GetLabel()
+    {
+        var assembly = typeof(PenumbraErrorWindow).Assembly;
+        var version  = assembly.GetName().Version?.ToString() ?? string.Empty;
+        return version.Length is 0
+            ? "Penumbra###PenumbraConfigWindow"
+            : $"Penumbra v{version}###PenumbraConfigWindow";
+    }
+}
+
 public class Penumbra : IDalamudPlugin
 {
     public static readonly Logger         Log = new("Penumbra");
     public static          MessageService Messager { get; private set; } = null!;
     public static          DynamisIpc     Dynamis  { get; private set; } = null!;
 
-    private readonly ValidityChecker         _validityChecker;
-    private readonly ResidentResourceManager _residentResources;
-    private readonly TempModManager          _tempMods;
-    private readonly TempCollectionManager   _tempCollections;
-    private readonly ModManager              _modManager;
-    private readonly CollectionManager       _collectionManager;
-    private readonly Configuration           _config;
-    private readonly CharacterUtility        _characterUtility;
-    private readonly RedrawService           _redrawService;
-    private readonly CommunicatorService     _communicatorService;
-    private readonly IDataManager            _gameData;
-    private          PenumbraWindowSystem?   _windowSystem;
+    private readonly ValidityChecker         _validityChecker     = null!;
+    private readonly ResidentResourceManager _residentResources   = null!;
+    private readonly TempModManager          _tempMods            = null!;
+    private readonly TempCollectionManager   _tempCollections     = null!;
+    private readonly ModManager              _modManager          = null!;
+    private readonly CollectionManager       _collectionManager   = null!;
+    private readonly Configuration           _config              = null!;
+    private readonly CharacterUtility        _characterUtility    = null!;
+    private readonly RedrawService           _redrawService       = null!;
+    private readonly CommunicatorService     _communicatorService = null!;
+    private readonly IDataManager            _gameData            = null!;
+    private          PenumbraWindowSystem?   _windowSystem        = null!;
     private          bool                    _disposed;
 
-    private readonly ServiceManager _services;
+    private readonly ServiceManager _services = null!;
+
+    private readonly ErrorWindow? _errorWindow;
 
     public Penumbra(IDalamudPluginInterface pluginInterface)
     {
@@ -117,7 +132,7 @@ public class Penumbra : IDalamudPlugin
         {
             Log.Error($"Error constructing Penumbra, Disposing again:\n{ex}");
             Dispose();
-            throw;
+            _errorWindow = new PenumbraErrorWindow(pluginInterface);
         }
     }
 
@@ -205,6 +220,7 @@ public class Penumbra : IDalamudPlugin
 
     public void Dispose()
     {
+        _errorWindow?.Dispose();
         if (_disposed)
             return;
 
