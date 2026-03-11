@@ -1,31 +1,31 @@
-using Dalamud.Plugin;
 using Dalamud.Bindings.ImGui;
-using Dalamud.Game;
+using Dalamud.Interface.ImGuiNotification;
+using Dalamud.Plugin;
+using Dalamud.Plugin.Services;
+using Lumina.Excel.Sheets;
 using OtterGui;
 using OtterGui.Log;
 using OtterGui.Services;
+using OtterGui.Tasks;
 using Penumbra.Api;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Collections.Cache;
-using Penumbra.Interop.PathResolving;
-using Penumbra.Services;
-using Penumbra.Interop.Services;
-using Penumbra.Mods.Manager;
 using Penumbra.Collections.Manager;
-using Penumbra.UI.Tabs;
-using ChangedItemClick = Penumbra.Communication.ChangedItemClick;
-using ChangedItemHover = Penumbra.Communication.ChangedItemHover;
-using OtterGui.Tasks;
-using Penumbra.UI;
-using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManager;
-using Dalamud.Plugin.Services;
-using Lumina.Excel.Sheets;
 using Penumbra.GameData.Data;
 using Penumbra.Interop;
 using Penumbra.Interop.Hooks;
 using Penumbra.Interop.Hooks.PostProcessing;
 using Penumbra.Interop.Hooks.ResourceLoading;
+using Penumbra.Interop.PathResolving;
+using Penumbra.Interop.Services;
+using Penumbra.Mods.Manager;
+using Penumbra.Services;
+using Penumbra.UI;
+using Penumbra.UI.Tabs;
+using ChangedItemClick = Penumbra.Communication.ChangedItemClick;
+using ChangedItemHover = Penumbra.Communication.ChangedItemHover;
+using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManager;
 
 namespace Penumbra;
 
@@ -106,6 +106,12 @@ public class Penumbra : IDalamudPlugin
 
             if (_characterUtility.Ready)
                 _residentResources.Reload();
+
+            if (pluginInterface.Reason is PluginLoadReason.Update or PluginLoadReason.Reload)
+                Messager.AddMessage(
+                    new OtterGui.Classes.Notification(
+                        "Penumbra seems to have been updated right now.\n\nIf you encounter any issues, please try restarting the game before reporting them.",
+                        NotificationType.Info, 30000), false, true, false, true);
         }
         catch (Exception ex)
         {
