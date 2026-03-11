@@ -1,13 +1,13 @@
 using Dalamud.Interface.ImGuiNotification;
 using OtterGui.Classes;
+using OtterGui.Extensions;
+using Penumbra.Api.Enums;
+using Penumbra.GameData.Data;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
-using Penumbra.Communication;
 using Penumbra.Mods.Editor;
 using Penumbra.String.Classes;
 using Penumbra.Util;
-using Penumbra.GameData.Data;
-using OtterGui.Extensions;
 
 namespace Penumbra.Collections.Cache;
 
@@ -23,7 +23,7 @@ public sealed class CollectionCache : IDisposable
     private readonly CollectionCacheManager                                          _manager;
     private readonly ModCollection                                                   _collection;
     public readonly  CollectionModData                                               ModData       = new();
-    private readonly SortedList<string, (SingleArray<IMod>, IIdentifiedObjectData)> _changedItems = [];
+    private readonly SortedList<string, (SingleArray<IMod>, IIdentifiedObjectData)>  _changedItems = [];
     public readonly  ConcurrentDictionary<Utf8GamePath, ModPath>                     ResolvedFiles = new();
     public readonly  CustomResourceCache                                             CustomResources;
     public readonly  MetaCache                                                       Meta;
@@ -149,20 +149,20 @@ public sealed class CollectionCache : IDisposable
             {
                 ResolvedFiles.TryAdd(path, new ModPath(Mod.ForcedFiles, fullPath));
                 CustomResources.Invalidate(path);
-                InvokeResolvedFileChange(_collection, ResolvedFileChanged.Type.Replaced, path, fullPath, modPath.Path,
+                InvokeResolvedFileChange(_collection, ResolvedFileChange.Replaced, path, fullPath, modPath.Path,
                     Mod.ForcedFiles);
             }
             else
             {
                 CustomResources.Invalidate(path);
-                InvokeResolvedFileChange(_collection, ResolvedFileChanged.Type.Removed, path, FullPath.Empty, modPath.Path, null);
+                InvokeResolvedFileChange(_collection, ResolvedFileChange.Removed, path, FullPath.Empty, modPath.Path, null);
             }
         }
         else if (fullPath.FullName.Length > 0)
         {
             ResolvedFiles.TryAdd(path, new ModPath(Mod.ForcedFiles, fullPath));
             CustomResources.Invalidate(path);
-            InvokeResolvedFileChange(_collection, ResolvedFileChanged.Type.Added, path, fullPath, FullPath.Empty, Mod.ForcedFiles);
+            InvokeResolvedFileChange(_collection, ResolvedFileChange.Added, path, fullPath, FullPath.Empty, Mod.ForcedFiles);
         }
     }
 
@@ -186,10 +186,9 @@ public sealed class CollectionCache : IDisposable
             {
                 CustomResources.Invalidate(path);
                 if (mp.Mod != mod)
-                    Penumbra.Log.Warning(
-                        $"Invalid mod state, removing {mod.Name} and associated file {path} returned current mod {mp.Mod.Name}.");
+                    Penumbra.Log.Warning($"Invalid mod state, removing {mod.Name} and associated file {path} returned current mod {mp.Mod.Name}.");
                 else
-                    _manager.ResolvedFileChanged.Invoke(_collection, ResolvedFileChanged.Type.Removed, path, FullPath.Empty, mp.Path, mp.Mod);
+                    _manager.ResolvedFileChanged.Invoke(_collection, ResolvedFileChange.Removed, path, FullPath.Empty, mp.Path, mp.Mod);
             }
         }
 
@@ -272,7 +271,7 @@ public sealed class CollectionCache : IDisposable
     }
 
     /// <summary> Invoke only if not in a full recalculation. </summary>
-    private void InvokeResolvedFileChange(ModCollection collection, ResolvedFileChanged.Type type, Utf8GamePath key, FullPath value,
+    private void InvokeResolvedFileChange(ModCollection collection, ResolvedFileChange type, Utf8GamePath key, FullPath value,
         FullPath old, IMod? mod)
     {
         if (Calculating == -1)
@@ -315,7 +314,7 @@ public sealed class CollectionCache : IDisposable
             {
                 ModData.AddPath(mod, path);
                 CustomResources.Invalidate(path);
-                InvokeResolvedFileChange(_collection, ResolvedFileChanged.Type.Added, path, file, FullPath.Empty, mod);
+                InvokeResolvedFileChange(_collection, ResolvedFileChange.Added, path, file, FullPath.Empty, mod);
                 return;
             }
 
@@ -330,7 +329,7 @@ public sealed class CollectionCache : IDisposable
                 ResolvedFiles[path] = new ModPath(mod, file);
                 ModData.AddPath(mod, path);
                 CustomResources.Invalidate(path);
-                InvokeResolvedFileChange(_collection, ResolvedFileChanged.Type.Replaced, path, file, modPath.Path, mod);
+                InvokeResolvedFileChange(_collection, ResolvedFileChange.Replaced, path, file, modPath.Path, mod);
             }
         }
         catch (Exception ex)

@@ -1,4 +1,6 @@
 using OtterGui.Classes;
+using Penumbra.Api.Api;
+using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Mods.Editor;
 using Penumbra.String.Classes;
@@ -16,20 +18,14 @@ namespace Penumbra.Communication;
 ///     <item>Parameter is the mod responsible for the new redirection if any. </item>
 /// </list> </summary>
 public sealed class ResolvedFileChanged()
-    : EventWrapper<ModCollection, ResolvedFileChanged.Type, Utf8GamePath, FullPath, FullPath, IMod?, ResolvedFileChanged.Priority>(
+    : EventWrapper<ModCollection, ResolvedFileChange, Utf8GamePath, FullPath, FullPath, IMod?, ResolvedFileChanged.Priority>(
         nameof(ResolvedFileChanged))
 {
-    public enum Type
-    {
-        Added,
-        Removed,
-        Replaced,
-        FullRecomputeStart,
-        FullRecomputeFinished,
-    }
-
     public enum Priority
     {
+        /// <seealso cref="CollectionApi.OnResolvedFileChange"/>
+        ApiResolvedFile = int.MinValue,
+
         /// <seealso cref="Api.DalamudSubstitutionProvider.OnResolvedFileChange"/>
         DalamudSubstitutionProvider = 0,
 

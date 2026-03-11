@@ -170,7 +170,7 @@ public class CollectionCacheManager : IDisposable, IService
         cache.Calculating = Environment.CurrentManagedThreadId;
         try
         {
-            ResolvedFileChanged.Invoke(collection, ResolvedFileChanged.Type.FullRecomputeStart, Utf8GamePath.Empty, FullPath.Empty,
+            ResolvedFileChanged.Invoke(collection, ResolvedFileChange.FullRecomputeStart, Utf8GamePath.Empty, FullPath.Empty,
                 FullPath.Empty, null);
             cache.ResolvedFiles.Clear();
             cache.Meta.Reset();
@@ -189,7 +189,7 @@ public class CollectionCacheManager : IDisposable, IService
             collection.Counters.IncrementChange();
 
             MetaFileManager.ApplyDefaultFiles(collection);
-            ResolvedFileChanged.Invoke(collection, ResolvedFileChanged.Type.FullRecomputeFinished, Utf8GamePath.Empty, FullPath.Empty,
+            ResolvedFileChanged.Invoke(collection, ResolvedFileChange.FullRecomputeFinished, Utf8GamePath.Empty, FullPath.Empty,
                 FullPath.Empty,
                 null);
         }
