@@ -8,6 +8,7 @@
         <AssemblyVersion>9.0.0.1</AssemblyVersion>
         <OutputPath>bin\$(Configuration)\</OutputPath>
         <LangVersion>preview</LangVersion>
+        <SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
     </PropertyGroup>
 
     <PropertyGroup>
