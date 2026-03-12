@@ -1,0 +1,29 @@
+name: 'Build and upload Artifact'
+description: 'Build the checked out branch and upload the resulting build artifact, including a zipped version.'
+inputs:
+  configuration:
+    description: 'The configuration in which to build, either Release or Debug. Default is Release.'
+    required: false
+    type: string
+    default: 'Release'
+  project:
+    description: 'The main project that is to be built and packaged.'
+    type: string
+    required: true
+        
+runs:
+  using: "composite"
+  steps:
+    - name: Build Solution
+      shell: pwsh
+      run: |
+        dotnet build --no-restore --nologo --configuration ${{ inputs.configuration }}
+    
+    - name: Create Archive
+      shell: pwsh
+      run: Compress-Archive -Path ${{ inputs.project }}/bin/Release/* -DestinationPath ${{ inputs.project }}.zip
+      
+    - name: Upload the Build Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        path: ./${{ inputs.project }}/bin/Release/*

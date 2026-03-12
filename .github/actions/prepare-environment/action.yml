@@ -14,6 +14,7 @@ runs:
       uses: actions/setup-dotnet@v5
       with:
         dotnet-version: 10.x.x
+        cache: true
         
     - name: Restore dependencies
       shell: pwsh
@@ -22,5 +23,5 @@ runs:
     - name: Download Dalamud
       shell: pwsh
       run: | 
-        Invoke-WebRequest -Uri "https://goatcorp.github.io/dalamud-distrib/${{ inputs.dalamud-distrib }}/latest.zip" -OutFile latest.zip
+        Invoke-WebRequest -Uri https://goatcorp.github.io/dalamud-distrib/${{ inputs.dalamud-distrib }}/latest.zip -OutFile latest.zip
         Expand-Archive -Force latest.zip "$env:AppData\XIVLauncher\addon\Hooks\dev"
