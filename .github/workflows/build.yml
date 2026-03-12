@@ -14,7 +14,8 @@ jobs:
         uses: actions/checkout@v5
         with:
           submodules: recursive
-      - uses: ./.github/workflows/prepare-environment.yml
+      - name: Prepare environment
+        uses: ./.github/actions/prepare-environment
       - name: Build
         run: |
           dotnet build --no-restore --configuration Release --nologo

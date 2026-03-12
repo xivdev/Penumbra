@@ -1,0 +1,26 @@
+name: 'Prepare Environment'
+description: 'Prepare the dalamud build environment for further actions.'
+inputs:
+  dalamud-distrib:
+    description: 'The distribution to download for the Dalamud build.'
+    required: false
+    type: string
+    default: 'release'
+        
+runs:
+  using: "composite"
+  steps:
+    - name: Setup dotnet
+      uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: 10.x.x
+        
+    - name: Restore dependencies
+      shell: pwsh
+      run: dotnet restore
+      
+    - name: Download Dalamud
+      shell: pwsh
+      run: | 
+        Invoke-WebRequest -Uri "https://goatcorp.github.io/dalamud-distrib/${{ inputs.dalamud-distrib }}/latest.zip" -OutFile latest.zip
+        Expand-Archive -Force latest.zip "$env:AppData\XIVLauncher\addon\Hooks\dev"
