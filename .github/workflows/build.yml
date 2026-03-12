@@ -18,3 +18,5 @@ jobs:
         uses: ./.github/actions/prepare-environment
       - name: Build and Upload Artifact
         uses: ./.github/actions/build-with-artifact
+        with:
+          project: Penumbra

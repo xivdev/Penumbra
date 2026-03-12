@@ -21,9 +21,9 @@ runs:
     
     - name: Create Archive
       shell: pwsh
-      run: Compress-Archive -Path ${{ inputs.project }}/bin/Release/* -DestinationPath ${{ inputs.project }}.zip
+      run: Compress-Archive -Path ${{ inputs.project }}/bin/${{ inputs.configuration }}/* -DestinationPath ${{ inputs.project }}.zip
       
     - name: Upload the Build Artifact
       uses: actions/upload-artifact@v4
       with:
-        path: ./${{ inputs.project }}/bin/Release/*
+        path: ./${{ inputs.project }}/bin/${{ inputs.configuration }}/*
