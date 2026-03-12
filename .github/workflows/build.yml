@@ -10,6 +10,10 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
+      - name: checkout
+        uses: actions/checkout@v5
+        with:
+          submodules: recursive
       - uses: ./.github/workflows/prepare-environment.yml
       - name: Build
         run: |
