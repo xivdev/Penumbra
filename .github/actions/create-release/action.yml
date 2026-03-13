@@ -1,0 +1,39 @@
+name: 'Create and Upload Release'
+description: 'Create a release of the build artifact and upload it.'
+inputs:
+  token:
+    description: "The Github secret token."
+    required: true
+  project:
+    description: 'The main project that is to be built and packaged.'
+    type: string
+    required: true
+  version:
+    description: 'The version written to the assembly.'
+    type: string
+    required: true
+    
+runs:
+  using: "composite"
+  steps:
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ inputs.token }}
+      with:
+        tag_name: ${{ inputs.version }}
+        release_name: ${{ inputs.project }} ${{ inputs.version }}
+        draft: false
+        prerelease: false
+        
+    - name: Upload Release Assets
+      id: upload-release-assets
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ inputs.token }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./${{ inputs.project }}.zip
+        asset_name: ${{ inputs.project }}.zip
+        asset_content_type: application/zip
