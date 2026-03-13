@@ -1,3 +1,4 @@
+using ImSharp;
 using Luna;
 using Penumbra.Api.Enums;
 using Penumbra.Communication;
@@ -51,4 +52,21 @@ public sealed class ManagementTab : TabBar<ManagementTabType>, ITab<TabType>, ID
 
     public void Dispose()
         => _navigator.ManagementTabBar -= OnNavigation;
+
+    public static void DrawScanButtons(ObjectScanner scanner)
+    {
+        var size = ImEx.ScaledVectorX(100);
+
+        if (Im.Button("Scan"u8, size))
+            scanner.Scan();
+        Im.Line.SameInner();
+        var running = scanner.Running;
+        if (ImEx.Button("Cancel"u8, size, "Cancel the current scan process."u8, !running))
+            scanner.Cancel();
+        if (running)
+        {
+            Im.Line.SameInner();
+            Im.ProgressBar(scanner.Progress, Vector2.Zero with { X = size.X * 2 + Im.Style.ItemInnerSpacing.X });
+        }
+    }
 }

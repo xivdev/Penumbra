@@ -21,7 +21,7 @@ public sealed class CleanupTab(CleanupService cleanup, Configuration config) : I
         var enabled = config.DeleteModModifier.IsActive();
         if (cleanup.Progress is not 0.0 and not 1.0)
         {
-            Im.ProgressBar((float)cleanup.Progress, new Vector2(200 * Im.Style.GlobalScale, Im.Style.FrameHeight),
+            Im.ProgressBar((float)cleanup.Progress, ImEx.ScaledVectorX(200, Im.Style.FrameHeight),
                 $"{cleanup.Progress * 100}%");
             Im.Line.Same();
             if (Im.Button("Cancel##FileCleanup"u8))

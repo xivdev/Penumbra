@@ -30,17 +30,7 @@ public sealed class TextureOptimizationTab(ModManager mods, TextureManager textu
         ImEx.LogarithmicInput("Show Textures With Larger Dimensions, Even If Compressed"u8, ref _largeDimensionLimit);
 
         var cache = CacheManager.Instance.GetOrCreateCache(Im.Id.Current, () => new Cache(mods, textures));
-        if (Im.Button("Scan"u8))
-            cache.Scanner.ScanRedirections();
-        Im.Line.Same();
-        var running = cache.Scanner.Running;
-        if (ImEx.Button("Cancel"u8, default, StringU8.Empty, !running))
-            cache.Scanner.Cancel();
-        if (running)
-        {
-            Im.Line.Same();
-            Im.ProgressBar(cache.Scanner.Progress, ImEx.ScaledVectorX(200));
-        }
+        ManagementTab.DrawScanButtons(cache.Scanner);
 
         using var table = Im.Table.Begin("t"u8, 7,
             TableFlags.RowBackground | TableFlags.SizingFixedFit | TableFlags.ScrollX | TableFlags.ScrollY | TableFlags.BordersOuter,

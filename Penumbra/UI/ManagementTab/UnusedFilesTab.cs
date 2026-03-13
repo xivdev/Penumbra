@@ -14,17 +14,7 @@ public sealed class UnusedFilesTab(ModManager mods, UiNavigator navigator) : ITa
     public void DrawContent()
     {
         var cache = CacheManager.Instance.GetOrCreateCache(Im.Id.Current, () => new Cache(mods));
-        if (Im.Button("Scan"u8))
-            cache.Scanner.ScanFiles();
-        Im.Line.Same();
-        var running = cache.Scanner.Running;
-        if (ImEx.Button("Cancel"u8, default, StringU8.Empty, !running))
-            cache.Scanner.Cancel();
-        if (running)
-        {
-            Im.Line.Same();
-            Im.ProgressBar(cache.Scanner.Progress, ImEx.ScaledVectorX(200));
-        }
+        ManagementTab.DrawScanButtons(cache.Scanner);
 
         using var table = Im.Table.Begin("t"u8, 3, TableFlags.RowBackground | TableFlags.SizingFixedFit, Im.ContentRegion.Available);
         if (!table)

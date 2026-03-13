@@ -17,17 +17,7 @@ public sealed class RedundantFilesTab(ModManager mods, IDataManager dataManager,
     public void DrawContent()
     {
         var cache = CacheManager.Instance.GetOrCreateCache(Im.Id.Current, () => new Cache(mods, dataManager));
-        if (Im.Button("Scan"u8))
-            cache.Scanner.ScanRedirections();
-        Im.Line.Same();
-        var running = cache.Scanner.Running;
-        if (ImEx.Button("Cancel"u8, default, StringU8.Empty, !running))
-            cache.Scanner.Cancel();
-        if (running)
-        {
-            Im.Line.Same();
-            Im.ProgressBar(cache.Scanner.Progress, ImEx.ScaledVectorX(200));
-        }
+        ManagementTab.DrawScanButtons(cache.Scanner);
 
         using var table = Im.Table.Begin("t"u8, 4, TableFlags.RowBackground | TableFlags.SizingFixedFit, Im.ContentRegion.Available);
         if (!table)

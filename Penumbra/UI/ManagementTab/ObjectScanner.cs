@@ -45,13 +45,13 @@ public abstract class RedirectionScanner<T>(ModManager mods) : ObjectScanner<T>(
 
     protected abstract T Create(Utf8GamePath path, FullPath redirection, IModDataContainer container, bool swap);
 
-    public Task ScanRedirections()
+    public override Task Scan()
     {
         StableList.Clear();
         Cancel();
         var mods  = Mods.ToArray();
         var token = CancelSource.Token;
-        Scan = Task.Run(() =>
+        ScanTask = Task.Run(() =>
         {
             CurrentProgress = 0;
             ProgressMax     = mods.Length;
@@ -85,7 +85,7 @@ public abstract class RedirectionScanner<T>(ModManager mods) : ObjectScanner<T>(
                 ++CurrentProgress;
             }
         }, token);
-        return Scan;
+        return ScanTask;
     }
 }
 
@@ -97,13 +97,13 @@ public abstract class ModFileScanner<T>(ModManager mods) : ObjectScanner<T>(mods
 
     protected abstract T Create(string fileName, Mod mod);
 
-    public Task ScanFiles()
+    public override Task Scan()
     {
         StableList.Clear();
         Cancel();
         var mods  = Mods.ToArray();
         var token = CancelSource.Token;
-        Scan = Task.Run(() =>
+        ScanTask = Task.Run(() =>
         {
             CurrentProgress = 0;
             ProgressMax     = mods.Length;
@@ -136,15 +136,15 @@ public abstract class ModFileScanner<T>(ModManager mods) : ObjectScanner<T>(mods
                 ++CurrentProgress;
             }
         }, token);
-        return Scan;
+        return ScanTask;
     }
 }
 
-public abstract class ObjectScanner<T>(ModManager mods) : IDisposable
+public abstract class ObjectScanner<T>(ModManager mods) : ObjectScanner, IDisposable
     where T : IScannedObject
 {
     protected readonly ModManager              Mods = mods;
-    protected          Task?                   Scan;
+    protected          Task?                   ScanTask;
     protected          CancellationTokenSource CancelSource = new();
 
     protected readonly ConcurrentQueue<T> Cache      = [];
@@ -153,14 +153,14 @@ public abstract class ObjectScanner<T>(ModManager mods) : IDisposable
     protected int ProgressMax;
     protected int CurrentProgress;
 
-    public float Progress
+    public sealed override float Progress
         => ProgressMax is 0 ? 1f : CurrentProgress / (float)ProgressMax;
 
-    public bool Completed
-        => Scan?.IsCompletedSuccessfully ?? false;
+    public sealed override bool Completed
+        => ScanTask?.IsCompletedSuccessfully ?? false;
 
-    public bool Running
-        => !Scan?.IsCompleted ?? false;
+    public sealed override bool Running
+        => !ScanTask?.IsCompleted ?? false;
 
     public IReadOnlyList<T> GetCurrentList()
     {
@@ -169,12 +169,21 @@ public abstract class ObjectScanner<T>(ModManager mods) : IDisposable
         return StableList;
     }
 
-    public void Cancel()
+    public IEnumerable<T> GetNewItems()
     {
-        if (Scan is null)
+        while (Cache.TryDequeue(out var redirection))
+        {
+            StableList.Add(redirection);
+            yield return redirection;
+        }
+    }
+
+    public override void Cancel()
+    {
+        if (ScanTask is null)
             return;
 
-        Scan = null;
+        ScanTask = null;
         CancelSource.Cancel();
         CancelSource = new CancellationTokenSource();
     }
@@ -182,6 +191,15 @@ public abstract class ObjectScanner<T>(ModManager mods) : IDisposable
     public void Dispose()
     {
         CancelSource.Cancel();
-        Scan = null;
+        ScanTask = null;
     }
+}
+
+public abstract class ObjectScanner
+{
+    public abstract Task  Scan();
+    public abstract void  Cancel();
+    public abstract float Progress  { get; }
+    public abstract bool  Completed { get; }
+    public abstract bool  Running   { get; }
 }
