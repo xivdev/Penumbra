@@ -14,6 +14,8 @@ jobs:
           submodules: recursive
       - name: Prepare Environment
         uses: ./.github/actions/prepare-environment
+        with:
+          project: Penumbra
       - name: Build and Upload Artifact
         uses: ./.github/actions/build-with-artifact
         with:

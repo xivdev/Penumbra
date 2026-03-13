@@ -16,6 +16,7 @@ jobs:
         uses: ./.github/actions/prepare-environment
         with:
           dalamud-distrib: stg/
+          project: Penumbra
       - name: Build and Upload Artifact
         uses: ./.github/actions/build-with-artifact
         with:
