@@ -32,10 +32,9 @@ public sealed class DeleteSelectionButton(ModFileSystemDrawer drawer) : BaseIcon
     /// <inheritdoc/>
     public override void OnClick()
     {
-        foreach (var node in drawer.FileSystem.Selection.DataNodes.ToArray())
-        {
-            if (node.GetValue<Mod>() is { } mod)
-                drawer.ModManager.DeleteMod(mod);
-        }
+        var mods = drawer.FileSystem.Selection.DataNodes.Select(n => n.Value).OfType<Mod>().ToList();
+        drawer.FileSystem.Selection.UnselectAll();
+        foreach (var mod in mods)
+            drawer.ModManager.DeleteMod(mod);
     }
 }
