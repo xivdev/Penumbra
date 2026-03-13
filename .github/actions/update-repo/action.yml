@@ -1,0 +1,76 @@
+name: 'Update repo.json file for Release.'
+description: 'Update the repo.json file in the master branch for the newly made release.'
+inputs:
+  token:
+    description: "The Github secret token."
+    required: true
+  project:
+    description: 'The main project that is to be built and packaged.'
+    type: string
+    required: true
+  version:
+    description: 'The version written to the assembly.'
+    type: string
+    required: false
+  testing:
+    description: "Whether this is a testing release or not."
+    type: bool
+    required: false
+    default: false
+  branch:
+    description: "The name of the branch containing the repo.json file."
+    type: string
+    required: false
+    default: master
+  
+        
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout Master branch
+      env:
+        GITHUB_TOKEN: ${{ inputs.token }}
+      uses: actions/checkout@v6
+      with:
+        ref: master
+
+    - name: Write out new repo.json
+      shell: pwsh
+      run: |
+         $ver = [version]('${{ inputs.version }}' -replace 'testing_')
+         $path = './repo.json'
+         $json = Get-Content -Raw $path | ConvertFrom-Json
+         if ( ${{ inputs.testing }} )
+         {
+           $json[0].TestingAssemblyVersion = $ver
+           $json[0].DownloadLinkTesting = $json.DownloadLinkTesting -replace '[^/]+/${{ inputs.project }}.zip',"${{ inputs.version }}/${{ inputs.project }}.zip"
+         }
+         else
+         {
+           $json[0].AssemblyVersion = $ver
+           $testVer = [version] $json[0].TestingAssemblyVersion
+           $json[0].DownloadLinkInstall = $json.DownloadLinkInstall -replace '[^/]+/${{ inputs.project }}.zip',"${{ inputs.version }}/${{ inputs.project }}.zip"
+           $json[0].DownloadLinkUpdate = $json.DownloadLinkUpdate -replace '[^/]+/${{ inputs.project }}.zip',"${{ inputs.version }}/${{ inputs.project }}.zip"
+           if ( $ver -gt $testVer )
+           {
+             $json[0].TestingAssemblyVersion = $ver
+             $json[0].DownloadLinkTesting = $json.DownloadLinkTesting -replace '[^/]+/${{ inputs.project }}.zip',"${{ inputs.version }}/${{ inputs.project }}.zip"
+           }
+           
+         }
+         $content = $json | ConvertTo-Json -AsArray
+         set-content -Path $path -Value $content
+     
+    - name: Commit new repo.json
+      env:
+        GITHUB_TOKEN: ${{ inputs.token }}
+      shell: pwsh
+      run: |
+        git config --global user.name "Actions User"
+        git config --global user.email "actions@github.com"
+        git fetch origin ${{ inputs.branch }}
+        git branch -f ${{ inputs.branch }} ${{ github.sha }}
+        git checkout ${{ inputs.branch }}
+        git add repo.json
+        git commit -m "[CI] Updating repo.json for ${{ inputs.version }}" || true
+        git push origin ${{ inputs.branch }}

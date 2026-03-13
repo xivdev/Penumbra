@@ -9,81 +9,25 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v5
+      - name: Prepare Environment
+        uses: ./.github/actions/prepare-environment
+      - name: Build and Upload Artifact
+        uses: ./.github/actions/build-with-artifact
         with:
-          dotnet-version: |
-              10.x.x
-              9.x.x
-      - name: Restore dependencies
-        run: dotnet restore
-      - name: Download Dalamud
-        run: |
-          Invoke-WebRequest -Uri https://goatcorp.github.io/dalamud-distrib/stg/latest.zip -OutFile latest.zip
-          Expand-Archive -Force latest.zip "$env:AppData\XIVLauncher\addon\Hooks\dev"
-      - name: Build
-        run: |
-          $ver = '${{ github.ref_name }}'
-          invoke-expression 'dotnet build --no-restore --configuration Release --nologo -p:Version=$ver -p:FileVersion=$ver -p:AssemblyVersion=$ver'
-      - name: write version into jsons
-        run: |
-          $ver = '${{ github.ref_name }}'
-          $path = './Penumbra/bin/Release/Penumbra.json'
-          $json = Get-Content -Raw $path | ConvertFrom-Json
-          $json.AssemblyVersion = $ver
-          $content = $json | ConvertTo-Json
-          set-content -Path $path -Value $content
-      - name: Archive
-        run: Compress-Archive -Path Penumbra/bin/Release/* -DestinationPath Penumbra.zip
-      - name: Upload a Build Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          path: |
-            ./Penumbra/bin/Release/*
+          project: Penumbra
+          version: ${{ github.ref_name }}
       - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: ./.github/actions/create-release
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Penumbra ${{ github.ref }}
-          draft: false
-          prerelease: false
-      - name: Upload Release Asset
-        id: upload-release-asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          project: Penumbra
+          version: ${{ github.ref_name }}
+      - name: Update repo.json
+        uses: ./.github/actions/update-repo
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
-          asset_path: ./Penumbra.zip
-          asset_name: Penumbra.zip
-          asset_content_type: application/zip
-
-      - name: Write out repo.json
-        run: |
-          $ver = '${{ github.ref_name }}'
-          $path = './repo.json'
-          $json = Get-Content -Raw $path | ConvertFrom-Json
-          $json[0].AssemblyVersion = $ver
-          $json[0].TestingAssemblyVersion = $ver
-          $json[0].DownloadLinkInstall = $json.DownloadLinkInstall -replace '[^/]+/Penumbra.zip',"$ver/Penumbra.zip"
-          $json[0].DownloadLinkTesting = $json.DownloadLinkTesting -replace '[^/]+/Penumbra.zip',"$ver/Penumbra.zip"
-          $json[0].DownloadLinkUpdate = $json.DownloadLinkUpdate -replace '[^/]+/Penumbra.zip',"$ver/Penumbra.zip"
-          $content = $json | ConvertTo-Json -AsArray
-          set-content -Path $path -Value $content
-
-      - name: Commit repo.json
-        run: |
-          git config --global user.name "Actions User"
-          git config --global user.email "actions@github.com"
-          git fetch origin master
-          git branch -f master ${{ github.sha }}
-          git checkout master
-          git add repo.json
-          git commit -m "[CI] Updating repo.json for ${{ github.ref_name }}" || true
-          git push origin master
+          token: ${{ secrets.GITHUB_TOKEN }}
+          project: Penumbra
+          version: ${{ github.ref_name }}

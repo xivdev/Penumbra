@@ -1,0 +1,52 @@
+name: 'Build and upload Artifact'
+description: 'Build the checked out branch and upload the resulting build artifact, including a zipped version.'
+inputs:
+  configuration:
+    description: 'The configuration in which to build, either Release or Debug. Default is Release.'
+    required: false
+    type: string
+    default: 'Release'
+  project:
+    description: 'The main project that is to be built and packaged.'
+    type: string
+    required: true
+  version:
+    description: 'The version written to the assembly.'
+    type: string
+    required: false
+        
+runs:
+  using: "composite"
+  steps:
+    - name: Build Solution
+      shell: pwsh
+      run: |
+        $version = "${{ inputs.version }}" -replace 'testing_'
+        
+        if ([string]::IsNullOrWhiteSpace($version)) {
+          dotnet build --no-restore --nologo --configuration ${{ inputs.configuration }}
+        }
+        else {
+          dotnet build --no-restore --nologo --configuration ${{ inputs.configuration }} /p:Version=$version -p:FileVersion=$version -p:AssemblyVersion=$version
+        }
+    
+    - name: Update the Plugin JSON File
+      shell: pwsh
+      run: |
+        $version = "${{ inputs.version }}" -replace 'testing_'
+        if ([string]::IsNullOrWhiteSpace($version)) {
+          $path = "./${{ inputs.project }}/bin/${{ inputs.configuration }}/${{ inputs.project }}.json"
+          $json = Get-Content -Raw $path | ConvertFrom-Json
+          $json.AssemblyVersion = $version
+          $content = $json | ConvertTo-Json
+          set-content -Path $path -Value $content
+        }
+    
+    - name: Create Archive
+      shell: pwsh
+      run: Compress-Archive -Path ${{ inputs.project }}/bin/${{ inputs.configuration }}/* -DestinationPath ${{ inputs.project }}/bin/${{ inputs.configuration }}/${{ inputs.project }}.zip
+      
+    - name: Upload the Build Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        path: ./${{ inputs.project }}/bin/${{ inputs.configuration }}/*
