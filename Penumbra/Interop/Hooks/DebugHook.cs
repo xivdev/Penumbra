@@ -1,15 +1,12 @@
 using Dalamud.Hooking;
 using Luna;
-using Penumbra.Collections;
 using Penumbra.Collections.Manager;
-using Penumbra.Interop.PathResolving;
-using Penumbra.String;
 
 namespace Penumbra.Interop.Hooks;
 
 #if DEBUG
 
-public sealed unsafe class DebugHook(CollectionStorage collections) : Luna.IHookService
+public sealed unsafe class DebugHook(CollectionStorage collections) : IHookService
 {
     public const string Signature = "";
 
@@ -37,19 +34,12 @@ public sealed unsafe class DebugHook(CollectionStorage collections) : Luna.IHook
     public bool Finished
         => _task?.IsCompletedSuccessfully ?? true;
 
-    private delegate nint Delegate(nint a, nint b, nint c, nint d, uint e, nint f, nint g);
+    private delegate byte Delegate(nint a, nint b, int c, uint d);
 
-    private nint Detour(nint a, nint b, nint c, nint d, uint e, nint f, nint g)
+    private byte Detour(nint a, nint b, int c, uint d)
     {
-        var path = new CiByteString((byte*)c);
-        var collection = PathDataHandler.Split(path.Span, out _, out var additionalData) && PathDataHandler.Read(additionalData, out var data)
-            ? collections.ByLocalId(data.Collection)
-            : ModCollection.Empty;
-
-        var ret  = _task!.Result!.Original(a, b, c, d, e, f, g);
-
-        
-        Penumbra.Log.Information($"[Debug Hook] Results with 0x{a:X}, 0x{b:X}, 0x{c:X} ({path}, {collection}) 0x{d:X} {e} 0x{f:X} {g} -> 0x{ret:X}.");
+        var ret  = _task!.Result!.Original(a, b, c, d);
+        Penumbra.Log.Information($"[Debug Hook] Results with 0x{a:X}, 0x{b:X}, {c}, {d} -> {ret}.");
         return ret;
     }
 }
