@@ -62,7 +62,7 @@ public class Penumbra : IDalamudPlugin
     private readonly RedrawService           _redrawService       = null!;
     private readonly CommunicatorService     _communicatorService = null!;
     private readonly IDataManager            _gameData            = null!;
-    private          PenumbraWindowSystem?   _windowSystem        = null!;
+    private          PenumbraWindowSystem?   _windowSystem;
     private          bool                    _disposed;
 
     private readonly ServiceManager _services = null!;
@@ -110,7 +110,6 @@ public class Penumbra : IDalamudPlugin
             SetupInterface();
             SetupApi();
 
-            _validityChecker.LogExceptions();
             Log.Information(
                 $"Penumbra Version {_validityChecker.Version}, Commit #{_validityChecker.CommitHash} successfully Loaded from {pluginInterface.SourceRepository}.");
             OtterTex.NativeDll.Initialize(pluginInterface.AssemblyLocation.DirectoryName);
@@ -298,7 +297,6 @@ public class Penumbra : IDalamudPlugin
             $"> **`Mods with FileSwaps:         `** {_modManager.Count(m => m.TotalSwapCount > 0)}, Total: {_modManager.Sum(m => m.TotalSwapCount)}\n");
         sb.Append(
             $"> **`Mods with Meta Manipulations:`** {_modManager.Count(m => m.TotalManipulations > 0)}, Total {_modManager.Sum(m => m.TotalManipulations)}\n");
-        sb.Append($"> **`IMC Exceptions Thrown:       `** {_validityChecker.ImcExceptions.Count}\n");
         sb.Append(
             $"> **`#Temp Mods:                  `** {_tempMods.Mods.Sum(kvp => kvp.Value.Count) + _tempMods.ModsForAllCollections.Count}\n");
 

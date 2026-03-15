@@ -60,13 +60,15 @@ public readonly record struct ImcIdentifier(
         => (MetaIndex)(-1);
 
     public override string ToString()
+        => $"IMC - {ToStringWithoutImc()}";
+
+    public string ToStringWithoutImc()
         => ObjectType switch
         {
-            ObjectType.Equipment or ObjectType.Accessory => $"IMC - {PrimaryId} - {EquipSlot.ToName()} - {Variant}",
-            ObjectType.DemiHuman => $"IMC - {PrimaryId} - DemiHuman - {SecondaryId} - {EquipSlot.ToName()} - {Variant}",
-            _ => $"IMC - {PrimaryId} - {ObjectType.ToName()} - {SecondaryId} - {BodySlot} - {Variant}",
+            ObjectType.Equipment or ObjectType.Accessory => $"{PrimaryId} - {EquipSlot.ToName()} - {Variant}",
+            ObjectType.DemiHuman => $"{PrimaryId} - DemiHuman - {SecondaryId} - {EquipSlot.ToName()} - {Variant}",
+            _ => $"{PrimaryId} - {ObjectType.ToName()} - {SecondaryId} - {BodySlot} - {Variant}",
         };
-
 
     public bool Validate()
     {

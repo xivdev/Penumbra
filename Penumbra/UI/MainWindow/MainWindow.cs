@@ -70,16 +70,7 @@ public sealed class MainWindow : Window
         _globalModImporter.DrawWindowTarget();
         try
         {
-            if (_validityChecker.ImcExceptions.Count > 0)
-            {
-                DrawProblemWindow(
-                    $"There were {_validityChecker.ImcExceptions.Count} errors while trying to load IMC files from the game data.\n"
-                  + "This usually means that your game installation was corrupted by updating the game while having TexTools mods still active.\n"
-                  + "It is recommended to not use TexTools and Penumbra (or other Lumina-based tools) at the same time.\n\n"
-                  + "Please use the Launcher's Repair Game Files function to repair your client installation.");
-                DrawImcExceptions();
-            }
-            else if (!_validityChecker.IsValidSourceRepo)
+            if (!_validityChecker.IsValidSourceRepo)
             {
                 DrawProblemWindow(
                     $"You are loading a release version of Penumbra from the repository \"{_pluginInterface.SourceRepository}\" instead of the official repository.\n"
@@ -145,19 +136,6 @@ public sealed class MainWindow : Window
         UiHelpers.DrawSupportButton(_penumbra!);
         Im.Line.New();
         Im.Line.New();
-    }
-
-    private void DrawImcExceptions()
-    {
-        Im.Text("Exceptions"u8);
-        Im.Separator();
-        using var box = Im.ListBox.Begin("##Exceptions"u8, new Vector2(-1, -1));
-        foreach (var exception in _validityChecker.ImcExceptions)
-        {
-            Im.TextWrapped($"{exception}");
-            Im.Separator();
-            Im.Line.New();
-        }
     }
 
     private void OnToggleMainWindow(bool open)

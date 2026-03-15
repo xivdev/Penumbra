@@ -1,4 +1,3 @@
-using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Plugin;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using Luna;
@@ -15,8 +14,6 @@ public class ValidityChecker : IService
     public readonly bool DevPenumbraExists;
     public readonly bool IsNotInstalledPenumbra;
     public readonly bool IsValidSourceRepo;
-
-    public readonly List<Exception> ImcExceptions = [];
 
     public readonly string Version;
     public readonly string CommitHash;
@@ -44,14 +41,6 @@ public class ValidityChecker : IService
         var assembly = GetType().Assembly;
         Version    = assembly.GetName().Version?.ToString() ?? string.Empty;
         CommitHash = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "Unknown";
-    }
-
-    public void LogExceptions()
-    {
-        if (ImcExceptions.Count > 0)
-            Penumbra.Messager.NotificationMessage(
-                $"{ImcExceptions.Count} IMC Exceptions thrown during Penumbra load. Please repair your game files.",
-                NotificationType.Warning);
     }
 
     // Because remnants of penumbra in devPlugins cause issues, we check for them to warn users to remove them.

@@ -3,6 +3,7 @@ using Penumbra.GameData.Files;
 using Penumbra.GameData.Files.AtchStructs;
 using Penumbra.Meta;
 using Penumbra.Meta.Manipulations;
+using Penumbra.Mods.Editor;
 
 namespace Penumbra.Collections.Cache;
 
@@ -34,7 +35,7 @@ public sealed class AtchCache(MetaFileManager manager, ModCollection collection)
         Clear();
     }
 
-    protected override void ApplyModInternal(AtchIdentifier identifier, AtchEntry entry)
+    protected override void ApplyModInternal(IMod source, AtchIdentifier identifier, AtchEntry entry)
     {
         Collection.Counters.IncrementAtch();
         ApplyFile(identifier, entry);

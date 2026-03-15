@@ -20,7 +20,7 @@ public abstract class MetaCacheBase<TIdentifier, TEntry>(MetaFileManager manager
 
         this[identifier] = (source, entry);
 
-        ApplyModInternal(identifier, entry);
+        ApplyModInternal(source, identifier, entry);
         return true;
     }
 
@@ -39,7 +39,7 @@ public abstract class MetaCacheBase<TIdentifier, TEntry>(MetaFileManager manager
     }
 
 
-    protected virtual void ApplyModInternal(TIdentifier identifier, TEntry entry)
+    protected virtual void ApplyModInternal(IMod source, TIdentifier identifier, TEntry entry)
     { }
 
     protected virtual void RevertModInternal(TIdentifier identifier)
