@@ -326,6 +326,37 @@ public sealed class FileEditor(
         protected override float ItemHeight
             => Im.Style.TextHeightWithSpacing;
 
+        protected override void PostDrawCombo(float width)
+        {
+            if (Selected is null)
+                return;
+
+            using var popup = Im.Popup.BeginContextItem();
+            if (!popup)
+                return;
+            if (Im.Menu.Item("Open Containing Directory in File Explorer"u8) && Path.GetDirectoryName(Selected.File.FullName) is {} dir)
+                try
+                {
+                    Process.Start(new ProcessStartInfo(dir) { UseShellExecute = true });
+                }
+                catch (Exception ex)
+                {
+                    Penumbra.Messager.NotificationMessage(ex, $"Could not open Directory {dir}.", $"Could not open Directory {dir}",
+                        NotificationType.Warning);
+                }
+
+            if (Im.Menu.Item("Open File with Associated Application"u8))
+                try
+                {
+                    Process.Start(new ProcessStartInfo(Selected.File.FullName) { UseShellExecute = true });
+                }
+                catch (Exception ex)
+                {
+                    Penumbra.Messager.NotificationMessage(ex, $"Could not open File {Selected.File.FullName}.", $"Could not open File {Selected.File.FullName}",
+                        NotificationType.Warning);
+                }
+        }
+
         protected override bool DrawItem(in FileRegistry item, int globalIndex, bool selected)
         {
             bool ret;

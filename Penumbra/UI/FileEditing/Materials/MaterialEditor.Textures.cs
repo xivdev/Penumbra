@@ -23,11 +23,11 @@ public partial class MaterialEditor
         Textures.Clear();
         TextureIds.Clear();
         SamplerIds.Clear();
-        if (_associatedShpk == null)
+        if (_associatedShpk is null)
         {
             TextureIds.UnionWith(Mtrl.ShaderPackage.Samplers.Select(sampler => sampler.SamplerId));
             SamplerIds.UnionWith(Mtrl.ShaderPackage.Samplers.Select(sampler => sampler.SamplerId));
-            if (Mtrl.Table != null)
+            if (Mtrl.Table is not null)
                 TextureIds.Add(TableSamplerId);
 
             foreach (var (index, sampler) in Mtrl.ShaderPackage.Samplers.Index())
@@ -64,7 +64,7 @@ public partial class MaterialEditor
                 var hasDkLabel = !string.IsNullOrEmpty(dkData?.Label);
 
                 var sampler = Mtrl.GetOrAddSampler(textureId, dkData?.DefaultTexture ?? string.Empty, out var samplerIndex);
-                Textures.Add((hasDkLabel ? dkData!.Label : shpkTexture!.Value.Name, sampler.TextureIndex, samplerIndex,
+                Textures.Add((hasDkLabel ? dkData!.Label : shpkTexture?.Name ?? $"<UNKNOWN> (0x{textureId:X})", sampler.TextureIndex, samplerIndex,
                     dkData?.Description ?? string.Empty, !hasDkLabel));
             }
 
@@ -76,21 +76,12 @@ public partial class MaterialEditor
 
         TextureLabelWidth = 50f * Im.Style.GlobalScale;
 
-        var helpWidth = Im.Style.ItemSpacing.X + ImEx.Icon.CalculateSize(FontAwesomeIcon.InfoCircle.Icon()).X;
+        var helpWidth = Im.Style.ItemSpacing.X + ImEx.Icon.CalculateSize(LunaStyle.InfoIcon).X;
 
         foreach (var (label, _, _, description, monoFont) in Textures)
         {
-            if (!monoFont)
-                TextureLabelWidth = Math.Max(TextureLabelWidth, Im.Font.CalculateSize(label).X + (description.Length > 0 ? helpWidth : 0.0f));
-        }
-
-        using (Im.Font.PushMono())
-        {
-            foreach (var (label, _, _, description, monoFont) in Textures)
-            {
-                if (monoFont)
-                    TextureLabelWidth = Math.Max(TextureLabelWidth, Im.Font.CalculateSize(label).X + (description.Length > 0 ? helpWidth : 0.0f));
-            }
+            TextureLabelWidth = Math.Max(TextureLabelWidth,
+                (monoFont ? Im.Font.Mono : Im.Font.Default).CalculateTextSize(label, false).X + (description.Length > 0 ? helpWidth : 0.0f));
         }
 
         TextureLabelWidth = TextureLabelWidth / Im.Style.GlobalScale + 4;
@@ -131,7 +122,8 @@ public partial class MaterialEditor
             var       tmp      = Mtrl.Textures[textureI].Path;
             var       unfolded = UnfoldedTextures.Contains(samplerI);
             table.NextColumn();
-            if (ImEx.Icon.Button(unfolded ? LunaStyle.ExpandDownIcon : LunaStyle.CollapseUpIcon, "Settings for this texture and the associated sampler"u8))
+            if (ImEx.Icon.Button(unfolded ? LunaStyle.ExpandDownIcon : LunaStyle.CollapseUpIcon,
+                    "Settings for this texture and the associated sampler"u8))
             {
                 unfolded = !unfolded;
                 if (unfolded)
@@ -142,7 +134,8 @@ public partial class MaterialEditor
 
             table.NextColumn();
             Im.Item.SetNextWidth(Im.ContentRegion.Available.X);
-            if (Im.Input.Text(StringU8.Empty, ref tmp, default, disabled ? InputTextFlags.ReadOnly : InputTextFlags.None, Utf8GamePath.MaxGamePathLength)
+            if (Im.Input.Text(StringU8.Empty, ref tmp, default, disabled ? InputTextFlags.ReadOnly : InputTextFlags.None,
+                    Utf8GamePath.MaxGamePathLength)
              && tmp.Length > 0
              && tmp != Mtrl.Textures[textureI].Path)
             {
@@ -276,7 +269,8 @@ public partial class MaterialEditor
             ret = true;
 
         Im.Item.SetNextWidthScaled(100.0f);
-        if (Im.Input.Scalar("Sampler Flags"u8, ref sampler.Flags, "%08X"u8, flags: InputTextFlags.CharsHexadecimal | (disabled ? InputTextFlags.ReadOnly : InputTextFlags.None)))
+        if (Im.Input.Scalar("Sampler Flags"u8, ref sampler.Flags, "%08X"u8,
+                flags: InputTextFlags.CharsHexadecimal | (disabled ? InputTextFlags.ReadOnly : InputTextFlags.None)))
         {
             ret = true;
             SetSamplerFlags(sampler.SamplerId, sampler.Flags);
