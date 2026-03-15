@@ -114,11 +114,8 @@ public abstract class ModFileScanner<T>(ModManager mods) : ObjectScanner<T>(mods
                 {
                     foreach (var directory in mod.ModPath.EnumerateDirectories())
                     {
-                        foreach (var file in directory.EnumerateNonHiddenFiles())
+                        foreach (var file in directory.EnumerateNonHiddenFiles().Where(file => DoCreateFile(file.FullName, mod)))
                         {
-                            if (!DoCreateFile(file.FullName, mod))
-                                continue;
-
                             if (token.IsCancellationRequested)
                                 return;
 
@@ -188,6 +185,22 @@ public abstract class ObjectScanner<T>(ModManager mods) : ObjectScanner, IDispos
         CancelSource = new CancellationTokenSource();
     }
 
+    public virtual bool RemoveObject(T? toRemove)
+    {
+        if (toRemove is null)
+            return false;
+
+        return StableList.Remove(toRemove);
+    }
+
+    public sealed override bool RemoveObject(IScannedObject? toRemove)
+    {
+        if (toRemove is not T obj)
+            return false;
+
+        return RemoveObject(obj);
+    }
+
     public void Dispose()
     {
         CancelSource.Cancel();
@@ -197,6 +210,7 @@ public abstract class ObjectScanner<T>(ModManager mods) : ObjectScanner, IDispos
 
 public abstract class ObjectScanner
 {
+    public abstract bool  RemoveObject(IScannedObject? toRemove);
     public abstract Task  Scan();
     public abstract void  Cancel();
     public abstract float Progress  { get; }
