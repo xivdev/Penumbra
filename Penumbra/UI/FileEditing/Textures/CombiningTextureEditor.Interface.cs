@@ -48,6 +48,7 @@ public partial class CombiningTextureEditor
     {
         try
         {
+            using var id = Im.Id.Push(_context?.Mod?.Identifier ?? string.Empty);
             _dragDropManager.CreateImGuiSource("TextureDragDrop",
                 m => m.Extensions.Any(e => ValidTextureExtensions.Contains(e.ToLowerInvariant())), m =>
                 {

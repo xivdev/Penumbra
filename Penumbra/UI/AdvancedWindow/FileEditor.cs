@@ -4,6 +4,7 @@ using ImSharp;
 using Luna;
 using Penumbra.Communication;
 using Penumbra.GameData.Data;
+using Penumbra.Mods;
 using Penumbra.Mods.Editor;
 using Penumbra.Services;
 using Penumbra.String.Classes;
@@ -36,6 +37,7 @@ public sealed class FileEditor(
             return;
         }
 
+        using var id = Im.Id.Push(owner.Mod!.Identifier);
         Im.Line.New();
         DrawFileSelectCombo();
         SaveButton();

@@ -15,6 +15,7 @@ public partial class ModEditWindow
         if (!tab)
             return;
 
+        using var id = Im.Id.Push(Mod!.Identifier);
         Im.Line.New();
         MaterialSuffix.Draw(_editor, ImEx.ScaledVector(175, 0));
 
@@ -29,7 +30,7 @@ public partial class ModEditWindow
 
         foreach (var (idx, info) in _editor.MdlMaterialEditor.ModelFiles.Index())
         {
-            using var id = Im.Id.Push(idx);
+            id.Push(idx);
             table.NextColumn();
             if (ImEx.Icon.Button(LunaStyle.SaveIcon, "Save the changed mdl file.\nUse at own risk!"u8, !info.Changed))
                 info.Save(_editor.Compactor);
@@ -58,6 +59,8 @@ public partial class ModEditWindow
                 if (Im.Input.Text(""u8, ref tmp))
                     info.SetMaterial(tmp, i);
             }
+
+            id.Pop();
         }
     }
 }

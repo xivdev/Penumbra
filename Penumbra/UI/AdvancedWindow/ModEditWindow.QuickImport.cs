@@ -49,6 +49,7 @@ public partial class ModEditWindow
             return;
         }
 
+        using var id = Im.Id.Push(Mod!.Identifier);
         if (optionChanged)
             _quickImportActions.Clear();
         _quickImportViewer.Draw();

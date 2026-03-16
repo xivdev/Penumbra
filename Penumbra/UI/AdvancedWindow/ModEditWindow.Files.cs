@@ -33,6 +33,7 @@ public partial class ModEditWindow
         if (!tab)
             return;
 
+        using var id = Im.Id.Push(Mod!.Identifier);
         DrawButtonHeader();
 
         if (!_overviewMode)

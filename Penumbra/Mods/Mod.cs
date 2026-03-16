@@ -1,4 +1,5 @@
 using Luna;
+using Luna.Generators;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Structs;
 using Penumbra.Meta.Manipulations;
@@ -11,6 +12,7 @@ using Penumbra.String.Classes;
 namespace Penumbra.Mods;
 
 [Flags]
+[NamedEnum(Utf16: false)]
 public enum FeatureFlags : ulong
 {
     None    = 0,

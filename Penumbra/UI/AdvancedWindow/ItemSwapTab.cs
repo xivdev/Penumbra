@@ -125,6 +125,7 @@ public class ItemSwapTab : IDisposable, ITab
 
     public void DrawContent()
     {
+        using var id = Im.Id.Push(_mod!.Identifier);
         Im.Line.New();
         DrawHeaderLine(300 * Im.Style.GlobalScale);
         Im.Line.New();

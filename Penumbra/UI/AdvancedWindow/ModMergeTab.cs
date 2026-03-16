@@ -20,6 +20,7 @@ public sealed class ModMergeTab(ModMerger modMerger, ModComboWithoutCurrent comb
         if (!tab)
             return;
 
+        using var id = Im.Id.Push(ModMerger.MergeFromMod!.Identifier);
         Im.Dummy(Vector2.Zero);
         var size = 550 * Im.Style.GlobalScale;
         DrawMergeInto(size);

@@ -6,12 +6,12 @@ namespace Penumbra.Interop.Hooks;
 
 #if DEBUG
 
-public sealed unsafe class DebugHook(CollectionStorage collections) : IHookService
+public sealed unsafe class DebugHook() : IHookService
 {
     public const string Signature = "";
 
     public DebugHook(CollectionStorage collections, HookManager hooks)
-        : this(collections)
+        : this()
     {
         if (Signature.Length > 0)
             _task = hooks.CreateHook<Delegate>("Debug Hook", Signature, Detour, true);
