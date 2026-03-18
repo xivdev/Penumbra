@@ -81,8 +81,9 @@ public sealed partial class EphemeralConfig : ISavable, IService
     public string ToFilePath(FilenameService fileNames)
         => fileNames.EphemeralConfigFile;
 
-    public void Save(StreamWriter writer)
+    public void Save(Stream stream)
     {
+        using var writer  = new StreamWriter(stream);
         using var jWriter = new JsonTextWriter(writer);
         jWriter.Formatting = Formatting.Indented;
         var serializer = new JsonSerializer { Formatting = Formatting.Indented };

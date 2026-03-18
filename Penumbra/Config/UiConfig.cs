@@ -1,6 +1,6 @@
+using System.Text.Json;
 using Luna;
 using Luna.Generators;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Penumbra.Services;
 using MessageService = Penumbra.Services.MessageService;
@@ -15,10 +15,10 @@ public sealed partial class UiConfig : ConfigurationFile<FilenameService>
         Load();
     }
 
-    protected override void AddData(JsonTextWriter j)
+    protected override void AddData(Utf8JsonWriter j)
     {
-        CollectionsTabScale.WriteJson(j, "CollectionsTab");
-        ModTabScale.WriteJson(j, "ModsTab");
+        CollectionsTabScale.WriteJson(j, "CollectionsTab"u8);
+        ModTabScale.WriteJson(j, "ModsTab"u8);
     }
 
     protected override void LoadData(JObject j)

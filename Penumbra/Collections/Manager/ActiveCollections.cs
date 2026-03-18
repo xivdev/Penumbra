@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Dalamud.Interface.ImGuiNotification;
 using ImSharp;
 using Luna;
@@ -7,7 +8,6 @@ using Penumbra.Communication;
 using Penumbra.GameData.Actors;
 using Penumbra.GameData.Enums;
 using Penumbra.Services;
-using Penumbra.UI;
 
 namespace Penumbra.Collections.Manager;
 
@@ -138,7 +138,7 @@ public class ActiveCollections : ISavable, IDisposable, IService
             return;
 
         var old = SpecialCollections[(int)collectionType];
-        if (old == null)
+        if (old is null)
             return;
 
         SpecialCollections[(int)collectionType] = null;
@@ -178,12 +178,12 @@ public class ActiveCollections : ISavable, IDisposable, IService
             var idx = Individuals.Index(identifiers[0]);
             if (idx >= 0)
             {
-                if (collection == null)
+                if (collection is null)
                     RemoveIndividualCollection(idx);
                 else
                     SetCollection(collection, collectionType, idx);
             }
-            else if (collection != null)
+            else if (collection is not null)
             {
                 CreateIndividualCollection(identifiers);
                 SetCollection(collection, CollectionType.Individual, Individuals.Count - 1);
@@ -191,7 +191,7 @@ public class ActiveCollections : ISavable, IDisposable, IService
         }
         else
         {
-            if (collection == null)
+            if (collection is null)
             {
                 RemoveSpecialCollection(collectionType);
             }
@@ -248,23 +248,19 @@ public class ActiveCollections : ISavable, IDisposable, IService
     public string LogName(string _)
         => "to file";
 
-    public void Save(StreamWriter writer)
+    public void Save(Stream stream)
     {
-        var jObj = new JObject
-        {
-            { nameof(Version), Version },
-            { nameof(Default), Default.Identity.Id },
-            { nameof(Interface), Interface.Identity.Id },
-            { nameof(Current), Current.Identity.Id },
-        };
+        using var j = new Utf8JsonWriter(stream, JsonFunctions.WriterOptions);
+        j.WriteNumber("Version"u8, Version);
+        j.WriteString("Default"u8, Default.Identity.Id);
+        j.WriteString("Interface"u8, Interface.Identity.Id);
+        j.WriteString("Current"u8, Current.Identity.Id);
         foreach (var (type, collection) in SpecialCollections.Index().Where(p => p.Item != null)
                      .Select(p => ((CollectionType)p.Index, p.Item!)))
-            jObj.Add(type.ToString(), collection.Identity.Id);
-
-        jObj.Add(nameof(Individuals), Individuals.ToJObject());
-        using var j = new JsonTextWriter(writer);
-        j.Formatting = Formatting.Indented;
-        jObj.WriteTo(j);
+            j.WriteString(type.ToString(), collection.Identity.Id);
+        j.WritePropertyName("Individuals"u8);
+        // TODO Do this correctly
+        j.WriteRawValue(Individuals.ToJObject().ToString(Formatting.Indented));
     }
 
     private void UpdateCurrentCollectionInUse()

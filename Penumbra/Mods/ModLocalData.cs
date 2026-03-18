@@ -1,6 +1,5 @@
+using System.Text.Json;
 using Luna;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Penumbra.GameData.Structs;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
@@ -14,62 +13,126 @@ public readonly struct ModLocalData(Mod mod) : ISavable
     public string ToFilePath(FilenameService fileNames)
         => fileNames.LocalDataFile(mod);
 
-    public void Save(StreamWriter writer)
+    public void Save(Stream stream)
     {
-        var jObject = new JObject
+        using var j = new Utf8JsonWriter(stream, JsonFunctions.WriterOptions);
+        j.WriteStartObject();
+
+        j.WriteNumber("FileVersion"u8,    FileVersion);
+        j.WriteNumber("ImportDate"u8,     mod.ImportDate);
+        j.WriteNumber("LastConfigEdit"u8, mod.LastConfigEdit);
+        j.WriteBoolean("Favorite"u8, mod.Favorite);
+        if (mod.Note.Length > 0)
+            j.WriteString("Note"u8, mod.Note);
+
+        if (mod.LocalTags.Count > 0)
         {
-            { nameof(FileVersion), JToken.FromObject(FileVersion) },
-            { nameof(Mod.ImportDate), JToken.FromObject(mod.ImportDate) },
-            { nameof(Mod.LocalTags), JToken.FromObject(mod.LocalTags) },
-            { nameof(Mod.Note), JToken.FromObject(mod.Note) },
-            { nameof(Mod.Favorite), JToken.FromObject(mod.Favorite) },
-            { nameof(Mod.PreferredChangedItems), JToken.FromObject(mod.PreferredChangedItems) },
-            { nameof(Mod.LastConfigEdit), JToken.FromObject(mod.LastConfigEdit) },
-        };
+            j.WritePropertyName("LocalTags"u8);
+            j.WriteStartArray();
+            foreach (var tag in mod.LocalTags)
+                j.WriteStringValue(tag);
+            j.WriteEndArray();
+        }
+
+        if (mod.PreferredChangedItems.Count > 0)
+        {
+            j.WritePropertyName("PreferredChangedItems"u8);
+            j.WriteStartArray();
+            foreach (var item in mod.PreferredChangedItems)
+                j.WriteNumberValue(item);
+            j.WriteEndArray();
+        }
 
         if (mod.Path.Folder.Length > 0)
-            jObject["FileSystemFolder"] = mod.Path.Folder;
-        if (mod.Path.SortName is not null)
-            jObject["SortOrderName"] = mod.Path.SortName;
+            j.WriteString("FileSystemFolder"u8, mod.Path.Folder);
 
-        using var jWriter = new JsonTextWriter(writer);
-        jWriter.Formatting = Formatting.Indented;
-        jObject.WriteTo(jWriter);
+        if (mod.Path.SortName is not null)
+            j.WriteString("SortOrderName"u8, mod.Path.SortName);
+
+        j.WriteEndObject();
+        j.Flush();
     }
 
     public static ModDataChangeType Load(ModDataEditor editor, Mod mod)
     {
         var dataFile = editor.SaveService.FileNames.LocalDataFile(mod);
 
-        var     now              = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        var     importDate       = now;
-        var     localTags        = Enumerable.Empty<string>();
-        var     favorite         = false;
-        var     note             = string.Empty;
-        var     fileSystemFolder = string.Empty;
-        string? sortOrderName    = null;
-        var     lastConfigEdit   = now;
-
+        var                   now                   = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        var                   importDate            = now;
+        var                   localTags             = Enumerable.Empty<string>();
         HashSet<CustomItemId> preferredChangedItems = [];
+        var                   favorite              = false;
+        var                   note                  = string.Empty;
+        var                   fileSystemFolder      = string.Empty;
+        string?               sortOrderName         = null;
+        var                   lastConfigEdit        = now;
+
 
         var save = true;
         if (File.Exists(dataFile))
             try
             {
-                var text = File.ReadAllText(dataFile);
-                var json = JObject.Parse(text);
+                var data   = JsonFunctions.ReadUtf8Bytes(dataFile);
+                var reader = new Utf8JsonReader(data, JsonFunctions.ReaderOptions);
 
-                importDate     = json[nameof(Mod.ImportDate)]?.Value<long>() ?? importDate;
-                lastConfigEdit = json[nameof(Mod.LastConfigEdit)]?.Value<long>() ?? now;
-                favorite       = json[nameof(Mod.Favorite)]?.Value<bool>() ?? favorite;
-                note           = json[nameof(Mod.Note)]?.Value<string>() ?? note;
-                localTags      = (json[nameof(Mod.LocalTags)] as JArray)?.Values<string>().OfType<string>() ?? localTags;
-                preferredChangedItems =
-                    (json[nameof(Mod.PreferredChangedItems)] as JArray)?.Values<ulong>().Select(i => (CustomItemId)i).ToHashSet()
-                 ?? mod.DefaultPreferredItems;
-                fileSystemFolder = json["FileSystemFolder"]?.Value<string>() ?? string.Empty;
-                sortOrderName    = json["SortOrderName"]?.Value<string>()?.FixName();
-                save             = false;
+                while (reader.Read())
+                {
+                    if (reader.TokenType is not JsonTokenType.PropertyName)
+                        continue;
+
+                    if (reader.ValueTextEquals("ImportDate"u8))
+                    {
+                        reader.Read();
+                        importDate = reader.GetInt64();
+                    }
+                    else if (reader.ValueTextEquals("LastConfigEdit"u8))
+                    {
+                        reader.Read();
+                        lastConfigEdit = reader.GetInt64();
+                    }
+                    else if (reader.ValueTextEquals("Favorite"u8))
+                    {
+                        reader.Read();
+                        favorite = reader.GetBoolean();
+                    }
+                    else if (reader.ValueTextEquals("Note"u8))
+                    {
+                        reader.Read();
+                        note = reader.GetString() ?? string.Empty;
+                    }
+                    else if (reader.ValueTextEquals("LocalTags"u8))
+                    {
+                        reader.Read();
+                        if (reader.TokenType is not JsonTokenType.StartArray)
+                            continue;
+
+                        var tags = new HashSet<string>();
+                        while (reader.Read() && reader.TokenType is not JsonTokenType.EndArray && reader.GetString() is { Length: > 0 } tag)
+                            tags.Add(tag);
+                        localTags = tags;
+                    }
+                    else if (reader.ValueTextEquals("PreferredItems"u8))
+                    {
+                        reader.Read();
+                        if (reader.TokenType is not JsonTokenType.StartArray)
+                            continue;
+
+                        while (reader.Read() && reader.TokenType is not JsonTokenType.EndArray)
+                            preferredChangedItems.Add(reader.GetUInt64());
+                    }
+                    else if (reader.ValueTextEquals("FileSystemFolder"u8))
+                    {
+                        reader.Read();
+                        fileSystemFolder = reader.GetString() ?? string.Empty;
+                    }
+                    else if (reader.ValueTextEquals("SortOrderName"u8))
+                    {
+                        reader.Read();
+                        sortOrderName = reader.GetString()?.FixName();
+                    }
+                }
+
+                save = false;
             }
             catch (Exception e)
             {
@@ -78,7 +141,7 @@ public readonly struct ModLocalData(Mod mod) : ISavable
         else
             preferredChangedItems = mod.DefaultPreferredItems;
 
-        if (importDate == 0)
+        if (importDate is 0)
             importDate = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
         if (lastConfigEdit == now)

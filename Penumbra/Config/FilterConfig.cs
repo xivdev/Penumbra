@@ -1,6 +1,6 @@
+using System.Text.Json;
 using Luna;
 using Luna.Generators;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Penumbra.Enums;
 using Penumbra.Services;
@@ -22,7 +22,7 @@ public sealed partial class FilterConfig : ConfigurationFile<FilenameService>
         Load();
     }
 
-    protected override void AddData(JsonTextWriter j)
+    protected override void AddData(Utf8JsonWriter j)
     {
         WriteModsTab(j);
         WriteCollectionsTab(j);
@@ -59,34 +59,12 @@ public sealed partial class FilterConfig : ConfigurationFile<FilenameService>
     [ConfigProperty]
     private ChangedItemIconFlag _modChangedItemTypeFilter = ChangedItemFlagExtensions.DefaultFlags;
 
-    private void WriteModsTab(JsonTextWriter j)
+    private void WriteModsTab(Utf8JsonWriter j)
     {
-        if (ModTypeFilter is ModTypeFilterExtensions.UnfilteredStateMods
-         && ModFilter.Length is 0
-         && ModChangedItemTypeFilter is ChangedItemFlagExtensions.DefaultFlags)
-            return;
-
-        j.WritePropertyName("Mods");
-        j.WriteStartObject();
-        if (ModTypeFilter is not ModTypeFilterExtensions.UnfilteredStateMods)
-        {
-            j.WritePropertyName("TypeFilter");
-            j.WriteValue((uint)ModTypeFilter);
-        }
-
-        if (ModFilter.Length > 0)
-        {
-            j.WritePropertyName("ModFilter");
-            j.WriteValue(ModFilter);
-        }
-
-        if (ModChangedItemTypeFilter is not ChangedItemFlagExtensions.DefaultFlags)
-        {
-            j.WritePropertyName("ChangedItemTypeFilter");
-            j.WriteValue((uint)ModChangedItemTypeFilter);
-        }
-
-        j.WriteEndObject();
+        using var tmp = j.TemporaryObject("Mods"u8);
+        tmp.WriteUnsignedIfNot("TypeFilter"u8, ModTypeFilter, ModTypeFilterExtensions.UnfilteredStateMods);
+        tmp.WriteNonEmptyString("ModFilter"u8, ModFilter);
+        tmp.WriteUnsignedIfNot("ChangedItemTypeFilter"u8, ModChangedItemTypeFilter, ChangedItemFlagExtensions.DefaultFlags);
     }
 
     private void LoadModsTab(JObject j)
@@ -110,20 +88,10 @@ public sealed partial class FilterConfig : ConfigurationFile<FilenameService>
     [ConfigProperty]
     private string _collectionFilter = string.Empty;
 
-    private void WriteCollectionsTab(JsonTextWriter j)
+    private void WriteCollectionsTab(Utf8JsonWriter j)
     {
-        if (CollectionFilter.Length is 0)
-            return;
-
-        j.WritePropertyName("Collections");
-        j.WriteStartObject();
-        if (CollectionFilter.Length > 0)
-        {
-            j.WritePropertyName("CollectionFilter");
-            j.WriteValue(CollectionFilter);
-        }
-
-        j.WriteEndObject();
+        using var tmp = j.TemporaryObject("Collections"u8);
+        tmp.WriteNonEmptyString("CollectionFilter"u8, CollectionFilter);
     }
 
     private void LoadCollectionsTab(JObject j)
@@ -146,34 +114,12 @@ public sealed partial class FilterConfig : ConfigurationFile<FilenameService>
     [ConfigProperty(EventName = "ChangedItemTypeFilterChanged")]
     private ChangedItemIconFlag _changedItemTypeFilter = ChangedItemFlagExtensions.DefaultFlags;
 
-    private void WriteChangedItemsTab(JsonTextWriter j)
+    private void WriteChangedItemsTab(Utf8JsonWriter j)
     {
-        if (ChangedItemItemFilter.Length is 0
-         && ChangedItemModFilter.Length is 0
-         && ChangedItemTypeFilter is ChangedItemFlagExtensions.DefaultFlags)
-            return;
-
-        j.WritePropertyName("ChangedItems");
-        j.WriteStartObject();
-        if (ChangedItemItemFilter.Length > 0)
-        {
-            j.WritePropertyName("ItemFilter");
-            j.WriteValue(ChangedItemItemFilter);
-        }
-
-        if (ChangedItemModFilter.Length > 0)
-        {
-            j.WritePropertyName("ModFilter");
-            j.WriteValue(ChangedItemModFilter);
-        }
-
-        if (ChangedItemTypeFilter is not ChangedItemFlagExtensions.DefaultFlags)
-        {
-            j.WritePropertyName("TypeFilter");
-            j.WriteValue((uint)ChangedItemTypeFilter);
-        }
-
-        j.WriteEndObject();
+        using var tmp = j.TemporaryObject("ChangedItems"u8);
+        tmp.WriteNonEmptyString("ItemFilter"u8, ChangedItemItemFilter);
+        tmp.WriteNonEmptyString("ModFilter"u8,  ChangedItemModFilter);
+        tmp.WriteUnsignedIfNot("TypeFilter"u8, ChangedItemTypeFilter, ChangedItemFlagExtensions.DefaultFlags);
     }
 
     private void LoadChangedItemsTab(JObject j)
@@ -198,26 +144,11 @@ public sealed partial class FilterConfig : ConfigurationFile<FilenameService>
     [ConfigProperty]
     private string _effectiveChangesFilePathFilter = string.Empty;
 
-    private void WriteEffectiveChangesTab(JsonTextWriter j)
+    private void WriteEffectiveChangesTab(Utf8JsonWriter j)
     {
-        if (EffectiveChangesGamePathFilter.Length is 0 && EffectiveChangesFilePathFilter.Length is 0)
-            return;
-
-        j.WritePropertyName("EffectiveChanges");
-        j.WriteStartObject();
-        if (EffectiveChangesGamePathFilter.Length > 0)
-        {
-            j.WritePropertyName("GamePathFilter");
-            j.WriteValue(EffectiveChangesGamePathFilter);
-        }
-
-        if (EffectiveChangesFilePathFilter.Length > 0)
-        {
-            j.WritePropertyName("FilePathFilter");
-            j.WriteValue(EffectiveChangesFilePathFilter);
-        }
-
-        j.WriteEndObject();
+        using var tmp = j.TemporaryObject("EffectiveChanges"u8);
+        tmp.WriteNonEmptyString("GamePathFilter"u8, EffectiveChangesGamePathFilter);
+        tmp.WriteNonEmptyString("FilePathFilter"u8, EffectiveChangesFilePathFilter);
     }
 
     private void LoadEffectiveChangesTab(JObject j)
@@ -249,34 +180,12 @@ public sealed partial class FilterConfig : ConfigurationFile<FilenameService>
         _onScreenTypeFilter      = ChangedItemFlagExtensions.DefaultFlags;
     }
 
-    private void WriteOnScreenTab(JsonTextWriter j)
+    private void WriteOnScreenTab(Utf8JsonWriter j)
     {
-        if (OnScreenCharacterFilter.Length is 0
-         && OnScreenItemFilter.Length is 0
-         && OnScreenTypeFilter is ChangedItemFlagExtensions.DefaultFlags)
-            return;
-
-        j.WritePropertyName("OnScreen");
-        j.WriteStartObject();
-        if (OnScreenCharacterFilter.Length > 0)
-        {
-            j.WritePropertyName("CharacterFilter");
-            j.WriteValue(OnScreenCharacterFilter);
-        }
-
-        if (OnScreenItemFilter.Length > 0)
-        {
-            j.WritePropertyName("ItemFilter");
-            j.WriteValue(OnScreenItemFilter);
-        }
-
-        if (OnScreenTypeFilter is not ChangedItemFlagExtensions.DefaultFlags)
-        {
-            j.WritePropertyName("TypeFilter");
-            j.WriteValue((uint)OnScreenTypeFilter);
-        }
-
-        j.WriteEndObject();
+        using var tmp = j.TemporaryObject("OnScreen"u8);
+        tmp.WriteNonEmptyString("CharacterFilter"u8, OnScreenCharacterFilter);
+        tmp.WriteNonEmptyString("ItemFilter"u8,      OnScreenItemFilter);
+        tmp.WriteUnsignedIfNot("TypeFilter"u8, OnScreenTypeFilter, ChangedItemFlagExtensions.DefaultFlags);
     }
 
     private void LoadOnScreenTab(JObject j)
@@ -298,20 +207,10 @@ public sealed partial class FilterConfig : ConfigurationFile<FilenameService>
     [ConfigProperty]
     private string _resourceManagerFilter = string.Empty;
 
-    private void WriteResourceManagerTab(JsonTextWriter j)
+    private void WriteResourceManagerTab(Utf8JsonWriter j)
     {
-        if (ResourceManagerFilter.Length is 0)
-            return;
-
-        j.WritePropertyName("ResourceManager");
-        j.WriteStartObject();
-        if (ResourceManagerFilter.Length > 0)
-        {
-            j.WritePropertyName("PathFilter");
-            j.WriteValue(ResourceManagerFilter);
-        }
-
-        j.WriteEndObject();
+        using var tmp = j.TemporaryObject("ResourceManager"u8);
+        tmp.WriteNonEmptyString("PathFilter"u8, ResourceManagerFilter);
     }
 
     private void LoadResourceManagerTab(JObject j)
@@ -381,56 +280,30 @@ public sealed partial class FilterConfig : ConfigurationFile<FilenameService>
     [ConfigProperty]
     private LoadStateFlag _resourceLoggerLoadStateFilter = LoadStateExtensions.All;
 
-    private void WriteResourceWatcherTab(JsonTextWriter j)
+    private void WriteResourceWatcherTab(Utf8JsonWriter j)
     {
-        var jObj = new JObject();
-
-        if (ResourceLoggerEnabled)
-            jObj["Enabled"] = true;
-        if (ResourceLoggerWriteToLog)
-            jObj["WriteToLog"] = true;
-        if (ResourceLoggerMaxEntries is not 500)
-            jObj["MaxEntries"] = ResourceLoggerMaxEntries;
-        if (!ResourceLoggerStoreOnlyMatching)
-            jObj["StoreOnlyMatching"] = false;
-        if (ResourceLoggerLogFilter.Length > 0)
-            jObj["LogFilter"] = ResourceLoggerLogFilter;
-        if (ResourceLoggerPathFilter.Length > 0)
-            jObj["PathFilter"] = ResourceLoggerPathFilter;
-        if (ResourceLoggerCollectionFilter.Length > 0)
-            jObj["CollectionFilter"] = ResourceLoggerCollectionFilter;
-        if (ResourceLoggerObjectFilter.Length > 0)
-            jObj["ObjectFilter"] = ResourceLoggerObjectFilter;
-        if (ResourceLoggerOriginalPathFilter.Length > 0)
-            jObj["OriginalPathFilter"] = ResourceLoggerOriginalPathFilter;
-        if (ResourceLoggerResourceFilter.Length > 0)
-            jObj["ResourceFilter"] = ResourceLoggerResourceFilter;
-        if (ResourceLoggerCrcFilter.Length > 0)
-            jObj["CrcFilter"] = ResourceLoggerCrcFilter;
-        if (ResourceLoggerRefFilter.Length > 0)
-            jObj["RefFilter"] = ResourceLoggerRefFilter;
-        if (ResourceLoggerThreadFilter.Length > 0)
-            jObj["ThreadFilter"] = ResourceLoggerThreadFilter;
-
-        if (ResourceLoggerRecordFilter is not RecordTypeExtensions.All)
-            jObj["RecordFilter"] = (uint)ResourceLoggerRecordFilter;
-        if (ResourceLoggerCustomFilter is not BoolEnumExtensions.All)
-            jObj["CustomFilter"] = (uint)ResourceLoggerCustomFilter;
-        if (ResourceLoggerSyncFilter is not BoolEnumExtensions.All)
-            jObj["SyncFilter"] = (uint)ResourceLoggerSyncFilter;
-        if (ResourceLoggerCategoryFilter != ResourceExtensions.AllResourceCategories)
-            jObj["CategoryFilter"] = (uint)ResourceLoggerCategoryFilter;
-        if (ResourceLoggerTypeFilter != ResourceExtensions.AllResourceTypes)
-            jObj["TypeFilter"] = (uint)ResourceLoggerTypeFilter;
-        if (ResourceLoggerLoadStateFilter is not LoadStateExtensions.All)
-            jObj["LoadStateFilter"] = (uint)ResourceLoggerLoadStateFilter;
-
-        if (jObj.Count is not 0)
-        {
-            j.WritePropertyName("ResourceWatcher");
-            jObj.WriteTo(j);
-        }
+        using var tmp = j.TemporaryObject("ResourceWatcher"u8);
+        tmp.WriteBoolIf("Enabled"u8,    ResourceLoggerEnabled,    false);
+        tmp.WriteBoolIf("WriteToLog"u8, ResourceLoggerWriteToLog, false);
+        tmp.WriteSignedIfNot("MaxEntries"u8, ResourceLoggerMaxEntries, 500);
+        tmp.WriteBoolIf("StoreOnlyMatching"u8, ResourceLoggerStoreOnlyMatching, true);
+        tmp.WriteNonEmptyString("LogFilter"u8,          ResourceLoggerLogFilter);
+        tmp.WriteNonEmptyString("PathFilter"u8,         ResourceLoggerPathFilter);
+        tmp.WriteNonEmptyString("CollectionFilter"u8,   ResourceLoggerCollectionFilter);
+        tmp.WriteNonEmptyString("ObjectFilter"u8,       ResourceLoggerObjectFilter);
+        tmp.WriteNonEmptyString("OriginalPathFilter"u8, ResourceLoggerOriginalPathFilter);
+        tmp.WriteNonEmptyString("ResourceFilter"u8,     ResourceLoggerResourceFilter);
+        tmp.WriteNonEmptyString("CrcFilter"u8,          ResourceLoggerCrcFilter);
+        tmp.WriteNonEmptyString("RefFilter"u8,          ResourceLoggerRefFilter);
+        tmp.WriteNonEmptyString("ThreadFilter"u8,       ResourceLoggerThreadFilter);
+        tmp.WriteUnsignedIfNot("RecordFilter"u8,    ResourceLoggerRecordFilter,    RecordTypeExtensions.All);
+        tmp.WriteUnsignedIfNot("CustomFilter"u8,    ResourceLoggerCustomFilter,    BoolEnumExtensions.All);
+        tmp.WriteUnsignedIfNot("SyncFilter"u8,      ResourceLoggerSyncFilter,      BoolEnumExtensions.All);
+        tmp.WriteUnsignedIfNot("CategoryFilter"u8,  ResourceLoggerCategoryFilter,  ResourceExtensions.AllResourceCategories);
+        tmp.WriteUnsignedIfNot("TypeFilter"u8,      ResourceLoggerTypeFilter,      ResourceExtensions.AllResourceTypes);
+        tmp.WriteUnsignedIfNot("LoadStateFilter"u8, ResourceLoggerLoadStateFilter, LoadStateExtensions.All);
     }
+
 
     private void LoadResourceWatcherTab(JObject j)
     {

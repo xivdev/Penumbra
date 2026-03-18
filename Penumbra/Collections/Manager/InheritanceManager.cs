@@ -102,7 +102,7 @@ public class InheritanceManager : IDisposable, IService
     /// <inheritdoc cref="AddInheritance(ModCollection, ModCollection)"/>
     private bool AddInheritance(ModCollection inheritor, ModCollection parent, bool invokeEvent)
     {
-        if (CheckValidInheritance(inheritor, parent) != ValidInheritance.Valid)
+        if (CheckValidInheritance(inheritor, parent) is not ValidInheritance.Valid)
             return false;
 
         inheritor.Inheritance.AddInheritance(inheritor, parent);

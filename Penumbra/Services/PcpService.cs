@@ -297,8 +297,7 @@ public class PcpService : IApiService, IDisposable
         var filePath  = _files.FileNames.OptionGroupFile(modDirectory.FullName, -1, string.Empty, _config.ReplaceNonAsciiOnImport);
         cancel.ThrowIfCancellationRequested();
         await using var fileStream = File.Open(filePath, File.Exists(filePath) ? FileMode.Truncate : FileMode.CreateNew);
-        await using var writer     = new StreamWriter(fileStream);
-        saveGroup.Save(writer);
+        saveGroup.Save(fileStream);
     }
 
     private (ICharacter Actor, ActorIdentifier Identifier) CheckActor(ObjectIndex objectIndex)

@@ -5,7 +5,7 @@ namespace Penumbra.UI.ManagementTab;
 
 public class RedirectionCacheObject<T> where T : BaseScannedRedirection
 {
-    private static readonly StringPair None = new("<None>", new StringU8("<None>"));
+    private static readonly StringPair  None = new("<None>", new StringU8("<None>"));
 
     public readonly T          ScannedObject;
     public readonly StringPair GamePath;
@@ -13,7 +13,7 @@ public class RedirectionCacheObject<T> where T : BaseScannedRedirection
     public readonly StringPair Mod;
     public readonly StringPair Container;
 
-    public RedirectionCacheObject(T redirection)
+    protected RedirectionCacheObject(T redirection)
     {
         ScannedObject = redirection;
         GamePath      = new StringPair(redirection.GamePath.Path.Span);

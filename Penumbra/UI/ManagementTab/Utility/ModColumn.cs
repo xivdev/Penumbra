@@ -19,12 +19,17 @@ public abstract class ModColumn<TCacheObject> : TextColumn<TCacheObject>
     public override void DrawColumn(in TCacheObject item, int globalIndex)
     {
         var mod = GetMod(item, globalIndex);
-        if (Im.Selectable(GetModName(item, globalIndex).Utf8) && mod is not null)
-            _navigator.MoveTo(mod);
+        using (ImGuiColor.Text.Push(Im.Style[ImGuiColor.TextDisabled], MatchesLastItem(item)))
+        {
+            if (Im.Selectable(GetModName(item, globalIndex).Utf8) && mod is not null)
+                _navigator.MoveTo(mod);
+        }
 
         if (mod is not null)
             Im.Tooltip.OnHover("Click to move to mod."u8);
     }
+
+    protected abstract bool MatchesLastItem(in TCacheObject item);
 
     protected ModColumn(UiNavigator navigator)
     {

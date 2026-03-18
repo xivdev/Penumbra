@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Luna;
 using Penumbra.Api.Enums;
 using Penumbra.Mods.Editor;
@@ -130,12 +131,30 @@ public class ModSettings
     // A simple struct conversion to easily save settings by name instead of value.
     public struct SavedSettings
     {
-        public Dictionary<string, Setting> Settings;
-        public ModPriority                 Priority;
-        public bool                        Enabled;
+        public Dictionary<string, Setting>? Settings;
+        public ModPriority                  Priority;
+        public bool                         Enabled;
+
+        public void Write(Utf8JsonWriter writer)
+        {
+            writer.WriteStartObject();
+            if (Settings?.Count > 0)
+            {
+                writer.WritePropertyName("Settings"u8);
+                writer.WriteStartObject();
+                foreach (var (group, setting) in Settings)
+                    writer.WriteNumber(group, setting.Value);
+                writer.WriteEndObject();
+            }
+
+            writer.WriteNumber("Priority"u8, Priority.Value);
+            writer.WriteBoolean("Enabled"u8, Enabled);
+
+            writer.WriteEndObject();
+        }
 
         public SavedSettings DeepCopy()
-            => this with { Settings = Settings.ToDictionary(kvp => kvp.Key, kvp => kvp.Value) };
+            => this with { Settings = Settings?.ToDictionary(kvp => kvp.Key, kvp => kvp.Value)};
 
         public SavedSettings(ModSettings settings, Mod mod)
         {
@@ -152,10 +171,10 @@ public class ModSettings
         public readonly bool ToSettings(Mod mod, out ModSettings settings)
         {
             var list    = new SettingList(mod.Groups.Count);
-            var changes = Settings.Count != mod.Groups.Count;
+            var changes = (Settings?.Count ?? 0) != mod.Groups.Count;
             foreach (var group in mod.Groups)
             {
-                if (Settings.TryGetValue(group.Name, out var config))
+                if (Settings?.TryGetValue(group.Name, out var config) is true)
                 {
                     var actualConfig = group.FixSetting(config);
                     list.Add(actualConfig);
