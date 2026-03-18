@@ -40,8 +40,9 @@ runs:
          $verText = ('${{ inputs.version }}' -replace 'testing_')
          $ver = [version] $verText
          $path = './repo.json'
+         $testing = [System.Convert]::ToBoolean("${{ inputs.testing }}")
          $json = Get-Content -Raw $path | ConvertFrom-Json
-         if ( '${{ inputs.testing }}' -eq 'true' )
+         if ( $testing )
          {
            $json[0].TestingAssemblyVersion = $verText
            $json[0].DownloadLinkTesting = $json[0].DownloadLinkTesting -replace '[^/]+/${{ inputs.project }}.zip',"${{ inputs.version }}/${{ inputs.project }}.zip"
