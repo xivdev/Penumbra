@@ -38,24 +38,25 @@ runs:
       shell: pwsh
       run: |
          $verText = ('${{ inputs.version }}' -replace 'testing_')
-         $ver = [version]${{ verText}}
+         $ver = [version] $verText
          $path = './repo.json'
+         $testing = [System.Convert]::ToBoolean("${{ inputs.testing }}")
          $json = Get-Content -Raw $path | ConvertFrom-Json
-         if ( ${{ inputs.testing }} )
+         if ( $testing )
          {
            $json[0].TestingAssemblyVersion = $verText
-           $json[0].DownloadLinkTesting = $json.DownloadLinkTesting -replace '[^/]+/${{ inputs.project }}.zip',"${{ inputs.version }}/${{ inputs.project }}.zip"
+           $json[0].DownloadLinkTesting = $json[0].DownloadLinkTesting -replace '[^/]+/${{ inputs.project }}.zip',"${{ inputs.version }}/${{ inputs.project }}.zip"
          }
          else 
          {
            $json[0].AssemblyVersion = $verText
            $testVer = [version] $json[0].TestingAssemblyVersion
-           $json[0].DownloadLinkInstall = $json.DownloadLinkInstall -replace '[^/]+/${{ inputs.project }}.zip',"${{ inputs.version }}/${{ inputs.project }}.zip"
-           $json[0].DownloadLinkUpdate = $json.DownloadLinkUpdate -replace '[^/]+/${{ inputs.project }}.zip',"${{ inputs.version }}/${{ inputs.project }}.zip"
+           $json[0].DownloadLinkInstall = $json[0].DownloadLinkInstall -replace '[^/]+/${{ inputs.project }}.zip',"${{ inputs.version }}/${{ inputs.project }}.zip"
+           $json[0].DownloadLinkUpdate = $json[0].DownloadLinkUpdate -replace '[^/]+/${{ inputs.project }}.zip',"${{ inputs.version }}/${{ inputs.project }}.zip"
            if ( $ver -gt $testVer )
            {
              $json[0].TestingAssemblyVersion = $verText
-             $json[0].DownloadLinkTesting = $json.DownloadLinkTesting -replace '[^/]+/${{ inputs.project }}.zip',"${{ inputs.version }}/${{ inputs.project }}.zip"
+             $json[0].DownloadLinkTesting = $json[0].DownloadLinkTesting -replace '[^/]+/${{ inputs.project }}.zip',"${{ inputs.version }}/${{ inputs.project }}.zip"
            }
          }
          $content = $json | ConvertTo-Json -AsArray
