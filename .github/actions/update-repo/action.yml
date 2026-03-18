@@ -27,12 +27,12 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Checkout Master branch
+    - name: Checkout Repo branch
       env:
         GITHUB_TOKEN: ${{ inputs.token }}
       uses: actions/checkout@v6
       with:
-        ref: master
+        ref: ${{ branch }}
 
     - name: Write out new repo.json
       shell: pwsh
