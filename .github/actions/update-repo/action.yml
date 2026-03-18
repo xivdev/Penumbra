@@ -32,7 +32,7 @@ runs:
         GITHUB_TOKEN: ${{ inputs.token }}
       uses: actions/checkout@v6
       with:
-        ref: ${{ branch }}
+        ref: ${{ inputs.branch }}
 
     - name: Write out new repo.json
       shell: pwsh
