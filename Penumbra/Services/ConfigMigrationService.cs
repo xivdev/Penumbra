@@ -75,7 +75,20 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
         Version8To9();
         Version9To10();
         Version10To11();
+        Version11To12();
         AddColors(config, true);
+    }
+
+    private void Version11To12()
+    {
+        if (_config.Version > 11)
+            return;
+
+        backupService.CreateMigrationBackup("pre_initial_json_update");
+        _config.Version           = 12;
+        _config.Ephemeral.Version = 12;
+        _config.Save();
+        _config.Ephemeral.Save();
     }
 
     private void Version10To11()
