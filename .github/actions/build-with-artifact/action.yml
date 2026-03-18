@@ -34,7 +34,7 @@ runs:
       shell: pwsh
       run: |
         $version = "${{ inputs.version }}" -replace 'testing_'
-        if ([string]::IsNullOrWhiteSpace($version)) {
+        if (![string]::IsNullOrWhiteSpace($version)) {
           $path = "./${{ inputs.project }}/bin/${{ inputs.configuration }}/${{ inputs.project }}.json"
           $json = Get-Content -Raw $path | ConvertFrom-Json
           $json.AssemblyVersion = $version
