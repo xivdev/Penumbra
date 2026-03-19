@@ -6,114 +6,133 @@ using Penumbra.Services;
 
 namespace Penumbra.Mods.Manager;
 
-public sealed class LocalModDatabase(FilenameService filenames) : IDisposable, IReadOnlyCollection<string>, IService
+public sealed class LocalModDatabase(FilenameService filenames) : IDisposable, IService
 {
-    private LiteDatabase?          _database;
-    private ILiteCollection<Data>? _collection;
-
-    public void Open()
-        => Check();
+    private readonly Lock                   _lock = new();
+    private          LiteDatabase?          _database;
+    private          ILiteCollection<Data>? _collection;
 
     [MemberNotNull(nameof(_collection))]
-    private ILiteCollection<Data> Check()
+    private ILiteCollection<Data> Check([CallerMemberName] string callerName = "")
     {
-        if (_collection is { } collection)
-            return collection;
+        lock (_lock)
+        {
+            if (_collection is { } collection)
+                return collection;
 
-        _database   = new LiteDatabase(filenames.LocalModDatabase);
-        _collection = _database.GetCollection<Data>("LocalModData");
-        _collection.EnsureIndex(x => x.Id, true);
-        return _collection;
+            Log(callerName);
+            _database = new LiteDatabase($"Filename={filenames.LocalModDatabase};Connection=Shared;Timeout=00:00:02");
+            _database.Mapper.EmptyStringToNull = false;
+            _database.Mapper.IncludeFields = true;
+            _database.Mapper.SerializeNullValues = false;
+            _collection = _database.GetCollection<Data>("LocalModData");
+            _collection.EnsureIndex(x => x.Id, true);
+            return _collection;
+        }
     }
 
     public void Close()
     {
-        _database?.Dispose();
-        _database   = null;
-        _collection = null;
+        lock (_lock)
+        {
+            _database?.Dispose();
+            _database   = null;
+            _collection = null;
+        }
     }
+
+    [Conditional("DEBUG")]
+    private static void Log([CallerMemberName] string callerName = "")
+        => Penumbra.Log.Information($"[{Environment.CurrentManagedThreadId}] {callerName}");
 
     public void Migrate()
     {
         if (!Directory.Exists(filenames.OldLocalDataDirectory))
             return;
 
-        Check();
-        foreach (var file in Directory.GetFiles(filenames.OldLocalDataDirectory, "*.json"))
+        using (Transaction())
         {
-            var id = Path.GetFileNameWithoutExtension(file);
-            try
+            foreach (var file in Directory.GetFiles(filenames.OldLocalDataDirectory, "*.json"))
             {
-                var data   = JsonFunctions.ReadUtf8Bytes(file);
-                var reader = new Utf8JsonReader(data, JsonFunctions.ReaderOptions);
-
-                var modData = new Data(id);
-
-                while (reader.Read())
+                var id = Path.GetFileNameWithoutExtension(file);
+                try
                 {
-                    if (reader.TokenType is not JsonTokenType.PropertyName)
-                        continue;
+                    var data   = JsonFunctions.ReadUtf8Bytes(file);
+                    var reader = new Utf8JsonReader(data, JsonFunctions.ReaderOptions);
 
-                    if (reader.ValueTextEquals("ImportDate"u8))
-                    {
-                        reader.Read();
+                    var modData = new Data(id);
 
-                        modData.ImportDate = reader.GetInt64();
-                    }
-                    else if (reader.ValueTextEquals("LastConfigEdit"u8))
+                    while (reader.Read())
                     {
-                        reader.Read();
-                        modData.LastConfigEdit = reader.GetInt64();
-                    }
-                    else if (reader.ValueTextEquals("Favorite"u8))
-                    {
-                        reader.Read();
-                        modData.Favorite = reader.GetBoolean();
-                    }
-                    else if (reader.ValueTextEquals("Note"u8))
-                    {
-                        reader.Read();
-                        modData.Note = reader.GetString() ?? string.Empty;
-                    }
-                    else if (reader.ValueTextEquals("LocalTags"u8))
-                    {
-                        reader.Read();
-                        if (reader.TokenType is not JsonTokenType.StartArray)
+                        if (reader.TokenType is not JsonTokenType.PropertyName)
                             continue;
 
-                        while (reader.Read() && reader.TokenType is not JsonTokenType.EndArray && reader.GetString() is { Length: > 0 } tag)
-                            modData.LocalTags.Add(tag);
-                    }
-                    else if (reader.ValueTextEquals("PreferredItems"u8))
-                    {
-                        reader.Read();
-                        if (reader.TokenType is not JsonTokenType.StartArray)
-                            continue;
+                        if (reader.ValueTextEquals("ImportDate"u8))
+                        {
+                            reader.Read();
 
-                        while (reader.Read() && reader.TokenType is not JsonTokenType.EndArray)
-                            modData.PreferredChangedItems.Add(reader.GetUInt64());
+                            modData.ImportDate = reader.GetInt64();
+                        }
+                        else if (reader.ValueTextEquals("LastConfigEdit"u8))
+                        {
+                            reader.Read();
+                            modData.LastConfigEdit = reader.GetInt64();
+                        }
+                        else if (reader.ValueTextEquals("Favorite"u8))
+                        {
+                            reader.Read();
+                            modData.Favorite = reader.GetBoolean();
+                        }
+                        else if (reader.ValueTextEquals("Note"u8))
+                        {
+                            reader.Read();
+                            modData.Note = reader.GetString() ?? string.Empty;
+                        }
+                        else if (reader.ValueTextEquals("LocalTags"u8))
+                        {
+                            reader.Read();
+                            if (reader.TokenType is not JsonTokenType.StartArray)
+                                continue;
+
+                            while (reader.Read() && reader.TokenType is not JsonTokenType.EndArray && reader.GetString() is { Length: > 0 } tag)
+                                modData.LocalTags.Add(tag);
+                        }
+                        else if (reader.ValueTextEquals("PreferredItems"u8))
+                        {
+                            reader.Read();
+                            if (reader.TokenType is not JsonTokenType.StartArray)
+                                continue;
+
+                            while (reader.Read() && reader.TokenType is not JsonTokenType.EndArray)
+                                modData.PreferredChangedItems.Add(reader.GetUInt64());
+                        }
+                        else if (reader.ValueTextEquals("FileSystemFolder"u8))
+                        {
+                            reader.Read();
+                            modData.Folder = reader.GetString() ?? string.Empty;
+                        }
+                        else if (reader.ValueTextEquals("SortOrderName"u8))
+                        {
+                            reader.Read();
+                            modData.SortOrderName = reader.GetString()?.FixName();
+                        }
                     }
-                    else if (reader.ValueTextEquals("FileSystemFolder"u8))
+
+                    if (modData.LastConfigEdit < modData.ImportDate)
+                        modData.LastConfigEdit = modData.ImportDate;
+
+                    lock (_lock)
                     {
-                        reader.Read();
-                        modData.Folder = reader.GetString() ?? string.Empty;
+                        _collection!.Upsert(modData);
                     }
-                    else if (reader.ValueTextEquals("SortOrderName"u8))
-                    {
-                        reader.Read();
-                        modData.SortOrderName = reader.GetString()?.FixName();
-                    }
+
+                    Penumbra.Log.Debug($"Migrated local mod data for {id} to database.");
+                    Log();
                 }
-
-                if (modData.LastConfigEdit < modData.ImportDate)
-                    modData.LastConfigEdit = modData.ImportDate;
-
-                _collection!.Upsert(modData);
-                Penumbra.Log.Debug($"Migrated local mod data for {id} to database.");
-            }
-            catch (Exception ex)
-            {
-                Penumbra.Log.Error($"Could not load local mod data for {id}:\n{ex}");
+                catch (Exception ex)
+                {
+                    Penumbra.Log.Error($"Could not load local mod data for {id}:\n{ex}");
+                }
             }
         }
 
@@ -228,89 +247,127 @@ public sealed class LocalModDatabase(FilenameService filenames) : IDisposable, I
         }
     }
 
-    public void Delete(string id)
-        => Check().Delete(id);
+    public bool Delete(string id)
+    {
+        lock (_lock)
+        {
+            return Check().Delete(id);
+        }
+    }
+
+    public TransactionDisposable Transaction()
+    {
+        lock (_lock)
+        {
+            Check();
+            return new TransactionDisposable(this);
+        }
+    }
 
     public void Upsert(Mod mod)
     {
-        var data = Check().FindById(mod.Identifier)?.Update(mod) ?? new Data(mod);
-        _collection.Upsert(data);
+        lock (_lock)
+        {
+            var data = Check().FindById(mod.Identifier)?.Update(mod) ?? new Data(mod);
+            _collection.Upsert(data);
+        }
     }
 
     public void Move(string oldId, string newId)
     {
-        if (Check().FindById(oldId) is not { } data)
-            return;
+        lock (_lock)
+        {
+            if (Check().FindById(oldId) is not { } data)
+                return;
 
-        _collection.Delete(oldId);
-        _collection.Upsert(new Data(data, newId));
+            _collection.Delete(oldId);
+            _collection.Upsert(new Data(data, newId));
+        }
     }
-
-    public void DeleteMany(IReadOnlySet<string> ids)
-        => Check().DeleteMany(e => ids.Contains(e.Id));
 
     public void UpsertImportDate(Mod mod)
     {
-        if (GetOrCreateData(mod, out var data))
-            return;
+        lock (_lock)
+        {
+            if (GetOrCreateData(mod, out var data))
+                return;
 
-        data.ImportDate = mod.ImportDate;
-        _collection.Upsert(data);
+            data.ImportDate = mod.ImportDate;
+            _collection.Upsert(data);
+        }
     }
 
     public void UpsertLastConfigEdit(Mod mod)
     {
-        if (GetOrCreateData(mod, out var data))
-            return;
+        lock (_lock)
+        {
+            if (GetOrCreateData(mod, out var data))
+                return;
 
-        data.LastConfigEdit = mod.LastConfigEdit;
-        _collection.Upsert(data);
+            data.LastConfigEdit = mod.LastConfigEdit;
+            _collection.Upsert(data);
+        }
     }
 
     public void UpsertFavorite(Mod mod)
     {
-        if (GetOrCreateData(mod, out var data))
-            return;
+        lock (_lock)
+        {
+            if (GetOrCreateData(mod, out var data))
+                return;
 
-        data.Favorite = mod.Favorite;
-        _collection.Upsert(data);
+            data.Favorite = mod.Favorite;
+            _collection.Upsert(data);
+        }
     }
 
     public void UpsertNote(Mod mod)
     {
-        if (GetOrCreateData(mod, out var data))
-            return;
+        lock (_lock)
+        {
+            if (GetOrCreateData(mod, out var data))
+                return;
 
-        data.Note = mod.Note;
-        _collection.Upsert(data);
+            data.Note = mod.Note;
+            _collection.Upsert(data);
+        }
     }
 
     public void UpsertPath(Mod mod)
     {
-        if (GetOrCreateData(mod, out var data))
-            return;
+        lock (_lock)
+        {
+            if (GetOrCreateData(mod, out var data))
+                return;
 
-        data.Folder        = mod.Path.Folder;
-        data.SortOrderName = mod.Path.SortName;
-        _collection.Upsert(data);
+            data.Folder        = mod.Path.Folder;
+            data.SortOrderName = mod.Path.SortName;
+            _collection.Upsert(data);
+        }
     }
 
     public void UpsertChangedItems(Mod mod)
     {
-        if (GetOrCreateData(mod, out var data))
-            return;
+        lock (_lock)
+        {
+            if (GetOrCreateData(mod, out var data))
+                return;
 
-        data.PreferredChangedItems = mod.PreferredChangedItems.Select(i => i.Id).ToHashSet();
-        _collection.Upsert(data);
+            data.PreferredChangedItems = mod.PreferredChangedItems.Select(i => i.Id).ToHashSet();
+            _collection.Upsert(data);
+        }
     }
 
     public void UpsertTags(Mod mod)
     {
-        if (GetOrCreateData(mod, out var data))
-            return;
+        lock (_lock)
+        {
+            if (GetOrCreateData(mod, out var data))
+                return;
 
-        data.LocalTags = mod.LocalTags.ToHashSet();
-        _collection.Upsert(data);
+            data.LocalTags = mod.LocalTags.ToHashSet();
+            _collection.Upsert(data);
+        }
     }
 
     [MemberNotNull(nameof(_collection))]
@@ -328,28 +385,62 @@ public sealed class LocalModDatabase(FilenameService filenames) : IDisposable, I
 
     public ModDataChangeType AddData(Mod mod)
     {
-        if (Check().FindById(mod.Identifier) is { } data)
-            return data.ApplyToMod(mod);
+        lock (_lock)
+        {
+            if (Check().FindById(mod.Identifier) is { } data)
+                return data.ApplyToMod(mod);
 
-        _collection.Upsert(new Data(mod));
-        return ModDataChangeType.None;
+            _collection.Upsert(new Data(mod));
+            Penumbra.Log.Debug($"Added new local mod data for {mod.Identifier}.");
+            return ModDataChangeType.None;
+        }
     }
 
     public void AddData(ModStorage mods)
     {
-        foreach (var mod in mods)
-            AddData(mod);
+        lock (_lock)
+        {
+            foreach (var mod in mods)
+                AddData(mod);
+        }
     }
 
     public void Dispose()
         => Close();
 
-    public IEnumerator<string> GetEnumerator()
-        => Check().FindAll().Select(c => c.Id).GetEnumerator();
-
-    IEnumerator IEnumerable.GetEnumerator()
-        => GetEnumerator();
+    public HashSet<string> GetIds()
+    {
+        lock (_lock)
+        {
+            return Check().FindAll().Select(c => c.Id).ToHashSet();
+        }
+    }
 
     public int Count
-        => Check().Count();
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return Check().Count();
+            }
+        }
+    }
+
+    public ref struct TransactionDisposable(LocalModDatabase db)
+    {
+        private bool _enabled = db._database!.BeginTrans();
+
+        public void Dispose()
+        {
+            if (!_enabled)
+                return;
+
+            lock (db._lock)
+            {
+                Log();
+                _enabled = !db._database!.Commit();
+            }
+        }
+    }
 }

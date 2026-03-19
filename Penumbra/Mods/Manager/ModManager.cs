@@ -29,7 +29,7 @@ public enum ModPathChangeType
     StartingReload,
 }
 
-public sealed class ModManager : ModStorage, IDisposable, Luna.IService
+public sealed class ModManager : ModStorage, IDisposable, IService
 {
     private readonly Configuration       _config;
     private readonly CommunicatorService _communicator;
@@ -224,7 +224,7 @@ public sealed class ModManager : ModStorage, IDisposable, Luna.IService
     public NewDirectoryState NewDirectoryValid(string oldName, string newName, out DirectoryInfo? directory)
     {
         directory = null;
-        if (newName.Length == 0)
+        if (newName.Length is 0)
             return NewDirectoryState.Empty;
 
         if (oldName == newName)
@@ -277,7 +277,7 @@ public sealed class ModManager : ModStorage, IDisposable, Luna.IService
         if (!firstTime && string.Equals(newPath, _config.ModDirectory, StringComparison.Ordinal))
             return;
 
-        if (newPath.Length == 0)
+        if (newPath.Length is 0)
         {
             Valid    = false;
             BasePath = new DirectoryInfo(".");
@@ -328,15 +328,14 @@ public sealed class ModManager : ModStorage, IDisposable, Luna.IService
         {
             var options = new ParallelOptions()
             {
-                MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount / 2),
+                MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount),
             };
             var queue = new ConcurrentQueue<Mod>();
             Parallel.ForEach(BasePath.EnumerateDirectories(), options, dir =>
             {
                 try
                 {
-                    var mod = Creator.LoadMod(dir, false, false);
-                    if (mod != null)
+                    if (Creator.LoadMod(dir, false, false) is {} mod)
                         queue.Enqueue(mod);
                 }
                 catch (Exception ex)

@@ -27,26 +27,38 @@ public class CleanupService(SaveService saveService, ModManager mods, Collection
         _cancel  = new CancellationTokenSource();
         _task = Task.Run(() =>
         {
-            var set     = new HashSet<string>();
-            var entries = modDatabase.ToList();
-            var step    = 0.9 / entries.Count;
+            var       count   = 0;
+            var       entries = modDatabase.GetIds();
+            var       step    = 0.9 / entries.Count;
             Progress = 0.1;
-            foreach (var entry in entries)
+            using (modDatabase.Transaction())
             {
-                if (_cancel.IsCancellationRequested)
-                    break;
-
-                if (!usedFiles.Contains(entry))
+                foreach (var entry in entries)
                 {
-                    Penumbra.Log.Debug($"[CleanupService] Deleted unused local data entry {entry}.");
-                    set.Add(entry);
-                }
+                    if (_cancel.IsCancellationRequested)
+                        break;
 
-                Progress += step;
+                    if (!usedFiles.Contains(entry))
+                    {
+                        if (modDatabase.Delete(entry))
+                        {
+                            Penumbra.Log.Debug($"[CleanupService] Deleted unused local data entry {entry}.");
+                            ++count;
+                        }
+                        else
+                        {
+                            Penumbra.Log.Debug($"[CleanupService] Failed to delete unused local data entry {entry}.");
+                        }
+                    }
+
+                    Progress += step;
+                }
             }
 
-            modDatabase.DeleteMany(set);
-            Penumbra.Log.Information($"[CleanupService] Deleted {set.Count} unused local data entries.");
+            if (_cancel.IsCancellationRequested)
+                return;
+
+            Penumbra.Log.Information($"[CleanupService] Deleted {count} unused local data entries.");
             Progress = 1;
         });
     }

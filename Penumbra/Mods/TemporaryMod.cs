@@ -45,7 +45,7 @@ public class TemporaryMod : IMod
     }
 
     public IReadOnlyList<IModGroup> Groups
-        => Array.Empty<IModGroup>();
+        => [];
 
     public TemporaryMod()
         => Default = new DefaultSubMod(this);
