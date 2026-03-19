@@ -3,7 +3,12 @@ using Penumbra.Services;
 
 namespace Penumbra.Mods.Manager;
 
-public sealed class ModFileSystemSaver(Logger log, BaseFileSystem fileSystem, SaveService saveService, ModStorage mods)
+public sealed class ModFileSystemSaver(
+    Logger log,
+    BaseFileSystem fileSystem,
+    SaveService saveService,
+    ModStorage mods,
+    LocalModDatabase localModDatabase)
     : FileSystemSaver<SaveService, FilenameService>(log, fileSystem, saveService)
 {
     protected override string LockedFile(FilenameService provider)
@@ -52,6 +57,6 @@ public sealed class ModFileSystemSaver(Logger log, BaseFileSystem fileSystem, Sa
     protected override void SaveDataValue(IFileSystemValue value)
     {
         if (value is Mod mod)
-            SaveService.QueueSave(new ModLocalData(mod));
+            localModDatabase.UpsertPath(mod);
     }
 }

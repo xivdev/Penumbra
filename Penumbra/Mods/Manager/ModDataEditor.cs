@@ -28,10 +28,11 @@ public enum ModDataChangeType : uint
     RequiredFeatures      = 0x008000,
     FileSystemFolder      = 0x010000,
     FileSystemSortOrder   = 0x020000,
-    LastConfigEdit              = 0x040000,
+    LastConfigEdit        = 0x040000,
 }
 
-public class ModDataEditor(SaveService saveService, CommunicatorService communicatorService, ItemData itemData) : Luna.IService
+public class ModDataEditor(SaveService saveService, CommunicatorService communicatorService, ItemData itemData, LocalModDatabase database)
+    : Luna.IService
 {
     public SaveService SaveService
         => saveService;
@@ -123,7 +124,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
             return;
 
         mod.Favorite = state;
-        saveService.QueueSave(new ModLocalData(mod));
+        database.UpsertFavorite(mod);
         communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.Favorite, mod, null));
     }
 
@@ -134,7 +135,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
             return;
 
         mod.ImportDate = newDate;
-        saveService.QueueSave(new ModLocalData(mod));
+        database.UpsertImportDate(mod);
         communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.ImportDate, mod, null));
     }
 
@@ -144,7 +145,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
             return;
 
         mod.Note = newNote;
-        saveService.QueueSave(new ModLocalData(mod));
+        database.UpsertNote(mod);
         communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.Favorite, mod, null));
     }
 
@@ -157,20 +158,20 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
         ModDataChangeType flags;
         if (tagIdx == which.Count)
         {
-            flags = ModLocalData.UpdateTags(mod, local ? null : which.Append(newTag), local ? which.Append(newTag) : null);
+            flags = UpdateTags(mod, local ? null : which.Append(newTag), local ? which.Append(newTag) : null);
         }
         else
         {
             var tmp = which.ToArray();
             tmp[tagIdx] = newTag;
-            flags       = ModLocalData.UpdateTags(mod, local ? null : tmp, local ? tmp : null);
+            flags       = UpdateTags(mod, local ? null : tmp, local ? tmp : null);
         }
 
         if (flags.HasFlag(ModDataChangeType.ModTags))
             saveService.QueueSave(new ModMeta(mod));
 
         if (flags.HasFlag(ModDataChangeType.LocalTags))
-            saveService.QueueSave(new ModLocalData(mod));
+            database.UpsertTags(mod);
 
         if (flags != 0)
             communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(flags, mod, null));
@@ -178,18 +179,13 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
 
     public void MoveDataFile(DirectoryInfo oldMod, DirectoryInfo newMod)
     {
-        var oldFile = saveService.FileNames.LocalDataFile(oldMod.Name);
-        var newFile = saveService.FileNames.LocalDataFile(newMod.Name);
-        if (!File.Exists(oldFile))
-            return;
-
         try
         {
-            File.Move(oldFile, newFile, true);
+            database.Move(oldMod.Name, newMod.Name);
         }
         catch (Exception e)
         {
-            Penumbra.Log.Error($"Could not move local data file {oldFile} to {newFile}:\n{e}");
+            Penumbra.Log.Error($"Could not move local data entry {oldMod.Name} to {newMod.Name}:\n{e}");
         }
     }
 
@@ -198,7 +194,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
         if (CleanExisting(mod.PreferredChangedItems))
         {
             ++mod.LastChangedItemsUpdate;
-            saveService.QueueSave(new ModLocalData(mod));
+            database.UpsertChangedItems(mod);
             communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.PreferredChangedItems, mod, null));
         }
 
@@ -253,7 +249,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
         if (!fromDefault && mod.PreferredChangedItems.Remove(id))
         {
             ++mod.LastChangedItemsUpdate;
-            saveService.QueueSave(new ModLocalData(mod));
+            database.UpsertChangedItems(mod);
             communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.PreferredChangedItems, mod, null));
         }
 
@@ -273,7 +269,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
         {
             mod.PreferredChangedItems = newSet;
             ++mod.LastChangedItemsUpdate;
-            saveService.QueueSave(new ModLocalData(mod));
+            database.UpsertChangedItems(mod);
             communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.PreferredChangedItems, mod, null));
         }
 
@@ -310,7 +306,37 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
         mod.PreferredChangedItems.Clear();
         mod.PreferredChangedItems.UnionWith(mod.DefaultPreferredItems);
         ++mod.LastChangedItemsUpdate;
-        saveService.QueueSave(new ModLocalData(mod));
+        database.UpsertChangedItems(mod);
         communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.PreferredChangedItems, mod, null));
+    }
+
+    internal static ModDataChangeType UpdateTags(Mod mod, IEnumerable<string>? newModTags, IEnumerable<string>? newLocalTags)
+    {
+        if (newModTags is null && newLocalTags is null)
+            return 0;
+
+        ModDataChangeType type = 0;
+        if (newModTags is not null)
+        {
+            var modTags = newModTags.Where(t => t.Length > 0).Distinct().ToArray();
+            if (!modTags.SequenceEqual(mod.ModTags))
+            {
+                newLocalTags ??= mod.LocalTags;
+                mod.ModTags  =   modTags;
+                type         |=  ModDataChangeType.ModTags;
+            }
+        }
+
+        if (newLocalTags is not null)
+        {
+            var localTags = newLocalTags.Where(t => t.Length > 0 && !mod.ModTags.Contains(t)).Distinct().ToArray();
+            if (!localTags.SequenceEqual(mod.LocalTags))
+            {
+                mod.LocalTags =  localTags;
+                type          |= ModDataChangeType.LocalTags;
+            }
+        }
+
+        return type;
     }
 }

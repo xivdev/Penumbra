@@ -8,7 +8,6 @@
     <File Path=".github/workflows/release.yml" />
     <File Path=".github/workflows/test_release.yml" />
     <File Path="Penumbra/Penumbra.json" />
-    <File Path="repo.json" />
   </Folder>
   <Folder Name="/Solution Items/Schemas/">
     <File Path="schemas/default_mod.json" />

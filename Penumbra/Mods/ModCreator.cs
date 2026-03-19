@@ -22,7 +22,8 @@ public partial class ModCreator(
     Configuration config,
     ModDataEditor dataEditor,
     MetaFileManager metaFileManager,
-    GamePathParser gamePathParser) : IService
+    GamePathParser gamePathParser,
+    LocalModDatabase localModDatabase) : IService
 {
     public const    FeatureFlags  SupportedFeatures = FeatureFlags.Atch | FeatureFlags.Shp | FeatureFlags.Atr;
     public readonly Configuration Config            = config;
@@ -72,10 +73,10 @@ public partial class ModCreator(
             return false;
 
         modDataChange = ModMeta.Load(dataEditor, this, mod);
-        if (modDataChange.HasFlag(ModDataChangeType.Deletion) || mod.Name.Length == 0 || mod.RequiredFeatures is FeatureFlags.Invalid)
+        if (modDataChange.HasFlag(ModDataChangeType.Deletion) || mod.Name.Length is 0 || mod.RequiredFeatures is FeatureFlags.Invalid)
             return false;
 
-        modDataChange |= ModLocalData.Load(dataEditor, mod);
+        modDataChange |= localModDatabase.AddData(mod);
         LoadDefaultOption(mod);
         LoadAllGroups(mod);
         if (incorporateMetaChanges)

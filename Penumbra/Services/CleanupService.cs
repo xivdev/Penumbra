@@ -3,7 +3,8 @@ using Penumbra.Mods.Manager;
 
 namespace Penumbra.Services;
 
-public class CleanupService(SaveService saveService, ModManager mods, CollectionManager collections) : Luna.IService
+public class CleanupService(SaveService saveService, ModManager mods, CollectionManager collections, LocalModDatabase modDatabase)
+    : Luna.IService
 {
     private CancellationTokenSource _cancel = new();
     private Task?                   _task;
@@ -21,38 +22,31 @@ public class CleanupService(SaveService saveService, ModManager mods, Collection
         if (IsRunning)
             return;
 
-        var usedFiles = mods.Select(saveService.FileNames.LocalDataFile).ToHashSet();
+        var usedFiles = mods.Select(m => m.Identifier).ToHashSet();
         Progress = 0;
-        var deleted = 0;
-        _cancel = new CancellationTokenSource();
+        _cancel  = new CancellationTokenSource();
         _task = Task.Run(() =>
         {
-            var localFiles = saveService.FileNames.LocalDataFiles.ToList();
-            var step       = 0.9 / localFiles.Count;
+            var set     = new HashSet<string>();
+            var entries = modDatabase.ToList();
+            var step    = 0.9 / entries.Count;
             Progress = 0.1;
-            foreach (var file in localFiles)
+            foreach (var entry in entries)
             {
                 if (_cancel.IsCancellationRequested)
                     break;
 
-                try
+                if (!usedFiles.Contains(entry))
                 {
-                    if (!file.Exists || usedFiles.Contains(file.FullName))
-                        continue;
-
-                    file.Delete();
-                    Penumbra.Log.Debug($"[CleanupService] Deleted unused local data file {file.Name}.");
-                    ++deleted;
-                }
-                catch (Exception ex)
-                {
-                    Penumbra.Log.Error($"[CleanupService] Failed to delete unused local data file {file.Name}:\n{ex}");
+                    Penumbra.Log.Debug($"[CleanupService] Deleted unused local data entry {entry}.");
+                    set.Add(entry);
                 }
 
                 Progress += step;
             }
 
-            Penumbra.Log.Information($"[CleanupService] Deleted {deleted} unused local data files.");
+            modDatabase.DeleteMany(set);
+            Penumbra.Log.Information($"[CleanupService] Deleted {set.Count} unused local data entries.");
             Progress = 1;
         });
     }

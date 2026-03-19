@@ -17,6 +17,12 @@
           "Unosquare.Swan.Lite": "3.1.0"
         }
       },
+      "LiteDB": {
+        "type": "Direct",
+        "requested": "[6.0.0-prerelease.77, )",
+        "resolved": "6.0.0-prerelease.77",
+        "contentHash": "hxFhbAyP1oWRWMhVHNIMdGqGFHqwfsUfNYsU8BK9MFJb+9lGnwDmyXGse+aY0msY+Lm3EdOzdZ/qn6M6U1ezrQ=="
+      },
       "PeNet": {
         "type": "Direct",
         "requested": "[5.1.0, )",
@@ -162,7 +168,7 @@
           "FlatSharp.Compiler": "[7.9.0, )",
           "FlatSharp.Runtime": "[7.9.0, )",
           "Luna": "[1.0.0, )",
-          "Penumbra.Api": "[5.14.0, )",
+          "Penumbra.Api": "[5.15.0, )",
           "Penumbra.String": "[1.0.7, )"
         }
       },

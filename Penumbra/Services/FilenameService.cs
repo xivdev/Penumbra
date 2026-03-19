@@ -8,11 +8,12 @@ namespace Penumbra.Services;
 public sealed class FilenameService(IDalamudPluginInterface pi) : BaseFilePathProvider(pi)
 {
     public readonly string CollectionDirectory       = Path.Combine(pi.ConfigDirectory.FullName, "collections");
-    public readonly string LocalDataDirectory        = Path.Combine(pi.ConfigDirectory.FullName, "mod_data");
+    public readonly string LocalModDatabase          = Path.Combine(pi.ConfigDirectory.FullName, "mod_data.db");
     public readonly string EphemeralConfigFile       = Path.Combine(pi.ConfigDirectory.FullName, "ephemeral_config.json");
     public readonly string UiConfigFile              = Path.Combine(pi.ConfigDirectory.FullName, "ui_config.json");
     public readonly string FilterFile                = Path.Combine(pi.ConfigDirectory.FullName, "filters.json");
     public readonly string OldFilesystemFile         = Path.Combine(pi.ConfigDirectory.FullName, "sort_order.json");
+    public readonly string OldLocalDataDirectory     = Path.Combine(pi.ConfigDirectory.FullName, "mod_data");
     public readonly string ActiveCollectionsFile     = Path.Combine(pi.ConfigDirectory.FullName, "active_collections.json");
     public readonly string PredefinedTagFile         = Path.Combine(pi.ConfigDirectory.FullName, "predefined_tags.json");
     public readonly string FileSystemFolder          = Path.Combine(pi.ConfigDirectory.FullName, "mod_filesystem");
@@ -35,30 +36,12 @@ public sealed class FilenameService(IDalamudPluginInterface pi) : BaseFilePathPr
     public string CollectionFile(string collectionName)
         => Path.Combine(CollectionDirectory, $"{collectionName}.json");
 
-    /// <summary> Obtain the path of the local data file given a mod directory. Returns an empty string if the mod is temporary. </summary>
-    public string LocalDataFile(Mod mod)
-        => LocalDataFile(mod.ModPath.FullName);
-
-    /// <summary> Obtain the path of the local data file given a mod directory. </summary>
-    public string LocalDataFile(string modDirectory)
-        => Path.Combine(LocalDataDirectory, $"{Path.GetFileName(modDirectory)}.json");
-
     /// <summary> Enumerate all collection files. </summary>
     public IEnumerable<FileInfo> CollectionFiles
     {
         get
         {
             var directory = new DirectoryInfo(CollectionDirectory);
-            return directory.Exists ? directory.EnumerateFiles("*.json") : [];
-        }
-    }
-
-    /// <summary> Enumerate all local data files. </summary>
-    public IEnumerable<FileInfo> LocalDataFiles
-    {
-        get
-        {
-            var directory = new DirectoryInfo(LocalDataDirectory);
             return directory.Exists ? directory.EnumerateFiles("*.json") : [];
         }
     }
@@ -88,11 +71,21 @@ public sealed class FilenameService(IDalamudPluginInterface pi) : BaseFilePathPr
     public IEnumerable<FileInfo> GetOptionGroupFiles(Mod mod)
         => mod.ModPath.EnumerateFiles("group_*.json");
 
+    /// <summary> Enumerate all outdated local data files. </summary>
+    public IEnumerable<FileInfo> OldLocalDataFiles
+    {
+        get
+        {
+            var directory = new DirectoryInfo(OldLocalDataDirectory);
+            return directory.Exists ? directory.EnumerateFiles("*.json") : [];
+        }
+    }
+
     /// <summary> Collect all relevant files for penumbra configuration. </summary>
     public override List<FileInfo> GetBackupFiles()
     {
         var list = CollectionFiles.ToList();
-        list.AddRange(LocalDataFiles);
+        list.Add(new FileInfo(LocalModDatabase));
         list.Add(new FileInfo(ConfigurationFile));
         list.Add(new FileInfo(ActiveCollectionsFile));
         list.Add(new FileInfo(PredefinedTagFile));

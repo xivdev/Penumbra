@@ -21,7 +21,7 @@ namespace Penumbra.Services;
 /// Contains everything to migrate from older versions of the config to the current,
 /// including deprecated fields.
 /// </summary>
-public class ConfigMigrationService(SaveService saveService, BackupService backupService) : IService
+public class ConfigMigrationService(SaveService saveService, BackupService backupService, LocalModDatabase localModDatabase) : IService
 {
     private Configuration _config = null!;
     private JObject       _data   = null!;
@@ -62,8 +62,6 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
         }
 
         _data = JObject.Parse(File.ReadAllText(saveService.FileNames.ConfigurationFile));
-        CreateBackup();
-
         Version0To1();
         Version1To2(utility);
         Version2To3();
@@ -76,15 +74,29 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
         Version9To10();
         Version10To11();
         Version11To12();
+        Version12To13();
         AddColors(config, true);
+    }
+
+    private void Version12To13()
+    {
+        if (_config.Version is not 12)
+            return;
+
+        backupService.CreateMigrationBackup("pre_local_mod_db", saveService.FileNames.OldLocalDataFiles);
+        localModDatabase.Migrate();
+        _config.Version           = 13;
+        _config.Ephemeral.Version = 13;
+        _config.Save();
+        _config.Ephemeral.Save();
     }
 
     private void Version11To12()
     {
-        if (_config.Version > 11)
+        if (_config.Version is not 11)
             return;
 
-        backupService.CreateMigrationBackup("pre_initial_json_update");
+        backupService.CreateMigrationBackup("pre_initial_json_update", saveService.FileNames.OldLocalDataFiles);
         _config.Version           = 12;
         _config.Ephemeral.Version = 12;
         _config.Save();
@@ -93,7 +105,7 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
 
     private void Version10To11()
     {
-        if (_config.Version > 10)
+        if (_config.Version is not 10)
             return;
 
         // Migrate keybinds.
@@ -119,10 +131,10 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
 
     private void Version9To10()
     {
-        if (_config.Version != 9)
+        if (_config.Version is not 9)
             return;
 
-        backupService.CreateMigrationBackup("pre_filesystem_update", saveService.FileNames.OldFilesystemFile);
+        backupService.CreateMigrationBackup("pre_filesystem_update", saveService.FileNames.OldLocalDataFiles.Append(new FileInfo(saveService.FileNames.OldFilesystemFile)));
         _config.Version           = 10;
         _config.Ephemeral.Version = 10;
         _config.Save();
@@ -132,10 +144,10 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
     // Migrate to ephemeral config.
     private void Version8To9()
     {
-        if (_config.Version != 8)
+        if (_config.Version is not 8)
             return;
 
-        backupService.CreateMigrationBackup("pre_collection_identifiers");
+        backupService.CreateMigrationBackup("pre_collection_identifiers", saveService.FileNames.OldLocalDataFiles.Append(new FileInfo(saveService.FileNames.OldFilesystemFile)));
         _config.Version           = 9;
         _config.Ephemeral.Version = 9;
         _config.Save();
@@ -145,7 +157,7 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
     // Migrate to ephemeral config.
     private void Version7To8()
     {
-        if (_config.Version != 7)
+        if (_config.Version is not 7)
             return;
 
         _config.Version           = 8;
@@ -176,7 +188,7 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
     // Gendered special collections were added.
     private void Version6To7()
     {
-        if (_config.Version != 6)
+        if (_config.Version is not 6)
             return;
 
         ActiveCollectionMigration.MigrateUngenderedCollections(saveService.FileNames);
@@ -189,7 +201,7 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
     // The migration for the UI collection itself happens in the ActiveCollections file.
     private void Version5To6()
     {
-        if (_config.Version != 5)
+        if (_config.Version is not 5)
             return;
 
         if (_config.Ephemeral.TutorialStep == 25)
@@ -202,7 +214,7 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
     // Actual migration takes place in ModManager.
     private void Version4To5()
     {
-        if (_config.Version != 4)
+        if (_config.Version is not 4)
             return;
 
         ModBackup.MigrateModBackups = true;
@@ -212,7 +224,7 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
     // SortMode was changed from an enum to a type.
     private void Version3To4()
     {
-        if (_config.Version != 3)
+        if (_config.Version is not 3)
             return;
 
         SortMode = _data[nameof(SortMode)]?.ToObject<SortModeV3>() ?? SortMode;
@@ -234,7 +246,7 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
     // SortFoldersFirst was changed from a bool to the enum SortMode.
     private void Version2To3()
     {
-        if (_config.Version != 2)
+        if (_config.Version is not 2)
             return;
 
         SortFoldersFirst = _data[nameof(SortFoldersFirst)]?.ToObject<bool>() ?? false;
@@ -248,7 +260,7 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
     // Delete the penumbrametatmp folder if it exists.
     private void Version1To2(CharacterUtility utility)
     {
-        if (_config.Version != 1)
+        if (_config.Version is not 1)
             return;
 
         // Ensure the right meta files are loaded.
@@ -383,7 +395,7 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
     // Collections were introduced and the previous CurrentCollection got put into ModDirectory.
     private void Version0To1()
     {
-        if (_config.Version != 0)
+        if (_config.Version is not 0)
             return;
 
         _config.ModDirectory = _data[nameof(CurrentCollection)]?.ToObject<string>() ?? string.Empty;
@@ -440,21 +452,6 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
         {
             Penumbra.Log.Error($"Could not migrate the old collection file to new collection files:\n{e}");
             throw;
-        }
-    }
-
-    // Create a backup of the configuration file specifically.
-    private void CreateBackup()
-    {
-        var name    = saveService.FileNames.ConfigurationFile;
-        var bakName = name + ".bak";
-        try
-        {
-            File.Copy(name, bakName, true);
-        }
-        catch (Exception e)
-        {
-            Penumbra.Log.Error($"Could not create backup copy of config at {bakName}:\n{e}");
         }
     }
 

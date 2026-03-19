@@ -229,7 +229,7 @@ public readonly struct ModMeta(Mod mod) : ISavable
             mod.RequiredFeatures =  requiredFeatures;
         }
 
-        changes |= ModLocalData.UpdateTags(mod, modTags, null);
+        changes |= ModDataEditor.UpdateTags(mod, modTags, null);
 
         return changes;
     }

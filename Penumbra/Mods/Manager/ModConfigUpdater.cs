@@ -12,13 +12,16 @@ public class ModConfigUpdater : IDisposable, IRequiredService
     private readonly SaveService         _saveService;
     private readonly ModStorage          _mods;
     private readonly CollectionStorage   _collections;
+    private readonly LocalModDatabase    _localModDatabase;
 
-    public ModConfigUpdater(CommunicatorService communicator, SaveService saveService, ModStorage mods, CollectionStorage collections)
+    public ModConfigUpdater(CommunicatorService communicator, SaveService saveService, ModStorage mods, CollectionStorage collections,
+        LocalModDatabase localModDatabase)
     {
-        _communicator = communicator;
-        _saveService  = saveService;
-        _mods         = mods;
-        _collections  = collections;
+        _communicator     = communicator;
+        _saveService      = saveService;
+        _mods             = mods;
+        _collections      = collections;
+        _localModDatabase = localModDatabase;
 
         _communicator.ModSettingChanged.Subscribe(OnModSettingChanged, ModSettingChanged.Priority.ModConfigUpdater);
     }
@@ -88,7 +91,7 @@ public class ModConfigUpdater : IDisposable, IRequiredService
         {
             mod.LastConfigEdit = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             _communicator.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.LastConfigEdit, mod, null));
-            _saveService.Save(SaveType.Delay, new ModLocalData(mod));
+            _localModDatabase.UpsertLastConfigEdit(mod);
         }
     }
 

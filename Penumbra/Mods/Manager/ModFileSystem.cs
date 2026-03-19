@@ -11,12 +11,12 @@ public sealed class ModFileSystem : BaseFileSystem, IDisposable, IRequiredServic
     private readonly CommunicatorService _communicator;
     private readonly ModFileSystemSaver  _saver;
 
-    public ModFileSystem(Configuration config, CommunicatorService communicator, SaveService saveService, Logger log, ModStorage modStorage)
+    public ModFileSystem(Configuration config, CommunicatorService communicator, SaveService saveService, Logger log, ModStorage modStorage, LocalModDatabase database)
         : base("ModFileSystem", log, true)
     {
         _config       = config;
         _communicator = communicator;
-        _saver        = new ModFileSystemSaver(log, this, saveService, modStorage);
+        _saver        = new ModFileSystemSaver(log, this, saveService, modStorage, database);
         _communicator.ModPathChanged.Subscribe(OnModPathChange, ModPathChanged.Priority.ModFileSystem);
         _communicator.ModDiscoveryFinished.Subscribe(_saver.Load, ModDiscoveryFinished.Priority.ModFileSystem);
         _communicator.ModDataChanged.Subscribe(OnModDataChange, ModDataChanged.Priority.ModFileSystem);

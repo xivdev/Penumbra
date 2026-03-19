@@ -193,7 +193,10 @@ public class ModPanelEditTab(
     private void EditLocalData()
     {
         DrawImportDate();
-        DrawOpenLocalData();
+        ImEx.TextFramed($"{DateTimeOffset.FromUnixTimeMilliseconds(_mod.LastConfigEdit).ToLocalTime():yyyy/MM/dd HH:mm}",
+            UiHelpers.InputTextWidth with { Y = 0 }, ImGuiColor.FrameBackground.Get(0.5f));
+        Im.Line.SameInner();
+        Im.Text("Last Config Edit"u8);
     }
 
     private void DrawImportDate()
@@ -210,17 +213,6 @@ public class ModPanelEditTab(
             modManager.DataEditor.ResetModImportDate(_mod);
         Im.Line.SameInner();
         Im.Text("Import Date"u8);
-    }
-
-    private void DrawOpenLocalData()
-    {
-        var file       = filenames.LocalDataFile(_mod);
-        var fileExists = File.Exists(file);
-        var tt = fileExists
-            ? "Open the local mod data file in the text editor of your choice."u8
-            : "The local mod data file does not exist."u8;
-        if (ImEx.Button("Open Local Data"u8, UiHelpers.InputTextWidth, tt, !fileExists))
-            Process.Start(new ProcessStartInfo(file) { UseShellExecute = true });
     }
 
     private void DrawOpenDefaultMod()
