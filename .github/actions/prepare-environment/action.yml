@@ -6,6 +6,10 @@ inputs:
     required: false
     type: string
     default: ''
+  project:
+    description: 'The main project that is to be built and packaged.'
+    type: string
+    required: true
         
 runs:
   using: "composite"
@@ -15,7 +19,7 @@ runs:
       with:
         dotnet-version: 10.x.x
         cache: true
-        cache-dependency-path: Penumbra/packages.lock.json 
+        cache-dependency-path: ./${{ inputs.project }}/packages.lock.json 
         
     - name: Restore dependencies
       shell: pwsh
