@@ -19,9 +19,9 @@
       },
       "LiteDB": {
         "type": "Direct",
-        "requested": "[6.0.0-prerelease.77, )",
-        "resolved": "6.0.0-prerelease.77",
-        "contentHash": "hxFhbAyP1oWRWMhVHNIMdGqGFHqwfsUfNYsU8BK9MFJb+9lGnwDmyXGse+aY0msY+Lm3EdOzdZ/qn6M6U1ezrQ=="
+        "requested": "[5.0.21, )",
+        "resolved": "5.0.21",
+        "contentHash": "ykJ7ffFl7P9YQKR/PLci6zupiLrsSCNkOTiw6OtzntH7d2kCYp5L1+3a/pksKgTEHcJBoPXFtg7VZSGVBseN9w=="
       },
       "PeNet": {
         "type": "Direct",

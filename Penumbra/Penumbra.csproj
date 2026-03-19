@@ -57,7 +57,7 @@
         <PackageReference Include="SharpGLTF.Core" Version="1.0.5" />
         <PackageReference Include="SharpGLTF.Toolkit" Version="1.0.5" />
         <PackageReference Include="PeNet" Version="5.1.0" />
-        <PackageReference Include="LiteDB" Version="6.0.0-prerelease.77" />
+        <PackageReference Include="LiteDB" Version="5.0.21" />
     </ItemGroup>
 
     <ItemGroup>

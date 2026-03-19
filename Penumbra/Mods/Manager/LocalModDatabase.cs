@@ -17,10 +17,10 @@ public sealed class LocalModDatabase(FilenameService filenames) : IDisposable, I
     {
         lock (_lock)
         {
+            Log(callerName);
             if (_collection is { } collection)
                 return collection;
 
-            Log(callerName);
             _database = new LiteDatabase($"Filename={filenames.LocalModDatabase};Connection=Shared;Timeout=00:00:02");
             _database.Mapper.EmptyStringToNull = false;
             _database.Mapper.IncludeFields = true;
@@ -40,10 +40,6 @@ public sealed class LocalModDatabase(FilenameService filenames) : IDisposable, I
             _collection = null;
         }
     }
-
-    [Conditional("DEBUG")]
-    private static void Log([CallerMemberName] string callerName = "")
-        => Penumbra.Log.Information($"[{Environment.CurrentManagedThreadId}] {callerName}");
 
     public void Migrate()
     {
@@ -124,10 +120,10 @@ public sealed class LocalModDatabase(FilenameService filenames) : IDisposable, I
                     lock (_lock)
                     {
                         _collection!.Upsert(modData);
+                        Log();
                     }
 
                     Penumbra.Log.Debug($"Migrated local mod data for {id} to database.");
-                    Log();
                 }
                 catch (Exception ex)
                 {
@@ -438,9 +434,14 @@ public sealed class LocalModDatabase(FilenameService filenames) : IDisposable, I
 
             lock (db._lock)
             {
-                Log();
+                db.Log();
                 _enabled = !db._database!.Commit();
             }
         }
     }
+
+    [Conditional("false")]
+    private void Log([CallerMemberName] string callerName = "")
+        => Penumbra.Log.Information(
+            $"[{Environment.CurrentManagedThreadId}] {callerName} Lock: {_lock.IsHeldByCurrentThread}, DB: {RuntimeHelpers.GetHashCode(_database)}");
 }
