@@ -201,12 +201,6 @@ public partial class Configuration : IPluginConfiguration, ISavable, IService
     public static class Constants
     {
         public const int   CurrentVersion      = 13;
-        public const float MaxAbsoluteSize     = 600;
-        public const int   DefaultAbsoluteSize = 250;
-        public const float MinAbsoluteSize     = 50;
-        public const int   MaxScaledSize       = 80;
-        public const int   DefaultScaledSize   = 20;
-        public const int   MinScaledSize       = 5;
         public const int   MinimumSizeX        = 900;
         public const int   MinimumSizeY        = 675;
     }

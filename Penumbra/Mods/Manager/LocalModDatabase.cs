@@ -181,8 +181,8 @@ public sealed class LocalModDatabase(FilenameService filenames) : IDisposable, I
             if (!string.Equals(mod.Identifier, Id, StringComparison.OrdinalIgnoreCase))
                 throw new Exception($"Updating mod database data for {Id} with {mod.Identifier}.");
 
-            ImportDate            = mod.ImportDate;
-            LastConfigEdit        = mod.LastConfigEdit;
+            ImportDate            = mod.ImportDate     = mod.ImportDate > 0 ? mod.ImportDate : DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            LastConfigEdit        = mod.LastConfigEdit = ImportDate > mod.LastConfigEdit ? ImportDate : mod.LastConfigEdit;
             Favorite              = mod.Favorite;
             Note                  = mod.Note;
             LocalTags             = mod.LocalTags.ToHashSet();

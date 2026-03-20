@@ -5,7 +5,6 @@ using Newtonsoft.Json.Linq;
 using Penumbra.Collections;
 using Penumbra.Collections.Cache;
 using Penumbra.GameData.Files.AtchStructs;
-using Penumbra.GameData.Files.Utility;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.PathResolving;
 using Penumbra.Meta.Manipulations;
