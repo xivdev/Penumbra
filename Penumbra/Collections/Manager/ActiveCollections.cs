@@ -2,7 +2,6 @@ using System.Text.Json;
 using Dalamud.Interface.ImGuiNotification;
 using ImSharp;
 using Luna;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Penumbra.Communication;
 using Penumbra.GameData.Actors;
@@ -149,7 +148,8 @@ public class ActiveCollections : ISavable, IDisposable, IService
     public void CreateIndividualCollection(params ActorIdentifier[] identifiers)
     {
         if (Individuals.Add(identifiers, Default))
-            _communicator.CollectionChange.Invoke(new CollectionChange.Arguments(CollectionType.Individual, null, Default, Individuals.Last().DisplayName));
+            _communicator.CollectionChange.Invoke(new CollectionChange.Arguments(CollectionType.Individual, null, Default,
+                Individuals.Last().DisplayName));
     }
 
     /// <summary> Remove an individual collection if it exists. </summary>
@@ -251,16 +251,16 @@ public class ActiveCollections : ISavable, IDisposable, IService
     public void Save(Stream stream)
     {
         using var j = new Utf8JsonWriter(stream, JsonFunctions.WriterOptions);
+        j.WriteStartObject();
         j.WriteNumber("Version"u8, Version);
-        j.WriteString("Default"u8, Default.Identity.Id);
+        j.WriteString("Default"u8,   Default.Identity.Id);
         j.WriteString("Interface"u8, Interface.Identity.Id);
-        j.WriteString("Current"u8, Current.Identity.Id);
+        j.WriteString("Current"u8,   Current.Identity.Id);
         foreach (var (type, collection) in SpecialCollections.Index().Where(p => p.Item != null)
                      .Select(p => ((CollectionType)p.Index, p.Item!)))
             j.WriteString(type.ToString(), collection.Identity.Id);
-        j.WritePropertyName("Individuals"u8);
-        // TODO Do this correctly
-        j.WriteRawValue(Individuals.ToJObject().ToString(Formatting.Indented));
+        Individuals.WriteJson(j, "Individuals"u8);
+        j.WriteEndObject();
     }
 
     private void UpdateCurrentCollectionInUse()

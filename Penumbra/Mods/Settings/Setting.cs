@@ -35,6 +35,9 @@ public readonly record struct Setting(ulong Value)
     public Setting SetBit(int idx, bool value)
         => new(value ? Value | (1ul << idx) : Value & ~(1ul << idx));
 
+    public Setting ToggleBit(int idx)
+        => new(Value ^ (1ul << idx));
+
     public static Setting AllBits(int count)
         => new((1ul << Math.Clamp(count, 0, 63)) - 1);
 
