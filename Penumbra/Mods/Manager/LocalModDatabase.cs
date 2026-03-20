@@ -54,7 +54,7 @@ public sealed class LocalModDatabase(FilenameService filenames) : IDisposable, I
                 try
                 {
                     var data   = JsonFunctions.ReadUtf8Bytes(file);
-                    var reader = new Utf8JsonReader(data, JsonFunctions.ReaderOptions);
+                    var reader = new Utf8JsonReader(data.Span, JsonFunctions.ReaderOptions);
 
                     var modData = new Data(id);
 
