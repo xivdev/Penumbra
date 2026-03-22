@@ -39,106 +39,6 @@ public partial class CombinedTexture
         ];
     // @formatter:on
 
-    private Vector4 DataLeft(int offset)
-        => CappedVector(_leftPixels.PixelData, offset, _multiplierLeft, _constantLeft);
-
-    private Vector4 DataRight(int offset)
-        => CappedVector(_rightPixels.PixelData, offset, _multiplierRight, _constantRight);
-
-    private Vector4 DataRight(int x, int y)
-    {
-        x += _offsetX;
-        y += _offsetY;
-        if (x < 0 || x >= _rightPixels.Width || y < 0 || y >= _rightPixels.Height)
-            return Vector4.Zero;
-
-        var offset = (y * _rightPixels.Width + x) * 4;
-        return CappedVector(_rightPixels.PixelData, offset, _multiplierRight, _constantRight);
-    }
-
-    private void AddPixelsMultiplied(int y, ParallelLoopState _)
-    {
-        for (var x = 0; x < _leftPixels.Width; ++x)
-        {
-            var offset = (_leftPixels.Width * y + x) * 4;
-            var left   = DataLeft(offset);
-            var right  = DataRight(x, y);
-            var alpha  = right.W + left.W * (1 - right.W);
-            var rgba = alpha == 0
-                ? new Rgba32()
-                : new Rgba32(((right * right.W + left * left.W * (1 - right.W)) / alpha) with { W = alpha });
-            _centerStorage.RgbaPixels[offset]     = rgba.R;
-            _centerStorage.RgbaPixels[offset + 1] = rgba.G;
-            _centerStorage.RgbaPixels[offset + 2] = rgba.B;
-            _centerStorage.RgbaPixels[offset + 3] = rgba.A;
-        }
-    }
-
-    private void ReverseAddPixelsMultiplied(int y, ParallelLoopState _)
-    {
-        for (var x = 0; x < _leftPixels.Width; ++x)
-        {
-            var offset = (_leftPixels.Width * y + x) * 4;
-            var left   = DataLeft(offset);
-            var right  = DataRight(x, y);
-            var alpha  = left.W + right.W * (1 - left.W);
-            var rgba = alpha == 0
-                ? new Rgba32()
-                : new Rgba32(((left * left.W + right * right.W * (1 - left.W)) / alpha) with { W = alpha });
-            _centerStorage.RgbaPixels[offset]     = rgba.R;
-            _centerStorage.RgbaPixels[offset + 1] = rgba.G;
-            _centerStorage.RgbaPixels[offset + 2] = rgba.B;
-            _centerStorage.RgbaPixels[offset + 3] = rgba.A;
-        }
-    }
-
-    private void ChannelMergePixelsMultiplied(int y, ParallelLoopState _)
-    {
-        var channels = _copyChannels;
-        for (var x = 0; x < _leftPixels.Width; ++x)
-        {
-            var offset = (_leftPixels.Width * y + x) * 4;
-            var left   = DataLeft(offset);
-            var right  = DataRight(x, y);
-            var rgba = new Rgba32((channels & Channels.Red) != 0 ? right.X : left.X,
-                (channels & Channels.Green) != 0 ? right.Y : left.Y,
-                (channels & Channels.Blue) != 0 ? right.Z : left.Z,
-                (channels & Channels.Alpha) != 0 ? right.W : left.W);
-            _centerStorage.RgbaPixels[offset]     = rgba.R;
-            _centerStorage.RgbaPixels[offset + 1] = rgba.G;
-            _centerStorage.RgbaPixels[offset + 2] = rgba.B;
-            _centerStorage.RgbaPixels[offset + 3] = rgba.A;
-        }
-    }
-
-    private void MultiplyPixelsLeft(int y, ParallelLoopState _)
-    {
-        for (var x = 0; x < _leftPixels.Width; ++x)
-        {
-            var offset = (_leftPixels.Width * y + x) * 4;
-            var left   = DataLeft(offset);
-            var rgba   = new Rgba32(left);
-            _centerStorage.RgbaPixels[offset]     = rgba.R;
-            _centerStorage.RgbaPixels[offset + 1] = rgba.G;
-            _centerStorage.RgbaPixels[offset + 2] = rgba.B;
-            _centerStorage.RgbaPixels[offset + 3] = rgba.A;
-        }
-    }
-
-    private void MultiplyPixelsRight(int y, ParallelLoopState _)
-    {
-        for (var x = 0; x < _rightPixels.Width; ++x)
-        {
-            var offset = (_rightPixels.Width * y + x) * 4;
-            var right  = DataRight(offset);
-            var rgba   = new Rgba32(right);
-            _centerStorage.RgbaPixels[offset]     = rgba.R;
-            _centerStorage.RgbaPixels[offset + 1] = rgba.G;
-            _centerStorage.RgbaPixels[offset + 2] = rgba.B;
-            _centerStorage.RgbaPixels[offset + 3] = rgba.A;
-        }
-    }
-
     private (int Width, int Height) CombineImage()
     {
         var combineOp = GetActualCombineOp();
@@ -173,12 +73,24 @@ public partial class CombinedTexture
 
             Parallel.For(0, targetSize.Height, combineOp switch
             {
-                CombineOp.Over          => AddPixelsMultiplied,
-                CombineOp.Under         => ReverseAddPixelsMultiplied,
-                CombineOp.LeftMultiply  => MultiplyPixelsLeft,
-                CombineOp.RightMultiply => MultiplyPixelsRight,
-                CombineOp.CopyChannels  => ChannelMergePixelsMultiplied,
-                _                       => throw new InvalidOperationException($"Cannot combine images with operation {combineOp}"),
+                CombineOp.Over                => new OverImpl(this, true),
+                CombineOp.Under               => new OverImpl(this, false),
+                CombineOp.LeftMultiply        => MultiplyPixelsLeft,
+                CombineOp.RightMultiply       => MultiplyPixelsRight,
+                CombineOp.CopyChannels        => new CopyChannelsImpl(this, _copyChannels),
+                CombineOp.BlendMultiplyOver   => new BlendMultiplyImpl(this, true),
+                CombineOp.BlendMultiplyUnder  => new BlendMultiplyImpl(this, false),
+                CombineOp.BlendMultiplyRgba   => new BlendMultiplyRgbaImpl(this),
+                CombineOp.BlendScreenOver     => new BlendScreenImpl(this, true),
+                CombineOp.BlendScreenUnder    => new BlendScreenImpl(this, false),
+                CombineOp.BlendScreenRgba     => new BlendScreenRgbaImpl(this),
+                CombineOp.BlendOverlayOver    => new BlendOverlayImpl(this, false, true),
+                CombineOp.BlendOverlayUnder   => new BlendOverlayImpl(this, false, false),
+                CombineOp.BlendOverlayRgba    => new BlendOverlayRgbaImpl(this, false),
+                CombineOp.BlendHardLightOver  => new BlendOverlayImpl(this, true, true),
+                CombineOp.BlendHardLightUnder => new BlendOverlayImpl(this, true, false),
+                CombineOp.BlendHardLightRgba  => new BlendOverlayRgbaImpl(this, true),
+                _                             => throw new InvalidOperationException($"Cannot combine images with operation {combineOp}"),
             });
 
             _centerStorage.InvalidateRgbaSolidColor();

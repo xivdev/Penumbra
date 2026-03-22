@@ -26,8 +26,56 @@ public partial class CombinedTexture
         RightMultiply = 2,
 
         [Name("Copy Channels")]
-        [Tooltip("Replace some input channels with those from the overlay.\nUseful for Multi maps.")]
+        [Tooltip("Replace some input channels with those from the overlay.\nUseful for Mask/Multi maps.")]
         CopyChannels = 3,
+
+        [Name("Blend: Multiply - Result over Input")]
+        [Tooltip("Multiplies the RGB channel values of the input and the overlay.\nApplies the result over the input.")]
+        BlendMultiplyOver = 4,
+
+        [Name("Blend: Multiply - Input over Result")]
+        [Tooltip("Multiplies the RGB channel values of the input and the overlay.\nApplies the input over the result.")]
+        BlendMultiplyUnder = 5,
+
+        [Name("Blend: Multiply - RGBA")]
+        [Tooltip("Multiplies the RGBA channel values of the input and the overlay.\nThis mode is commutative.")]
+        BlendMultiplyRgba = 6,
+
+        [Name("Blend: Screen - Result over Input")]
+        [Tooltip("Inverts the RGB channel values of the input and the overlay, multiplies them, and inverts them back.\nApplies the result over the input.")]
+        BlendScreenOver = 7,
+
+        [Name("Blend: Screen - Input over Result")]
+        [Tooltip("Inverts the RGB channel values of the input and the overlay, multiplies them, and inverts them back.\nApplies the result over the input.")]
+        BlendScreenUnder = 8,
+
+        [Name("Blend: Screen - RGBA")]
+        [Tooltip("Inverts the RGBA channel values of the input and the overlay, multiplies them, and inverts them back.\nThis mode is commutative.")]
+        BlendScreenRgba = 9,
+
+        [Name("Blend: Overlay - Result over Input")]
+        [Tooltip("Darkens the overlay where the input is darker, lightens the overlay where the input is lighter.\nApplies the result over the input.")]
+        BlendOverlayOver = 10,
+
+        [Name("Blend: Overlay - Input over Result")]
+        [Tooltip("Darkens the overlay where the input is darker, lightens the overlay where the input is lighter.\nApplies the input over the result.")]
+        BlendOverlayUnder = 11,
+
+        [Name("Blend: Overlay - RGBA")]
+        [Tooltip("Darkens the overlay where the input is darker, lightens the overlay where the input is lighter, including the Alpha channel.\nThis mode is commutative.")]
+        BlendOverlayRgba = 12,
+
+        [Name("Blend: Hard Light - Result over Input")]
+        [Tooltip("Darkens the input where the overlay is darker, lightens the input where the overlay is lighter.\nApplies the result over the input.")]
+        BlendHardLightOver = 13,
+
+        [Name("Blend: Hard Light - Input over Result")]
+        [Tooltip("Darkens the input where the overlay is darker, lightens the input where the overlay is lighter.\nApplies the input over the result.")]
+        BlendHardLightUnder = 14,
+
+        [Name("Blend: Hard Light - RGBA")]
+        [Tooltip("Darkens the input where the overlay is darker, lightens the input where the overlay is lighter, including the Alpha channel.\nThis mode is commutative.")]
+        BlendHardLightRgba = 15,
     }
 
     [NamedEnum("ToLabel")]
@@ -59,14 +107,10 @@ public partial class CombinedTexture
     private static ResizeOp GetActualResizeOp(ResizeOp resizeOp, CombineOp combineOp)
         => combineOp switch
         {
-            CombineOp.LeftCopy      => ResizeOp.LeftOnly,
-            CombineOp.LeftMultiply  => ResizeOp.LeftOnly,
-            CombineOp.RightCopy     => ResizeOp.RightOnly,
-            CombineOp.RightMultiply => ResizeOp.RightOnly,
-            CombineOp.Over          => resizeOp,
-            CombineOp.Under         => resizeOp,
-            CombineOp.CopyChannels  => resizeOp,
-            _                       => throw new ArgumentException($"Invalid combine operation {combineOp}"),
+            CombineOp.LeftCopy or CombineOp.LeftMultiply   => ResizeOp.LeftOnly,
+            CombineOp.RightCopy or CombineOp.RightMultiply => ResizeOp.RightOnly,
+            >= 0                                           => resizeOp,
+            _                                              => throw new ArgumentException($"Invalid combine operation {combineOp}"),
         };
 
     private CombineOp GetActualCombineOp()
