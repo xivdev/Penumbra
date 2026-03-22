@@ -28,11 +28,11 @@ public unsafe class ResidentResourceManager : Luna.IService
     // Reload certain player resources by force.
     public void Reload()
     {
-        if (Address != null && Address->NumResources > 0)
-        {
-            Penumbra.Log.Debug("Reload of resident resources triggered.");
-            UnloadPlayerResources.Invoke(Address);
-            LoadPlayerResources.Invoke(Address);
-        }
+        if (Address is null || Address->NumResources <= 0)
+            return;
+
+        Penumbra.Log.Debug("Reload of resident resources triggered.");
+        UnloadPlayerResources.Invoke(Address);
+        LoadPlayerResources.Invoke(Address);
     }
 }

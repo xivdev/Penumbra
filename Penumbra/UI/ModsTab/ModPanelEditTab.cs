@@ -4,7 +4,9 @@ using ImSharp;
 using Luna;
 using Penumbra.Mods;
 using Penumbra.Mods.Editor;
+using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager;
+using Penumbra.Mods.Settings;
 using Penumbra.Services;
 using Penumbra.UI.ModsTab.Groups;
 
@@ -23,8 +25,11 @@ public class ModPanelEditTab(
     AddGroupDrawer addGroupDrawer)
     : ITab<ModPanelTab>
 {
-    private IFileSystemData<Mod> _leaf = null!;
-    private Mod                  _mod  = null!;
+    private IFileSystemData<Mod> _leaf             = null!;
+    private Mod                  _mod              = null!;
+    private bool                 _groupReorderMode = false;
+    private IModGroup?           _draggedGroup     = null;
+
 
     public ReadOnlySpan<byte> Label
         => "Edit Mod"u8;
@@ -79,7 +84,18 @@ public class ModPanelEditTab(
             addGroupDrawer.Draw(_mod, UiHelpers.InputTextWidth.X);
             UiHelpers.DefaultLineSpace();
 
-            groupEditDrawer.Draw(_mod);
+            if (Im.RadioButton("Group Edit Mode"u8, !_groupReorderMode))
+                _groupReorderMode = false;
+            Im.Line.SameInner();
+            if (Im.RadioButton("Group Reorder Mode"u8, _groupReorderMode))
+                _groupReorderMode = true;
+
+            UiHelpers.DefaultLineSpace();
+
+            if (_groupReorderMode)
+                DrawGroupReordering(_mod);
+            else
+                groupEditDrawer.Draw(_mod);
         }
 
         descriptionPopup.Draw();
@@ -89,6 +105,59 @@ public class ModPanelEditTab(
     {
         MoveDirectory.Reset();
         Input.Reset();
+    }
+
+    private void DrawGroupReordering(Mod mod)
+    {
+        using var table = Im.Table.Begin("##reorder"u8, 5, TableFlags.BordersOuter | TableFlags.RowBackground);
+        if (!table)
+            return;
+
+        var active = config.DeleteModModifier.IsActive();
+        for (var i = 0; i < mod.Groups.Count; ++i)
+        {
+            using var id    = Im.Id.Push(i);
+            var       group = mod.Groups[i];
+            table.DrawFrameColumn($"Group #{i:D2}");
+
+            table.NextColumn();
+            Im.Selectable(group.Name);
+            using (var source = Im.DragDrop.Source())
+            {
+                if (source)
+                {
+                    source.SetPayload("##group"u8);
+                    _draggedGroup = group;
+                }
+            }
+
+            using (var target = Im.DragDrop.Target())
+            {
+                if (target.IsDropping("##group"u8) && _draggedGroup is not null)
+                {
+                    modManager.OptionEditor.MoveModGroup(_draggedGroup, i);
+                    _draggedGroup = null;
+                }
+            }
+
+
+            table.DrawFrameColumn($"{group.Type}");
+
+            table.DrawFrameColumn($"{group.Options.Count} Options");
+
+            table.NextColumn();
+            Im.Item.SetNextWidth(2 * Im.Style.FrameHeight);
+            if (ImEx.InputOnDeactivation.Scalar("##prio"u8, group.Priority.Value, out var newPriority))
+                modManager.OptionEditor.ChangeGroupPriority(group, new ModPriority(newPriority));
+            Im.Line.SameInner();
+            if (ImEx.Icon.Button(LunaStyle.DeleteIcon, "Delete this option group."u8, !active)
+            {
+                modManager.OptionEditor.DeleteModGroup(group);
+                --i;
+            }
+            if (!active)
+                Im.Tooltip.OnHover($"Hold {config.DeleteModModifier} to delete.");
+        }
     }
 
     /// <summary> The general edit row for non-detailed mod edits. </summary>

@@ -144,7 +144,7 @@ public sealed class ModsApi : IPenumbraApiMods, IApiService, IDisposable
 
     public PenumbraApiEc SetModPath(string modDirectory, string modName, string newPath)
     {
-        if (newPath.Length == 0)
+        if (newPath.Length is 0)
             return PenumbraApiEc.InvalidArgument;
 
         if (!_modManager.TryGetMod(modDirectory, modName, out var mod) || mod.Node is not { } node)

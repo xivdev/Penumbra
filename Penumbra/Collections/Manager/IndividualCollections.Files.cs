@@ -94,7 +94,7 @@ public partial class IndividualCollections
             }
             catch (Exception e)
             {
-                Penumbra.Messager.NotificationMessage(e, $"Could not load an unknown individual collection, removed.", NotificationType.Error);
+                Penumbra.Messager.NotificationMessage(e, "Could not load an unknown individual collection, removed.", NotificationType.Error);
             }
         }
 
