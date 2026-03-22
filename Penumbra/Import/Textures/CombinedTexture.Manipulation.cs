@@ -185,12 +185,11 @@ public partial class CombinedTexture
         Im.Drag("Offsets##YOffset"u8, ref _offsetY, speed: 0.5f);
         ret |= Im.Item.DeactivatedAfterEdit;
 
-        Im.Item.SetNextWidthScaled(200);
-        ret |= _combineCombo.Draw("Combine Operation"u8, ref _combineOp, StringU8.Empty, 200 * Im.Style.GlobalScale);
+        ret |= _combineCombo.Draw("Combine Operation"u8, ref _combineOp, StringU8.Empty, 250 * Im.Style.GlobalScale);
         var resizeOp = GetActualResizeOp(_resizeOp, _combineOp);
         using (Im.Disabled((int)resizeOp < 0))
         {
-            ret |= _resizeCombo.Draw("Resizing Mode"u8, ref _resizeOp, StringU8.Empty, 200 * Im.Style.GlobalScale);
+            ret |= _resizeCombo.Draw("Resizing Mode"u8, ref _resizeOp, StringU8.Empty, 250 * Im.Style.GlobalScale);
         }
 
         using (Im.Disabled(_combineOp != CombineOp.CopyChannels))
