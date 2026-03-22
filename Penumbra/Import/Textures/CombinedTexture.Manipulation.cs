@@ -192,7 +192,7 @@ public partial class CombinedTexture
             ret |= _resizeCombo.Draw("Resizing Mode"u8, ref _resizeOp, StringU8.Empty, 250 * Im.Style.GlobalScale);
         }
 
-        using (Im.Disabled(_combineOp != CombineOp.CopyChannels))
+        using (Im.Disabled(_combineOp is not CombineOp.CopyChannels))
         {
             Im.Text("Copy"u8);
             foreach (var channel in Channels.Values)
