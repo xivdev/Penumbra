@@ -1,4 +1,5 @@
 using System.Buffers;
+using ImSharp;
 using Rgba32 = SixLabors.ImageSharp.PixelFormats.Rgba32;
 
 namespace Penumbra.Import.Textures;
@@ -22,6 +23,9 @@ public partial class CombinedTexture
         return CappedVector(_rightPixels.PixelData, offset, _multiplierRight, _constantRight);
     }
 
+    private Span<Rgba32> CenterRow(int width, int y)
+        => MemoryMarshal.Cast<byte, Rgba32>(_centerStorage.RgbaPixels.AsSpan(width * 4 * y, width * 4));
+
     private static Vector4 Over(Vector4 over, Vector4 under)
     {
         var alpha = over.W + under.W * (1 - over.W);
@@ -38,16 +42,16 @@ public partial class CombinedTexture
 
     private void MultiplyPixelsLeft(int y, ParallelLoopState _)
     {
+        var output = CenterRow(_leftPixels.Width, y);
         var offset = _leftPixels.Width * y * 4;
-        var output = MemoryMarshal.Cast<byte, Rgba32>(_centerStorage.RgbaPixels.AsSpan(offset, _leftPixels.Width * 4));
         for (var x = 0; x < _leftPixels.Width; ++x, offset += 4)
             output[x] = new Rgba32(DataLeft(offset));
     }
 
     private void MultiplyPixelsRight(int y, ParallelLoopState _)
     {
+        var output = CenterRow(_rightPixels.Width, y);
         var offset = _rightPixels.Width * y * 4;
-        var output = MemoryMarshal.Cast<byte, Rgba32>(_centerStorage.RgbaPixels.AsSpan(offset, _rightPixels.Width * 4));
         for (var x = 0; x < _rightPixels.Width; ++x, offset += 4)
             output[x] = new Rgba32(DataRight(offset));
     }
@@ -57,32 +61,22 @@ public partial class CombinedTexture
         /// <remarks> When applicable, should honor both alpha values. For example using https://drafts.csswg.org/compositing/#generalformula </remarks>
         protected abstract void CombinePixels(Span<Rgba32> outputSpan, ReadOnlySpan<Vector4> leftSpan, ReadOnlySpan<Vector4> rightSpan);
 
-        public unsafe void ProcessRow(int y, ParallelLoopState _)
+        public void ProcessRow(int y, ParallelLoopState _)
         {
-            // Rent from a byte array pool and cast the span (instead of renting directly from a Vector4 array pool) to increase chances of reuse.
-            var pool         = ArrayPool<byte>.Shared;
-            var width        = owner._leftPixels.Width;
-            var bufferLength = width * 2 * sizeof(Vector4);
-            var buffer       = pool.Rent(bufferLength);
-            var bufferSpan   = MemoryMarshal.Cast<byte, Vector4>(buffer.AsSpan(0, bufferLength));
-            var leftSpan     = bufferSpan[..width];
-            var rightSpan    = bufferSpan[width..];
-            try
+            var       width      = owner._leftPixels.Width;
+            using var lease      = ArrayPool<byte>.Shared.RentLease<Vector4>(width * 2);
+            var       bufferSpan = lease.Span;
+            var       leftSpan   = bufferSpan[..width];
+            var       rightSpan  = bufferSpan[width..];
+            var       outputSpan = owner.CenterRow(width, y);
+            var       offset     = width * y * 4;
+            for (var x = 0; x < width; ++x, offset += 4)
             {
-                var offset     = width * y * 4;
-                var outputSpan = MemoryMarshal.Cast<byte, Rgba32>(owner._centerStorage.RgbaPixels.AsSpan(offset, width * 4));
-                for (var x = 0; x < width; ++x, offset += 4)
-                {
-                    leftSpan[x]  = owner.DataLeft(offset);
-                    rightSpan[x] = owner.DataRight(x, y);
-                }
+                leftSpan[x]  = owner.DataLeft(offset);
+                rightSpan[x] = owner.DataRight(x, y);
+            }
 
-                CombinePixels(outputSpan, leftSpan, rightSpan);
-            }
-            finally
-            {
-                pool.Return(buffer);
-            }
+            CombinePixels(outputSpan, leftSpan, rightSpan);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
