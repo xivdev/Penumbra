@@ -113,12 +113,19 @@ public class ModPanelEditTab(
         if (!table)
             return;
 
+        table.SetupColumn("Index"u8, TableColumnFlags.WidthFixed, Im.Font.CalculateSize("Group #00  "u8).X);
+        table.SetupColumn("Group"u8, TableColumnFlags.WidthStretch);
+        table.SetupColumn("Type"u8, TableColumnFlags.WidthFixed, Im.Font.CalculateSize("Combining  "u8).X);
+        table.SetupColumn("Options"u8, TableColumnFlags.WidthFixed, Im.Font.CalculateSize("1000 Options  "u8).X);
+        table.SetupColumn("##actions"u8, TableColumnFlags.WidthFixed, Im.Style.FrameHeight * 3 + Im.Style.ItemInnerSpacing.X);
+        table.HeaderRow();
+
         var active = config.DeleteModModifier.IsActive();
         for (var i = 0; i < mod.Groups.Count; ++i)
         {
             using var id    = Im.Id.Push(i);
             var       group = mod.Groups[i];
-            table.DrawFrameColumn($"Group #{i:D2}");
+            table.DrawFrameColumn($"Group #{i + 1:D2}");
 
             table.NextColumn();
             Im.Selectable(group.Name);
@@ -128,6 +135,7 @@ public class ModPanelEditTab(
                 {
                     source.SetPayload("##group"u8);
                     _draggedGroup = group;
+                    Im.Text($"Dragging group #{i + 1} - {group.Name}...");
                 }
             }
 
@@ -143,14 +151,14 @@ public class ModPanelEditTab(
 
             table.DrawFrameColumn($"{group.Type}");
 
-            table.DrawFrameColumn($"{group.Options.Count} Options");
+            table.DrawFrameColumn($"{group.Options.Count} Option{(group.Options.Count is not 1 ? "s"u8 : StringU8.Empty)}");
 
             table.NextColumn();
             Im.Item.SetNextWidth(2 * Im.Style.FrameHeight);
             if (ImEx.InputOnDeactivation.Scalar("##prio"u8, group.Priority.Value, out var newPriority))
                 modManager.OptionEditor.ChangeGroupPriority(group, new ModPriority(newPriority));
             Im.Line.SameInner();
-            if (ImEx.Icon.Button(LunaStyle.DeleteIcon, "Delete this option group."u8, !active)
+            if (ImEx.Icon.Button(LunaStyle.DeleteIcon, "Delete this option group."u8, !active))
             {
                 modManager.OptionEditor.DeleteModGroup(group);
                 --i;
