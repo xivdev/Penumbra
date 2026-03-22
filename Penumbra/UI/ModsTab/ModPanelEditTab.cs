@@ -117,11 +117,13 @@ public class ModPanelEditTab(
         table.SetupColumn("Group"u8, TableColumnFlags.WidthStretch);
         table.SetupColumn("Type"u8, TableColumnFlags.WidthFixed, Im.Font.CalculateSize("Combining  "u8).X);
         table.SetupColumn("Options"u8, TableColumnFlags.WidthFixed, Im.Font.CalculateSize("1000 Options  "u8).X);
-        table.SetupColumn("##actions"u8, TableColumnFlags.WidthFixed, Im.Style.FrameHeight * 3 + Im.Style.ItemInnerSpacing.X);
+        table.SetupColumn("Priority##actions"u8, TableColumnFlags.WidthFixed, Im.Style.FrameHeight * 3 + Im.Style.ItemInnerSpacing.X);
         table.HeaderRow();
 
-        var active = config.DeleteModModifier.IsActive();
-        for (var i = 0; i < mod.Groups.Count; ++i)
+        var        active   = config.DeleteModModifier.IsActive();
+        using var  clip     = new Im.ListClipper(mod.Groups.Count, Im.Style.FrameHeightWithSpacing);
+        IModGroup? deletion = null;
+        foreach(var i in clip)
         {
             using var id    = Im.Id.Push(i);
             var       group = mod.Groups[i];
@@ -159,13 +161,13 @@ public class ModPanelEditTab(
                 modManager.OptionEditor.ChangeGroupPriority(group, new ModPriority(newPriority));
             Im.Line.SameInner();
             if (ImEx.Icon.Button(LunaStyle.DeleteIcon, "Delete this option group."u8, !active))
-            {
-                modManager.OptionEditor.DeleteModGroup(group);
-                --i;
-            }
+                deletion = group;
+
             if (!active)
-                Im.Tooltip.OnHover($"Hold {config.DeleteModModifier} to delete.");
+                Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"Hold {config.DeleteModModifier} to delete.");
         }
+        if (deletion is not null)
+            modManager.OptionEditor.DeleteModGroup(deletion);
     }
 
     /// <summary> The general edit row for non-detailed mod edits. </summary>
