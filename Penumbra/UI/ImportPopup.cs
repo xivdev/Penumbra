@@ -99,7 +99,12 @@ public sealed class ImportPopup : Window, INotificationAwareMessage
 
         if (!Im.Popup.IsOpen("##PenumbraImportPopup"u8))
         {
-            if (_notification is null)
+            if (_configuration.AlwaysShowDetailedModImport)
+            {
+                _openPopup = true;
+                _notification?.DismissNow();
+            }
+            else if (_notification is null)
                 _messageService.AddMessage(this, false, true, false);
             return;
         }
@@ -121,17 +126,17 @@ public sealed class ImportPopup : Window, INotificationAwareMessage
                     terminate = true;
         }
 
-        if (import.State != ImporterState.Done)
+        if (import.State is not ImporterState.Done && !_configuration.AlwaysShowDetailedModImport)
         {
             if (Im.Button("Continue in the Background"u8,
-                    new Vector2((Im.ContentRegion.Available.X - Im.GetStyle().ItemSpacing.X) * 0.5f, 0.0f)))
+                    new Vector2((Im.ContentRegion.Available.X - Im.GetStyle().ItemSpacing.X) / 2, 0.0f)))
                 Im.Popup.CloseCurrent();
             Im.Line.Same();
         }
 
-        terminate |= import.State == ImporterState.Done
-            ? Im.Button("Close"u8, -Vector2.UnitX)
-            : import.DrawCancelButton(-Vector2.UnitX);
+        terminate |= import.State is ImporterState.Done
+            ? Im.Button("Close"u8, Im.ContentRegion.Available with { Y = 0} )
+            : import.DrawCancelButton(Im.ContentRegion.Available with { Y = 0 });
         if (terminate)
             _modImportManager.ClearImport();
     }

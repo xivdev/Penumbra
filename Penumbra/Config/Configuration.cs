@@ -74,6 +74,7 @@ public partial class Configuration : IPluginConfiguration, ISavable, IService
     public bool EnableDirectoryWatch                 { get; set; } = false;
     public bool EnableAutomaticModImport             { get; set; } = false;
     public bool AutoDismissModImportSuccessReports   { get; set; } = true;
+    public bool AlwaysShowDetailedModImport          { get; set; } = false;
     public bool PreventExportLoopback                { get; set; } = true;
     public bool EnableCustomShapes                   { get; set; } = true;
 
