@@ -1,5 +1,6 @@
 using Dalamud.Game.Command;
 using Dalamud.Game.Text.SeStringHandling;
+using Dalamud.Plugin.Ipc;
 using Dalamud.Plugin.Services;
 using ImSharp;
 using Luna;
@@ -17,6 +18,45 @@ using Penumbra.UI.MainWindow;
 
 namespace Penumbra;
 
+public sealed class CollectionShare(CollectionStorage collections) : IIdDataShareAdapter
+{
+    private readonly WeakReference<CollectionStorage> _collections = new(collections);
+
+    public enum MethodId
+    {
+        GetNameById = 0,
+    }
+
+    private CollectionStorage Storage
+        => _collections.TryGetTarget(out var storage) ? storage : throw new ObjectDisposedException(nameof(CollectionStorage));
+
+    public bool TryInvoke<T1, TRet>(int methodId, T1 arg1, out TRet? ret)
+        where T1 : allows ref struct
+        where TRet : allows ref struct
+    {
+        switch (methodId)
+        {
+            case (int)MethodId.GetNameById:
+            {
+                if (typeof(T1) != typeof(Guid))
+                    throw new AdapterTypeMismatchException((int)MethodId.GetNameById, 1, true, 0, typeof(T1));
+                if (typeof(TRet) != typeof(string))
+                    throw new AdapterTypeMismatchException((int)MethodId.GetNameById, 1, true, -1, typeof(TRet));
+
+                ret = Storage.ById(Unsafe.As<T1, Guid>(ref arg1), out var collection) && collection.Identity.Name is TRet r ? r : default;
+                return true;
+            }
+        }
+
+        throw new AdapterMethodMissingException(methodId, 1, true);
+    }
+
+    public void Dispose()
+    {
+        _collections.SetTarget(null!);
+    }
+}
+
 public class CommandHandler : IDisposable, IApiService
 {
     private const string CommandName = "/penumbra";
@@ -25,7 +65,7 @@ public class CommandHandler : IDisposable, IApiService
     private readonly RedrawService     _redrawService;
     private readonly IChatGui          _chat;
     private readonly Configuration     _config;
-    private readonly MainWindow      _mainWindow;
+    private readonly MainWindow        _mainWindow;
     private readonly ActorManager      _actors;
     private readonly ModManager        _modManager;
     private readonly CollectionManager _collectionManager;
@@ -41,7 +81,7 @@ public class CommandHandler : IDisposable, IApiService
         _commandManager    = commandManager;
         _redrawService     = redrawService;
         _config            = config;
-        _mainWindow      = mainWindow;
+        _mainWindow        = mainWindow;
         _modManager        = modManager;
         _collectionManager = collectionManager;
         _actors            = actors;
@@ -491,7 +531,7 @@ public class CommandHandler : IDisposable, IApiService
 
     private bool SetTag(string arguments)
     {
-        if (arguments.Length == 0)
+        if (arguments.Length is 0)
         {
             var seString = new SeStringBuilder()
                 .AddText("Use with /penumbra bulktag ").AddBlue("[enable|disable|toggle|inherit]").AddText("  ").AddYellow("[Collection Name]")
