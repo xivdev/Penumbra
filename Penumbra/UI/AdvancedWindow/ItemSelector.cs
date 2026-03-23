@@ -15,6 +15,15 @@ public sealed class ItemSelector(ActiveCollections collections, ItemData data, M
     public EquipItem CurrentSelection = new(string.Empty, default, default, default, default, default, FullEquipType.Unknown, default, default,
         default);
 
+    public bool Draw(Utf8StringHandler<LabelStringHandlerBuffer> label, float width)
+    {
+        if (!Draw(label, CurrentSelection.Name, StringU8.Empty, width, out var cache))
+            return false;
+
+        CurrentSelection = cache.Item;
+        return true;
+    }
+
     public sealed record CacheItem(EquipItem Item, StringPair Name, Vector4 Color, bool InCurrentMod, StringU8[] CollectionMods)
     {
         public Vector4 Color { get; set; } = Color;
@@ -75,16 +84,13 @@ public sealed class ItemSelector(ActiveCollections collections, ItemData data, M
     {
         using var color = item.Color.W > 0 ? ImGuiColor.Text.Push(item.Color) : null;
         var       ret   = Im.Selectable(item.Name.Utf8, selected);
-        if (item.CollectionMods.Length > 0 && Im.Item.Hovered())
-        {
-            using var style = Im.Style.PushDefault(ImStyleDouble.WindowPadding);
-            using var tt    = Im.Tooltip.Begin();
-            foreach (var mod in item.CollectionMods)
-                Im.Text(mod);
-        }
+        if (item.CollectionMods.Length <= 0 || !Im.Item.Hovered())
+            return ret;
 
-        if (ret)
-            CurrentSelection = item.Item;
+        using var style = Im.Style.PushDefault(ImStyleDouble.WindowPadding);
+        using var tt    = Im.Tooltip.Begin();
+        foreach (var mod in item.CollectionMods)
+            Im.Text(mod);
         return ret;
     }
 

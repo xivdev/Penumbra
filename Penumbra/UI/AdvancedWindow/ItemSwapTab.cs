@@ -514,8 +514,7 @@ public class ItemSwapTab : IDisposable, ITab
         table.NextColumn();
         using (Im.Id.Push((int)_slotFrom))
         {
-            _dirty |= selector.Draw("##itemSource"u8, selector.CurrentSelection.Name, StringU8.Empty, InputWidth * 2 * Im.Style.GlobalScale,
-                out _);
+            _dirty |= selector.Draw("##itemSource"u8, InputWidth * 2 * Im.Style.GlobalScale);
         }
 
         (article1, _, selector) = GetAccessorySelector(_slotTo, false);
@@ -539,8 +538,7 @@ public class ItemSwapTab : IDisposable, ITab
         table.NextColumn();
         using (Im.Id.Push((int)_slotTo))
         {
-            _dirty |= selector.Draw("##itemTarget"u8, selector.CurrentSelection.Name, StringU8.Empty, InputWidth * 2 * Im.Style.GlobalScale,
-                out _);
+            _dirty |= selector.Draw("##itemTarget"u8, InputWidth * 2 * Im.Style.GlobalScale);
         }
 
         if (_affectedItems is not { Count: > 1 })
@@ -586,8 +584,7 @@ public class ItemSwapTab : IDisposable, ITab
 
         table.DrawFrameColumn(text1);
         table.NextColumn();
-        _dirty |= sourceSelector.Draw("##itemSource"u8, sourceSelector.CurrentSelection.Name, StringU8.Empty,
-            InputWidth * 2 * Im.Style.GlobalScale, out _);
+        _dirty |= sourceSelector.Draw("##itemSource"u8, InputWidth * 2 * Im.Style.GlobalScale);
 
         if (type is SwapType.Ring)
         {
@@ -597,8 +594,7 @@ public class ItemSwapTab : IDisposable, ITab
 
         table.DrawFrameColumn(text2);
         table.NextColumn();
-        _dirty |= targetSelector.Draw("##itemTarget"u8, targetSelector.CurrentSelection.Name, StringU8.Empty,
-            InputWidth * 2 * Im.Style.GlobalScale, out _);
+        _dirty |= targetSelector.Draw("##itemTarget"u8, InputWidth * 2 * Im.Style.GlobalScale);
         if (type is SwapType.Ring)
         {
             Im.Line.Same();
