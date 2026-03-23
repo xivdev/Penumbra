@@ -104,7 +104,7 @@ public class ItemSwapContainer
     public void LoadMod(Mod? mod, ModSettings? settings)
     {
         Clear();
-        if (mod == null || mod.Index < 0)
+        if (mod is null || mod.Index < 0)
             _appliedModData = AppliedModData.Empty;
         else
             _appliedModData = ModSettings.GetResolveData(mod, settings);
@@ -118,7 +118,7 @@ public class ItemSwapContainer
     }
 
     private Func<Utf8GamePath, FullPath> PathResolver(ModCollection? collection)
-        => collection != null
+        => collection is not null
             ? p => collection.ResolvePath(p) ?? new FullPath(p)
             : p => ModRedirections.TryGetValue(p, out var path) ? path : new FullPath(p);
 
@@ -152,7 +152,8 @@ public class ItemSwapContainer
         ModCollection? collection = null)
     {
         var pathResolver = PathResolver(collection);
-        var mdl          = CustomizationSwap.CreateMdl(manager, pathResolver, slot, race, from, to);
+        var metaResolver = MetaResolver(collection);
+        var mdl          = CustomizationSwap.CreateMdl(manager, pathResolver, metaResolver, slot, race, from, to);
         var type = slot switch
         {
             BodySlot.Hair => EstType.Hair,
@@ -160,11 +161,10 @@ public class ItemSwapContainer
             _             => (EstType)0,
         };
 
-        var estResolver = MetaResolver(collection);
-        var est         = ItemSwap.CreateEst(manager, pathResolver, estResolver, type, race, from, to, true);
+        var est = ItemSwap.CreateEst(manager, pathResolver, metaResolver, type, race, from, to, true);
 
         Swaps.Add(mdl);
-        if (est != null)
+        if (est is not null)
             Swaps.Add(est);
 
         Loaded = true;

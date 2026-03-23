@@ -146,7 +146,7 @@ public static class ItemSwap
     public static MetaSwap<EstIdentifier, EstEntry>? CreateEst(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections,
         MetaDictionary manips, EstType type, GenderRace genderRace, PrimaryId idFrom, PrimaryId idTo, bool ownMdl)
     {
-        if (type == 0)
+        if (type is 0)
             return null;
 
         var manipFromIdentifier = new EstIdentifier(idFrom, type, genderRace);
