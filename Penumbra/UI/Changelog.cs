@@ -63,6 +63,7 @@ public class PenumbraChangelog : IUiService
         Add1_4_0_0(Changelog);
         Add1_5_0_0(Changelog);
         Add1_5_1_0(Changelog);
+        AddDummy(Changelog);
         Add1_6_0_0(Changelog);
     }
 
@@ -79,10 +80,17 @@ public class PenumbraChangelog : IUiService
             .RegisterEntry(
                 "Dragging mods into the game to install them should no longer need to drop them into the mod selector, or having the Penumbra window open. Dragging into the game window should be enough."u8,
                 1)
-            .RegisterEntry("The mod import popup has been relegated to a Dalamud notification. The popup itself only opens when further details are requested on the notification (Thanks Ny!)."u8)
-            .RegisterEntry("The notification should also gather multiple import activities without creating multiple popups."u8, 1)
-            .RegisterEntry("Many UI widgets should be more precise and consistent."u8, 1)
+            .RegisterEntry(
+                "The mod import popup has been relegated to a Dalamud notification. The popup itself only opens when further details are requested on the notification (Thanks Ny!)."u8)
+            .RegisterEntry(
+                "There are settings to keep the notification open until dismissed, or to always open the detailed popup as before."u8, 1)
+            .RegisterEntry("The notification should also gather multiple import activities without creating multiple popups."u8,       1)
+            .RegisterEntry("Many UI widgets should be more precise and consistent."u8,                                                 1)
             .RegisterHighlight("Made it possible to have multiple Advanced Editing windows open at once (Thanks Ny!)."u8)
+            .RegisterEntry("By default, every tab opened is pinned to the mod it was opened for."u8, 1)
+            .RegisterEntry(
+                "You can unpin a window, or choose a setting that windows are unpinned by default. Then it will follow the currently selected mod as before. But this prevents you from opening further windows."u8,
+                1)
             .RegisterHighlight("A new 'Management' tab was added."u8)
             .RegisterEntry("The management tab is supposed to help users get rid of unused mods."u8, 1)
             .RegisterEntry(
@@ -90,9 +98,26 @@ public class PenumbraChangelog : IUiService
                 1)
             .RegisterEntry(
                 "New IPC was added so that other plugins can register to add notes when inactive mods are queried or mark them as active."u8, 1)
-            .RegisterEntry("The Duplicate Mods panel checks for multiple mods with the same name."u8,                                         1)
-            .RegisterEntry("Cleanup functions have been moved from Advanced Settings to the General Cleanup panel."u8,                        1)
+            .RegisterEntry(
+                "The Forbidden Files tab can be used to check for and remove file redirection that Penumbra does not allow anymore due to stability issues. Those files will cause a notification if enabled and may need mod updates to retain functionality."u8,
+                1)
+            .RegisterEntry("Other management tabs are available to clean up and optimize mods, but are currently Work-in-Progress."u8, 1)
+            .RegisterEntry("The Duplicate Mods panel checks for multiple mods with the same name."u8,                                  1)
+            .RegisterEntry("Cleanup functions have been moved from Advanced Settings to the General Cleanup panel."u8,                 1)
+            .RegisterEntry("A mode to quickly reorder option groups in the mod edit tab has been added."u8)
+            .RegisterEntry("Multiple new modes and features for the texture editing tab have been added and improved (Thanks Ny!)."u8)
             .RegisterEntry("The attachment points BLD and BL2 have been identified as Twinblades."u8)
+            .RegisterEntry("Try to keep relevant ATR and SHP meta edits when using Item Swap."u8)
+            .RegisterEntry("Multi-design actions should now respect temporary settings mode."u8)
+            .RegisterEntry("Fixed multiple threading issues with subfile resource redirections for materials and avfx files."u8)
+            .RegisterEntry(
+                "Added a notification when updating Penumbra that prompts users to restart the game if they encounter any issues before reporting them."u8)
+            .RegisterEntry("Added some right-click context menu options to file combos in the advanced editing tabs."u8)
+            .RegisterEntry("Moved local mod data from a file per mod to a single file and generally improve startup times."u8)
+            .RegisterEntry("Improved handling of invalid IMC edits."u8)
+            .RegisterEntry("Fixed some issues with the Penumbra crash handler that should make it more durable."u8)
+            .RegisterEntry("Fixed issues with attachment points in cutscenes or on NPC props."u8)
+            .RegisterEntry("Fixed an issue with swapping minions."u8)
             .RegisterHighlight("Add support for other block compression types in the texture compression IPC (1.5.1.12)."u8)
             .RegisterHighlight(
                 "Added IPC to provide Penumbra-related settings of other plugins in the Penumbra Settings tab (Thanks Ny!) (1.5.1.9)."u8)
