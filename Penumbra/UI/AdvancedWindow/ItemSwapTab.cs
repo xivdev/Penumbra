@@ -317,11 +317,25 @@ public class ItemSwapTab : IDisposable, ITab
         if (newDir is null)
             return;
 
-        _modManager.AddMod(newDir, false);
-        var mod = _modManager[^1];
-        if (!_swapData.WriteMod(_modManager, mod, mod.Default,
+        if (!_swapData.WriteMod(_modManager, newDir, out var manips, out var files, out var swaps,
                 _useFileSwaps ? ItemSwapContainer.WriteType.UseSwaps : ItemSwapContainer.WriteType.NoSwaps))
-            _modManager.DeleteMod(mod);
+        {
+            try
+            {
+                newDir.Delete();
+            }
+            catch (Exception ex)
+            {
+                Penumbra.Log.Error($"Could not delete {newDir} after failing to create item swap:\n{ex}.");
+            }
+        }
+        else if (_modManager.AddMod(newDir, false) is { } mod)
+        {
+            _modManager.OptionEditor.SetFiles(mod.Default, files, SaveType.None);
+            _modManager.OptionEditor.SetFileSwaps(mod.Default, swaps, SaveType.None);
+            _modManager.OptionEditor.SetManipulations(mod.Default, manips, SaveType.None);
+            _modManager.OptionEditor.ForceSave(mod.Default, SaveType.ImmediateSync);
+        }
     }
 
     private void CreateOption()
@@ -346,21 +360,26 @@ public class ItemSwapTab : IDisposable, ITab
                 if (_selectedGroup is null)
                 {
                     if (_modManager.OptionEditor.AddModGroup(_mod, GroupType.Multi, _newGroupName) is not { } group)
-                        throw new Exception($"Failure creating option group.");
+                        throw new Exception("Failure creating option group.");
 
                     _selectedGroup = group;
                     groupCreated   = true;
                 }
 
                 if (_modManager.OptionEditor.AddOption(_selectedGroup, _newOptionName) is not { } option)
-                    throw new Exception($"Failure creating mod option.");
+                    throw new Exception("Failure creating mod option.");
 
                 createdOption    = option;
                 optionFolderName = Directory.CreateDirectory(optionFolderName.FullName);
                 dirCreated       = true;
-                if (!_swapData.WriteMod(_modManager, _mod, (IModDataContainer)option,
-                        _useFileSwaps ? ItemSwapContainer.WriteType.UseSwaps : ItemSwapContainer.WriteType.NoSwaps, optionFolderName))
+                if (!_swapData.WriteMod(_modManager, optionFolderName, out var manips, out var files, out var swaps,
+                        _useFileSwaps ? ItemSwapContainer.WriteType.UseSwaps : ItemSwapContainer.WriteType.NoSwaps))
                     throw new Exception("Failure writing files for mod swap.");
+
+                _modManager.OptionEditor.SetFiles((IModDataContainer)option, files, SaveType.None);
+                _modManager.OptionEditor.SetFileSwaps((IModDataContainer)option, swaps, SaveType.None);
+                _modManager.OptionEditor.SetManipulations((IModDataContainer)option, manips, SaveType.None);
+                _modManager.OptionEditor.ForceSave((IModDataContainer)option, SaveType.ImmediateSync);
             }
         }
         catch (Exception e)
@@ -377,7 +396,7 @@ public class ItemSwapTab : IDisposable, ITab
                     _selectedGroup = null;
                 }
 
-                if (dirCreated && optionFolderName != null)
+                if (dirCreated && optionFolderName is not null)
                     Directory.Delete(optionFolderName.FullName, true);
             }
             catch

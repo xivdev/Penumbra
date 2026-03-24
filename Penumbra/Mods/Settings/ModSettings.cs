@@ -45,7 +45,7 @@ public class ModSettings
     // Return everything required to resolve things for a single mod with given settings (which can be null, in which case the default is used.
     public static AppliedModData GetResolveData(Mod mod, ModSettings? settings)
     {
-        if (settings == null)
+        if (settings is null)
             settings = DefaultSettings(mod);
         else
             settings.Settings.FixSize(mod);

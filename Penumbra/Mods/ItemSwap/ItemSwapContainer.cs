@@ -42,13 +42,12 @@ public class ItemSwapContainer
         NoSwaps,
     }
 
-    public bool WriteMod(ModManager manager, Mod mod, IModDataContainer container, WriteType writeType = WriteType.NoSwaps,
-        DirectoryInfo? directory = null)
+    public bool WriteMod(ModManager manager, DirectoryInfo directory, out MetaDictionary manips, out Dictionary<Utf8GamePath, FullPath> files,
+        out Dictionary<Utf8GamePath, FullPath> swaps, WriteType writeType = WriteType.NoSwaps)
     {
-        var convertedManips = new MetaDictionary();
-        var convertedFiles  = new Dictionary<Utf8GamePath, FullPath>(Swaps.Count);
-        var convertedSwaps  = new Dictionary<Utf8GamePath, FullPath>(Swaps.Count);
-        directory ??= mod.ModPath;
+        manips = new MetaDictionary();
+        files  = new Dictionary<Utf8GamePath, FullPath>(Swaps.Count);
+        swaps  = new Dictionary<Utf8GamePath, FullPath>(Swaps.Count);
         try
         {
             foreach (var swap in Swaps.SelectMany(s => s.WithChildren()))
@@ -59,9 +58,9 @@ public class ItemSwapContainer
                     if (file.SwapToModdedEqualsOriginal)
                         continue;
 
-                    if (writeType == WriteType.UseSwaps && file.SwapToModdedExistsInGame && !file.DataWasChanged)
+                    if (writeType is WriteType.UseSwaps && file is { SwapToModdedExistsInGame: true, DataWasChanged: false })
                     {
-                        convertedSwaps.TryAdd(file.SwapFromRequestPath, file.SwapToModded);
+                        swaps.TryAdd(file.SwapFromRequestPath, file.SwapToModded);
                     }
                     else
                     {
@@ -69,7 +68,7 @@ public class ItemSwapContainer
                         var bytes = file.FileData.Write();
                         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
                         _manager.Compactor.WriteAllBytes(path, bytes);
-                        convertedFiles.TryAdd(file.SwapFromRequestPath, new FullPath(path));
+                        files.TryAdd(file.SwapFromRequestPath, new FullPath(path));
                     }
                 }
                 else if (swap is IMetaSwap { SwapAppliedIsDefault: false })
@@ -77,26 +76,24 @@ public class ItemSwapContainer
                     // @formatter:off
                     _ = swap switch
                     {
-                        MetaSwap<EstIdentifier, EstEntry> meta           => convertedManips.TryAdd(meta.SwapFromIdentifier, meta.SwapToModdedEntry),
-                        MetaSwap<EqpIdentifier, EqpEntryInternal> meta   => convertedManips.TryAdd(meta.SwapFromIdentifier, meta.SwapToModdedEntry),
-                        MetaSwap<EqdpIdentifier, EqdpEntryInternal> meta => convertedManips.TryAdd(meta.SwapFromIdentifier, meta.SwapToModdedEntry),
-                        MetaSwap<ImcIdentifier, ImcEntry>meta            => convertedManips.TryAdd(meta.SwapFromIdentifier, meta.SwapToModdedEntry),
-                        MetaSwap<GmpIdentifier, GmpEntry>meta            => convertedManips.TryAdd(meta.SwapFromIdentifier, meta.SwapToModdedEntry),
+                        MetaSwap<EstIdentifier, EstEntry>           meta => manips.TryAdd(meta.SwapFromIdentifier, meta.SwapToModdedEntry),
+                        MetaSwap<EqpIdentifier, EqpEntryInternal>   meta => manips.TryAdd(meta.SwapFromIdentifier, meta.SwapToModdedEntry),
+                        MetaSwap<EqdpIdentifier, EqdpEntryInternal> meta => manips.TryAdd(meta.SwapFromIdentifier, meta.SwapToModdedEntry),
+                        MetaSwap<ImcIdentifier, ImcEntry>           meta => manips.TryAdd(meta.SwapFromIdentifier, meta.SwapToModdedEntry),
+                        MetaSwap<GmpIdentifier, GmpEntry>           meta => manips.TryAdd(meta.SwapFromIdentifier, meta.SwapToModdedEntry),
+                        MetaSwap<AtrIdentifier, AtrEntry>           meta => manips.TryAdd(meta.SwapFromIdentifier, meta.SwapToModdedEntry),
+                        MetaSwap<ShpIdentifier, ShpEntry>           meta => manips.TryAdd(meta.SwapFromIdentifier, meta.SwapToModdedEntry),
                         _ => false,
                     };
                     // @formatter:on
                 }
             }
 
-            manager.OptionEditor.SetFiles(container, convertedFiles, SaveType.None);
-            manager.OptionEditor.SetFileSwaps(container, convertedSwaps, SaveType.None);
-            manager.OptionEditor.SetManipulations(container, convertedManips, SaveType.None);
-            manager.OptionEditor.ForceSave(container, SaveType.ImmediateSync);
             return true;
         }
         catch (Exception e)
         {
-            Penumbra.Log.Error($"Could not write FileSwapContainer to {mod.ModPath}:\n{e}");
+            Penumbra.Log.Error($"Could not write FileSwapContainer to {directory}:\n{e}");
             return false;
         }
     }
