@@ -18,7 +18,7 @@ public sealed class TextureOptimizationTab(ModManager mods, TextureManager textu
     private static int  _largeDimensionLimit = 4096;
 
     public ReadOnlySpan<byte> Label
-        => "Texture Optimization"u8;
+        => "Texture Optimization (WIP)"u8;
 
     public void DrawContent()
     {
