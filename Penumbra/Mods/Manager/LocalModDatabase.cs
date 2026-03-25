@@ -143,10 +143,10 @@ public sealed class LocalModDatabase(FilenameService filenames) : IDisposable, I
         }
     }
 
-    private sealed class Data(string id)
+    private sealed class Data()
     {
         [BsonId]
-        public string Id { get; private set; } = id;
+        public string Id { get; private set; } = string.Empty;
 
         public long            ImportDate     = DateTimeOffset.UnixEpoch.ToUnixTimeMilliseconds();
         public long            LastConfigEdit = DateTimeOffset.UnixEpoch.ToUnixTimeMilliseconds();
@@ -156,6 +156,12 @@ public sealed class LocalModDatabase(FilenameService filenames) : IDisposable, I
         public HashSet<ulong>  PreferredChangedItems = [];
         public string          Folder                = string.Empty;
         public string?         SortOrderName;
+
+        public Data(string id)
+            : this()
+        {
+            Id = id;
+        }
 
         public Data(Mod mod)
             : this(mod.Identifier)
