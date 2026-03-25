@@ -18,13 +18,16 @@ namespace Penumbra.UI.AdvancedWindow.Meta;
 public sealed class AtchMetaDrawer : MetaDrawer<AtchIdentifier, AtchEntry>
 {
     public override ReadOnlySpan<byte> Label
-        => "Attachment Points (ATCH)###ATCH"u8;
+        => "ATCH"u8;
+
+    public override ReadOnlySpan<byte> Tooltip
+        => "Attachment Points"u8;
 
     public override int NumColumns
         => 10;
 
     public override float ColumnHeight
-        => 2 * Im.Style.FrameHeightWithSpacing;
+        => 2 * Im.Style.FrameHeight + Im.Style.ItemSpacing.Y + 2 * Im.Style.CellPadding.Y;
 
     private          AtchFile?      _currentBaseAtchFile;
     private          AtchPoint?     _currentBaseAtchPoint;
@@ -129,7 +132,7 @@ public sealed class AtchMetaDrawer : MetaDrawer<AtchIdentifier, AtchEntry>
             .ThenBy(p => p.Key.Type)
             .ThenBy(p => p.Key.EntryIndex);
 
-    protected override int Count
+    public override int Count
         => Editor.Atch.Count;
 
     private bool DrawIdentifierInput(ref AtchIdentifier identifier)

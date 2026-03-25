@@ -16,7 +16,10 @@ public sealed class ShpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     : MetaDrawer<ShpIdentifier, ShpEntry>(editor, metaFiles)
 {
     public override ReadOnlySpan<byte> Label
-        => "Shape Keys (SHP)###SHP"u8;
+        => "SHP"u8;
+
+    public override ReadOnlySpan<byte> Tooltip
+        => "Shape Keys"u8;
 
     private ShapeAttributeString _buffer = ShapeAttributeString.TryRead("shpx_"u8, out var s) ? s : ShapeAttributeString.Empty;
     private bool                 _identifierValid;
@@ -25,7 +28,7 @@ public sealed class ShpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
         => 8;
 
     public override float ColumnHeight
-        => Im.Style.FrameHeightWithSpacing;
+        => Im.Style.FrameHeight + 2 * Im.Style.CellPadding.Y;
 
     protected override void Initialize()
         => Identifier = new ShpIdentifier(HumanSlot.Unknown, null, ShapeAttributeString.Empty, ShapeConnectorCondition.None,
@@ -68,7 +71,7 @@ public sealed class ShpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
             .ThenBy(kvp => kvp.Key.ConnectorCondition)
             .Select(kvp => (kvp.Key, kvp.Value));
 
-    protected override int Count
+    public override int Count
         => Editor.Shp.Count;
 
     private bool DrawIdentifierInput(ref ShpIdentifier identifier)

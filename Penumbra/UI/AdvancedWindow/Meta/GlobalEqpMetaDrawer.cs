@@ -12,7 +12,10 @@ public sealed class GlobalEqpMetaDrawer(ModMetaEditor editor, MetaFileManager me
     : MetaDrawer<GlobalEqpManipulation, byte>(editor, metaFiles)
 {
     public override ReadOnlySpan<byte> Label
-        => "Global Equipment Parameter Edits (Global EQP)###GEQP"u8;
+        => "GEQP"u8;
+
+    public override ReadOnlySpan<byte> Tooltip
+        => "Global Equipment Parameters"u8;
 
     public override int NumColumns
         => 4;
@@ -53,7 +56,7 @@ public sealed class GlobalEqpMetaDrawer(ModMetaEditor editor, MetaFileManager me
             .ThenBy(identifier => identifier.Condition.Id)
             .Select(identifier => (identifier, (byte)0));
 
-    protected override int Count
+    public override int Count
         => Editor.GlobalEqp.Count;
 
     private static void DrawIdentifierInput(ref GlobalEqpManipulation identifier)

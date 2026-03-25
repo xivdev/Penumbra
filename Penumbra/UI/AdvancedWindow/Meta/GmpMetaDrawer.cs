@@ -13,7 +13,10 @@ public sealed class GmpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     : MetaDrawer<GmpIdentifier, GmpEntry>(editor, metaFiles)
 {
     public override ReadOnlySpan<byte> Label
-        => "Visor/Gimmick Edits (GMP)###GMP"u8;
+        => "GMP"u8;
+
+    public override ReadOnlySpan<byte> Tooltip
+        => "Visor/Gimmick Edits"u8;
 
     public override int NumColumns
         => 7;
@@ -60,7 +63,7 @@ public sealed class GmpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
             .OrderBy(kvp => kvp.Key.SetId.Id)
             .Select(kvp => (kvp.Key, kvp.Value));
 
-    protected override int Count
+    public override int Count
         => Editor.Gmp.Count;
 
     private static bool DrawIdentifierInput(ref GmpIdentifier identifier)

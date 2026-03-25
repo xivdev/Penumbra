@@ -12,7 +12,8 @@ namespace Penumbra.UI.AdvancedWindow;
 
 public partial class ModEditWindow
 {
-    private readonly MetaDrawers _metaDrawers;
+    private readonly MetaDrawers          _metaDrawers;
+    private          MetaManipulationType _selected = MetaManipulationType.Eqp;
 
     private void DrawMetaTab()
     {
@@ -20,6 +21,7 @@ public partial class ModEditWindow
         if (!tab)
             return;
 
+        Im.Cursor.Y += Im.Style.ItemSpacing.Y;
         using var id        = Im.Id.Push(Mod!.Identifier);
         var       setsEqual = !_editor.MetaEditor.Changes;
         var       tt        = setsEqual ? "No changes staged."u8 : "Apply the currently staged changes to the option."u8;
@@ -46,20 +48,39 @@ public partial class ModEditWindow
         Im.Line.Same();
         DrawAtchDragDrop();
 
-        using var child = Im.Child.Begin("##meta"u8, Im.ContentRegion.Available, true);
-        if (!child)
-            return;
+        Im.Cursor.Y += Im.Style.ItemSpacing.Y;
+        var buttonSize = new Vector2(Im.ContentRegion.Available.X / 10, Im.Style.FrameHeight);
+        DrawEditHeader(MetaManipulationType.Eqp,       buttonSize);
+        DrawVerticalSeparator();
+        DrawEditHeader(MetaManipulationType.Eqdp,      buttonSize);
+        DrawVerticalSeparator();
+        DrawEditHeader(MetaManipulationType.Imc,       buttonSize);
+        DrawVerticalSeparator();
+        DrawEditHeader(MetaManipulationType.Est,       buttonSize);
+        DrawVerticalSeparator();
+        DrawEditHeader(MetaManipulationType.Gmp,       buttonSize);
+        DrawVerticalSeparator();
+        DrawEditHeader(MetaManipulationType.Rsp,       buttonSize);
+        DrawVerticalSeparator();
+        DrawEditHeader(MetaManipulationType.Atch,      buttonSize);
+        DrawVerticalSeparator();
+        DrawEditHeader(MetaManipulationType.Shp,       buttonSize);
+        DrawVerticalSeparator();
+        DrawEditHeader(MetaManipulationType.Atr,       buttonSize);
+        DrawVerticalSeparator();
+        DrawEditHeader(MetaManipulationType.GlobalEqp, buttonSize);
 
-        DrawEditHeader(MetaManipulationType.Eqp);
-        DrawEditHeader(MetaManipulationType.Eqdp);
-        DrawEditHeader(MetaManipulationType.Imc);
-        DrawEditHeader(MetaManipulationType.Est);
-        DrawEditHeader(MetaManipulationType.Gmp);
-        DrawEditHeader(MetaManipulationType.Rsp);
-        DrawEditHeader(MetaManipulationType.Atch);
-        DrawEditHeader(MetaManipulationType.Shp);
-        DrawEditHeader(MetaManipulationType.Atr);
-        DrawEditHeader(MetaManipulationType.GlobalEqp);
+        Im.Cursor.Y -= Im.Style.ItemSpacing.Y;
+        if (_metaDrawers.Get(_selected) is { } drawer)
+            DrawTable(drawer);
+    }
+
+    private static void DrawVerticalSeparator()
+    {
+        var lowerRight = Im.Item.LowerRightCorner;
+        var upperLeft  = Im.Item.UpperLeftCorner with { X = lowerRight.X };
+        Im.Window.DrawList.Shape.Line(upperLeft, lowerRight, ImGuiColor.Separator.Get(), Im.Style.GlobalScale);
+        Im.Line.NoSpacing();
     }
 
     private void DrawAtchDragDrop()
@@ -103,50 +124,64 @@ public partial class ModEditWindow
         }
     }
 
-    private void DrawEditHeader(MetaManipulationType type)
+    private void DrawEditHeader(MetaManipulationType type, Vector2 buttonSize)
     {
         var drawer = _metaDrawers.Get(type);
         if (drawer is null)
             return;
 
-        var oldPos = Im.Cursor.Y;
-        var header = Im.Tree.Header($"{_editor.MetaEditor.GetCount(type)} {drawer.Label}");
-        DrawOtherOptionData(type, oldPos, Im.Cursor.Position);
-        if (!header)
-            return;
+        var otherData = _editor.MetaEditor.OtherData[type];
+        using (Im.Style.Push(ImStyleSingle.FrameRounding, 0))
+        {
+            var color = Im.Color.Push(ImGuiColor.Button, Im.Style[ImGuiColor.ButtonHovered], _selected == type)
+                .Push(ImGuiColor.ButtonHovered,  Im.Style[ImGuiColor.ButtonHovered], _selected == type)
+                .Push(ImGuiColor.ButtonActive,   Im.Style[ImGuiColor.ButtonHovered], _selected == type);
 
-        DrawTable(drawer);
+            //if (Im.Button($"{(drawer.Count > 0 ? $"{drawer.Count} " : StringU8.Empty)}{drawer.Header}{(otherData.TotalCount > 0 ? $" ({otherData.TotalCount})" : StringU8.Empty)}###{drawer.Label}", buttonSize))
+            if (Im.Button(drawer.Header, buttonSize))
+                _selected = type;
+            if (drawer.Count > 0)
+            {
+                var position = Im.Item.UpperLeftCorner + Im.Style.FramePadding;
+                Im.Window.DrawList.Text(position, ColorId.NewMod.Value().FullAlpha(), $"({drawer.Count})");
+            }
+            if (otherData.TotalCount > 0)
+            {
+                var position = Im.Item.LowerRightCorner - Im.Style.FramePadding - Im.Font.CalculateSize($"({otherData.TotalCount})");
+                Im.Window.DrawList.Text(position, ColorId.RedundantAssignment.Value().FullAlpha(), $"({otherData.TotalCount})");
+            }
+            color.Dispose();
+
+            if (Im.Item.Hovered())
+            {
+                using var tt = Im.Tooltip.Begin();
+                Im.Text(drawer.Tooltip);
+                Im.Cursor.Y += Im.Style.ItemInnerSpacing.Y;
+                Im.Separator();
+                Im.Cursor.Y += Im.Style.ItemInnerSpacing.Y;
+                Im.Text($"{drawer.Count} Edits in this Option.");
+                Im.Text($"{otherData.TotalCount} Edits in {otherData.Count} other Option{(otherData.Count is not 1 ? "s"u8 : StringU8.Empty)}.");
+                if (otherData.TotalCount > 0)
+                {
+                    Im.Cursor.Y += Im.Style.ItemInnerSpacing.Y;
+                    Im.Separator();
+                    Im.Cursor.Y += Im.Style.ItemInnerSpacing.Y;
+                    foreach (var name in otherData)
+                        Im.BulletText(name);
+                }
+            }
+        }
     }
 
     private static void DrawTable(IMetaDrawer drawer)
     {
-        const TableFlags flags = TableFlags.RowBackground | TableFlags.SizingFixedFit | TableFlags.BordersInnerVertical;
-        using var        table = Im.Table.Begin(drawer.Label, drawer.NumColumns, flags);
+        const TableFlags flags = TableFlags.RowBackground | TableFlags.SizingFixedFit | TableFlags.BordersInnerVertical | TableFlags.BordersOuter | TableFlags.ScrollY;
+        using var        table = Im.Table.Begin(drawer.Label, drawer.NumColumns, flags, Im.ContentRegion.Available);
         if (!table)
             return;
 
+        table.SetupScrollFreeze(0, 1);
         drawer.Draw();
-        Im.Line.New();
-    }
-
-    private void DrawOtherOptionData(MetaManipulationType type, float oldPos, Vector2 newPos)
-    {
-        var otherOptionData = _editor.MetaEditor.OtherData[type];
-        if (otherOptionData.TotalCount <= 0)
-            return;
-
-        Utf8StringHandler<TextStringHandlerBuffer> text = $"{otherOptionData.TotalCount} Edits in other Options";
-        var                                        size = Im.Font.CalculateSize(ref text).X;
-        Im.Cursor.Position = new Vector2(Im.ContentRegion.Available.X - size, oldPos + Im.Style.FramePadding.Y);
-        Im.Text(text, ColorId.RedundantAssignment.Value().FullAlpha());
-        if (Im.Item.Hovered())
-        {
-            using var tt = Im.Tooltip.Begin();
-            foreach (var name in otherOptionData)
-                Im.Text(name);
-        }
-
-        Im.Cursor.Position = newPos;
     }
 
     private static void CopyToClipboardButton(ReadOnlySpan<byte> tooltip, Vector2 iconSize, MetaDictionary manipulations)

@@ -16,7 +16,10 @@ public sealed class AtrMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     : MetaDrawer<AtrIdentifier, AtrEntry>(editor, metaFiles)
 {
     public override ReadOnlySpan<byte> Label
-        => "Attributes(ATR)###ATR"u8;
+        => "ATR"u8;
+
+    public override ReadOnlySpan<byte> Tooltip
+        => "Attributes"u8;
 
     private ShapeAttributeString _buffer = ShapeAttributeString.TryRead("atrx_"u8, out var s) ? s : ShapeAttributeString.Empty;
     private bool                 _identifierValid;
@@ -25,7 +28,7 @@ public sealed class AtrMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
         => 7;
 
     public override float ColumnHeight
-        => Im.Style.FrameHeightWithSpacing;
+        => Im.Style.FrameHeight + 2 * Im.Style.CellPadding.Y;
 
     protected override void Initialize()
     {
@@ -69,7 +72,7 @@ public sealed class AtrMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
             .ThenBy(kvp => kvp.Key.Id)
             .Select(kvp => (kvp.Key, kvp.Value));
 
-    protected override int Count
+    public override int Count
         => Editor.Atr.Count;
 
     private bool DrawIdentifierInput(ref AtrIdentifier identifier)

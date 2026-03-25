@@ -13,7 +13,10 @@ public sealed class ImcMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     : MetaDrawer<ImcIdentifier, ImcEntry>(editor, metaFiles)
 {
     public override ReadOnlySpan<byte> Label
-        => "Variant Edits (IMC)###IMC"u8;
+        => "IMC"u8;
+
+    public override ReadOnlySpan<byte> Tooltip
+        => "Variant Edits"u8;
 
     public override int NumColumns
         => 10;
@@ -145,7 +148,7 @@ public sealed class ImcMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
             .ThenBy(kvp => kvp.Key.Variant.Id)
             .Select(kvp => (kvp.Key, kvp.Value));
 
-    protected override int Count
+    public override int Count
         => Editor.Imc.Count;
 
     public static bool DrawObjectType(ref ImcIdentifier identifier, float width = 110)

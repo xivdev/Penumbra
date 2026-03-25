@@ -80,12 +80,12 @@ public class PenumbraChangelog : IUiService
             .RegisterEntry(
                 "Dragging mods into the game to install them should no longer need to drop them into the mod selector, or having the Penumbra window open. Dragging into the game window should be enough."u8,
                 1)
+            .RegisterEntry("Many UI widgets should be more precise and consistent."u8, 1)
             .RegisterEntry(
                 "The mod import popup has been relegated to a Dalamud notification. The popup itself only opens when further details are requested on the notification (Thanks Ny!)."u8)
             .RegisterEntry(
                 "There are settings to keep the notification open until dismissed, or to always open the detailed popup as before."u8, 1)
             .RegisterEntry("The notification should also gather multiple import activities without creating multiple popups."u8,       1)
-            .RegisterEntry("Many UI widgets should be more precise and consistent."u8,                                                 1)
             .RegisterHighlight("Made it possible to have multiple Advanced Editing windows open at once (Thanks Ny!)."u8)
             .RegisterEntry("By default, every tab opened is pinned to the mod it was opened for."u8, 1)
             .RegisterEntry(
@@ -107,7 +107,7 @@ public class PenumbraChangelog : IUiService
             .RegisterEntry("A mode to quickly reorder option groups in the mod edit tab has been added."u8)
             .RegisterEntry("Multiple new modes and features for the texture editing tab have been added and improved (Thanks Ny!)."u8)
             .RegisterEntry("The attachment points BLD and BL2 have been identified as Twinblades."u8)
-            .RegisterEntry("Try to keep relevant ATR and SHP meta edits when using Item Swap."u8)
+            .RegisterEntry("Creating mods using item swap will try to keep relevant ATR and SHP meta edits."u8)
             .RegisterEntry("Multi-design actions should now respect temporary settings mode."u8)
             .RegisterEntry("Fixed multiple threading issues with subfile resource redirections for materials and avfx files."u8)
             .RegisterEntry(

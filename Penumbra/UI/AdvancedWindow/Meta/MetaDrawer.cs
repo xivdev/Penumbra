@@ -10,9 +10,12 @@ namespace Penumbra.UI.AdvancedWindow.Meta;
 
 public interface IMetaDrawer
 {
+    public ReadOnlySpan<byte> Header        { get; }
     public ReadOnlySpan<byte> Label        { get; }
+    public ReadOnlySpan<byte> Tooltip      { get; }
     public int                NumColumns   { get; }
     public float              ColumnHeight { get; }
+    public int                Count        { get; }
     public void               Draw();
 }
 
@@ -49,18 +52,21 @@ public abstract class MetaDrawer<TIdentifier, TEntry>(ModMetaEditor editor, Meta
         }
     }
 
+    public virtual ReadOnlySpan<byte> Header
+        => Label;
     public abstract ReadOnlySpan<byte> Label      { get; }
+    public abstract ReadOnlySpan<byte> Tooltip    { get; }
     public abstract int                NumColumns { get; }
+    public abstract int                Count      { get; }
 
     public virtual float ColumnHeight
-        => Im.Style.FrameHeightWithSpacing;
+        => Im.Style.FrameHeight + 2 * Im.Style.CellPadding.Y;
 
     protected abstract void DrawNew();
     protected abstract void Initialize();
     protected abstract void DrawEntry(TIdentifier identifier, TEntry entry);
 
     protected abstract IEnumerable<(TIdentifier, TEntry)> Enumerate();
-    protected abstract int                                Count { get; }
 
 
     /// <summary>

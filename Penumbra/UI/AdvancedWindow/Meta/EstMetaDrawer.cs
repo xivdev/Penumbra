@@ -13,7 +13,10 @@ public sealed class EstMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     : MetaDrawer<EstIdentifier, EstEntry>(editor, metaFiles)
 {
     public override ReadOnlySpan<byte> Label
-        => "Extra Skeleton Parameters (EST)###EST"u8;
+        => "EST"u8;
+
+    public override ReadOnlySpan<byte> Tooltip
+        => "Extra Skeleton Parameters"u8;
 
     public override int NumColumns
         => 7;
@@ -62,7 +65,7 @@ public sealed class EstMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
             .ThenBy(kvp => kvp.Key.Slot)
             .Select(kvp => (kvp.Key, kvp.Value));
 
-    protected override int Count
+    public override int Count
         => Editor.Est.Count;
 
     private static bool DrawIdentifierInput(ref EstIdentifier identifier)
