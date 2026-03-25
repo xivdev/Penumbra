@@ -1,6 +1,6 @@
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
-using OtterGui.Text.HelperObjects;
+using Luna;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
@@ -273,7 +273,7 @@ internal partial record ResolveContext
         var metaCache = Global.Collection.MetaCache;
         var skeletonSet = metaCache?.GetEstEntry(type, raceCode, primary)
          ?? EstFile.GetDefault(Global.MetaFileManager, type, raceCode, primary);
-        return (raceCode, type.ToName(), skeletonSet.AsId);
+        return (raceCode, type.ToSuffix(), skeletonSet.AsId);
     }
 
     private unsafe Utf8GamePath ResolveSkeletonPathNative(uint partialSkeletonIndex)

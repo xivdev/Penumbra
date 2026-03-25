@@ -1,5 +1,4 @@
-using OtterGui.Extensions;
-using OtterGui.Services;
+using Luna;
 using Penumbra.Api;
 using Penumbra.Communication;
 using Penumbra.GameData.Actors;
@@ -9,7 +8,7 @@ using Penumbra.String;
 
 namespace Penumbra.Collections.Manager;
 
-public class TempCollectionManager : IDisposable, IService
+public class TempCollectionManager : IDisposable, Luna.IService
 {
     public          int                   GlobalChangeCounter { get; private set; }
     public readonly IndividualCollections Collections;
@@ -34,8 +33,8 @@ public class TempCollectionManager : IDisposable, IService
         _communicator.TemporaryGlobalModChange.Unsubscribe(OnGlobalModChange);
     }
 
-    private void OnGlobalModChange(TemporaryMod mod, bool created, bool removed)
-        => TempModManager.OnGlobalModChange(_customCollections.Values, mod, created, removed);
+    private void OnGlobalModChange(in TemporaryGlobalModChange.Arguments arguments)
+        => TempModManager.OnGlobalModChange(_customCollections.Values, arguments.Mod, arguments.NewlyCreated, arguments.Deleted);
 
     public int Count
         => _customCollections.Count;
@@ -58,7 +57,7 @@ public class TempCollectionManager : IDisposable, IService
         if (_customCollections.TryAdd(collection.Identity.Id, collection))
         {
             // Temporary collection created.
-            _communicator.CollectionChange.Invoke(CollectionType.Temporary, null, collection, string.Empty);
+            _communicator.CollectionChange.Invoke(new CollectionChange.Arguments(CollectionType.Temporary, null, collection, string.Empty));
             return collection.Identity.Id;
         }
 
@@ -82,7 +81,7 @@ public class TempCollectionManager : IDisposable, IService
                 continue;
 
             // Temporary collection assignment removed.
-            _communicator.CollectionChange.Invoke(CollectionType.Temporary, collection, null, Collections[i].DisplayName);
+            _communicator.CollectionChange.Invoke(new CollectionChange.Arguments(CollectionType.Temporary, collection, null, Collections[i].DisplayName));
             Penumbra.Log.Verbose($"Unassigned temporary collection {collection.Identity.Id} from {Collections[i].DisplayName}.");
             Collections.Delete(i--);
         }
@@ -97,7 +96,7 @@ public class TempCollectionManager : IDisposable, IService
 
         // Temporary collection assignment added.
         Penumbra.Log.Verbose($"Assigned temporary collection {collection.Identity.AnonymizedName} to {Collections.Last().DisplayName}.");
-        _communicator.CollectionChange.Invoke(CollectionType.Temporary, null, collection, Collections.Last().DisplayName);
+        _communicator.CollectionChange.Invoke(new CollectionChange.Arguments(CollectionType.Temporary, null, collection, Collections.Last().DisplayName));
         return true;
     }
 

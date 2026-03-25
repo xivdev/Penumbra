@@ -1,4 +1,4 @@
-using OtterGui.Services;
+using Luna;
 using Penumbra.GameData;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.PathResolving;
@@ -8,7 +8,7 @@ using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Interop.Hooks.Meta;
 
-public class RspTailHook : FastHook<RspTailHook.Delegate>, IDisposable
+public sealed class RspTailHook : FastHook<RspTailHook.Delegate>
 {
     public delegate float Delegate(nint cmpResource, Race clan, byte gender, byte isSecondSubRace, byte bodyType, byte height);
 
@@ -22,7 +22,7 @@ public class RspTailHook : FastHook<RspTailHook.Delegate>, IDisposable
         Task = hooks.CreateHook<Delegate>("GetRspTail", Sigs.GetRspTail, Detour,
             metaState.Config.EnableMods && !HookOverrides.Instance.Meta.RspTailHook);
         if (!HookOverrides.Instance.Meta.RspTailHook)
-            _metaState.Config.ModsEnabled += Toggle;
+            _metaState.Config.ModsEnabled += Set;
     }
 
     private unsafe float Detour(nint cmpResource, Race race, byte gender, byte isSecondSubRace, byte bodyType, byte tailLength)
@@ -64,7 +64,7 @@ public class RspTailHook : FastHook<RspTailHook.Delegate>, IDisposable
         }
         else
         {
-            scale = Task.Result.Original(cmpResource, race, gender, isSecondSubRace, bodyType, tailLength);
+            scale = Task.Result!.Original(cmpResource, race, gender, isSecondSubRace, bodyType, tailLength);
         }
 
         Penumbra.Log.Excessive(
@@ -72,6 +72,9 @@ public class RspTailHook : FastHook<RspTailHook.Delegate>, IDisposable
         return scale;
     }
 
-    public void Dispose()
-        => _metaState.Config.ModsEnabled -= Toggle;
+    public override void Dispose()
+    {
+        _metaState.Config.ModsEnabled -= Set;
+        base.Dispose();
+    }
 }

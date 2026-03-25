@@ -1,4 +1,4 @@
-using OtterGui.Services;
+using Luna;
 using Penumbra.GameData;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
@@ -9,7 +9,7 @@ using CharacterUtility = Penumbra.Interop.Services.CharacterUtility;
 
 namespace Penumbra.Interop.Hooks.Meta;
 
-public unsafe class EstHook : FastHook<EstHook.Delegate>, IDisposable
+public sealed unsafe class EstHook : FastHook<EstHook.Delegate>
 {
     public delegate EstEntry Delegate(ResourceHandle* estResource, uint id, uint genderRace);
 
@@ -23,7 +23,7 @@ public unsafe class EstHook : FastHook<EstHook.Delegate>, IDisposable
         Task = hooks.CreateHook<Delegate>("FindEstEntry", Sigs.FindEstEntry, Detour,
             metaState.Config.EnableMods && !HookOverrides.Instance.Meta.EstHook);
         if (!HookOverrides.Instance.Meta.EstHook)
-            _metaState.Config.ModsEnabled += Toggle;
+            _metaState.Config.ModsEnabled += Set;
     }
 
     private EstEntry Detour(ResourceHandle* estResource, uint genderRace, uint id)
@@ -34,7 +34,7 @@ public unsafe class EstHook : FastHook<EstHook.Delegate>, IDisposable
          && cache.Est.TryGetValue(Convert(estResource, genderRace, id), out var entry))
             ret = entry.Entry;
         else
-            ret = Task.Result.Original(estResource, genderRace, id);
+            ret = Task.Result!.Original(estResource, genderRace, id);
 
         Penumbra.Log.Excessive($"[FindEstEntry] Invoked with 0x{(nint)estResource:X}, {genderRace}, {id}, returned {ret.Value}.");
         return ret;
@@ -58,6 +58,9 @@ public unsafe class EstHook : FastHook<EstHook.Delegate>, IDisposable
         return new EstIdentifier(i, 0, gr);
     }
 
-    public void Dispose()
-        => _metaState.Config.ModsEnabled -= Toggle;
+    public override void Dispose()
+    {
+        _metaState.Config.ModsEnabled -= Set;
+        base.Dispose();
+    }
 }

@@ -1,5 +1,5 @@
-using OtterGui.Extensions;
-using OtterGui.Filesystem;
+using System.Text.Json;
+using Luna;
 using Penumbra.Api.Enums;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Groups;
@@ -45,7 +45,7 @@ public class ModSettings
     // Return everything required to resolve things for a single mod with given settings (which can be null, in which case the default is used.
     public static AppliedModData GetResolveData(Mod mod, ModSettings? settings)
     {
-        if (settings == null)
+        if (settings is null)
             settings = DefaultSettings(mod);
         else
             settings.Settings.FixSize(mod);
@@ -131,12 +131,30 @@ public class ModSettings
     // A simple struct conversion to easily save settings by name instead of value.
     public struct SavedSettings
     {
-        public Dictionary<string, Setting> Settings;
-        public ModPriority                 Priority;
-        public bool                        Enabled;
+        public Dictionary<string, Setting>? Settings;
+        public ModPriority                  Priority;
+        public bool                         Enabled;
+
+        public void Write(Utf8JsonWriter writer)
+        {
+            writer.WriteStartObject();
+            if (Settings?.Count > 0)
+            {
+                writer.WritePropertyName("Settings"u8);
+                writer.WriteStartObject();
+                foreach (var (group, setting) in Settings)
+                    writer.WriteNumber(group, setting.Value);
+                writer.WriteEndObject();
+            }
+
+            writer.WriteNumber("Priority"u8, Priority.Value);
+            writer.WriteBoolean("Enabled"u8, Enabled);
+
+            writer.WriteEndObject();
+        }
 
         public SavedSettings DeepCopy()
-            => this with { Settings = Settings.ToDictionary(kvp => kvp.Key, kvp => kvp.Value) };
+            => this with { Settings = Settings?.ToDictionary(kvp => kvp.Key, kvp => kvp.Value)};
 
         public SavedSettings(ModSettings settings, Mod mod)
         {
@@ -153,10 +171,10 @@ public class ModSettings
         public readonly bool ToSettings(Mod mod, out ModSettings settings)
         {
             var list    = new SettingList(mod.Groups.Count);
-            var changes = Settings.Count != mod.Groups.Count;
+            var changes = (Settings?.Count ?? 0) != mod.Groups.Count;
             foreach (var group in mod.Groups)
             {
-                if (Settings.TryGetValue(group.Name, out var config))
+                if (Settings?.TryGetValue(group.Name, out var config) is true)
                 {
                     var actualConfig = group.FixSetting(config);
                     list.Add(actualConfig);
@@ -186,7 +204,7 @@ public class ModSettings
     public (bool Enabled, ModPriority Priority, Dictionary<string, List<string>> Settings) ConvertToShareable(Mod mod)
     {
         var dict = new Dictionary<string, List<string>>(Settings.Count);
-        foreach (var (setting, idx) in Settings.WithIndex())
+        foreach (var (idx, setting) in Settings.Index())
         {
             if (idx >= mod.Groups.Count)
                 break;
@@ -197,7 +215,7 @@ public class ModSettings
                     dict.Add(single.Name, [single.Options[setting.AsIndex].Name]);
                     break;
                 case { Behaviour: GroupDrawBehaviour.MultiSelection } multi:
-                    var list = multi.Options.WithIndex().Where(p => setting.HasFlag(p.Index)).Select(p => p.Value.Name).ToList();
+                    var list = multi.Options.Index().Where(p => setting.HasFlag(p.Index)).Select(p => p.Item.Name).ToList();
                     dict.Add(multi.Name, list);
                     break;
             }

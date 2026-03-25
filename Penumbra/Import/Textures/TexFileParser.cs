@@ -19,7 +19,7 @@ public static class TexFileParser
             throw new Exception($"Could not obtain dimensionality from {header.Type}.");
 
         meta.MipLevels = CountMipLevels(data, in meta, in header);
-        if (meta.MipLevels == 0)
+        if (meta.MipLevels is 0)
             throw new Exception("Could not load file. Image is corrupted and does not contain enough data for its size.");
 
         var scratch = ScratchImage.Initialize(meta);
@@ -44,8 +44,8 @@ public static class TexFileParser
             if (offset == 0)
                 return i;
 
-            var Size = width * height * bits / 8;
-            if (offset + Size > data.Length)
+            var size = width * height * bits / 8;
+            if (offset + size > data.Length)
                 return i;
 
             var diff = offset - lastOffset;
@@ -55,7 +55,7 @@ public static class TexFileParser
             width      = Math.Max(width / 2,  minSize);
             height     = Math.Max(height / 2, minSize);
             lastOffset = offset;
-            lastSize   = Size;
+            lastSize   = size;
         }
 
         return 13;

@@ -1,33 +1,32 @@
-using Dalamud.Bindings.ImGui;
-using Dalamud.Interface.Utility.Raii;
 using Dalamud.Plugin;
-using OtterGui.Services;
+using ImSharp;
+using Luna;
 using Penumbra.Mods;
 using Penumbra.Services;
-using Penumbra.UI.AdvancedWindow;
 
 namespace Penumbra.UI.ModsTab;
 
-public class ModPanel : IDisposable, IUiService
+public class ModPanel : IDisposable, IPanel
 {
     private readonly MultiModPanel  _multiModPanel;
     private readonly ModSelection   _selection;
-    private readonly ModEditWindow  _editWindow;
     private readonly ModPanelHeader _header;
     private readonly ModPanelTabBar _tabs;
     private          bool           _resetCursor;
 
-    public ModPanel(IDalamudPluginInterface pi, ModSelection selection, ModEditWindow editWindow, ModPanelTabBar tabs,
+    public ModPanel(IDalamudPluginInterface pi, ModSelection selection, ModPanelTabBar tabs,
         MultiModPanel multiModPanel, CommunicatorService communicator)
     {
         _selection     = selection;
-        _editWindow    = editWindow;
         _tabs          = tabs;
         _multiModPanel = multiModPanel;
         _header        = new ModPanelHeader(pi, communicator);
         _selection.Subscribe(OnSelectionChange, ModSelection.Priority.ModPanel);
-        OnSelectionChange(null, _selection.Mod);
+        OnSelectionChange(new ModSelection.Arguments(null, _selection.Mod));
     }
+
+    public ReadOnlySpan<byte> Id
+        => "MP"u8;
 
     public void Draw()
     {
@@ -40,13 +39,13 @@ public class ModPanel : IDisposable, IUiService
         if (_resetCursor)
         {
             _resetCursor = false;
-            ImGui.SetScrollX(0);
+            Im.Scroll.X  = 0;
         }
 
         _header.Draw();
-        ImGui.SetCursorPosX(ImGui.GetScrollX() + ImGui.GetCursorPosX());
-        using var child = ImRaii.Child("Tabs",
-            new Vector2(ImGui.GetWindowContentRegionMax().X - ImGui.GetWindowContentRegionMin().X, ImGui.GetContentRegionAvail().Y));
+        Im.Cursor.X += Im.Scroll.X;
+        using var child = Im.Child.Begin("Tabs"u8,
+            Im.ContentRegion.Available with { X = Im.Window.MaximumContentRegion.X - Im.Window.MinimumContentRegion.X });
         if (child)
             _tabs.Draw(_mod);
     }
@@ -60,20 +59,17 @@ public class ModPanel : IDisposable, IUiService
     private bool _valid;
     private Mod  _mod = null!;
 
-    private void OnSelectionChange(Mod? old, Mod? mod)
+    private void OnSelectionChange(in ModSelection.Arguments arguments)
     {
         _resetCursor = true;
-        if (mod == null || _selection.Mod == null)
+        if (arguments.NewSelection is null || _selection.Mod is null)
         {
-            _editWindow.IsOpen = false;
-            _valid             = false;
+            _valid = false;
         }
         else
         {
-            if (_editWindow.IsOpen)
-                _editWindow.ChangeMod(mod);
             _valid = true;
-            _mod   = mod;
+            _mod   = arguments.NewSelection;
             _header.ChangeMod(_mod);
             _tabs.Settings.Reset();
             _tabs.Edit.Reset();

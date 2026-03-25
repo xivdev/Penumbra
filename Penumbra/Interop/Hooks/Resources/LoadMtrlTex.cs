@@ -1,5 +1,5 @@
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
-using OtterGui.Services;
+using Luna;
 using Penumbra.GameData;
 
 namespace Penumbra.Interop.Hooks.Resources;
@@ -22,7 +22,7 @@ public sealed unsafe class LoadMtrlTex : FastHook<LoadMtrlTex.Delegate>
     {
         var last = _gameState.MtrlData.Value;
         _gameState.MtrlData.Value = _gameState.LoadSubFileHelper((nint)handle);
-        var ret = Task.Result.Original(handle);
+        var ret = Task.Result!.Original(handle);
         _gameState.MtrlData.Value = last;
         return ret;
     }

@@ -1,4 +1,3 @@
-using OtterGui.Classes;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.Settings;
@@ -15,7 +14,7 @@ public record struct AppliedModData(
 
 public interface IMod
 {
-    LowerString Name { get; }
+    public string Name { get; }
 
     public int         Index    { get; }
     public ModPriority Priority { get; }

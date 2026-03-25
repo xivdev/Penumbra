@@ -4,6 +4,7 @@ using Penumbra.GameData.Enums;
 using Penumbra.GameData.Files;
 using Penumbra.GameData.Structs;
 using Penumbra.Meta;
+using Penumbra.Meta.Manipulations;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Mods.ItemSwap;
@@ -11,7 +12,8 @@ namespace Penumbra.Mods.ItemSwap;
 public static class CustomizationSwap
 {
     /// The .mdl file for customizations is unique per racecode, slot and id, thus the .mdl redirection itself is independent of the mode.
-    public static FileSwap CreateMdl(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections, BodySlot slot, GenderRace race,
+    public static FileSwap CreateMdl(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections, MetaDictionary manips, BodySlot slot,
+        GenderRace race,
         PrimaryId idFrom, PrimaryId idTo)
     {
         if (idFrom.Id > byte.MaxValue)
@@ -21,8 +23,8 @@ public static class CustomizationSwap
         var mdlPathTo   = GamePaths.Mdl.Customization(race, slot, idTo,   slot.ToCustomizationType());
 
         var mdl = FileSwap.CreateSwap(manager, ResourceType.Mdl, redirections, mdlPathFrom, mdlPathTo);
-        var range = slot == BodySlot.Tail
-         && race is GenderRace.HrothgarMale or GenderRace.HrothgarFemale or GenderRace.HrothgarMaleNpc or GenderRace.HrothgarMaleNpc
+        var range = slot is BodySlot.Tail
+         && race is GenderRace.HrothgarMale or GenderRace.HrothgarFemale or GenderRace.HrothgarMaleNpc or GenderRace.HrothgarFemaleNpc
                 ? 5
                 : 1;
 
@@ -38,6 +40,17 @@ public static class CustomizationSwap
 
             materialFileName = name;
         }
+
+        var humanSlot = slot switch
+        {
+            BodySlot.Hair => HumanSlot.Hair,
+            BodySlot.Face => HumanSlot.Face,
+            BodySlot.Ear  => HumanSlot.Ear,
+            _             => HumanSlot.Unknown,
+        };
+
+        if (humanSlot is not HumanSlot.Unknown)
+            EquipmentSwap.AddShapesAttributes(mdl, manips, humanSlot, humanSlot, race, idFrom, idTo);
 
         return mdl;
     }
@@ -82,7 +95,7 @@ public static class CustomizationSwap
         PrimaryId idFrom, ref MtrlFile.Texture texture, ref bool dataWasChanged)
     {
         var addedDashes = GamePaths.Tex.HandleDx11Path(texture, out var path);
-        var newPath = ItemSwap.ReplaceAnyRace(path, race);
+        var newPath     = ItemSwap.ReplaceAnyRace(path, race);
         newPath = ItemSwap.ReplaceAnyBody(newPath, slot, idFrom);
         newPath = ItemSwap.AddSuffix(newPath, ".tex", $"_{Path.GetFileName(texture.Path).GetStableHashCode():x8}", true);
         if (newPath != path)

@@ -1,0 +1,59 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+  </Configurations>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path=".github/workflows/build.yml" />
+    <File Path=".github/workflows/release.yml" />
+    <File Path=".github/workflows/test_release.yml" />
+    <File Path="Penumbra/Penumbra.json" />
+  </Folder>
+  <Folder Name="/Solution Items/Schemas/">
+    <File Path="schemas/default_mod.json" />
+    <File Path="schemas/group.json" />
+    <File Path="schemas/local_mod_data-v3.json" />
+    <File Path="schemas/mod_meta-v3.json" />
+  </Folder>
+  <Folder Name="/Solution Items/Schemas/structs/">
+    <File Path="schemas/structs/container.json" />
+    <File Path="schemas/structs/group_combining.json" />
+    <File Path="schemas/structs/group_imc.json" />
+    <File Path="schemas/structs/group_multi.json" />
+    <File Path="schemas/structs/group_single.json" />
+    <File Path="schemas/structs/manipulation.json" />
+    <File Path="schemas/structs/meta_atch.json" />
+    <File Path="schemas/structs/meta_atr.json" />
+    <File Path="schemas/structs/meta_enums.json" />
+    <File Path="schemas/structs/meta_eqdp.json" />
+    <File Path="schemas/structs/meta_eqp.json" />
+    <File Path="schemas/structs/meta_est.json" />
+    <File Path="schemas/structs/meta_geqp.json" />
+    <File Path="schemas/structs/meta_gmp.json" />
+    <File Path="schemas/structs/meta_imc.json" />
+    <File Path="schemas/structs/meta_rsp.json" />
+    <File Path="schemas/structs/meta_shp.json" />
+    <File Path="schemas/structs/option.json" />
+  </Folder>
+  <Project Path="Luna/Luna.Generators/Luna.Generators.csproj">
+    <Platform Project="x64" />
+  </Project>
+  <Project Path="Luna/Luna/Luna.csproj">
+    <Platform Project="x64" />
+  </Project>
+  <Project Path="Penumbra.Api/Penumbra.Api.csproj">
+    <Platform Project="x64" />
+  </Project>
+  <Project Path="Penumbra.CrashHandler/Penumbra.CrashHandler.csproj">
+    <Platform Project="x64" />
+  </Project>
+  <Project Path="Penumbra.GameData/Penumbra.GameData.csproj">
+    <Platform Project="x64" />
+  </Project>
+  <Project Path="Penumbra.String/Penumbra.String.csproj">
+    <Platform Project="x64" />
+  </Project>
+  <Project Path="Penumbra/Penumbra.csproj">
+    <Platform Project="x64" />
+  </Project>
+</Solution>

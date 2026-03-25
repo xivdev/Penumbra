@@ -1,30 +1,102 @@
+using Luna.Generators;
+
 namespace Penumbra.Import.Textures;
 
 public partial class CombinedTexture
 {
-    private enum CombineOp
+    [NamedEnum("ToLabel")]
+    [TooltipEnum]
+    public enum CombineOp
     {
-        LeftMultiply  = -4,
-        LeftCopy      = -3,
-        RightCopy     = -2,
-        Invalid       = -1,
-        Over          = 0,
-        Under         = 1,
+        LeftMultiply = -4,
+        LeftCopy     = -3,
+        RightCopy    = -2,
+        Invalid      = -1,
+
+        [Name("Overlay over Input")]
+        [Tooltip("Standard composition.\nApply the overlay over the input.")]
+        Over = 0,
+
+        [Name("Input over Overlay")]
+        [Tooltip("Standard composition, reversed.\nApply the input over the overlay ; can be used to fix some wrong imports.")]
+        Under = 1,
+
+        [Name("Replace Input")]
+        [Tooltip("Completely replace the input with the overlay.\nCan be used to select the destination file as input and the source file as overlay.")]
         RightMultiply = 2,
-        CopyChannels  = 3,
+
+        [Name("Copy Channels")]
+        [Tooltip("Replace some input channels with those from the overlay.\nUseful for Mask/Multi maps.")]
+        CopyChannels = 3,
+
+        [Name("Blend: Multiply - Result over Input")]
+        [Tooltip("Multiplies the RGB channel values of the input and the overlay.\nApplies the result over the input.")]
+        BlendMultiplyOver = 4,
+
+        [Name("Blend: Multiply - Input over Result")]
+        [Tooltip("Multiplies the RGB channel values of the input and the overlay.\nApplies the input over the result.")]
+        BlendMultiplyUnder = 5,
+
+        [Name("Blend: Multiply - RGBA")]
+        [Tooltip("Multiplies the RGBA channel values of the input and the overlay.\nThis mode is commutative.")]
+        BlendMultiplyRgba = 6,
+
+        [Name("Blend: Screen - Result over Input")]
+        [Tooltip("Inverts the RGB channel values of the input and the overlay, multiplies them, and inverts them back.\nApplies the result over the input.")]
+        BlendScreenOver = 7,
+
+        [Name("Blend: Screen - Input over Result")]
+        [Tooltip("Inverts the RGB channel values of the input and the overlay, multiplies them, and inverts them back.\nApplies the result over the input.")]
+        BlendScreenUnder = 8,
+
+        [Name("Blend: Screen - RGBA")]
+        [Tooltip("Inverts the RGBA channel values of the input and the overlay, multiplies them, and inverts them back.\nThis mode is commutative.")]
+        BlendScreenRgba = 9,
+
+        [Name("Blend: Overlay - Result over Input")]
+        [Tooltip("Darkens the overlay where the input is darker, lightens the overlay where the input is lighter.\nApplies the result over the input.")]
+        BlendOverlayOver = 10,
+
+        [Name("Blend: Overlay - Input over Result")]
+        [Tooltip("Darkens the overlay where the input is darker, lightens the overlay where the input is lighter.\nApplies the input over the result.")]
+        BlendOverlayUnder = 11,
+
+        [Name("Blend: Overlay - RGBA")]
+        [Tooltip("Darkens the overlay where the input is darker, lightens the overlay where the input is lighter, including the Alpha channel.\nThis mode is commutative.")]
+        BlendOverlayRgba = 12,
+
+        [Name("Blend: Hard Light - Result over Input")]
+        [Tooltip("Darkens the input where the overlay is darker, lightens the input where the overlay is lighter.\nApplies the result over the input.")]
+        BlendHardLightOver = 13,
+
+        [Name("Blend: Hard Light - Input over Result")]
+        [Tooltip("Darkens the input where the overlay is darker, lightens the input where the overlay is lighter.\nApplies the input over the result.")]
+        BlendHardLightUnder = 14,
+
+        [Name("Blend: Hard Light - RGBA")]
+        [Tooltip("Darkens the input where the overlay is darker, lightens the input where the overlay is lighter, including the Alpha channel.\nThis mode is commutative.")]
+        BlendHardLightRgba = 15,
     }
 
-    private enum ResizeOp
+    [NamedEnum("ToLabel")]
+    public enum ResizeOp
     {
         LeftOnly  = -2,
         RightOnly = -1,
-        None      = 0,
-        ToLeft    = 1,
-        ToRight   = 2,
+
+        [Name("No Resizing")]
+        None = 0,
+
+        [Name("Adjust Overlay to Input")]
+        ToLeft = 1,
+
+        [Name("Adjust Input to Overlay")]
+        ToRight = 2,
     }
 
     [Flags]
-    private enum Channels : byte
+    [NamedEnum]
+    public enum Channels : byte
     {
         Red   = 1,
         Green = 2,
@@ -32,40 +104,13 @@ public partial class CombinedTexture
         Alpha = 8,
     }
 
-    private static readonly IReadOnlyList<string> CombineOpLabels = new[]
-    {
-        "Overlay over Input",
-        "Input over Overlay",
-        "Replace Input",
-        "Copy Channels",
-    };
-
-    private static readonly IReadOnlyList<string> CombineOpTooltips = new[]
-    {
-        "Standard composition.\nApply the overlay over the input.",
-        "Standard composition, reversed.\nApply the input over the overlay ; can be used to fix some wrong imports.",
-        "Completely replace the input with the overlay.\nCan be used to select the destination file as input and the source file as overlay.",
-        "Replace some input channels with those from the overlay.\nUseful for Multi maps.",
-    };
-
-    private static readonly IReadOnlyList<string> ResizeOpLabels = new string[]
-    {
-        "No Resizing",
-        "Adjust Overlay to Input",
-        "Adjust Input to Overlay",
-    };
-
     private static ResizeOp GetActualResizeOp(ResizeOp resizeOp, CombineOp combineOp)
         => combineOp switch
         {
-            CombineOp.LeftCopy      => ResizeOp.LeftOnly,
-            CombineOp.LeftMultiply  => ResizeOp.LeftOnly,
-            CombineOp.RightCopy     => ResizeOp.RightOnly,
-            CombineOp.RightMultiply => ResizeOp.RightOnly,
-            CombineOp.Over          => resizeOp,
-            CombineOp.Under         => resizeOp,
-            CombineOp.CopyChannels  => resizeOp,
-            _                       => throw new ArgumentException($"Invalid combine operation {combineOp}"),
+            CombineOp.LeftCopy or CombineOp.LeftMultiply   => ResizeOp.LeftOnly,
+            CombineOp.RightCopy or CombineOp.RightMultiply => ResizeOp.RightOnly,
+            >= 0                                           => resizeOp,
+            _                                              => throw new ArgumentException($"Invalid combine operation {combineOp}"),
         };
 
     private CombineOp GetActualCombineOp()

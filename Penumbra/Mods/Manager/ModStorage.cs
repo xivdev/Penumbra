@@ -1,16 +1,4 @@
-using OtterGui.Classes;
-using OtterGui.Widgets;
-
 namespace Penumbra.Mods.Manager;
-
-public class ModCombo(Func<IReadOnlyList<Mod>> generator) : FilterComboCache<Mod>(generator, MouseWheelType.None, Penumbra.Log)
-{
-    protected override bool IsVisible(int globalIndex, LowerString filter)
-        => Items[globalIndex].Name.Contains(filter);
-
-    protected override string ToString(Mod obj)
-        => obj.Name.Text;
-}
 
 public class ModStorage : IReadOnlyList<Mod>
 {
@@ -32,22 +20,41 @@ public class ModStorage : IReadOnlyList<Mod>
     IEnumerator IEnumerable.GetEnumerator()
         => GetEnumerator();
 
+    /// <summary> Try to obtain a mod by its directory name (unique identifier). </summary>
+    public bool TryGetMod(ReadOnlySpan<char> identifier, [NotNullWhen(true)] out Mod? mod)
+    {
+        foreach (var m in Mods)
+        {
+            if (!identifier.Equals(m.Identifier, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            mod = m;
+            return true;
+        }
+
+        mod = null;
+        return false;
+    }
+
     /// <summary>
     /// Try to obtain a mod by its directory name (unique identifier, preferred),
     /// or the first mod of the given name if no directory fits.
     /// </summary>
-    public bool TryGetMod(string identifier, string modName, [NotNullWhen(true)] out Mod? mod)
+    public bool TryGetMod(ReadOnlySpan<char> identifier, ReadOnlySpan<char> modName, [NotNullWhen(true)] out Mod? mod)
     {
+        if (modName.Length is 0)
+            return TryGetMod(identifier, out mod);
+
         mod = null;
         foreach (var m in Mods)
         {
-            if (string.Equals(m.Identifier, identifier, StringComparison.OrdinalIgnoreCase))
+            if (identifier.Equals(m.Identifier, StringComparison.OrdinalIgnoreCase))
             {
                 mod = m;
                 return true;
             }
 
-            if (m.Name == modName)
+            if (m.Name.SequenceEqual(modName))
                 mod ??= m;
         }
 
@@ -60,7 +67,7 @@ public class ModStorage : IReadOnlyList<Mod>
     /// Mods are removed when they are deleted or when they are toggled in any collection.
     /// Also gets cleared on mod rediscovery.
     /// </summary>
-    private readonly HashSet<Mod> _newMods = new();
+    private readonly HashSet<Mod> _newMods = [];
 
     public bool IsNew(Mod mod)
         => _newMods.Contains(mod);

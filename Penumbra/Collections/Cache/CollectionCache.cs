@@ -1,5 +1,5 @@
 using Dalamud.Interface.ImGuiNotification;
-using OtterGui.Classes;
+using Luna;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
 using Penumbra.Communication;
@@ -7,7 +7,7 @@ using Penumbra.Mods.Editor;
 using Penumbra.String.Classes;
 using Penumbra.Util;
 using Penumbra.GameData.Data;
-using OtterGui.Extensions;
+using Penumbra.Interop.PathResolving;
 
 namespace Penumbra.Collections.Cache;
 
@@ -20,14 +20,14 @@ public record ModConflicts(IMod Mod2, List<object> Conflicts, bool HasPriority, 
 /// </summary>
 public sealed class CollectionCache : IDisposable
 {
-    private readonly CollectionCacheManager                                          _manager;
-    private readonly ModCollection                                                   _collection;
-    public readonly  CollectionModData                                               ModData       = new();
+    private readonly CollectionCacheManager                                         _manager;
+    private readonly ModCollection                                                  _collection;
+    public readonly  CollectionModData                                              ModData       = new();
     private readonly SortedList<string, (SingleArray<IMod>, IIdentifiedObjectData)> _changedItems = [];
-    public readonly  ConcurrentDictionary<Utf8GamePath, ModPath>                     ResolvedFiles = new();
-    public readonly  CustomResourceCache                                             CustomResources;
-    public readonly  MetaCache                                                       Meta;
-    public readonly  Dictionary<IMod, SingleArray<ModConflicts>>                     ConflictDict = [];
+    public readonly  ConcurrentDictionary<Utf8GamePath, ModPath>                    ResolvedFiles = new();
+    public readonly  CustomResourceCache                                            CustomResources;
+    public readonly  MetaCache                                                      Meta;
+    public readonly  Dictionary<IMod, SingleArray<ModConflicts>>                    ConflictDict = [];
 
     public int Calculating = -1;
 
@@ -105,12 +105,12 @@ public sealed class CollectionCache : IDisposable
     // Reverse resolve multiple paths at once for efficiency.
     public HashSet<Utf8GamePath>[] ReverseResolvePaths(IReadOnlyCollection<string> fullPaths)
     {
-        if (fullPaths.Count == 0)
+        if (fullPaths.Count is 0)
             return [];
 
         var ret  = new HashSet<Utf8GamePath>[fullPaths.Count];
         var dict = new Dictionary<FullPath, int>(fullPaths.Count);
-        foreach (var (path, idx) in fullPaths.WithIndex())
+        foreach (var (idx, path) in fullPaths.Index())
         {
             dict[new FullPath(path)] = idx;
             ret[idx] = !Path.IsPathRooted(path) && Utf8GamePath.FromString(path, out var utf8)
@@ -189,7 +189,8 @@ public sealed class CollectionCache : IDisposable
                     Penumbra.Log.Warning(
                         $"Invalid mod state, removing {mod.Name} and associated file {path} returned current mod {mp.Mod.Name}.");
                 else
-                    _manager.ResolvedFileChanged.Invoke(_collection, ResolvedFileChanged.Type.Removed, path, FullPath.Empty, mp.Path, mp.Mod);
+                    _manager.ResolvedFileChanged.Invoke(new ResolvedFileChanged.Arguments(ResolvedFileChanged.Type.Removed, _collection, path,
+                        FullPath.Empty, mp.Path, mp.Mod));
             }
         }
 
@@ -275,27 +276,31 @@ public sealed class CollectionCache : IDisposable
     private void InvokeResolvedFileChange(ModCollection collection, ResolvedFileChanged.Type type, Utf8GamePath key, FullPath value,
         FullPath old, IMod? mod)
     {
-        if (Calculating == -1)
-            _manager.ResolvedFileChanged.Invoke(collection, type, key, value, old, mod);
+        if (Calculating is -1)
+            _manager.ResolvedFileChanged.Invoke(new ResolvedFileChanged.Arguments(type, collection, key, value, old, mod));
     }
 
-    private static bool IsRedirectionSupported(Utf8GamePath path, IMod mod)
+    private sealed class ForbiddenFileNotification : Luna.Notification
     {
-        var ext = path.Extension().AsciiToLower().ToString();
-        switch (ext)
-        {
-            case ".atch" or ".eqp" or ".eqdp" or ".est" or ".gmp" or ".cmp" or ".imc":
-                Penumbra.Messager.NotificationMessage(
-                    $"Redirection of {ext} files for {mod.Name} is unsupported. This probably means that the mod is outdated and may not work correctly.\n\nPlease tell the mod creator to use the corresponding meta manipulations instead.",
-                    NotificationType.Warning);
-                return false;
-            case ".lvb" or ".lgb" or ".sgb":
-                Penumbra.Messager.NotificationMessage($"Redirection of {ext} files for {mod.Name} is unsupported as this breaks the game.\n\nThis mod will probably not work correctly.",
-                    NotificationType.Warning);
-                return false;
-            default: return true;
-        }
+
+        public ForbiddenFileNotification(string content, NotificationType type = NotificationType.Warning)
+            : base(content, type)
+        { }
+
+        public ForbiddenFileNotification(string content, TimeSpan duration, NotificationType type = NotificationType.Warning)
+            : base(content, duration, type)
+        { }
+
+        public ForbiddenFileNotification(Exception ex, string content1, string content2, NotificationType type = NotificationType.Error)
+            : base(ex, content1, content2, type)
+        { }
+
+        public ForbiddenFileNotification(Exception ex, string content1, string content2, TimeSpan duration, NotificationType type = NotificationType.Error)
+            : base(ex, content1, content2, duration, type)
+        { }
     }
+
+
 
     // Add a specific file redirection, handling potential conflicts.
     // For different mods, higher mod priority takes precedence before option group priority,
@@ -306,7 +311,7 @@ public sealed class CollectionCache : IDisposable
         if (!CheckFullPath(path, file))
             return;
 
-        if (!IsRedirectionSupported(path, mod))
+        if (!_manager.ForbiddenNotification.IsRedirectionSupported(path, mod, _collection.Identity.Index <= 0))
             return;
 
         try
@@ -529,18 +534,10 @@ public sealed class CollectionCache : IDisposable
         {
             switch (Type)
             {
-                case 0:
-                    Cache.RemoveModSync(Mod, AddMetaChanges);
-                    break;
-                case 1:
-                    Cache.AddModSync(Mod, AddMetaChanges);
-                    break;
-                case 2:
-                    Cache.ReloadModSync(Mod, AddMetaChanges);
-                    break;
-                case 3:
-                    Cache.ForceFileSync(Path, FullPath);
-                    break;
+                case 0: Cache.RemoveModSync(Mod, AddMetaChanges); break;
+                case 1: Cache.AddModSync(Mod, AddMetaChanges); break;
+                case 2: Cache.ReloadModSync(Mod, AddMetaChanges); break;
+                case 3: Cache.ForceFileSync(Path, FullPath); break;
             }
         }
     }

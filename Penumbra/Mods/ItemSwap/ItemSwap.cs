@@ -132,21 +132,21 @@ public static class ItemSwap
     public static FileSwap CreatePhyb(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections, EstType type,
         GenderRace race, EstEntry estEntry)
     {
-        var phybPath = GamePaths.Phyb.Customization(race, type.ToName(), estEntry.AsId);
+        var phybPath = GamePaths.Phyb.Customization(race, type.ToSuffix(), estEntry.AsId);
         return FileSwap.CreateSwap(manager, ResourceType.Phyb, redirections, phybPath, phybPath);
     }
 
     public static FileSwap CreateSklb(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections, EstType type,
         GenderRace race, EstEntry estEntry)
     {
-        var sklbPath = GamePaths.Sklb.Customization(race, type.ToName(), estEntry.AsId);
+        var sklbPath = GamePaths.Sklb.Customization(race, type.ToSuffix(), estEntry.AsId);
         return FileSwap.CreateSwap(manager, ResourceType.Sklb, redirections, sklbPath, sklbPath);
     }
 
     public static MetaSwap<EstIdentifier, EstEntry>? CreateEst(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections,
         MetaDictionary manips, EstType type, GenderRace genderRace, PrimaryId idFrom, PrimaryId idTo, bool ownMdl)
     {
-        if (type == 0)
+        if (type is 0)
             return null;
 
         var manipFromIdentifier = new EstIdentifier(idFrom, type, genderRace);

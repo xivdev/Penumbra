@@ -1,8 +1,7 @@
 using Dalamud.Interface.ImGuiNotification;
+using Luna;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using OtterGui.Classes;
-using OtterGui.Extensions;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Data;
 using Penumbra.Meta.Manipulations;
@@ -158,7 +157,7 @@ public sealed class ComplexModGroup(Mod mod) : IModGroup
             }
 
         // Fix up conditions: No condition on itself.
-        foreach (var (option, index) in ret.Options.WithIndex())
+        foreach (var (index, option) in ret.Options.Index())
         {
             option.Conditions = option.Conditions.Limit(ret.Options.Count);
             option.Conditions = new MaskedSetting(option.Conditions.Mask.SetBit(index, false), option.Conditions.Value);

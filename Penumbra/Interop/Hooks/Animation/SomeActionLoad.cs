@@ -1,6 +1,6 @@
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
-using OtterGui.Services;
+using Luna;
 using Penumbra.CrashHandler.Buffers;
 using Penumbra.GameData;
 using Penumbra.Interop.PathResolving;
@@ -32,7 +32,7 @@ public sealed unsafe class SomeActionLoad : FastHook<SomeActionLoad.Delegate>
         var last    = _state.SetAnimationData(newData);
         Penumbra.Log.Excessive($"[Some Action Load] Invoked on 0x{(nint)timelineManager:X}.");
         _crashHandler.LogAnimation(newData.AssociatedGameObject, newData.ModCollection, AnimationInvocationType.ActionLoad);
-        Task.Result.Original(timelineManager);
+        Task.Result!.Original(timelineManager);
         _state.RestoreAnimationData(last);
     }
 }

@@ -1,11 +1,9 @@
 using Dalamud.Plugin.Services;
-using OtterGui.Compression;
-using OtterGui.Services;
+using Luna;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.GameData.Data;
 using Penumbra.Import;
-using Penumbra.Interop.Hooks.Meta;
 using Penumbra.Interop.Services;
 using Penumbra.Meta.Files;
 using Penumbra.Mods;
@@ -15,7 +13,7 @@ using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManage
 
 namespace Penumbra.Meta;
 
-public class MetaFileManager : IService
+public class MetaFileManager : Luna.IService
 {
     internal readonly Configuration           Config;
     internal readonly CharacterUtility        CharacterUtility;

@@ -29,7 +29,7 @@ public readonly record struct AtchIdentifier(AtchType Type, GenderRace GenderRac
     }
 
     public override string ToString()
-        => $"Atch - {Type.ToAbbreviation()} - {GenderRace.ToName()} - {EntryIndex}";
+        => $"ATCH - {Type.ToAbbreviation()} - {GenderRace.ToName()} - {EntryIndex}";
 
     public void AddChangedItems(ObjectIdentification identifier, IDictionary<string, IIdentifiedObjectData> changedItems)
     {

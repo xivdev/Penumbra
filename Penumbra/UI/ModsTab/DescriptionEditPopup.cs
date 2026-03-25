@@ -1,7 +1,4 @@
-using Dalamud.Interface.Utility;
-using Dalamud.Bindings.ImGui;
-using OtterGui.Services;
-using OtterGui.Text;
+using ImSharp;
 using Penumbra.Mods;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager;
@@ -9,13 +6,13 @@ using Penumbra.Mods.SubMods;
 
 namespace Penumbra.UI.ModsTab;
 
-public class DescriptionEditPopup(ModManager modManager) : IUiService
+public class DescriptionEditPopup(ModManager modManager) : Luna.IUiService
 {
     private static ReadOnlySpan<byte> PopupId
-        => "PenumbraEditDescription"u8;
+        => "EditDesc"u8;
 
     private bool   _hasBeenEdited;
-    private string _description = string.Empty;
+    private StringU8 _description = StringU8.Empty;
 
     private object? _current;
     private bool    _opened;
@@ -25,7 +22,7 @@ public class DescriptionEditPopup(ModManager modManager) : IUiService
         _current       = mod;
         _opened        = true;
         _hasBeenEdited = false;
-        _description   = mod.Description;
+        _description   = new StringU8(mod.Description);
     }
 
     public void Open(IModGroup group)
@@ -33,7 +30,7 @@ public class DescriptionEditPopup(ModManager modManager) : IUiService
         _current       = group;
         _opened        = true;
         _hasBeenEdited = false;
-        _description   = group.Description;
+        _description   = new StringU8(group.Description);
     }
 
     public void Open(IModOption option)
@@ -41,74 +38,68 @@ public class DescriptionEditPopup(ModManager modManager) : IUiService
         _current       = option;
         _opened        = true;
         _hasBeenEdited = false;
-        _description   = option.Description;
+        _description   = new StringU8(option.Description);
     }
 
     public void Draw()
     {
-        if (_current == null)
+        if (_current is null)
             return;
 
         if (_opened)
         {
             _opened = false;
-            ImUtf8.OpenPopup(PopupId);
+            Im.Popup.Open(PopupId);
         }
 
-        var       inputSize = ImGuiHelpers.ScaledVector2(800);
-        using var popup     = ImUtf8.Popup(PopupId);
+        var       inputSize = ImEx.ScaledVector(800);
+        using var popup     = Im.Popup.Begin(PopupId);
         if (!popup)
             return;
 
-        if (ImGui.IsWindowAppearing())
-            ImGui.SetKeyboardFocusHere();
+        if (Im.Window.Appearing)
+            Im.Keyboard.SetFocusHere();
 
-        ImUtf8.InputMultiLineOnDeactivated("##editDescription"u8, ref _description, inputSize);
-        _hasBeenEdited |= ImGui.IsItemEdited();
+        if (Im.Input.MultiLine("##editDescription"u8, ref _description, inputSize))
+            _hasBeenEdited = true;
         UiHelpers.DefaultLineSpace();
 
-        var buttonSize = new Vector2(ImUtf8.GlobalScale * 100, 0);
+        var buttonSize = new Vector2(Im.Style.GlobalScale * 100, 0);
 
         var width = 2 * buttonSize.X
-          + 4 * ImUtf8.FramePadding.X
-          + ImUtf8.ItemSpacing.X;
+          + 4 * Im.Style.FramePadding.X
+          + Im.Style.ItemSpacing.X;
 
-        ImGui.SetCursorPosX((inputSize.X - width) / 2);
+        Im.Cursor.X = (inputSize.X - width) / 2;
         DrawSaveButton(buttonSize);
-        ImGui.SameLine();
+        Im.Line.Same();
         DrawCancelButton(buttonSize);
     }
 
     private void DrawSaveButton(Vector2 buttonSize)
     {
-        if (!ImUtf8.ButtonEx("Save"u8, _hasBeenEdited ? [] : "No changes made yet."u8, buttonSize, !_hasBeenEdited))
+        if (!ImEx.Button("Save"u8, buttonSize, _hasBeenEdited ? StringU8.Empty : "No changes made yet."u8, !_hasBeenEdited))
             return;
 
         switch (_current)
         {
-            case Mod mod:
-                modManager.DataEditor.ChangeModDescription(mod, _description);
-                break;
-            case IModGroup group:
-                modManager.OptionEditor.ChangeGroupDescription(group, _description);
-                break;
-            case IModOption option:
-                modManager.OptionEditor.ChangeOptionDescription(option, _description);
-                break;
+            case Mod mod:           modManager.DataEditor.ChangeModDescription(mod, _description.ToString()); break;
+            case IModGroup group:   modManager.OptionEditor.ChangeGroupDescription(group, _description.ToString()); break;
+            case IModOption option: modManager.OptionEditor.ChangeOptionDescription(option, _description.ToString()); break;
         }
 
-        _description   = string.Empty;
+        _description   = StringU8.Empty;
         _hasBeenEdited = false;
-        ImGui.CloseCurrentPopup();
+        Im.Popup.CloseCurrent();
     }
 
     private void DrawCancelButton(Vector2 buttonSize)
     {
-        if (!ImUtf8.Button("Cancel"u8, buttonSize) && !ImGui.IsKeyPressed(ImGuiKey.Escape))
+        if (!Im.Button("Cancel"u8, buttonSize) && !Im.Keyboard.IsPressed(Key.Escape))
             return;
 
-        _description   = string.Empty;
+        _description   = StringU8.Empty;
         _hasBeenEdited = false;
-        ImGui.CloseCurrentPopup();
+        Im.Popup.CloseCurrent();
     }
 }

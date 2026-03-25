@@ -1,5 +1,5 @@
 using Dalamud.Plugin;
-using OtterGui.Services;
+using Luna;
 using Penumbra.Api.Api;
 using Penumbra.Api.Helpers;
 using Penumbra.Communication;
@@ -7,7 +7,7 @@ using CharacterUtility = Penumbra.Interop.Services.CharacterUtility;
 
 namespace Penumbra.Api;
 
-public sealed class IpcProviders : IDisposable, IApiService
+public sealed class IpcProviders : IDisposable, IApiService, IRequiredService
 {
     private readonly List<IDisposable> _providers;
 
@@ -47,6 +47,7 @@ public sealed class IpcProviders : IDisposable, IApiService
             IpcSubscribers.GetMetaManipulations.Provider(pi, api.Meta),
 
             IpcSubscribers.GetModList.Provider(pi, api.Mods),
+            IpcSubscribers.GetModListAdapter.Provider(pi, api.Mods),
             IpcSubscribers.InstallMod.Provider(pi, api.Mods),
             IpcSubscribers.ReloadMod.Provider(pi, api.Mods),
             IpcSubscribers.AddMod.Provider(pi, api.Mods),
@@ -56,6 +57,7 @@ public sealed class IpcProviders : IDisposable, IApiService
             IpcSubscribers.ModMoved.Provider(pi, api.Mods),
             IpcSubscribers.CreatingPcp.Provider(pi, api.Mods),
             IpcSubscribers.ParsingPcp.Provider(pi, api.Mods),
+            IpcSubscribers.ModUsageQueried.Provider(pi, api.Mods),
             IpcSubscribers.GetModPath.Provider(pi, api.Mods),
             IpcSubscribers.SetModPath.Provider(pi, api.Mods),
             IpcSubscribers.GetChangedItems.Provider(pi, api.Mods),

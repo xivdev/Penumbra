@@ -1,5 +1,5 @@
-using OtterGui.Classes;
-using OtterGui.Extensions;
+using Luna;
+using Luna.Generators;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Structs;
 using Penumbra.Meta.Manipulations;
@@ -12,6 +12,7 @@ using Penumbra.String.Classes;
 namespace Penumbra.Mods;
 
 [Flags]
+[NamedEnum(Utf16: false)]
 public enum FeatureFlags : ulong
 {
     None    = 0,
@@ -21,7 +22,7 @@ public enum FeatureFlags : ulong
     Invalid = 1ul << 62,
 }
 
-public sealed class Mod : IMod
+public sealed class Mod : IMod, IFileSystemValue<Mod>
 {
     public static readonly TemporaryMod ForcedFiles = new()
     {
@@ -34,12 +35,9 @@ public sealed class Mod : IMod
     public DirectoryInfo ModPath { get; internal set; }
 
     public string Identifier
-        => Index >= 0 ? ModPath.Name : Name;
+        => ModPath.Name;
 
     public int Index { get; internal set; } = -1;
-
-    public bool IsTemporary
-        => Index < 0;
 
     /// <summary>Unused if Index is less than 0 but used for special temporary mods.</summary>
     public ModPriority Priority
@@ -55,11 +53,11 @@ public sealed class Mod : IMod
     }
 
     public override string ToString()
-        => Name.Text;
+        => Name;
 
     // Meta Data
-    public LowerString           Name                  { get; internal set; } = "New Mod";
-    public LowerString           Author                { get; internal set; } = LowerString.Empty;
+    public string                Name                  { get; internal set; } = "New Mod";
+    public string                Author                { get; internal set; } = string.Empty;
     public string                Description           { get; internal set; } = string.Empty;
     public string                Version               { get; internal set; } = string.Empty;
     public string                Website               { get; internal set; } = string.Empty;
@@ -70,11 +68,14 @@ public sealed class Mod : IMod
 
 
     // Local Data
+    public DataPath              Path                  { get; }               = new();
     public long                  ImportDate            { get; internal set; } = DateTimeOffset.UnixEpoch.ToUnixTimeMilliseconds();
+    public long                  LastConfigEdit        { get; internal set; } = DateTimeOffset.UnixEpoch.ToUnixTimeMilliseconds();
+    public bool                  IgnoreLastConfig      { get; internal set; } = false;
     public IReadOnlyList<string> LocalTags             { get; internal set; } = [];
     public string                Note                  { get; internal set; } = string.Empty;
     public HashSet<CustomItemId> PreferredChangedItems { get; internal set; } = [];
-    public bool                  Favorite              { get; internal set; } = false;
+    public bool                  Favorite              { get; internal set; }
 
     // Options
     public readonly DefaultSubMod   Default;
@@ -104,7 +105,7 @@ public sealed class Mod : IMod
 
         var dictRedirections = new Dictionary<Utf8GamePath, FullPath>(TotalFileCount);
         var setManips        = new MetaDictionary();
-        foreach (var (group, groupIndex) in Groups.WithIndex().Reverse().OrderByDescending(g => g.Value.Priority))
+        foreach (var (groupIndex, group) in Groups.Index().Reverse().OrderByDescending(g => g.Item.Priority))
         {
             var config = settings.Settings[groupIndex];
             group.AddData(config, dictRedirections, setManips);
@@ -131,6 +132,7 @@ public sealed class Mod : IMod
     }
 
     // Cache
+    public          IFileSystemData<Mod>?                     Node { get; set; }
     public readonly SortedList<string, IIdentifiedObjectData> ChangedItems = new();
 
     public string LowerChangedItemsString { get; internal set; } = string.Empty;
@@ -141,4 +143,7 @@ public sealed class Mod : IMod
     public int    TotalManipulations     { get; internal set; }
     public ushort LastChangedItemsUpdate { get; internal set; }
     public bool   HasOptions             { get; internal set; }
+
+    string IFileSystemValue.DisplayName
+        => Name;
 }

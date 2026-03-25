@@ -160,8 +160,8 @@ public sealed class FileSwap : Swap
             SwapToModded          = FullPath.Empty,
         };
 
-        if (swapFromRequest.Length == 0
-         || swapToRequest.Length == 0
+        if (swapFromRequest.Length is 0
+         || swapToRequest.Length is 0
          || !Utf8GamePath.FromString(swapToRequest,   out swap.SwapToRequestPath)
          || !Utf8GamePath.FromString(swapFromRequest, out swap.SwapFromRequestPath))
             throw new Exception($"Could not create UTF8 String for \"{swapFromRequest}\" or \"{swapToRequest}\".");

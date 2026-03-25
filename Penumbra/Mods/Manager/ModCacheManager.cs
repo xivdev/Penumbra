@@ -1,33 +1,35 @@
-using OtterGui.Services;
+using Luna;
 using Penumbra.Communication;
 using Penumbra.GameData.Data;
-using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager.OptionEditor;
-using Penumbra.Mods.SubMods;
 using Penumbra.Services;
 using Penumbra.Util;
 
 namespace Penumbra.Mods.Manager;
 
-public class ModCacheManager : IDisposable, IService
+public class ModCacheManager : IDisposable, IRequiredService
 {
     private readonly Configuration        _config;
     private readonly CommunicatorService  _communicator;
     private readonly ObjectIdentification _identifier;
     private readonly ModStorage           _modManager;
+    private readonly SaveService          _saveService;
     private          bool                 _updatingItems;
 
-    public ModCacheManager(CommunicatorService communicator, ObjectIdentification identifier, ModStorage modStorage, Configuration config)
+    public ModCacheManager(CommunicatorService communicator, ObjectIdentification identifier, ModStorage modStorage, Configuration config,
+        SaveService saveService)
     {
         _communicator = communicator;
         _identifier   = identifier;
         _modManager   = modStorage;
         _config       = config;
+        _saveService  = saveService;
 
         _communicator.ModOptionChanged.Subscribe(OnModOptionChange, ModOptionChanged.Priority.ModCacheManager);
         _communicator.ModPathChanged.Subscribe(OnModPathChange, ModPathChanged.Priority.ModCacheManager);
         _communicator.ModDataChanged.Subscribe(OnModDataChange, ModDataChanged.Priority.ModCacheManager);
         _communicator.ModDiscoveryFinished.Subscribe(OnModDiscoveryFinished, ModDiscoveryFinished.Priority.ModCacheManager);
+        
         identifier.Awaiter.ContinueWith(_ => OnIdentifierCreation(), TaskScheduler.Default);
         OnModDiscoveryFinished();
     }
@@ -40,52 +42,49 @@ public class ModCacheManager : IDisposable, IService
         _communicator.ModDiscoveryFinished.Unsubscribe(OnModDiscoveryFinished);
     }
 
-    private void OnModOptionChange(ModOptionChangeType type, Mod mod, IModGroup? group, IModOption? option, IModDataContainer? container,
-        int fromIdx)
+    private void OnModOptionChange(in ModOptionChanged.Arguments arguments)
     {
-        switch (type)
+        switch (arguments.Type)
         {
             case ModOptionChangeType.GroupAdded:
             case ModOptionChangeType.GroupDeleted:
             case ModOptionChangeType.OptionAdded:
             case ModOptionChangeType.OptionDeleted:
-                UpdateChangedItems(mod);
-                UpdateCounts(mod);
+                UpdateChangedItems(arguments.Mod);
+                UpdateCounts(arguments.Mod);
                 break;
-            case ModOptionChangeType.GroupTypeChanged:
-                UpdateHasOptions(mod);
-                break;
+            case ModOptionChangeType.GroupTypeChanged: UpdateHasOptions(arguments.Mod); break;
             case ModOptionChangeType.OptionFilesChanged:
             case ModOptionChangeType.OptionFilesAdded:
-                UpdateChangedItems(mod);
-                UpdateFileCount(mod);
+                UpdateChangedItems(arguments.Mod);
+                UpdateFileCount(arguments.Mod);
                 break;
             case ModOptionChangeType.OptionSwapsChanged:
-                UpdateChangedItems(mod);
-                UpdateSwapCount(mod);
+                UpdateChangedItems(arguments.Mod);
+                UpdateSwapCount(arguments.Mod);
                 break;
             case ModOptionChangeType.OptionMetaChanged:
-                UpdateChangedItems(mod);
-                UpdateMetaCount(mod);
+                UpdateChangedItems(arguments.Mod);
+                UpdateMetaCount(arguments.Mod);
                 break;
         }
     }
 
-    private void OnModPathChange(ModPathChangeType type, Mod mod, DirectoryInfo? old, DirectoryInfo? @new)
+    private void OnModPathChange(in ModPathChanged.Arguments arguments)
     {
-        switch (type)
+        switch (arguments.Type)
         {
             case ModPathChangeType.Added:
             case ModPathChangeType.Reloaded:
-                RefreshWithChangedItems(mod);
+                RefreshWithChangedItems(arguments.Mod);
                 break;
         }
     }
 
-    private static void OnModDataChange(ModDataChangeType type, Mod mod, string? _)
+    private static void OnModDataChange(in ModDataChanged.Arguments arguments)
     {
-        if ((type & (ModDataChangeType.LocalTags | ModDataChangeType.ModTags)) != 0)
-            UpdateTags(mod);
+        if ((arguments.Type & (ModDataChangeType.LocalTags | ModDataChangeType.ModTags)) is not 0)
+            UpdateTags(arguments.Mod);
     }
 
     private void OnModDiscoveryFinished()

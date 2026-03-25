@@ -1,11 +1,10 @@
 using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
-using OtterGui.Services;
 using Penumbra.GameData;
 
 namespace Penumbra.Interop.Services;
 
-public unsafe class ResidentResourceManager : IService
+public unsafe class ResidentResourceManager : Luna.IService
 {
     // A static pointer to the resident resource manager address.
     [Signature(Sigs.ResidentResourceManager, ScanType = ScanType.StaticAddress)]
@@ -29,11 +28,11 @@ public unsafe class ResidentResourceManager : IService
     // Reload certain player resources by force.
     public void Reload()
     {
-        if (Address != null && Address->NumResources > 0)
-        {
-            Penumbra.Log.Debug("Reload of resident resources triggered.");
-            UnloadPlayerResources.Invoke(Address);
-            LoadPlayerResources.Invoke(Address);
-        }
+        if (Address is null || Address->NumResources <= 0)
+            return;
+
+        Penumbra.Log.Debug("Reload of resident resources triggered.");
+        UnloadPlayerResources.Invoke(Address);
+        LoadPlayerResources.Invoke(Address);
     }
 }

@@ -1,15 +1,12 @@
-using Dalamud.Bindings.ImGui;
 using Dalamud.Plugin;
-using OtterGui.Raii;
-using OtterGui.Services;
-using OtterGui.Text;
+using ImSharp;
 using Penumbra.Api.Api;
 using Penumbra.Api.IpcSubscribers;
 using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Api.IpcTester;
 
-public class MetaIpcTester(IDalamudPluginInterface pi) : IUiService
+public class MetaIpcTester(IDalamudPluginInterface pi) : Luna.IUiService
 {
     private int            _gameObjectIndex;
     private string         _metaBase64    = string.Empty;
@@ -18,35 +15,42 @@ public class MetaIpcTester(IDalamudPluginInterface pi) : IUiService
 
     public void Draw()
     {
-        using var _ = ImRaii.TreeNode("Meta");
+        using var _ = Im.Tree.Node("Meta"u8);
         if (!_)
             return;
 
-        ImGui.InputInt("##metaIdx", ref _gameObjectIndex, 0, 0);
-        if (ImUtf8.InputText("##metaText"u8, ref _metaBase64, "Base64 Metadata..."u8))
-            if (!MetaApi.ConvertManips(_metaBase64, out _metaDict!, out _parsedVersion))
-                _metaDict ??= new MetaDictionary();
+        Im.Input.Scalar("##metaIdx"u8, ref _gameObjectIndex);
+        if (Im.Input.Text("##metaText"u8, ref _metaBase64, "Base64 Metadata..."u8))
+            _metaDict = MetaApi.ConvertManips(_metaBase64, out var m, out _parsedVersion) ? m : new MetaDictionary();
 
 
-        using var table = ImRaii.Table(string.Empty, 3, ImGuiTableFlags.SizingFixedFit);
+        using var table = Im.Table.Begin(StringU8.Empty, 3, TableFlags.SizingFixedFit);
         if (!table)
             return;
 
-        IpcTester.DrawIntro(GetPlayerMetaManipulations.Label, "Player Meta Manipulations");
-        if (ImGui.Button("Copy to Clipboard##Player"))
+        using (IpcTester.DrawIntro(GetPlayerMetaManipulations.LabelU8, "Player Meta Manipulations"u8))
         {
-            var base64 = new GetPlayerMetaManipulations(pi).Invoke();
-            ImGui.SetClipboardText(base64);
+            table.NextColumn();
+            if (Im.SmallButton("Copy to Clipboard##Player"u8))
+            {
+                var base64 = new GetPlayerMetaManipulations(pi).Invoke();
+                Im.Clipboard.Set(base64);
+            }
         }
 
-        IpcTester.DrawIntro(GetMetaManipulations.Label, "Game Object Manipulations");
-        if (ImGui.Button("Copy to Clipboard##GameObject"))
+        using (IpcTester.DrawIntro(GetMetaManipulations.LabelU8, "Game Object Manipulations"u8))
         {
-            var base64 = new GetMetaManipulations(pi).Invoke(_gameObjectIndex);
-            ImGui.SetClipboardText(base64);
+            table.NextColumn();
+            if (Im.SmallButton("Copy to Clipboard##GameObject"u8))
+            {
+                var base64 = new GetMetaManipulations(pi).Invoke(_gameObjectIndex);
+                Im.Clipboard.Set(base64);
+            }
         }
 
-        IpcTester.DrawIntro(string.Empty, "Parsed Data");
-        ImUtf8.Text($"Version: {_parsedVersion}, Count: {_metaDict.Count}");
+        using (IpcTester.DrawIntro(StringU8.Empty, "Parsed Data"u8))
+        {
+            table.DrawColumn($"Version: {_parsedVersion}, Count: {_metaDict.Count}");
+        }
     }
 }

@@ -1,6 +1,5 @@
-using Dalamud.Bindings.ImGui;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
-using OtterGui.Services;
+using ImSharp;
 using TerraFX.Interop.DirectX;
 
 namespace Penumbra.Interop.Services;
@@ -8,7 +7,7 @@ namespace Penumbra.Interop.Services;
 /// <summary>
 /// Creates ImGui handles over slices of array textures, and manages their lifetime.
 /// </summary>
-public sealed unsafe class TextureArraySlicer : IUiService, IDisposable
+public sealed unsafe class TextureArraySlicer : Luna.IUiService, IDisposable
 {
     private const uint InitialTimeToLive = 2;
 
@@ -16,7 +15,7 @@ public sealed unsafe class TextureArraySlicer : IUiService, IDisposable
     private readonly HashSet<(nint XivTexture, byte SliceIndex)>                _expiredKeys  = [];
 
     /// <remarks> Caching this across frames will cause a crash to desktop. </remarks>
-    public ImTextureID GetImGuiHandle(Texture* texture, byte sliceIndex)
+    public ImTextureId GetImGuiHandle(Texture* texture, byte sliceIndex)
     {
         if (texture is null)
             throw new ArgumentNullException(nameof(texture));
@@ -27,7 +26,7 @@ public sealed unsafe class TextureArraySlicer : IUiService, IDisposable
         if (_activeSlices.TryGetValue(((nint)texture, sliceIndex), out var state))
         {
             state.Refresh();
-            return new ImTextureID((nint)state.ShaderResourceView);
+            return new ImTextureId((nint)state.ShaderResourceView);
         }
 
         ref var srv = ref *(ID3D11ShaderResourceView*)(nint)texture->D3D11ShaderResourceView;
@@ -76,7 +75,7 @@ public sealed unsafe class TextureArraySlicer : IUiService, IDisposable
                 Marshal.ThrowExceptionForHR(device->CreateShaderResourceView(resource, &description, &slicedSrv));
                 state = new SliceState(slicedSrv);
                 _activeSlices.Add(((nint)texture, sliceIndex), state);
-                return new ImTextureID((nint)state.ShaderResourceView);
+                return new ImTextureId((nint)state.ShaderResourceView);
             }
             finally
             {

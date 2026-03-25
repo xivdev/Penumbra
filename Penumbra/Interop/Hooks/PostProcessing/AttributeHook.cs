@@ -1,7 +1,6 @@
 using Dalamud.Hooking;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
-using OtterGui.Classes;
-using OtterGui.Services;
+using Luna;
 using Penumbra.Collections;
 using Penumbra.GameData;
 using Penumbra.GameData.Interop;
@@ -18,7 +17,7 @@ namespace Penumbra.Interop.Hooks.PostProcessing;
 ///     <item>Parameter is the collection associated with the game object. </item>
 ///     <item>Parameter is the slot that was recomputed. If this is Unknown, it is a general new update call. </item>
 /// </list> </summary>
-public sealed unsafe class AttributeHook : EventWrapper<Actor, Model, ModCollection, AttributeHook.Priority>, IHookService
+public sealed unsafe class AttributeHook : EventBase<AttributeHook.Arguments, AttributeHook.Priority>, IHookService
 {
     public enum Priority
     {
@@ -29,18 +28,18 @@ public sealed unsafe class AttributeHook : EventWrapper<Actor, Model, ModCollect
     private readonly CollectionResolver _resolver;
     private readonly Configuration      _config;
 
-    public AttributeHook(HookManager hooks, Configuration config, CollectionResolver resolver)
-        : base("Update Model Attributes")
+    public AttributeHook(Logger log, HookManager hooks, Configuration config, CollectionResolver resolver)
+        : base("Update Model Attributes", log)
     {
         _config   = config;
         _resolver = resolver;
         _task     = hooks.CreateHook<Delegate>(Name, Sigs.UpdateAttributes, Detour, config.EnableCustomShapes);
     }
 
-    private readonly Task<Hook<Delegate>> _task;
+    private readonly Task<Hook<Delegate>?> _task;
 
     public nint Address
-        => _task.Result.Address;
+        => _task.Result?.Address ?? nint.Zero;
 
     public void Enable()
         => SetState(true);
@@ -56,9 +55,9 @@ public sealed unsafe class AttributeHook : EventWrapper<Actor, Model, ModCollect
         _config.EnableCustomShapes = enabled;
         _config.Save();
         if (enabled)
-            _task.Result.Enable();
+            _task.Result?.Enable();
         else
-            _task.Result.Disable();
+            _task.Result?.Disable();
     }
 
 
@@ -72,14 +71,16 @@ public sealed unsafe class AttributeHook : EventWrapper<Actor, Model, ModCollect
 
     private void Detour(Human* human)
     {
-        _task.Result.Original(human);
+        _task.Result!.Original(human);
         var resolveData          = _resolver.IdentifyCollection((DrawObject*)human, true);
         var identifiedActor      = resolveData.AssociatedGameObject;
         var identifiedCollection = resolveData.ModCollection;
         Penumbra.Log.Excessive($"[{Name}] Invoked on 0x{(ulong)human:X} (0x{identifiedActor:X}).");
-        Invoke(identifiedActor, human, identifiedCollection);
+        Invoke(new Arguments(identifiedActor, human, identifiedCollection));
     }
 
+    public readonly record struct Arguments(Actor Character, Model Human, ModCollection Collection);
+
     protected override void Dispose(bool disposing)
-        => _task.Result.Dispose();
+        => _task.Result?.Dispose();
 }

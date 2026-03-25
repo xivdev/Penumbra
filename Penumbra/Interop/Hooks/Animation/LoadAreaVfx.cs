@@ -1,5 +1,5 @@
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
-using OtterGui.Services;
+using Luna;
 using Penumbra.Collections;
 using Penumbra.CrashHandler.Buffers;
 using Penumbra.GameData;
@@ -34,7 +34,7 @@ public sealed unsafe class LoadAreaVfx : FastHook<LoadAreaVfx.Delegate>
 
         var last = _state.SetAnimationData(newData);
         _crashHandler.LogAnimation(newData.AssociatedGameObject, newData.ModCollection, AnimationInvocationType.LoadAreaVfx);
-        var ret = Task.Result.Original(vfxId, pos, caster, unk1, unk2, unk3);
+        var ret = Task.Result!.Original(vfxId, pos, caster, unk1, unk2, unk3);
         Penumbra.Log.Excessive(
             $"[Load Area VFX] Invoked with {vfxId}, [{pos[0]} {pos[1]} {pos[2]}], 0x{(nint)caster:X}, {unk1}, {unk2}, {unk3} -> 0x{ret:X}.");
         _state.RestoreAnimationData(last);

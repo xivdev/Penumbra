@@ -2,7 +2,6 @@ using Dalamud.Hooking;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
-using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Interop.Hooks.ResourceLoading;
 using Penumbra.Interop.PathResolving;
@@ -13,7 +12,7 @@ using CharacterUtility = Penumbra.Interop.Services.CharacterUtility;
 
 namespace Penumbra.Interop.Hooks.PostProcessing;
 
-public sealed unsafe class PreBoneDeformerReplacer : IDisposable, IRequiredService
+public sealed unsafe class PreBoneDeformerReplacer : IDisposable, Luna.IRequiredService
 {
     public static readonly Utf8GamePath PreBoneDeformerPath =
         Utf8GamePath.FromSpan("chara/xls/boneDeformer/human.pbd"u8, MetaDataComputation.All, out var p) ? p : Utf8GamePath.Empty;
@@ -21,7 +20,7 @@ public sealed unsafe class PreBoneDeformerReplacer : IDisposable, IRequiredServi
     // Approximate name guess.
     private delegate void* CharacterBaseCreateDeformerDelegate(CharacterBase* drawObject, uint slotIndex);
 
-    private readonly Hook<CharacterBaseCreateDeformerDelegate> _humanCreateDeformerHook;
+    private readonly Hook<CharacterBaseCreateDeformerDelegate>? _humanCreateDeformerHook;
 
     private readonly CharacterUtility      _utility;
     private readonly CollectionResolver    _collectionResolver;
@@ -30,7 +29,7 @@ public sealed unsafe class PreBoneDeformerReplacer : IDisposable, IRequiredServi
     private readonly HumanSetupScalingHook _humanSetupScalingHook;
 
     public PreBoneDeformerReplacer(CharacterUtility utility, CollectionResolver collectionResolver, ResourceLoader resourceLoader,
-        HookManager hooks, IFramework framework, CharacterBaseVTables vTables, HumanSetupScalingHook humanSetupScalingHook)
+        Luna.HookManager hooks, IFramework framework, CharacterBaseVTables vTables, HumanSetupScalingHook humanSetupScalingHook)
     {
         _utility                                 =  utility;
         _collectionResolver                      =  collectionResolver;
@@ -44,14 +43,14 @@ public sealed unsafe class PreBoneDeformerReplacer : IDisposable, IRequiredServi
 
     public void Dispose()
     {
-        _humanCreateDeformerHook.Dispose();
+        _humanCreateDeformerHook?.Dispose();
         _humanSetupScalingHook.SetupReplacements -= SetupHssReplacements;
     }
 
     private SafeResourceHandle GetPreBoneDeformerForCharacter(CharacterBase* drawObject)
     {
         var resolveData = _collectionResolver.IdentifyCollection(&drawObject->DrawObject, true);
-        if (resolveData.ModCollection._cache is not { } cache)
+        if (resolveData.ModCollection.Cache is not { } cache)
             return _resourceLoader.LoadResolvedSafeResource(ResourceCategory.Chara, ResourceType.Pbd, PreBoneDeformerPath.Path, resolveData);
 
         return cache.CustomResources.Get(ResourceCategory.Chara, ResourceType.Pbd, PreBoneDeformerPath, resolveData);
@@ -90,7 +89,7 @@ public sealed unsafe class PreBoneDeformerReplacer : IDisposable, IRequiredServi
         {
             if (!preBoneDeformer.IsInvalid)
                 _utility.Address->HumanPbdResource = (Structs.ResourceHandle*)preBoneDeformer.ResourceHandle;
-            return _humanCreateDeformerHook.Original(drawObject, slotIndex);
+            return _humanCreateDeformerHook!.Original(drawObject, slotIndex);
         }
         finally
         {

@@ -1,8 +1,6 @@
-using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Plugin;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
-using OtterGui.Classes;
-using OtterGui.Services;
+using Luna;
 
 namespace Penumbra.Services;
 
@@ -17,8 +15,6 @@ public class ValidityChecker : IService
     public readonly bool IsNotInstalledPenumbra;
     public readonly bool IsValidSourceRepo;
 
-    public readonly List<Exception> ImcExceptions = [];
-
     public readonly string Version;
     public readonly string CommitHash;
 
@@ -31,6 +27,11 @@ public class ValidityChecker : IService
         }
     }
 
+    public string GetMainWindowLabel()
+        => Version.Length is 0
+            ? "Penumbra###PenumbraConfigWindow"
+            : $"Penumbra v{Version}###PenumbraConfigWindow";
+
     public ValidityChecker(IDalamudPluginInterface pi)
     {
         DevPenumbraExists      = CheckDevPluginPenumbra(pi);
@@ -42,19 +43,12 @@ public class ValidityChecker : IService
         CommitHash = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "Unknown";
     }
 
-    public void LogExceptions()
-    {
-        if (ImcExceptions.Count > 0)
-            Penumbra.Messager.NotificationMessage($"{ImcExceptions.Count} IMC Exceptions thrown during Penumbra load. Please repair your game files.",
-                NotificationType.Warning);
-    }
-
     // Because remnants of penumbra in devPlugins cause issues, we check for them to warn users to remove them.
     private static bool CheckDevPluginPenumbra(IDalamudPluginInterface pi)
     {
 #if !DEBUG
         var path = Path.Combine(pi.DalamudAssetDirectory.Parent?.FullName ?? "INVALIDPATH", "devPlugins", "Penumbra");
-        var dir  = new DirectoryInfo(path);
+        var dir = new DirectoryInfo(path);
 
         try
         {
@@ -75,7 +69,7 @@ public class ValidityChecker : IService
     {
 #if !DEBUG
         var checkedDirectory = pi.AssemblyLocation.Directory?.Parent?.Parent?.Name;
-        var ret              = checkedDirectory?.Equals("installedPlugins", StringComparison.OrdinalIgnoreCase) ?? false;
+        var ret = checkedDirectory?.Equals("installedPlugins", StringComparison.OrdinalIgnoreCase) ?? false;
         if (!ret)
             Penumbra.Log.Error($"Penumbra is not correctly installed. Application loaded from \"{pi.AssemblyLocation.Directory!.FullName}\".");
 

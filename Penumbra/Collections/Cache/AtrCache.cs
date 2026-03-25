@@ -2,6 +2,7 @@ using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Meta;
 using Penumbra.Meta.Manipulations;
+using Penumbra.Mods.Editor;
 
 namespace Penumbra.Collections.Cache;
 
@@ -30,7 +31,7 @@ public sealed class AtrCache(MetaFileManager manager, ModCollection collection) 
     protected override void Dispose(bool _)
         => Reset();
 
-    protected override void ApplyModInternal(AtrIdentifier identifier, AtrEntry entry)
+    protected override void ApplyModInternal(IMod source, AtrIdentifier identifier, AtrEntry entry)
     {
         if (!_atrData.TryGetValue(identifier.Attribute, out var value))
         {

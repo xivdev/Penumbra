@@ -1,6 +1,5 @@
-using OtterGui.Extensions;
-using OtterGui.Services;
 using Penumbra.Api.Enums;
+using Penumbra.Communication;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Settings;
@@ -8,7 +7,7 @@ using Penumbra.Services;
 
 namespace Penumbra.Collections.Manager;
 
-public class CollectionEditor(SaveService saveService, CommunicatorService communicator, ModStorage modStorage) : IService
+public class CollectionEditor(SaveService saveService, CommunicatorService communicator, ModStorage modStorage) : Luna.IService
 {
     /// <summary> Enable or disable the mod inheritance of mod idx. </summary>
     public bool SetModInheritance(ModCollection collection, Mod mod, bool inherit)
@@ -137,13 +136,13 @@ public class CollectionEditor(SaveService saveService, CommunicatorService commu
     /// <summary> Copy the settings of an existing (sourceMod != null) or stored (sourceName) mod to another mod, if they exist. </summary>
     public bool CopyModSettings(ModCollection collection, Mod? sourceMod, string sourceName, Mod? targetMod, string targetName)
     {
-        if (targetName.Length == 0 && targetMod == null || sourceName.Length == 0)
+        if (targetName.Length is 0 && targetMod is null || sourceName.Length is 0)
             return false;
 
         // If the source mod exists, convert its settings to saved settings or null if its inheriting.
         // If it does not exist, check unused settings.
         // If it does not exist and has no unused settings, also use null.
-        ModSettings.SavedSettings? savedSettings = sourceMod != null
+        ModSettings.SavedSettings? savedSettings = sourceMod is not null
             ? collection.GetOwnSettings(sourceMod.Index) is { } ownSettings
                 ? new ModSettings.SavedSettings(ownSettings, sourceMod)
                 : null
@@ -160,7 +159,7 @@ public class CollectionEditor(SaveService saveService, CommunicatorService commu
                 savedSettings.Value.ToSettings(targetMod, out var settings);
                 SetModState(collection, targetMod, settings.Enabled);
                 SetModPriority(collection, targetMod, settings.Priority);
-                foreach (var (value, index) in settings.Settings.WithIndex())
+                foreach (var (index, value) in settings.Settings.Index())
                     SetModSetting(collection, targetMod, index, value);
             }
             else
@@ -196,7 +195,7 @@ public class CollectionEditor(SaveService saveService, CommunicatorService commu
     private static bool FixInheritance(ModCollection collection, Mod mod, bool inherit)
     {
         var settings = collection.GetOwnSettings(mod.Index);
-        if (inherit == (settings == null))
+        if (inherit == (settings is null))
             return false;
 
         var settings1 = inherit ? null : collection.GetInheritedSettings(mod.Index).Settings?.DeepCopy() ?? ModSettings.DefaultSettings(mod);
@@ -210,7 +209,7 @@ public class CollectionEditor(SaveService saveService, CommunicatorService commu
     {
         if (type is not ModSettingChange.TemporarySetting)
             saveService.QueueSave(new ModCollectionSave(modStorage, changedCollection));
-        communicator.ModSettingChanged.Invoke(changedCollection, type, mod, oldValue, groupIdx, false);
+        communicator.ModSettingChanged.Invoke(new ModSettingChanged.Arguments(type, changedCollection, mod, oldValue, groupIdx, false));
         if (type is not ModSettingChange.TemporarySetting)
             RecurseInheritors(changedCollection, type, mod, oldValue, groupIdx);
     }
@@ -225,11 +224,11 @@ public class CollectionEditor(SaveService saveService, CommunicatorService commu
             {
                 case ModSettingChange.MultiInheritance:
                 case ModSettingChange.MultiEnableState:
-                    communicator.ModSettingChanged.Invoke(directInheritor, type, null, oldValue, groupIdx, true);
+                    communicator.ModSettingChanged.Invoke(new ModSettingChanged.Arguments(type, directInheritor, null, oldValue, groupIdx, true));
                     break;
                 default:
-                    if (directInheritor.GetOwnSettings(mod!.Index) == null)
-                        communicator.ModSettingChanged.Invoke(directInheritor, type, mod, oldValue, groupIdx, true);
+                    if (directInheritor.GetOwnSettings(mod!.Index) is null)
+                        communicator.ModSettingChanged.Invoke(new ModSettingChanged.Arguments(type, directInheritor, mod, oldValue, groupIdx, true));
                     break;
             }
 

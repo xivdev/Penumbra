@@ -1,3 +1,4 @@
+using ImSharp;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
@@ -45,14 +46,15 @@ public static class EquipmentSwap
         var mtrlVariantTo = imcEntry.MaterialId;
         var skipFemale    = false;
         var skipMale      = false;
-        foreach (var gr in Enum.GetValues<GenderRace>())
+        foreach (var gr in GenderRace.Values)
         {
             switch (gr.Split().Item1)
             {
-                case Gender.Male when skipMale:        continue;
-                case Gender.Female when skipFemale:    continue;
-                case Gender.MaleNpc when skipMale:     continue;
-                case Gender.FemaleNpc when skipFemale: continue;
+                case Gender.Male when skipMale:
+                case Gender.Female when skipFemale:
+                case Gender.MaleNpc when skipMale:
+                case Gender.FemaleNpc when skipFemale:
+                    continue;
             }
 
             if (CharacterUtilityData.EqdpIdx(gr, true) < 0)
@@ -137,14 +139,15 @@ public static class EquipmentSwap
 
             var skipFemale = false;
             var skipMale   = false;
-            foreach (var gr in Enum.GetValues<GenderRace>())
+            foreach (var gr in GenderRace.Values)
             {
                 switch (gr.Split().Item1)
                 {
-                    case Gender.Male when skipMale:        continue;
-                    case Gender.Female when skipFemale:    continue;
-                    case Gender.MaleNpc when skipMale:     continue;
-                    case Gender.FemaleNpc when skipFemale: continue;
+                    case Gender.Male when skipMale:
+                    case Gender.Female when skipFemale:
+                    case Gender.MaleNpc when skipMale:
+                    case Gender.FemaleNpc when skipFemale:
+                        continue;
                 }
 
                 if (CharacterUtilityData.EqdpIdx(gr, isAccessory) < 0)
@@ -205,7 +208,7 @@ public static class EquipmentSwap
         var (ownMtrl, ownMdl) = meta.SwapToModdedEntry;
         if (ownMdl)
         {
-            var mdl = CreateMdl(manager, redirections, slotFrom, slotTo, gr, idFrom, idTo, mtrlTo);
+            var mdl = CreateMdl(manager, redirections, manips, slotFrom, slotTo, gr, idFrom, idTo, mtrlTo);
             meta.ChildSwaps.Add(mdl);
         }
         else if (!ownMtrl && meta.SwapAppliedIsDefault)
@@ -216,12 +219,13 @@ public static class EquipmentSwap
         return meta;
     }
 
-    public static FileSwap CreateMdl(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections, EquipSlot slot, GenderRace gr,
+    public static FileSwap CreateMdl(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections, MetaDictionary manips, EquipSlot slot,
+        GenderRace gr,
         PrimaryId idFrom, PrimaryId idTo, byte mtrlTo)
-        => CreateMdl(manager, redirections, slot, slot, gr, idFrom, idTo, mtrlTo);
+        => CreateMdl(manager, redirections, manips, slot, slot, gr, idFrom, idTo, mtrlTo);
 
-    public static FileSwap CreateMdl(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections, EquipSlot slotFrom, EquipSlot slotTo,
-        GenderRace gr, PrimaryId idFrom, PrimaryId idTo, byte mtrlTo)
+    public static FileSwap CreateMdl(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections, MetaDictionary manips,
+        EquipSlot slotFrom, EquipSlot slotTo, GenderRace gr, PrimaryId idFrom, PrimaryId idTo, byte mtrlTo)
     {
         var mdlPathFrom = GamePaths.Mdl.Gear(idFrom, gr, slotFrom);
         var mdlPathTo   = GamePaths.Mdl.Gear(idTo,   gr, slotTo);
@@ -229,14 +233,32 @@ public static class EquipmentSwap
 
         foreach (ref var fileName in mdl.AsMdl()!.Materials.AsSpan())
         {
-            var mtrl = CreateMtrl(manager, redirections, slotFrom, slotTo, idFrom, idTo, mtrlTo, ref fileName, ref mdl.DataWasChanged);
-            if (mtrl != null)
+            if (CreateMtrl(manager, redirections, slotFrom, slotTo, idFrom, idTo, mtrlTo, ref fileName, ref mdl.DataWasChanged) is { } mtrl)
                 mdl.ChildSwaps.Add(mtrl);
         }
 
+        var humanSlotFrom = slotFrom.ToHumanSlot();
+        var humanSlotTo   = slotTo.ToHumanSlot();
+        AddShapesAttributes(mdl, manips, humanSlotFrom, humanSlotTo, gr, idFrom, idTo);
         FixAttributes(mdl, slotFrom, slotTo);
 
         return mdl;
+    }
+
+    public static void AddShapesAttributes(FileSwap mdl, MetaDictionary manips, HumanSlot slotFrom, HumanSlot slotTo, GenderRace gr, PrimaryId idFrom, PrimaryId idTo)
+    {
+        
+        foreach (var shape in mdl.AsMdl()!.Shapes.Select(s => s.ShapeName))
+        {
+            foreach (var (identifier, value) in manips.Shp.Where(kvp => CheckShape(kvp.Key, shape, slotFrom, gr, idFrom)))
+                mdl.ChildSwaps.Add(CreateShapeSwap(identifier, value, slotTo, idTo));
+        }
+
+        foreach (var attribute in mdl.AsMdl()!.Attributes)
+        {
+            foreach (var (identifier, value) in manips.Atr.Where(kvp => CheckAttribute(kvp.Key, attribute, slotFrom, gr, idFrom)))
+                mdl.ChildSwaps.Add(CreateAttributeSwap(identifier, value, slotTo, idTo));
+        }
     }
 
     private static void FixAttributes(FileSwap swap, EquipSlot slotFrom, EquipSlot slotTo)
@@ -364,7 +386,7 @@ public static class EquipmentSwap
     // Example: Crimson Standard Bracelet
     public static FileSwap? CreateDecal(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections, byte decalId)
     {
-        if (decalId == 0)
+        if (decalId is 0)
             return null;
 
         var decalPath = GamePaths.Tex.EquipDecal(decalId);
@@ -377,7 +399,7 @@ public static class EquipmentSwap
         PrimaryId idFrom, PrimaryId idTo,
         byte vfxId)
     {
-        if (vfxId == 0)
+        if (vfxId is 0)
             return null;
 
         var vfxPathFrom = GamePaths.Avfx.Path(slotFrom, idFrom, vfxId);
@@ -460,8 +482,11 @@ public static class EquipmentSwap
         }
 
         var mtrl = FileSwap.CreateSwap(manager, ResourceType.Mtrl, redirections, pathFrom, pathTo);
-        var shpk = CreateShader(manager, redirections, ref mtrl.AsMtrl()!.ShaderPackage.Name, ref mtrl.DataWasChanged);
-        mtrl.ChildSwaps.Add(shpk);
+        if (manager.Config.IncludeShpkInSwap)
+        {
+            var shpk = CreateShader(manager, redirections, ref mtrl.AsMtrl()!.ShaderPackage.Name, ref mtrl.DataWasChanged);
+            mtrl.ChildSwaps.Add(shpk);
+        }
 
         foreach (ref var texture in mtrl.AsMtrl()!.Textures.AsSpan())
         {
@@ -509,5 +534,54 @@ public static class EquipmentSwap
         dataWasChanged = true;
 
         return FileSwap.CreateSwap(manager, ResourceType.Atex, redirections, filePath, oldPath, oldPath);
+    }
+
+    public static MetaSwap<ShpIdentifier, ShpEntry> CreateShapeSwap(ShpIdentifier identifier, ShpEntry value, HumanSlot slotTo, PrimaryId idTo)
+    {
+        var toIdentifier = new ShpIdentifier(identifier.Slot is HumanSlot.Unknown ? HumanSlot.Unknown : slotTo,
+            identifier.Id is null ? null : idTo, identifier.Shape, identifier.ConnectorCondition, identifier.GenderRaceCondition);
+        return new MetaSwap<ShpIdentifier, ShpEntry>(_ => value, identifier, value, toIdentifier, ShpEntry.False);
+    }
+
+    public static MetaSwap<AtrIdentifier, AtrEntry> CreateAttributeSwap(AtrIdentifier identifier, AtrEntry value, HumanSlot slotTo,
+        PrimaryId idTo)
+    {
+        var toIdentifier = new AtrIdentifier(identifier.Slot is HumanSlot.Unknown ? HumanSlot.Unknown : slotTo,
+            identifier.Id is null ? null : idTo, identifier.Attribute, identifier.GenderRaceCondition);
+        return new MetaSwap<AtrIdentifier, AtrEntry>(_ => value, identifier, value, toIdentifier, AtrEntry.True);
+    }
+
+    private static bool CheckShape(ShpIdentifier identifier, string shape, HumanSlot slotFrom, GenderRace gr, PrimaryId idFrom)
+    {
+        if (shape != identifier.Shape.ToString())
+            return false;
+
+        if (identifier.Slot is not HumanSlot.Unknown && slotFrom != identifier.Slot)
+            return false;
+
+        if (identifier.GenderRaceCondition is not GenderRace.Unknown && gr != identifier.GenderRaceCondition)
+            return false;
+
+        if (identifier.Id is not null && identifier.Id.Value != idFrom)
+            return false;
+
+        return true;
+    }
+
+    private static bool CheckAttribute(AtrIdentifier identifier, string attribute, HumanSlot slotFrom, GenderRace gr, PrimaryId idFrom)
+    {
+        if (attribute != identifier.Attribute.ToString())
+            return false;
+
+        if (identifier.Slot is not HumanSlot.Unknown && slotFrom != identifier.Slot)
+            return false;
+
+        if (identifier.GenderRaceCondition is not GenderRace.Unknown && gr != identifier.GenderRaceCondition)
+            return false;
+
+        if (identifier.Id is not null && identifier.Id.Value != idFrom)
+            return false;
+
+        return true;
     }
 }

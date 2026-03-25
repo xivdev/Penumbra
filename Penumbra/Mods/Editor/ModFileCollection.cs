@@ -1,20 +1,15 @@
-using OtterGui;
-using OtterGui.Extensions;
-using OtterGui.Services;
+using ImSharp.Containers;
+using Luna;
+using Penumbra.Api.Enums;
 using Penumbra.Mods.SubMods;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Mods.Editor;
 
-public class ModFileCollection : IDisposable, IService
+public class ModFileCollection : IDisposable
 {
-    private readonly List<FileRegistry> _available = [];
-    private readonly List<FileRegistry> _mtrl      = [];
-    private readonly List<FileRegistry> _mdl       = [];
-    private readonly List<FileRegistry> _tex       = [];
-    private readonly List<FileRegistry> _shpk      = [];
-    private readonly List<FileRegistry> _pbd       = [];
-    private readonly List<FileRegistry> _atch       = [];
+    private readonly ObservableList<FileRegistry>                           _available = [];
+    private readonly Dictionary<ResourceType, ObservableList<FileRegistry>> _byType    = [];
 
     private readonly SortedSet<FullPath>   _missing   = [];
     private readonly HashSet<Utf8GamePath> _usedPaths = [];
@@ -25,28 +20,30 @@ public class ModFileCollection : IDisposable, IService
     public IReadOnlySet<Utf8GamePath> UsedPaths
         => Ready ? _usedPaths : [];
 
-    public IReadOnlyList<FileRegistry> Available
+    public IObservableList<FileRegistry> Available
         => Ready ? _available : [];
 
-    public IReadOnlyList<FileRegistry> Mtrl
-        => Ready ? _mtrl : [];
-
-    public IReadOnlyList<FileRegistry> Mdl
-        => Ready ? _mdl : [];
-
-    public IReadOnlyList<FileRegistry> Tex
-        => Ready ? _tex : [];
-
-    public IReadOnlyList<FileRegistry> Shpk
-        => Ready ? _shpk : [];
-
-    public IReadOnlyList<FileRegistry> Pbd
-        => Ready ? _pbd : [];
-
-    public IReadOnlyList<FileRegistry> Atch
-        => Ready ? _atch : [];
-
     public bool Ready { get; private set; } = true;
+
+    public IObservableList<FileRegistry> GetByType(ResourceType type)
+        => Ready
+            ? type switch
+            {
+                ResourceType.Unknown => _available,
+                _                    => DoGetByType(type),
+            }
+            : [];
+
+    private ObservableList<FileRegistry> DoGetByType(ResourceType type)
+    {
+        if (!_byType.TryGetValue(type, out var files))
+        {
+            files = [];
+            _byType.Add(type, files);
+        }
+
+        return files;
+    }
 
     public void UpdateAll(Mod mod, IModDataContainer option)
     {
@@ -123,39 +120,16 @@ public class ModFileCollection : IDisposable, IService
                 continue;
 
             _available.Add(registry);
-            switch (Path.GetExtension(registry.File.FullName).ToLowerInvariant())
-            {
-                case ".mtrl":
-                    _mtrl.Add(registry);
-                    break;
-                case ".mdl":
-                    _mdl.Add(registry);
-                    break;
-                case ".tex":
-                    _tex.Add(registry);
-                    break;
-                case ".shpk":
-                    _shpk.Add(registry);
-                    break;
-                case ".pbd":
-                    _pbd.Add(registry);
-                    break;
-                case ".atch":
-                    _atch.Add(registry);
-                    break;
-            }
+            DoGetByType(ResourceType.FromPath(registry.File.FullName)).Add(registry);
         }
     }
 
     private void ClearFiles()
     {
         _available.Clear();
-        _mtrl.Clear();
-        _mdl.Clear();
-        _tex.Clear();
-        _shpk.Clear();
-        _pbd.Clear();
-        _atch.Clear();
+        foreach (var files in _byType.Values)
+            files.Clear();
+        _byType.Clear();
     }
 
     private void ClearPaths(bool clearRegistries, CancellationToken tok)

@@ -1,8 +1,6 @@
-using Dalamud.Memory;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Memory;
-using OtterGui.Services;
 using Penumbra.GameData;
 using Penumbra.Interop.Structs;
 using Penumbra.String.Functions;
@@ -42,7 +40,7 @@ public sealed class MarshalAllocator : IFileAllocator
     }
 }
 
-public sealed unsafe class XivFileAllocator : IFileAllocator, IService
+public sealed unsafe class XivFileAllocator : IFileAllocator, Luna.IService
 {
     /// <summary>
     /// Allocate in the games space for file storage.
@@ -73,7 +71,7 @@ public sealed unsafe class XivFileAllocator : IFileAllocator, IService
     }
 }
 
-public sealed unsafe class XivDefaultAllocator : IFileAllocator, IService
+public sealed unsafe class XivDefaultAllocator : IFileAllocator, Luna.IService
 {
     public T* Allocate<T>(int length, int alignment = 1) where T : unmanaged
     {

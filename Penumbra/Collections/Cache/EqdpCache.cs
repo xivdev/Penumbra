@@ -2,6 +2,7 @@ using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Meta;
 using Penumbra.Meta.Manipulations;
+using Penumbra.Mods.Editor;
 
 namespace Penumbra.Collections.Cache;
 
@@ -21,7 +22,7 @@ public sealed class EqdpCache(MetaFileManager manager, ModCollection collection)
         _fullEntries.Clear();
     }
 
-    protected override void ApplyModInternal(EqdpIdentifier identifier, EqdpEntry entry)
+    protected override void ApplyModInternal(IMod source, EqdpIdentifier identifier, EqdpEntry entry)
     {
         var tuple       = (identifier.SetId, identifier.GenderRace, identifier.Slot.IsAccessory());
         var mask        = Eqdp.Mask(identifier.Slot);

@@ -1,5 +1,5 @@
-using OtterGui.Classes;
-using Penumbra.Api.Enums;
+using ImSharp;
+using Luna;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
@@ -16,26 +16,33 @@ namespace Penumbra.Mods;
 ///     <item>Parameter is the new selected mod </item>
 /// </list>
 /// </summary>
-public class ModSelection : EventWrapper<Mod?, Mod?, ModSelection.Priority>
+public class ModSelection : EventBase<ModSelection.Arguments, ModSelection.Priority>
 {
     private readonly ActiveCollections   _collections;
-    private readonly EphemeralConfig     _config;
     private readonly CommunicatorService _communicator;
+    private readonly ModFileSystem       _modFileSystem;
+    private readonly UiNavigator         _navigator;
 
-    public ModSelection(CommunicatorService communicator, ModManager mods, ActiveCollections collections, EphemeralConfig config)
-        : base(nameof(ModSelection))
+    public ModSelection(Logger log, CommunicatorService communicator, ModManager mods, ActiveCollections collections, EphemeralConfig config,
+        ModFileSystem modFileSystem, UiNavigator navigator)
+        : base(nameof(ModSelection), log)
     {
-        _communicator = communicator;
-        _collections  = collections;
-        _config       = config;
-        if (_config.LastModPath.Length > 0)
-            SelectMod(mods.FirstOrDefault(m => string.Equals(m.Identifier, config.LastModPath, StringComparison.OrdinalIgnoreCase)));
-
+        _communicator  = communicator;
+        _collections   = collections;
+        _modFileSystem = modFileSystem;
+        _navigator     = navigator;
         _communicator.CollectionChange.Subscribe(OnCollectionChange, CollectionChange.Priority.ModSelection);
         _communicator.CollectionInheritanceChanged.Subscribe(OnInheritanceChange, CollectionInheritanceChanged.Priority.ModSelection);
         _communicator.ModSettingChanged.Subscribe(OnSettingChange, ModSettingChanged.Priority.ModSelection);
+        _modFileSystem.Selection.Changed += OnSelectionChanged;
+        _navigator.ModSelector           += SelectMod;
+        SelectModInternal(_modFileSystem.Selection.Selection?.GetValue<Mod>());
     }
 
+    private void OnSelectionChanged()
+        => SelectModInternal(_modFileSystem.Selection.Selection?.GetValue<Mod>());
+
+    public StringU8              ModName           { get; private set; } = StringU8.Empty;
     public ModSettings           Settings          { get; private set; } = ModSettings.Empty;
     public ModCollection         Collection        { get; private set; } = ModCollection.Empty;
     public Mod?                  Mod               { get; private set; }
@@ -44,15 +51,21 @@ public class ModSelection : EventWrapper<Mod?, Mod?, ModSelection.Priority>
 
     public void SelectMod(Mod? mod)
     {
+        if (mod is null)
+            _modFileSystem.Selection.UnselectAll();
+        else if (mod.Node is { } node)
+            _modFileSystem.Selection.Select(node, true);
+    }
+
+    private void SelectModInternal(Mod? mod)
+    {
         if (mod == Mod)
             return;
 
         var oldMod = Mod;
         Mod = mod;
-        OnCollectionChange(CollectionType.Current, null, _collections.Current, string.Empty);
-        Invoke(oldMod, Mod);
-        _config.LastModPath = mod?.ModPath.Name ?? string.Empty;
-        _config.Save();
+        OnCollectionChange(new CollectionChange.Arguments(CollectionType.Current, null, _collections.Current, string.Empty));
+        Invoke(new Arguments(oldMod, Mod));
     }
 
     protected override void Dispose(bool _)
@@ -60,36 +73,40 @@ public class ModSelection : EventWrapper<Mod?, Mod?, ModSelection.Priority>
         _communicator.CollectionChange.Unsubscribe(OnCollectionChange);
         _communicator.CollectionInheritanceChanged.Unsubscribe(OnInheritanceChange);
         _communicator.ModSettingChanged.Unsubscribe(OnSettingChange);
+        _modFileSystem.Selection.Changed -= OnSelectionChanged;
+        _navigator.ModSelector           -= SelectMod;
     }
 
-    private void OnCollectionChange(CollectionType type, ModCollection? oldCollection, ModCollection? newCollection, string _2)
+    private void OnCollectionChange(in CollectionChange.Arguments arguments)
     {
-        if (type is CollectionType.Current && oldCollection != newCollection)
+        if (arguments.Type is CollectionType.Current && arguments.OldCollection != arguments.NewCollection)
             UpdateSettings();
     }
 
-    private void OnSettingChange(ModCollection collection, ModSettingChange _1, Mod? mod, Setting _2, int _3, bool _4)
+    private void OnSettingChange(in ModSettingChanged.Arguments arguments)
     {
-        if (collection == _collections.Current && mod == Mod)
+        if (arguments.Collection == _collections.Current && arguments.Mod == Mod)
             UpdateSettings();
     }
 
-    private void OnInheritanceChange(ModCollection collection, bool arg2)
+    private void OnInheritanceChange(in CollectionInheritanceChanged.Arguments arguments)
     {
-        if (collection == _collections.Current)
+        if (arguments.Collection == _collections.Current)
             UpdateSettings();
     }
 
     private void UpdateSettings()
     {
-        if (Mod == null)
+        if (Mod is null)
         {
+            ModName     = StringU8.Empty;
             Settings    = ModSettings.Empty;
             Collection  = ModCollection.Empty;
             OwnSettings = null;
         }
         else
         {
+            ModName                    = new StringU8(Mod.Name);
             (var settings, Collection) = _collections.Current.GetActualSettings(Mod.Index);
             OwnSettings                = _collections.Current.GetOwnSettings(Mod.Index);
             TemporarySettings          = _collections.Current.GetTempSettings(Mod.Index);
@@ -102,7 +119,9 @@ public class ModSelection : EventWrapper<Mod?, Mod?, ModSelection.Priority>
         /// <seealso cref="UI.ModsTab.ModPanel.OnSelectionChange"/>
         ModPanel = 0,
 
-        /// <seealso cref="Editor.ModMerger.OnSelectionChange"/>
-        ModMerger = 0,
+        /// <seealso cref="Penumbra.UI.AdvancedWindow.ModEditWindowFactory"/>
+        ModEditWindow = 0,
     }
+
+    public readonly record struct Arguments(Mod? OldSelection, Mod? NewSelection);
 }

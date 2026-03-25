@@ -1,4 +1,4 @@
-using OtterGui.Services;
+using Luna;
 using Penumbra.CrashHandler.Buffers;
 using Penumbra.GameData;
 using Penumbra.GameData.Interop;
@@ -35,7 +35,7 @@ public sealed unsafe class ScheduleClipUpdate : FastHook<ScheduleClipUpdate.Dele
         var newData = LoadTimelineResources.GetDataFromTimeline(_objects, _collectionResolver, clipScheduler->SchedulerTimeline);
         var last    = _state.SetAnimationData(newData);
         _crashHandler.LogAnimation(newData.AssociatedGameObject, newData.ModCollection, AnimationInvocationType.ScheduleClipUpdate);
-        Task.Result.Original(clipScheduler);
+        Task.Result!.Original(clipScheduler);
         _state.RestoreAnimationData(last);
     }
 }

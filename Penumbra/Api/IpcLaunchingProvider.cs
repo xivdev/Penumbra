@@ -1,6 +1,5 @@
 using Dalamud.Plugin;
-using OtterGui.Log;
-using OtterGui.Services;
+using Luna;
 using Penumbra.Api.Api;
 using Serilog.Events;
 

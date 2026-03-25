@@ -1,5 +1,5 @@
+using Luna;
 using Newtonsoft.Json;
-using OtterGui;
 
 namespace Penumbra.Mods.Settings;
 
@@ -27,13 +27,16 @@ public readonly record struct Setting(ulong Value)
         => idx >= 0 && (Value & (1ul << idx)) != 0;
 
     public Setting MoveBit(int idx1, int idx2)
-        => new(Functions.MoveBit(Value, idx1, idx2));
+        => new(BitFunctions.MoveBit(Value, idx1, idx2));
 
     public Setting RemoveBit(int idx)
-        => new(Functions.RemoveBit(Value, idx));
+        => new(BitFunctions.RemoveBit(Value, idx));
 
     public Setting SetBit(int idx, bool value)
         => new(value ? Value | (1ul << idx) : Value & ~(1ul << idx));
+
+    public Setting ToggleBit(int idx)
+        => new(Value ^ (1ul << idx));
 
     public static Setting AllBits(int count)
         => new((1ul << Math.Clamp(count, 0, 63)) - 1);

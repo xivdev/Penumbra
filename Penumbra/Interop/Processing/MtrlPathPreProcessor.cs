@@ -12,5 +12,10 @@ public sealed class MtrlPathPreProcessor : IPathPreProcessor
         => ResourceType.Mtrl;
 
     public FullPath? PreProcess(ResolveData resolveData, CiByteString path, Utf8GamePath originalGamePath, bool nonDefault, FullPath? resolved)
-        => nonDefault ? PathDataHandler.CreateMtrl(path, resolveData.ModCollection, originalGamePath) : resolved;
+    {
+        if (!nonDefault)
+            return resolved;
+
+        return PathDataHandler.CreateMtrl(path, resolveData.ModCollection, originalGamePath);
+    }
 }

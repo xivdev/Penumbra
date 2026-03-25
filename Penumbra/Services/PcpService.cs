@@ -1,9 +1,8 @@
 using Dalamud.Game.ClientState.Objects.Types;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
+using Luna;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using OtterGui.Classes;
-using OtterGui.Services;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
@@ -18,12 +17,14 @@ using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.SubMods;
 using Penumbra.String.Classes;
+using Penumbra.Util;
 
 namespace Penumbra.Services;
 
 public class PcpService : IApiService, IDisposable
 {
-    public const string Extension = ".pcp";
+    public string Extension
+        => _config.PcpSettings.PcpExtension;
 
     private readonly Configuration       _config;
     private readonly SaveService         _files;
@@ -87,18 +88,18 @@ public class PcpService : IApiService, IDisposable
             _collections.Storage.RemoveCollection(collection);
     }
 
-    private void OnModPathChange(ModPathChangeType type, Mod mod, DirectoryInfo? oldDirectory, DirectoryInfo? newDirectory)
+    private void OnModPathChange(in ModPathChanged.Arguments arguments)
     {
-        if (type is not ModPathChangeType.Added || _config.PcpSettings.DisableHandling || newDirectory is null)
+        if (arguments.Type is not ModPathChangeType.Added || _config.PcpSettings.DisableHandling || arguments.NewDirectory is null)
             return;
 
         try
         {
-            var file = Path.Combine(newDirectory.FullName, "character.json");
+            var file = Path.Combine(arguments.NewDirectory.FullName, "character.json");
             if (!File.Exists(file))
             {
                 // First version had collection.json, changed.
-                var oldFile = Path.Combine(newDirectory.FullName, "collection.json");
+                var oldFile = Path.Combine(arguments.NewDirectory.FullName, "collection.json");
                 if (File.Exists(oldFile))
                 {
                     Penumbra.Log.Information("[PCPService] Renaming old PCP file from collection.json to character.json.");
@@ -108,7 +109,7 @@ public class PcpService : IApiService, IDisposable
                     return;
             }
 
-            Penumbra.Log.Information($"[PCPService] Found a PCP file for {mod.Name}, applying.");
+            Penumbra.Log.Information($"[PCPService] Found a PCP file for {arguments.Mod.Name}, applying.");
             var text       = File.ReadAllText(file);
             var jObj       = JObject.Parse(text);
             var collection = ModCollection.Empty;
@@ -122,7 +123,7 @@ public class PcpService : IApiService, IDisposable
                     if (_collections.Storage.AddCollection(name, null))
                     {
                         collection = _collections.Storage[^1];
-                        _collections.Editor.SetModState(collection, mod, true);
+                        _collections.Editor.SetModState(collection, arguments.Mod, true);
 
                         // Assign collection.
                         if (_config.PcpSettings.AssignCollection)
@@ -135,12 +136,12 @@ public class PcpService : IApiService, IDisposable
             }
 
             // Move to folder.
-            if (_fileSystem.TryGetValue(mod, out var leaf))
+            if (arguments.Mod.Node is { } node)
             {
                 try
                 {
                     var folder = _fileSystem.FindOrCreateAllFolders(_config.PcpSettings.FolderName);
-                    _fileSystem.Move(leaf, folder);
+                    _fileSystem.Move(node, folder);
                 }
                 catch
                 {
@@ -150,18 +151,18 @@ public class PcpService : IApiService, IDisposable
 
             // Invoke IPC.
             if (_config.PcpSettings.AllowIpc)
-                _communicator.PcpParsing.Invoke(jObj, mod.Identifier, collection.Identity.Id);
+                _communicator.PcpParsing.Invoke(new PcpParsing.Arguments(jObj, arguments.Mod, collection));
         }
         catch (Exception ex)
         {
-            Penumbra.Log.Error($"Error reading the character.json file from {mod.Identifier}:\n{ex}");
+            Penumbra.Log.Error($"Error reading the character.json file from {arguments.Mod.Identifier}:\n{ex}");
         }
     }
 
     public void Dispose()
         => _communicator.ModPathChanged.Unsubscribe(OnModPathChange);
 
-    public async Task<(bool, string)> CreatePcp(ObjectIndex objectIndex, string note = "", CancellationToken cancel = default)
+    public async Task<(bool, string)> CreatePcp(ObjectIndex objectIndex, string? modPath, string note = "", CancellationToken cancel = default)
     {
         try
         {
@@ -189,7 +190,9 @@ public class PcpService : IApiService, IDisposable
             var modDirectory = CreateMod(identifier, note, time);
             await CreateDefaultMod(modDirectory, meta, tree, cancel);
             await CreateCollectionInfo(modDirectory, objectIndex, identifier, note, time, cancel);
-            var file = ZipUp(modDirectory);
+            var file = GetFullZipPath(modDirectory, modPath, Extension);
+            _modExport.IgnoreExportedFile(file);
+            ZipUp(modDirectory, file);
             return (true, file);
         }
         catch (Exception ex)
@@ -198,12 +201,19 @@ public class PcpService : IApiService, IDisposable
         }
     }
 
-    private static string ZipUp(DirectoryInfo directory)
+    private static string GetFullZipPath(DirectoryInfo directory, string? path, string extension)
     {
-        var fileName = directory.FullName + Extension;
-        ZipFile.CreateFromDirectory(directory.FullName, fileName, CompressionLevel.Optimal, false);
+        if (path is null)
+            path = directory.FullName + extension;
+        else if (Path.GetExtension(path.AsSpan()).IsEmpty)
+            path += extension;
+        return path;
+    }
+
+    private static void ZipUp(DirectoryInfo directory, string path)
+    {
+        ArchiveUtility.CreateFromDirectory(directory.FullName, path);
         directory.Delete(true);
-        return fileName;
     }
 
     private async Task CreateCollectionInfo(DirectoryInfo directory, ObjectIndex index, ActorIdentifier actor, string note, DateTime time,
@@ -221,7 +231,8 @@ public class PcpService : IApiService, IDisposable
         if (note.Length > 0)
             cancel.ThrowIfCancellationRequested();
         if (_config.PcpSettings.AllowIpc)
-            await _framework.Framework.RunOnFrameworkThread(() => _communicator.PcpCreation.Invoke(jObj, index.Index, directory.FullName));
+            await _framework.Framework.RunOnFrameworkThread(()
+                => _communicator.PcpCreation.Invoke(new PcpCreation.Arguments(jObj, index.Index, directory.FullName)));
         var             filePath = Path.Combine(directory.FullName, "character.json");
         await using var file     = File.Open(filePath, File.Exists(filePath) ? FileMode.Truncate : FileMode.CreateNew);
         await using var stream   = new StreamWriter(file);
@@ -234,15 +245,20 @@ public class PcpService : IApiService, IDisposable
     {
         var directory = _modExport.ExportDirectory;
         directory.Create();
-        var actorName  = actor.ToName();
-        var authorName = _actors.GetCurrentPlayer().ToName();
-        var suffix = note.Length > 0
-            ? note
-            : time.ToString("yyyy-MM-ddTHH\\:mm", CultureInfo.InvariantCulture);
-        var modName     = $"{actorName} - {suffix}";
+        var actorName   = actor.ToName();
+        var modName     = ModName(actorName, note, time);
+        var authorName  = _actors.GetCurrentPlayer().ToName();
         var description = $"On-Screen Data for {actorName} as snapshotted on {time}.";
         return _modCreator.CreateEmptyMod(directory, modName, description, authorName, "PCP")
          ?? throw new Exception($"Unable to create mod {modName} in {directory.FullName}.");
+    }
+
+    public static string ModName(string actorName, string note, DateTime time)
+    {
+        var suffix = note.Length > 0
+            ? note
+            : time.ToString("yyyy-MM-ddTHH_mm", CultureInfo.InvariantCulture);
+        return $"{actorName} - {suffix}";
     }
 
     private async Task CreateDefaultMod(DirectoryInfo modDirectory, MetaDictionary meta, ResourceTree tree,
@@ -281,8 +297,7 @@ public class PcpService : IApiService, IDisposable
         var filePath  = _files.FileNames.OptionGroupFile(modDirectory.FullName, -1, string.Empty, _config.ReplaceNonAsciiOnImport);
         cancel.ThrowIfCancellationRequested();
         await using var fileStream = File.Open(filePath, File.Exists(filePath) ? FileMode.Truncate : FileMode.CreateNew);
-        await using var writer     = new StreamWriter(fileStream);
-        saveGroup.Save(writer);
+        saveGroup.Save(fileStream);
     }
 
     private (ICharacter Actor, ActorIdentifier Identifier) CheckActor(ObjectIndex objectIndex)

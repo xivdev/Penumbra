@@ -1,5 +1,5 @@
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
-using OtterGui.Services;
+using Luna;
 using Penumbra.GameData;
 
 namespace Penumbra.Interop.Hooks.Resources;
@@ -22,7 +22,7 @@ public sealed unsafe class ApricotResourceLoad : FastHook<ApricotResourceLoad.De
     {
         var last = _gameState.AvfxData.Value;
         _gameState.AvfxData.Value = _gameState.LoadSubFileHelper((nint)handle);
-        var ret = Task.Result.Original(handle, unk1, unk2);
+        var ret = Task.Result!.Original(handle, unk1, unk2);
         _gameState.AvfxData.Value = last;
         return ret;
     }

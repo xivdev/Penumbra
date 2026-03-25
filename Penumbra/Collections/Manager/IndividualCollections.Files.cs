@@ -1,7 +1,8 @@
+using System.Text.Json;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Interface.ImGuiNotification;
+using Luna;
 using Newtonsoft.Json.Linq;
-using OtterGui.Classes;
 using Penumbra.GameData.Actors;
 using Penumbra.GameData.DataContainers.Bases;
 using Penumbra.GameData.Structs;
@@ -12,18 +13,19 @@ namespace Penumbra.Collections.Manager;
 
 public partial class IndividualCollections
 {
-    public JArray ToJObject()
+    public void WriteJson(Utf8JsonWriter writer, ReadOnlySpan<byte> property)
     {
-        var ret = new JArray();
+        writer.WriteStartArray(property);
         foreach (var (name, identifiers, collection) in Assignments)
         {
-            var tmp = identifiers[0].ToJson();
-            tmp.Add("Collection", collection.Identity.Id);
-            tmp.Add("Display",    name);
-            ret.Add(tmp);
+            writer.WriteStartObject();
+            writer.WriteString("Collection"u8, collection.Identity.Id);
+            writer.WriteString("Display"u8,    name);
+            writer.WriteJsonProperties(identifiers[0]);
+            writer.WriteEndObject();
         }
 
-        return ret;
+        writer.WriteEndArray();
     }
 
     public bool ReadJObject(SaveService saver, ActiveCollections parent, JArray? obj, CollectionStorage storage, int version)
@@ -58,7 +60,7 @@ public partial class IndividualCollections
     private bool ReadJObjectInternalV1(JArray? obj, CollectionStorage storage)
     {
         Penumbra.Log.Debug("[Collections] Reading individual assignments...");
-        if (obj == null)
+        if (obj is null)
         {
             Penumbra.Log.Debug($"[Collections] Finished reading {Count} individual assignments...");
             return true;
@@ -70,7 +72,7 @@ public partial class IndividualCollections
             {
                 var identifier = _actors.FromJson(data as JObject);
                 var group      = GetGroup(identifier);
-                if (group.Length == 0 || group.Any(i => !i.IsValid))
+                if (group.Length is 0 || group.Any(i => !i.IsValid))
                 {
                     Penumbra.Messager.NotificationMessage("Could not load an unknown individual collection, removed.",
                         NotificationType.Error);
@@ -78,7 +80,7 @@ public partial class IndividualCollections
                 }
 
                 var collectionName = data["Collection"]?.ToObject<string>() ?? string.Empty;
-                if (collectionName.Length == 0 || !storage.ByName(collectionName, out var collection))
+                if (collectionName.Length is 0 || !storage.ByName(collectionName, out var collection))
                 {
                     Penumbra.Messager.NotificationMessage(
                         $"Could not load the collection \"{collectionName}\" as individual collection for {identifier}, set to None.",
@@ -87,14 +89,12 @@ public partial class IndividualCollections
                 }
 
                 if (!Add(group, collection))
-                {
                     Penumbra.Messager.NotificationMessage($"Could not add an individual collection for {identifier}, removed.",
                         NotificationType.Warning);
-                }
             }
             catch (Exception e)
             {
-                Penumbra.Messager.NotificationMessage(e, $"Could not load an unknown individual collection, removed.", NotificationType.Error);
+                Penumbra.Messager.NotificationMessage(e, "Could not load an unknown individual collection, removed.", NotificationType.Error);
             }
         }
 
@@ -106,7 +106,7 @@ public partial class IndividualCollections
     private bool ReadJObjectInternalV2(JArray? obj, CollectionStorage storage)
     {
         Penumbra.Log.Debug("[Collections] Reading individual assignments...");
-        if (obj == null)
+        if (obj is null)
         {
             Penumbra.Log.Debug($"[Collections] Finished reading {Count} individual assignments...");
             return true;
@@ -119,7 +119,7 @@ public partial class IndividualCollections
             {
                 var identifier = _actors.FromJson(data as JObject);
                 var group      = GetGroup(identifier);
-                if (group.Length == 0 || group.Any(i => !i.IsValid))
+                if (group.Length is 0 || group.Any(i => !i.IsValid))
                 {
                     changes = true;
                     Penumbra.Messager.NotificationMessage("Could not load an unknown individual collection, removed assignment.",
@@ -147,7 +147,8 @@ public partial class IndividualCollections
             catch (Exception e)
             {
                 changes = true;
-                Penumbra.Messager.NotificationMessage(e, $"Could not load an unknown individual collection, removed assignment.", NotificationType.Error);
+                Penumbra.Messager.NotificationMessage(e, $"Could not load an unknown individual collection, removed assignment.",
+                    NotificationType.Error);
             }
         }
 

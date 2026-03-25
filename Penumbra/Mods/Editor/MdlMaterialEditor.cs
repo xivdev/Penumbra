@@ -1,12 +1,11 @@
-using OtterGui.Compression;
-using OtterGui.Extensions;
-using OtterGui.Services;
+using Luna;
+using Penumbra.Api.Enums;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Files;
 
 namespace Penumbra.Mods.Editor;
 
-public partial class MdlMaterialEditor(ModFileCollection files) : IService
+public partial class MdlMaterialEditor(ModFileCollection files)
 {
     [GeneratedRegex(@"/mt_c(?'RaceCode'\d{4})b0001_(?'Suffix'.*?)\.mtrl", RegexOptions.ExplicitCapture | RegexOptions.NonBacktracking)]
     private static partial Regex MaterialRegex();
@@ -68,14 +67,14 @@ public partial class MdlMaterialEditor(ModFileCollection files) : IService
     public void ScanModels(Mod mod)
     {
         _modelFiles.Clear();
-        foreach (var file in files.Mdl)
+        foreach (var file in files.GetByType(ResourceType.Mdl))
         {
             try
             {
                 var bytes   = File.ReadAllBytes(file.File.FullName);
                 var mdlFile = new MdlFile(bytes);
-                var materials = mdlFile.Materials.WithIndex().Where(p => MaterialRegex().IsMatch((string)p.Item1))
-                    .Select(p => p.Item2).ToArray();
+                var materials = mdlFile.Materials.Index().Where(p => MaterialRegex().IsMatch(p.Item2))
+                    .Select(p => p.Item1).ToArray();
                 if (materials.Length > 0)
                     _modelFiles.Add(new ModelMaterialInfo(file.File, mdlFile, materials));
             }

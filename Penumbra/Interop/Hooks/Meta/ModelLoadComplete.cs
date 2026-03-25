@@ -1,5 +1,5 @@
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
-using OtterGui.Services;
+using Luna;
 using Penumbra.Interop.PathResolving;
 
 namespace Penumbra.Interop.Hooks.Meta;
@@ -25,7 +25,7 @@ public sealed unsafe class ModelLoadComplete : FastHook<ModelLoadComplete.Delega
         var collection = _collectionResolver.IdentifyCollection(drawObject, true);
         _metaState.EqpCollection.Push(collection);
         _metaState.EqdpCollection.Push(collection);
-        Task.Result.Original(drawObject);
+        Task.Result!.Original(drawObject);
         _metaState.EqpCollection.Pop();
         _metaState.EqdpCollection.Pop();
     }

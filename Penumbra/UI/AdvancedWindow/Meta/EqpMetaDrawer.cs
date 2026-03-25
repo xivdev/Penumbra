@@ -1,24 +1,23 @@
-using Dalamud.Interface;
-using Dalamud.Bindings.ImGui;
+using ImSharp;
+using Luna;
 using Newtonsoft.Json.Linq;
-using OtterGui.Raii;
-using OtterGui.Services;
-using OtterGui.Text;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Meta;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Editor;
-using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.AdvancedWindow.Meta;
 
 public sealed class EqpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFiles)
-    : MetaDrawer<EqpIdentifier, EqpEntryInternal>(editor, metaFiles), IService
+    : MetaDrawer<EqpIdentifier, EqpEntryInternal>(editor, metaFiles)
 {
     public override ReadOnlySpan<byte> Label
-        => "Equipment Parameter Edits (EQP)###EQP"u8;
+        => "EQP"u8;
+
+    public override ReadOnlySpan<byte> Tooltip
+        => "Equipment Parameters"u8;
 
     public override int NumColumns
         => 5;
@@ -34,13 +33,13 @@ public sealed class EqpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
 
     protected override void DrawNew()
     {
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         CopyToClipboardButton("Copy all current EQP manipulations to clipboard."u8, new Lazy<JToken?>(() => MetaDictionary.SerializeTo([], Editor.Eqp)));
 
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         var canAdd = !Editor.Contains(Identifier);
         var tt     = canAdd ? "Stage this edit."u8 : "This entry is already edited."u8;
-        if (ImUtf8.IconButton(FontAwesomeIcon.Plus, tt, disabled: !canAdd))
+        if (ImEx.Icon.Button(LunaStyle.AddObjectIcon, tt, !canAdd))
             Editor.Changes |= Editor.TryAdd(Identifier, Entry);
 
         if (DrawIdentifierInput(ref Identifier))
@@ -65,40 +64,40 @@ public sealed class EqpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
             .ThenBy(kvp => kvp.Key.Slot)
             .Select(kvp => (kvp.Key, kvp.Value));
 
-    protected override int Count
+    public override int Count
         => Editor.Eqp.Count;
 
     private static bool DrawIdentifierInput(ref EqpIdentifier identifier)
     {
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         var changes = DrawPrimaryId(ref identifier);
 
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         changes |= DrawEquipSlot(ref identifier);
         return changes;
     }
 
     private static void DrawIdentifier(EqpIdentifier identifier)
     {
-        ImGui.TableNextColumn();
-        ImUtf8.TextFramed($"{identifier.SetId.Id}", FrameColor);
-        ImUtf8.HoverTooltip("Model Set ID"u8);
+        Im.Table.NextColumn();
+        ImEx.TextFramed($"{identifier.SetId.Id}", default, FrameColor);
+        Im.Tooltip.OnHover("Model Set ID"u8);
 
-        ImGui.TableNextColumn();
-        ImUtf8.TextFramed(identifier.Slot.ToName(), FrameColor);
-        ImUtf8.HoverTooltip("Equip Slot"u8);
+        Im.Table.NextColumn();
+        ImEx.TextFramed(identifier.Slot.ToNameU8(), default, FrameColor);
+        Im.Tooltip.OnHover("Equip Slot"u8);
     }
 
     private static bool DrawEntry(EquipSlot slot, EqpEntryInternal defaultEntry, ref EqpEntryInternal entry, bool disabled)
     {
         var       changes = false;
-        using var dis     = ImRaii.Disabled(disabled);
-        ImGui.TableNextColumn();
+        using var dis     = Im.Disabled(disabled);
+        Im.Table.NextColumn();
         var offset = Eqp.OffsetAndMask(slot).Item1;
         DrawBox(ref entry, 0);
         for (var i = 1; i < Eqp.EqpAttributes[slot].Count; ++i)
         {
-            ImUtf8.SameLineInner();
+            Im.Line.SameInner();
             DrawBox(ref entry, i);
         }
 
@@ -106,7 +105,7 @@ public sealed class EqpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
 
         void DrawBox(ref EqpEntryInternal entry, int i)
         {
-            using var id           = ImUtf8.PushId(i);
+            using var id           = Im.Id.Push(i);
             var       flag         = 1u << i;
             var       eqpFlag      = (EqpEntry)((ulong)flag << offset);
             var       defaultValue = (flag & defaultEntry.Value) != 0;
@@ -123,7 +122,7 @@ public sealed class EqpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     {
         var ret = IdInput("##eqpPrimaryId"u8, unscaledWidth, identifier.SetId.Id, out var setId, 0, ExpandedEqpGmpBase.Count - 1,
             identifier.SetId.Id <= 1);
-        ImUtf8.HoverTooltip(
+        Im.Tooltip.OnHover(
             "Model Set ID - You can usually find this as the 'e####' part of an item path.\nThis should generally not be left <= 1 unless you explicitly want that."u8);
         if (ret)
             identifier = identifier with { SetId = setId };
@@ -132,8 +131,7 @@ public sealed class EqpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
 
     public static bool DrawEquipSlot(ref EqpIdentifier identifier, float unscaledWidth = 100)
     {
-        var ret = Combos.EqpEquipSlot("##eqpSlot", identifier.Slot, out var slot, unscaledWidth);
-        ImUtf8.HoverTooltip("Equip Slot"u8);
+        var ret = Combos.EqpEquipSlot.Draw("##eqpSlot"u8, identifier.Slot, "Equip Slot"u8, unscaledWidth * Im.Style.GlobalScale, out var slot);
         if (ret)
             identifier = identifier with { Slot = slot };
         return ret;

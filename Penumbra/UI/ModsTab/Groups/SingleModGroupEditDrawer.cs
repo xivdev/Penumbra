@@ -1,8 +1,5 @@
-using Dalamud.Interface;
-using Dalamud.Bindings.ImGui;
-using OtterGui.Extensions;
-using OtterGui.Raii;
-using OtterGui.Text;
+using ImSharp;
+using Luna;
 using Penumbra.Mods.Groups;
 
 namespace Penumbra.UI.ModsTab.Groups;
@@ -11,25 +8,25 @@ public readonly struct SingleModGroupEditDrawer(ModGroupEditDrawer editor, Singl
 {
     public void Draw()
     {
-        foreach (var (option, optionIdx) in group.OptionData.WithIndex())
+        foreach (var (optionIdx, option) in group.OptionData.Index())
         {
-            using var id = ImRaii.PushId(optionIdx);
+            using var id = Im.Id.Push(optionIdx);
             editor.DrawOptionPosition(group, option, optionIdx);
 
-            ImUtf8.SameLineInner();
+            Im.Line.SameInner();
             editor.DrawOptionDefaultSingleBehaviour(group, option, optionIdx);
 
-            ImUtf8.SameLineInner();
+            Im.Line.SameInner();
             editor.DrawOptionName(option);
 
-            ImUtf8.SameLineInner();
+            Im.Line.SameInner();
             editor.DrawOptionDescription(option);
 
-            ImUtf8.SameLineInner();
+            Im.Line.SameInner();
             editor.DrawOptionDelete(option);
 
-            ImUtf8.SameLineInner();
-            ImGui.Dummy(new Vector2(editor.PriorityWidth, 0));
+            Im.Line.SameInner();
+            Im.Dummy(new Vector2(editor.PriorityWidth, 0));
         }
 
         DrawNewOption();
@@ -39,12 +36,12 @@ public readonly struct SingleModGroupEditDrawer(ModGroupEditDrawer editor, Singl
     private void DrawConvertButton()
     {
         var convertible = group.Options.Count <= IModGroup.MaxMultiOptions;
-        var g = group;
-        var e = editor.ModManager.OptionEditor.SingleEditor;
-        if (ImUtf8.ButtonEx("Convert to Multi Group", editor.AvailableWidth, !convertible))
+        var g           = group;
+        var e           = editor.ModManager.OptionEditor.SingleEditor;
+        if (ImEx.Button("Convert to Multi Group"u8, editor.AvailableWidth, !convertible))
             editor.ActionQueue.Enqueue(() => e.ChangeToMulti(g));
         if (!convertible)
-            ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled,
+            Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled,
                 "Can not convert to multi group since maximum number of options is exceeded."u8);
     }
 
@@ -57,9 +54,9 @@ public readonly struct SingleModGroupEditDrawer(ModGroupEditDrawer editor, Singl
         var name = editor.DrawNewOptionBase(group, count);
 
         var validName = name.Length > 0;
-        if (ImUtf8.IconButton(FontAwesomeIcon.Plus, validName
+        if (ImEx.Icon.Button(LunaStyle.AddObjectIcon, validName
                 ? "Add a new option to this group."u8
-                : "Please enter a name for the new option."u8, default, !validName))
+                : "Please enter a name for the new option."u8, !validName))
         {
             editor.ModManager.OptionEditor.SingleEditor.AddOption(group, name);
             editor.NewOptionName = null;

@@ -1,10 +1,10 @@
 using Dalamud.Utility;
+using Luna;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using OtterGui.Filesystem;
 using Penumbra.Import.Structs;
 using Penumbra.Mods;
-using Penumbra.Services;
+using Penumbra.Util;
 using SharpCompress.Archives;
 using SharpCompress.Archives.Rar;
 using SharpCompress.Archives.SevenZip;
@@ -16,7 +16,7 @@ namespace Penumbra.Import;
 
 public partial class TexToolsImporter
 {
-    private static readonly ExtractionOptions _extractionOptions = new()
+    private static readonly ExtractionOptions ExtractionOptions = new()
     {
         ExtractFullPath = true,
         Overwrite       = true,
@@ -56,16 +56,14 @@ public partial class TexToolsImporter
 
         State           = ImporterState.ExtractingModFiles;
         _currentFileIdx = 0;
-        var reader = archive.ExtractAllEntries();
-
-        while (reader.MoveToNextEntry())
+        ArchiveUtility.ForEachEntry(archive, reader =>
         {
             _token.ThrowIfCancellationRequested();
 
             if (reader.Entry.IsDirectory)
             {
                 --_currentNumFiles;
-                continue;
+                return;
             }
 
             Penumbra.Log.Information($"        -> Extracting {reader.Entry.Key}");
@@ -79,7 +77,7 @@ public partial class TexToolsImporter
                 using var t   = new StreamReader(s);
                 using var j   = new JsonTextReader(t);
                 var       obj = JObject.Load(j);
-                name = obj[nameof(Mod.Name)]?.Value<string>()?.RemoveInvalidPathSymbols() ?? string.Empty;
+                name = obj[nameof(Mod.Name)]?.Value<string>()?.RemoveInvalidFileNameSymbols() ?? string.Empty;
                 if (name.Length == 0)
                     throw new Exception("Invalid mod archive: mod meta has no name.");
 
@@ -93,7 +91,7 @@ public partial class TexToolsImporter
             }
 
             ++_currentFileIdx;
-        }
+        });
 
         _token.ThrowIfCancellationRequested();
         var oldName = _currentModDirectory.FullName;
@@ -131,27 +129,27 @@ public partial class TexToolsImporter
 
         _currentModDirectory.Refresh();
         _modManager.Creator.SplitMultiGroups(_currentModDirectory);
-        _editor.ModNormalizer.NormalizeUi(_currentModDirectory);
+        _modNormalizer.NormalizeUi(_currentModDirectory);
 
         return _currentModDirectory;
     }
 
 
-    private void HandleFileMigrationsAndWrite(IReader reader)
+    private void HandleFileMigrationsAndWrite(ArchiveUtility.ReaderShim reader)
     {
         switch (Path.GetExtension(reader.Entry.Key))
         {
             case ".mdl":
-                _migrationManager.MigrateMdlDuringExtraction(reader, _currentModDirectory!.FullName, _extractionOptions);
+                _migrationManager.MigrateMdlDuringExtraction(reader, _currentModDirectory!.FullName);
                 break;
             case ".mtrl":
-                _migrationManager.MigrateMtrlDuringExtraction(reader, _currentModDirectory!.FullName, _extractionOptions);
+                _migrationManager.MigrateMtrlDuringExtraction(reader, _currentModDirectory!.FullName);
                 break;
             case ".tex":
-                _migrationManager.FixMipMaps(reader, _currentModDirectory!.FullName, _extractionOptions);
+                _migrationManager.FixMipMaps(reader, _currentModDirectory!.FullName);
                 break;
             default:
-                reader.WriteEntryToDirectory(_currentModDirectory!.FullName, _extractionOptions);
+                reader.WriteEntryToDirectory(_currentModDirectory!.FullName);
                 break;
         }
     }

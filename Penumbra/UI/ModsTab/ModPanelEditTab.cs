@@ -1,25 +1,19 @@
 using Dalamud.Interface;
-using Dalamud.Interface.Components;
 using Dalamud.Interface.ImGuiNotification;
-using Dalamud.Bindings.ImGui;
-using OtterGui;
-using OtterGui.Raii;
-using OtterGui.Widgets;
-using OtterGui.Classes;
-using OtterGui.Services;
-using OtterGui.Text;
+using ImSharp;
+using Luna;
 using Penumbra.Mods;
 using Penumbra.Mods.Editor;
+using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager;
-using Penumbra.Services;
 using Penumbra.Mods.Settings;
+using Penumbra.Services;
 using Penumbra.UI.ModsTab.Groups;
 
 namespace Penumbra.UI.ModsTab;
 
 public class ModPanelEditTab(
     ModManager modManager,
-    ModFileSystemSelector selector,
     ModFileSystem fileSystem,
     Services.MessageService messager,
     FilenameService filenames,
@@ -29,24 +23,28 @@ public class ModPanelEditTab(
     ModGroupEditDrawer groupEditDrawer,
     DescriptionEditPopup descriptionPopup,
     AddGroupDrawer addGroupDrawer)
-    : ITab, IUiService
+    : ITab<ModPanelTab>
 {
-    private readonly TagButtons _modTags = new();
+    private IFileSystemData<Mod> _leaf             = null!;
+    private Mod                  _mod              = null!;
+    private bool                 _groupReorderMode = false;
+    private IModGroup?           _draggedGroup     = null;
 
-    private ModFileSystem.Leaf _leaf = null!;
-    private Mod                _mod  = null!;
 
     public ReadOnlySpan<byte> Label
         => "Edit Mod"u8;
 
+    public ModPanelTab Identifier
+        => ModPanelTab.Edit;
+
     public void DrawContent()
     {
-        using var child = ImRaii.Child("##editChild", -Vector2.One);
+        using var child = Im.Child.Begin("##editChild"u8, Im.ContentRegion.Available);
         if (!child)
             return;
 
-        _leaf = selector.SelectedLeaf!;
-        _mod  = selector.Selected!;
+        _leaf = (IFileSystemData<Mod>)fileSystem.Selection.Selection!;
+        _mod  = _leaf.Value;
 
         EditButtons();
         EditRegularMeta();
@@ -54,7 +52,7 @@ public class ModPanelEditTab(
         EditLocalData();
         UiHelpers.DefaultLineSpace();
 
-        if (Input.Text("Mod Path", Input.Path, Input.None, _leaf.FullName(), out var newPath, 256, UiHelpers.InputTextWidth.X))
+        if (Input.Text("Mod Path"u8, Input.Path, Input.None, _leaf.FullPath, out var newPath, UiHelpers.InputTextWidth.X))
             try
             {
                 fileSystem.RenameAndMove(_leaf, newPath);
@@ -70,22 +68,36 @@ public class ModPanelEditTab(
 
         UiHelpers.DefaultLineSpace();
         var sharedTagsEnabled     = predefinedTagManager.Enabled;
-        var sharedTagButtonOffset = sharedTagsEnabled ? ImGui.GetFrameHeight() + ImGui.GetStyle().FramePadding.X : 0;
-        var tagIdx = _modTags.Draw("Mod Tags: ", "Edit tags by clicking them, or add new tags. Empty tags are removed.", _mod.ModTags,
+        var sharedTagButtonOffset = sharedTagsEnabled ? Im.Style.FrameHeight + Im.Style.FramePadding.X : 0;
+        var tagIdx = TagButtons.Draw("Mod Tags: "u8, "Edit tags by clicking them, or add new tags. Empty tags are removed."u8, _mod.ModTags,
             out var editedTag, rightEndOffset: sharedTagButtonOffset);
         if (tagIdx >= 0)
             modManager.DataEditor.ChangeModTag(_mod, tagIdx, editedTag);
 
         if (sharedTagsEnabled)
-            predefinedTagManager.DrawAddFromSharedTagsAndUpdateTags(selector.Selected!.LocalTags, selector.Selected!.ModTags, false,
-                selector.Selected!);
-
+            predefinedTagManager.DrawAddFromSharedTagsAndUpdateTags(_mod, false);
 
         UiHelpers.DefaultLineSpace();
-        addGroupDrawer.Draw(_mod, UiHelpers.InputTextWidth.X);
-        UiHelpers.DefaultLineSpace();
+        if (Im.Tree.Header("Group Editing"u8))
+        {
+            UiHelpers.DefaultLineSpace();
+            addGroupDrawer.Draw(_mod, UiHelpers.InputTextWidth.X);
+            UiHelpers.DefaultLineSpace();
 
-        groupEditDrawer.Draw(_mod);
+            if (Im.RadioButton("Group Edit Mode"u8, !_groupReorderMode))
+                _groupReorderMode = false;
+            Im.Line.SameInner();
+            if (Im.RadioButton("Group Reorder Mode"u8, _groupReorderMode))
+                _groupReorderMode = true;
+
+            UiHelpers.DefaultLineSpace();
+
+            if (_groupReorderMode)
+                DrawGroupReordering(_mod);
+            else
+                groupEditDrawer.Draw(_mod);
+        }
+
         descriptionPopup.Draw();
     }
 
@@ -95,20 +107,82 @@ public class ModPanelEditTab(
         Input.Reset();
     }
 
+    private void DrawGroupReordering(Mod mod)
+    {
+        using var table = Im.Table.Begin("##reorder"u8, 5, TableFlags.BordersOuter | TableFlags.RowBackground);
+        if (!table)
+            return;
+
+        table.SetupColumn("Index"u8, TableColumnFlags.WidthFixed, Im.Font.CalculateSize("Group #00  "u8).X);
+        table.SetupColumn("Group"u8, TableColumnFlags.WidthStretch);
+        table.SetupColumn("Type"u8, TableColumnFlags.WidthFixed, Im.Font.CalculateSize("Combining  "u8).X);
+        table.SetupColumn("Options"u8, TableColumnFlags.WidthFixed, Im.Font.CalculateSize("1000 Options  "u8).X);
+        table.SetupColumn("Priority##actions"u8, TableColumnFlags.WidthFixed, Im.Style.FrameHeight * 3 + Im.Style.ItemInnerSpacing.X);
+        table.HeaderRow();
+
+        var        active   = config.DeleteModModifier.IsActive();
+        using var  clip     = new Im.ListClipper(mod.Groups.Count, Im.Style.FrameHeightWithSpacing);
+        IModGroup? deletion = null;
+        foreach(var i in clip)
+        {
+            using var id    = Im.Id.Push(i);
+            var       group = mod.Groups[i];
+            table.DrawFrameColumn($"Group #{i + 1:D2}");
+
+            table.NextColumn();
+            Im.Selectable(group.Name);
+            using (var source = Im.DragDrop.Source())
+            {
+                if (source)
+                {
+                    source.SetPayload("##group"u8);
+                    _draggedGroup = group;
+                    Im.Text($"Dragging group #{i + 1} - {group.Name}...");
+                }
+            }
+
+            using (var target = Im.DragDrop.Target())
+            {
+                if (target.IsDropping("##group"u8) && _draggedGroup is not null)
+                {
+                    modManager.OptionEditor.MoveModGroup(_draggedGroup, i);
+                    _draggedGroup = null;
+                }
+            }
+
+
+            table.DrawFrameColumn($"{group.Type}");
+
+            table.DrawFrameColumn($"{group.Options.Count} Option{(group.Options.Count is not 1 ? "s"u8 : StringU8.Empty)}");
+
+            table.NextColumn();
+            Im.Item.SetNextWidth(2 * Im.Style.FrameHeight);
+            if (ImEx.InputOnDeactivation.Scalar("##prio"u8, group.Priority.Value, out var newPriority))
+                modManager.OptionEditor.ChangeGroupPriority(group, new ModPriority(newPriority));
+            Im.Line.SameInner();
+            if (ImEx.Icon.Button(LunaStyle.DeleteIcon, "Delete this option group."u8, !active))
+                deletion = group;
+
+            if (!active)
+                Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"Hold {config.DeleteModModifier} to delete.");
+        }
+        if (deletion is not null)
+            modManager.OptionEditor.DeleteModGroup(deletion);
+    }
+
     /// <summary> The general edit row for non-detailed mod edits. </summary>
     private void EditButtons()
     {
-        var buttonSize   = new Vector2(150 * UiHelpers.Scale, 0);
+        var buttonSize   = new Vector2(150 * Im.Style.GlobalScale, 0);
         var folderExists = Directory.Exists(_mod.ModPath.FullName);
-        var tt = folderExists
-            ? $"Open \"{_mod.ModPath.FullName}\" in the file explorer of your choice."
-            : $"Mod directory \"{_mod.ModPath.FullName}\" does not exist.";
-        if (ImGuiUtil.DrawDisabledButton("Open Mod Directory", buttonSize, tt, !folderExists))
+        if (ImEx.Button("Open Mod Directory"u8, buttonSize, folderExists
+                ? $"Open \"{_mod.ModPath.FullName}\" in the file explorer of your choice."
+                : $"Mod directory \"{_mod.ModPath.FullName}\" does not exist.", !folderExists))
             Process.Start(new ProcessStartInfo(_mod.ModPath.FullName) { UseShellExecute = true });
 
-        ImGui.SameLine();
-        if (ImGuiUtil.DrawDisabledButton("Reload Mod", buttonSize, "Reload the current mod from its files.\n"
-              + "If the mod directory or meta file do not exist anymore or if the new mod name is empty, the mod is deleted instead.",
+        Im.Line.Same();
+        if (ImEx.Button("Reload Mod"u8, buttonSize, "Reload the current mod from its files.\n"u8
+              + "If the mod directory or meta file do not exist anymore or if the new mod name is empty, the mod is deleted instead."u8,
                 false))
             modManager.ReloadMod(_mod);
 
@@ -121,81 +195,76 @@ public class ModPanelEditTab(
     private void BackupButtons(Vector2 buttonSize)
     {
         var backup = new ModBackup(modExportManager, _mod);
-        var tt = ModBackup.CreatingBackup
-            ? "Already exporting a mod."
-            : backup.Exists
-                ? $"Overwrite current exported mod \"{backup.Name}\" with current mod."
-                : $"Create exported archive of current mod at \"{backup.Name}\".";
-        if (ImUtf8.ButtonEx("Export Mod"u8, tt, buttonSize, ModBackup.CreatingBackup))
-            backup.CreateAsync();
+        if (ImEx.Button("Export Mod"u8, buttonSize, ModBackup.CreatingBackup
+                ? "Already exporting a mod."
+                : backup.Exists
+                    ? $"Overwrite current exported mod \"{backup.Name}\" with current mod."
+                    : $"Create exported archive of current mod at \"{backup.Name}\".", ModBackup.CreatingBackup))
+            _ = backup.CreateAsync();
 
-        if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
-            ImUtf8.OpenPopup("context"u8);
+        if (Im.Item.RightClicked())
+            Im.Popup.Open("context"u8);
 
-        ImGui.SameLine();
-        tt = backup.Exists
-            ? $"Delete existing mod export \"{backup.Name}\" (hold {config.DeleteModModifier} while clicking)."
-            : $"Exported mod \"{backup.Name}\" does not exist.";
-        if (ImUtf8.ButtonEx("Delete Export"u8, tt, buttonSize, !backup.Exists || !config.DeleteModModifier.IsActive()))
+        Im.Line.Same();
+        if (ImEx.Button("Delete Export"u8, buttonSize, backup.Exists
+                ? $"Delete existing mod export \"{backup.Name}\" (hold {config.DeleteModModifier} while clicking)."
+                : $"Exported mod \"{backup.Name}\" does not exist.", !backup.Exists || !config.DeleteModModifier.IsActive()))
             backup.Delete();
 
-        tt = backup.Exists
-            ? $"Restore mod from exported file \"{backup.Name}\" (hold {config.DeleteModModifier} while clicking)."
-            : $"Exported mod \"{backup.Name}\" does not exist.";
-        ImGui.SameLine();
-        if (ImUtf8.ButtonEx("Restore From Export"u8, tt, buttonSize, !backup.Exists || !config.DeleteModModifier.IsActive()))
+        Im.Line.Same();
+        if (ImEx.Button("Restore From Export"u8, buttonSize, backup.Exists
+                ? $"Restore mod from exported file \"{backup.Name}\" (hold {config.DeleteModModifier} while clicking)."
+                : $"Exported mod \"{backup.Name}\" does not exist.", !backup.Exists || !config.DeleteModModifier.IsActive()))
             backup.Restore(modManager);
         if (backup.Exists)
         {
-            ImGui.SameLine();
-            using (ImRaii.PushFont(UiBuilder.IconFont))
-            {
-                ImUtf8.Text(FontAwesomeIcon.CheckCircle.ToIconString());
-            }
-
-            ImUtf8.HoverTooltip($"Export exists in \"{backup.Name}\".");
+            Im.Line.Same();
+            ImEx.Icon.Draw(FontAwesomeIcon.CheckCircle.Icon());
+            Im.Tooltip.OnHover($"Export exists in \"{backup.Name}\".");
         }
 
-        using var context = ImUtf8.Popup("context"u8);
+        using var context = Im.Popup.Begin("context"u8);
         if (!context)
             return;
 
-        if (ImUtf8.Selectable("Open Backup Directory"u8))
+        if (Im.Selectable("Open Backup Directory"u8))
             Process.Start(new ProcessStartInfo(modExportManager.ExportDirectory.FullName) { UseShellExecute = true });
     }
 
     /// <summary> Anything about editing the regular meta information about the mod. </summary>
     private void EditRegularMeta()
     {
-        if (Input.Text("Name", Input.Name, Input.None, _mod.Name, out var newName, 256, UiHelpers.InputTextWidth.X))
+        if (Input.Text("Name"u8, Input.Name, Input.None, _mod.Name, out var newName, UiHelpers.InputTextWidth.X))
             modManager.DataEditor.ChangeModName(_mod, newName);
 
-        if (Input.Text("Author", Input.Author, Input.None, _mod.Author, out var newAuthor, 256, UiHelpers.InputTextWidth.X))
+        if (Input.Text("Author"u8, Input.Author, Input.None, _mod.Author, out var newAuthor, UiHelpers.InputTextWidth.X))
             modManager.DataEditor.ChangeModAuthor(_mod, newAuthor);
 
-        if (Input.Text("Version", Input.Version, Input.None, _mod.Version, out var newVersion, 32,
+        if (Input.Text("Version"u8, Input.Version, Input.None, _mod.Version, out var newVersion,
                 UiHelpers.InputTextWidth.X))
             modManager.DataEditor.ChangeModVersion(_mod, newVersion);
 
-        if (Input.Text("Website", Input.Website, Input.None, _mod.Website, out var newWebsite, 256,
+        if (Input.Text("Website"u8, Input.Website, Input.None, _mod.Website, out var newWebsite,
                 UiHelpers.InputTextWidth.X))
             modManager.DataEditor.ChangeModWebsite(_mod, newWebsite);
 
-        using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(UiHelpers.ScaleX3));
+        using var style = ImStyleDouble.ItemSpacing.Push(new Vector2(Im.Style.GlobalScale * 3));
 
         var reducedSize = new Vector2(UiHelpers.InputTextMinusButton3, 0);
-        if (ImGui.Button("Edit Description", reducedSize))
+        if (Im.Button("Edit Description"u8, reducedSize))
             descriptionPopup.Open(_mod);
 
 
-        ImGui.SameLine();
+        Im.Line.Same();
         var fileExists = File.Exists(filenames.ModMetaPath(_mod));
         var tt = fileExists
-            ? "Open the metadata json file in the text editor of your choice."
-            : "The metadata json file does not exist.";
-        if (ImGuiUtil.DrawDisabledButton($"{FontAwesomeIcon.FileExport.ToIconString()}##metaFile", UiHelpers.IconButtonSize, tt,
-                !fileExists, true))
-            Process.Start(new ProcessStartInfo(filenames.ModMetaPath(_mod)) { UseShellExecute = true });
+            ? "Open the metadata json file in the text editor of your choice."u8
+            : "The metadata json file does not exist."u8;
+        using (Im.Id.Push("meta"u8))
+        {
+            if (ImEx.Icon.Button(LunaStyle.FileExportIcon, tt, !fileExists))
+                Process.Start(new ProcessStartInfo(filenames.ModMetaPath(_mod)) { UseShellExecute = true });
+        }
 
         DrawOpenDefaultMod();
     }
@@ -203,35 +272,26 @@ public class ModPanelEditTab(
     private void EditLocalData()
     {
         DrawImportDate();
-        DrawOpenLocalData();
+        ImEx.TextFramed($"{DateTimeOffset.FromUnixTimeMilliseconds(_mod.LastConfigEdit).ToLocalTime():yyyy/MM/dd HH:mm}",
+            UiHelpers.InputTextWidth with { Y = 0 }, ImGuiColor.FrameBackground.Get(0.5f));
+        Im.Line.SameInner();
+        Im.Text("Last Config Edit"u8);
     }
 
     private void DrawImportDate()
     {
-        ImUtf8.TextFramed($"{DateTimeOffset.FromUnixTimeMilliseconds(_mod.ImportDate).ToLocalTime():yyyy/MM/dd HH:mm}",
-            ImGui.GetColorU32(ImGuiCol.FrameBg, 0.5f), new Vector2(UiHelpers.InputTextMinusButton3, 0));
-        ImGui.SameLine(0, 3 * ImUtf8.GlobalScale);
+        ImEx.TextFramed($"{DateTimeOffset.FromUnixTimeMilliseconds(_mod.ImportDate).ToLocalTime():yyyy/MM/dd HH:mm}",
+            new Vector2(UiHelpers.InputTextMinusButton3, 0), ImGuiColor.FrameBackground.Get(0.5f));
+        Im.Line.Same(0, 3 * Im.Style.GlobalScale);
 
         var canRefresh = config.DeleteModModifier.IsActive();
-        var tt = canRefresh
-            ? "Reset the import date to the current date and time."
-            : $"Reset the import date to the current date and time.\nHold {config.DeleteModModifier} while clicking to refresh.";
-
-        if (ImUtf8.IconButton(FontAwesomeIcon.Sync, tt, disabled: !canRefresh))
+        if (ImEx.Icon.Button(LunaStyle.RefreshIcon, canRefresh
+                    ? "Reset the import date to the current date and time."u8
+                    : $"Reset the import date to the current date and time.\nHold {config.DeleteModModifier} while clicking to refresh.",
+                !canRefresh))
             modManager.DataEditor.ResetModImportDate(_mod);
-        ImUtf8.SameLineInner();
-        ImUtf8.Text("Import Date"u8);
-    }
-
-    private void DrawOpenLocalData()
-    {
-        var file       = filenames.LocalDataFile(_mod);
-        var fileExists = File.Exists(file);
-        var tt = fileExists
-            ? "Open the local mod data file in the text editor of your choice."u8
-            : "The local mod data file does not exist."u8;
-        if (ImUtf8.ButtonEx("Open Local Data"u8, tt, UiHelpers.InputTextWidth, !fileExists))
-            Process.Start(new ProcessStartInfo(file) { UseShellExecute = true });
+        Im.Line.SameInner();
+        Im.Text("Import Date"u8);
     }
 
     private void DrawOpenDefaultMod()
@@ -239,9 +299,9 @@ public class ModPanelEditTab(
         var file       = filenames.OptionGroupFile(_mod, -1, false);
         var fileExists = File.Exists(file);
         var tt = fileExists
-            ? "Open the default mod data file in the text editor of your choice."
-            : "The default mod data file does not exist.";
-        if (ImGuiUtil.DrawDisabledButton("Open Default Data", UiHelpers.InputTextWidth, tt, !fileExists))
+            ? "Open the default mod data file in the text editor of your choice."u8
+            : "The default mod data file does not exist."u8;
+        if (ImEx.Button("Open Default Data"u8, UiHelpers.InputTextWidth, tt, !fileExists))
             Process.Start(new ProcessStartInfo(file) { UseShellExecute = true });
     }
 
@@ -260,9 +320,9 @@ public class ModPanelEditTab(
 
         public static void Draw(ModManager modManager, Mod mod, Vector2 buttonSize)
         {
-            ImGui.SetNextItemWidth(buttonSize.X * 2 + ImGui.GetStyle().ItemSpacing.X);
+            Im.Item.SetNextWidth(buttonSize.X * 2 + Im.Style.ItemSpacing.X);
             var tmp = _currentModDirectory ?? mod.ModPath.Name;
-            if (ImGui.InputText("##newModMove", ref tmp, 64))
+            if (Im.Input.Text("##newModMove"u8, ref tmp))
             {
                 _currentModDirectory = tmp;
                 _state               = modManager.NewDirectoryValid(mod.ModPath.Name, _currentModDirectory, out _);
@@ -280,17 +340,17 @@ public class ModPanelEditTab(
                     $"{_currentModDirectory} contains invalid symbols for FFXIV."),
                 _ => (true, "Unknown error."),
             };
-            ImGui.SameLine();
-            if (ImGuiUtil.DrawDisabledButton("Rename Mod Directory", buttonSize, tt, disabled) && _currentModDirectory != null)
+            Im.Line.Same();
+            if (ImEx.Button("Rename Mod Directory"u8, buttonSize, tt, disabled) && _currentModDirectory is not null)
             {
                 modManager.MoveModDirectory(mod, _currentModDirectory);
                 Reset();
             }
 
-            ImGui.SameLine();
-            ImGuiComponents.HelpMarker(
-                "The mod directory name is used to correspond stored settings and sort orders, otherwise it has no influence on anything that is displayed.\n"
-              + "This can currently not be used on pre-existing folders and does not support merges or overwriting.");
+            Im.Line.SameInner();
+            LunaStyle.DrawAlignedHelpMarker(StringU8.Empty,
+                "The mod directory name is used to correspond stored settings and sort orders, otherwise it has no influence on anything that is displayed.\n"u8
+              + "This can currently not be used on pre-existing folders and does not support merges or overwriting."u8);
         }
     }
 
@@ -298,41 +358,38 @@ public class ModPanelEditTab(
     private static class Input
     {
         // Special field indices to reuse the same string buffer.
-        public const int None        = -1;
-        public const int Name        = -2;
-        public const int Author      = -3;
-        public const int Version     = -4;
-        public const int Website     = -5;
-        public const int Path        = -6;
-        public const int Description = -7;
+        public const int None    = -1;
+        public const int Name    = -2;
+        public const int Author  = -3;
+        public const int Version = -4;
+        public const int Website = -5;
+        public const int Path    = -6;
 
         // Temporary strings
-        private static string?      _currentEdit;
-        private static ModPriority? _currentGroupPriority;
-        private static int          _currentField = None;
-        private static int          _optionIndex  = None;
+        private static string? _currentEdit;
+        private static int     _currentField = None;
+        private static int     _optionIndex  = None;
 
         public static void Reset()
         {
-            _currentEdit          = null;
-            _currentGroupPriority = null;
-            _currentField         = None;
-            _optionIndex          = None;
+            _currentEdit  = null;
+            _currentField = None;
+            _optionIndex  = None;
         }
 
-        public static bool Text(string label, int field, int option, string oldValue, out string value, uint maxLength, float width)
+        public static bool Text(ReadOnlySpan<byte> label, int field, int option, string oldValue, out string value, float width)
         {
             var tmp = field == _currentField && option == _optionIndex ? _currentEdit ?? oldValue : oldValue;
-            ImGui.SetNextItemWidth(width);
+            Im.Item.SetNextWidth(width);
 
-            if (ImGui.InputText(label, ref tmp))
+            if (Im.Input.Text(label, ref tmp))
             {
                 _currentEdit  = tmp;
                 _optionIndex  = option;
                 _currentField = field;
             }
 
-            if (ImGui.IsItemDeactivatedAfterEdit() && _currentEdit != null)
+            if (Im.Item.DeactivatedAfterEdit && _currentEdit is not null)
             {
                 var ret = _currentEdit != oldValue;
                 value = _currentEdit;
@@ -341,29 +398,6 @@ public class ModPanelEditTab(
             }
 
             value = string.Empty;
-            return false;
-        }
-
-        public static bool Priority(string label, int field, int option, ModPriority oldValue, out ModPriority value, float width)
-        {
-            var tmp = (field == _currentField && option == _optionIndex ? _currentGroupPriority ?? oldValue : oldValue).Value;
-            ImGui.SetNextItemWidth(width);
-            if (ImGui.InputInt(label, ref tmp, 0, 0))
-            {
-                _currentGroupPriority = new ModPriority(tmp);
-                _optionIndex          = option;
-                _currentField         = field;
-            }
-
-            if (ImGui.IsItemDeactivatedAfterEdit() && _currentGroupPriority != null)
-            {
-                var ret = _currentGroupPriority != oldValue;
-                value = _currentGroupPriority.Value;
-                Reset();
-                return ret;
-            }
-
-            value = ModPriority.Default;
             return false;
         }
     }

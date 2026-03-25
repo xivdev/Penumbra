@@ -1,3 +1,5 @@
+using ImSharp;
+
 namespace Penumbra.Import.Textures;
 
 public partial class CombinedTexture : IDisposable
@@ -32,14 +34,14 @@ public partial class CombinedTexture : IDisposable
     public Task SaveTask { get; private set; } = Task.CompletedTask;
 
     public bool IsLoaded
-        => _mode != Mode.Empty;
+        => _mode is not Mode.Empty;
 
     public bool IsLeftCopy
-        => _mode == Mode.LeftCopy;
+        => _mode is Mode.LeftCopy;
 
     public void Draw(TextureManager textures, Vector2 size)
     {
-        if (_mode == Mode.Custom && !_centerStorage.IsLoaded)
+        if (_mode is Mode.Custom && !_centerStorage.IsLoaded)
         {
             var (width, height)        = CombineImage();
             _centerStorage.TextureWrap = textures.LoadTextureWrap(_centerStorage.RgbaPixels, width, height);
@@ -50,68 +52,50 @@ public partial class CombinedTexture : IDisposable
     }
 
 
-    public void SaveAsPng(TextureManager textures, string path)
-    {
-        if (!IsLoaded || _current == null)
-            return;
-
-        SaveTask = textures.SavePng(_current.BaseImage, path, _current.RgbaPixels, _current.TextureWrap!.Width, _current.TextureWrap!.Height);
-    }
-
-    public void SaveAsTarga(TextureManager textures, string path)
-    {
-        if (!IsLoaded || _current == null)
-            return;
-
-        SaveTask = textures.SaveTga(_current.BaseImage, path, _current.RgbaPixels, _current.TextureWrap!.Width, _current.TextureWrap!.Height);
-    }
-
-    private void SaveAs(TextureManager textures, string path, TextureSaveType type, bool mipMaps, bool writeTex)
-    {
-        if (!IsLoaded || _current == null)
-            return;
-
-        SaveTask = textures.SaveAs(type, mipMaps, writeTex, _current.BaseImage, path, _current.RgbaPixels, _current.TextureWrap!.Width,
-            _current.TextureWrap!.Height);
-    }
-
     public void SaveAs(TextureType? texType, TextureManager textures, string path, TextureSaveType type, bool mipMaps)
     {
-        var finalTexType = texType
-         ?? Path.GetExtension(path).ToLowerInvariant() switch
-            {
-                ".tex" => TextureType.Tex,
-                ".dds" => TextureType.Dds,
-                ".png" => TextureType.Png,
-                ".tga" => TextureType.Targa,
-                _      => TextureType.Unknown,
-            };
+        if (!IsLoaded || _current is null)
+            return;
 
-        switch (finalTexType)
+        var finalTexType = texType ?? TextureManager.GetTextureTypeForPath(path);
+
+        SaveTask = finalTexType switch
         {
-            case TextureType.Tex:
-                SaveAsTex(textures, path, type, mipMaps);
-                break;
-            case TextureType.Dds:
-                SaveAsDds(textures, path, type, mipMaps);
-                break;
-            case TextureType.Png:
-                SaveAsPng(textures, path);
-                break;
-            case TextureType.Targa:
-                SaveAsTarga(textures, path);
-                break;
-            default:
-                throw new ArgumentException(
-                    $"Cannot save texture as TextureType {finalTexType} with extension {Path.GetExtension(path).ToLowerInvariant()}");
-        }
+            TextureType.Tex => textures.SaveAs(type, mipMaps, true, _current.BaseImage, path, _current.RgbaPixels, _current.TextureWrap!.Width,
+                _current.TextureWrap!.Height),
+            TextureType.Dds => textures.SaveAs(type, mipMaps, false, _current.BaseImage, path, _current.RgbaPixels, _current.TextureWrap!.Width,
+                _current.TextureWrap!.Height),
+            TextureType.Png => textures.SavePng(_current.BaseImage, path, _current.RgbaPixels, _current.TextureWrap!.Width,
+                _current.TextureWrap!.Height),
+            TextureType.Targa => textures.SaveTga(_current.BaseImage, path, _current.RgbaPixels, _current.TextureWrap!.Width,
+                _current.TextureWrap!.Height),
+            _ => throw new ArgumentException(
+                $"Cannot save texture as TextureType {finalTexType} with extension {Path.GetExtension(path).ToLowerInvariant()}"),
+        };
     }
 
-    public void SaveAsTex(TextureManager textures, string path, TextureSaveType type, bool mipMaps)
-        => SaveAs(textures, path, type, mipMaps, true);
+    public Task SaveAs(TextureType texType, TextureManager textures, Stream output, TextureSaveType type, bool mipMaps)
+    {
+        if (!IsLoaded || _current is null)
+            return Task.CompletedTask;
 
-    public void SaveAsDds(TextureManager textures, string path, TextureSaveType type, bool mipMaps)
-        => SaveAs(textures, path, type, mipMaps, false);
+        var task = texType switch
+        {
+            TextureType.Tex => textures.SaveAs(type, mipMaps, true, _current.BaseImage, output, _current.RgbaPixels,
+                _current.TextureWrap!.Width, _current.TextureWrap!.Height),
+            TextureType.Dds => textures.SaveAs(type, mipMaps, false, _current.BaseImage, output, _current.RgbaPixels,
+                _current.TextureWrap!.Width, _current.TextureWrap!.Height),
+            TextureType.Png => textures.SavePng(_current.BaseImage, output, _current.RgbaPixels, _current.TextureWrap!.Width,
+                _current.TextureWrap!.Height),
+            TextureType.Targa => textures.SaveTga(_current.BaseImage, output, _current.RgbaPixels, _current.TextureWrap!.Width,
+                _current.TextureWrap!.Height),
+            _ => throw new ArgumentException($"Cannot save texture as TextureType {texType} to stream"),
+        };
+
+        SaveTask = task;
+
+        return task;
+    }
 
 
     public CombinedTexture(Texture left, Texture right)
@@ -160,5 +144,20 @@ public partial class CombinedTexture : IDisposable
         _current = null;
         SaveTask = Task.CompletedTask;
         _mode    = Mode.Empty;
+    }
+
+    public bool TryGetRgbaSolidColor(out Rgba32 color, out int width, out int height)
+    {
+        if (_current is not null)
+        {
+            width  = _current.TextureWrap?.Width ?? 0;
+            height = _current.TextureWrap?.Height ?? 0;
+            return _current.TryGetRgbaSolidColor(out color);
+        }
+
+        color  = 0u;
+        width  = 0;
+        height = 0;
+        return false;
     }
 }

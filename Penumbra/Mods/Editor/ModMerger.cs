@@ -1,9 +1,6 @@
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Utility;
-using OtterGui;
-using OtterGui.Classes;
-using OtterGui.Extensions;
-using OtterGui.Services;
+using Luna;
 using Penumbra.Api.Enums;
 using Penumbra.Communication;
 using Penumbra.Mods.Groups;
@@ -15,18 +12,18 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.Mods.Editor;
 
-public class ModMerger : IDisposable, IService
+public sealed class ModMerger : IDisposable, IConstructedService
 {
     private readonly Configuration       _config;
     private readonly CommunicatorService _communicator;
-    private readonly ModGroupEditor      _editor;
-    private readonly ModSelection        _selection;
+    private readonly ModGroupEditor      _groupEditor;
+    private readonly ModEditor           _editor;
     private readonly DuplicateManager    _duplicates;
     private readonly ModManager          _mods;
     private readonly ModCreator          _creator;
 
     public Mod? MergeFromMod
-        => _selection.Mod;
+        => _editor.Mod;
 
     public Mod?   MergeToMod;
     public string OptionGroupName = "Merges";
@@ -42,35 +39,28 @@ public class ModMerger : IDisposable, IService
     public readonly IReadOnlyList<string> Warnings = new List<string>();
     public          Exception?            Error { get; private set; }
 
-    public ModMerger(ModManager mods, ModGroupEditor editor, ModSelection selection, DuplicateManager duplicates,
-        CommunicatorService communicator, ModCreator creator, Configuration config)
+    public ModMerger(ModManager mods, ModGroupEditor groupEditor, DuplicateManager duplicates,
+        CommunicatorService communicator, ModCreator creator, Configuration config, ModEditor editor)
     {
-        _editor       = editor;
-        _selection    = selection;
+        _groupEditor  = groupEditor;
         _duplicates   = duplicates;
         _communicator = communicator;
         _creator      = creator;
         _config       = config;
+        _editor       = editor;
         _mods         = mods;
-        _selection.Subscribe(OnSelectionChange, ModSelection.Priority.ModMerger);
         _communicator.ModPathChanged.Subscribe(OnModPathChange, ModPathChanged.Priority.ModMerger);
     }
 
     public void Dispose()
-    {
-        _selection.Unsubscribe(OnSelectionChange);
-        _communicator.ModPathChanged.Unsubscribe(OnModPathChange);
-    }
-
-    public IEnumerable<Mod> ModsWithoutCurrent
-        => _mods.Where(m => m != MergeFromMod);
+        => _communicator.ModPathChanged.Unsubscribe(OnModPathChange);
 
     public bool CanMerge
-        => MergeToMod != null && MergeToMod != MergeFromMod;
+        => MergeToMod is not null && MergeToMod != MergeFromMod;
 
     public void Merge()
     {
-        if (MergeFromMod == null || MergeToMod == null || MergeFromMod == MergeToMod)
+        if (MergeFromMod is null || MergeToMod is null || MergeFromMod == MergeToMod)
             return;
 
         try
@@ -105,7 +95,7 @@ public class ModMerger : IDisposable, IService
                 case GroupType.Single:
                 case GroupType.Multi:
                 {
-                    var (group, groupIdx, groupCreated) = _editor.FindOrAddModGroup(MergeToMod!, originalGroup.Type, originalGroup.Name);
+                    var (group, groupIdx, groupCreated) = _groupEditor.FindOrAddModGroup(MergeToMod!, originalGroup.Type, originalGroup.Name);
                     if (group is null)
                         throw new Exception(
                             $"The merged group {originalGroup.Name} already existed, but had a different type than the original group of type {originalGroup.Type}.");
@@ -122,7 +112,7 @@ public class ModMerger : IDisposable, IService
 
                     foreach (var originalOption in originalGroup.Options)
                     {
-                        var (option, _, optionCreated) = _editor.FindOrAddOption(group, originalOption.Name);
+                        var (option, _, optionCreated) = _groupEditor.FindOrAddOption(group, originalOption.Name);
                         if (optionCreated)
                         {
                             _createdOptions.Add(option!);
@@ -143,7 +133,7 @@ public class ModMerger : IDisposable, IService
 
                 case GroupType.Imc when originalGroup is ImcModGroup imc:
                 {
-                    var group = _editor.ImcEditor.AddModGroup(MergeToMod!, imc.Name, imc.Identifier, imc.DefaultEntry);
+                    var group = _groupEditor.ImcEditor.AddModGroup(MergeToMod!, imc.Name, imc.Identifier, imc.DefaultEntry);
                     if (group is null)
                         throw new Exception(
                             $"The merged group {originalGroup.Name} already existed, but groups of type {originalGroup.Type} can not be merged.");
@@ -159,14 +149,14 @@ public class ModMerger : IDisposable, IService
                     {
                         if (originalOption.IsDisableSubMod)
                         {
-                            _editor.ImcEditor.ChangeCanBeDisabled(group, true);
+                            _groupEditor.ImcEditor.ChangeCanBeDisabled(group, true);
                             var disable = group.OptionData.First(s => s.IsDisableSubMod);
                             disable.Description = originalOption.Description;
                             disable.Name        = originalOption.Name;
                             continue;
                         }
 
-                        var newOption = _editor.ImcEditor.AddOption(group, originalOption.Name);
+                        var newOption = _groupEditor.ImcEditor.AddOption(group, originalOption.Name);
                         if (newOption is null)
                             throw new Exception(
                                 $"Could not merge {MergeFromMod!.Name} into {MergeToMod!.Name}: Unknown error when creating IMC option {originalOption.FullName}.");
@@ -179,7 +169,7 @@ public class ModMerger : IDisposable, IService
                 }
                 case GroupType.Combining when originalGroup is CombiningModGroup combining:
                 {
-                    var group = _editor.CombiningEditor.AddModGroup(MergeToMod!, combining.Name);
+                    var group = _groupEditor.CombiningEditor.AddModGroup(MergeToMod!, combining.Name);
                     if (group is null)
                         throw new Exception(
                             $"The merged group {originalGroup.Name} already existed, but groups of type {originalGroup.Type} can not be merged.");
@@ -191,7 +181,7 @@ public class ModMerger : IDisposable, IService
                     group.Priority        = combining.Priority;
                     foreach (var originalOption in combining.OptionData)
                     {
-                        var option = _editor.CombiningEditor.AddOption(group, originalOption.Name);
+                        var option = _groupEditor.CombiningEditor.AddOption(group, originalOption.Name);
                         if (option is null)
                             throw new Exception(
                                 $"Could not merge {MergeFromMod!.Name} into {MergeToMod!.Name}: Unknown error when creating combining option {originalOption.FullName}.");
@@ -220,20 +210,20 @@ public class ModMerger : IDisposable, IService
 
     private void MergeIntoOption(string groupName, string optionName)
     {
-        if (groupName.Length == 0 && optionName.Length == 0)
+        if (groupName.Length is 0 && optionName.Length is 0)
         {
             CopyFiles(MergeToMod!.ModPath);
             MergeIntoOption(MergeFromMod!.AllDataContainers.Reverse(), MergeToMod!.Default, true);
         }
-        else if (groupName.Length * optionName.Length == 0)
+        else if (groupName.Length is 0 || optionName.Length is 0)
         {
             return;
         }
 
-        var (group, groupIdx, groupCreated) = _editor.FindOrAddModGroup(MergeToMod!, GroupType.Multi, groupName, SaveType.None);
+        var (group, groupIdx, groupCreated) = _groupEditor.FindOrAddModGroup(MergeToMod!, GroupType.Multi, groupName, SaveType.None);
         if (groupCreated)
             _createdGroups.Add(groupIdx);
-        var (option, _, optionCreated) = _editor.FindOrAddOption(group!, optionName, SaveType.None);
+        var (option, _, optionCreated) = _groupEditor.FindOrAddOption(group!, optionName, SaveType.None);
         if (optionCreated)
             _createdOptions.Add(option!);
         var dir = ModCreator.NewOptionDirectory(MergeToMod!.ModPath, groupName, _config.ReplaceNonAsciiOnImport);
@@ -276,10 +266,10 @@ public class ModMerger : IDisposable, IService
             }
         }
 
-        _editor.SetFiles(option, redirections, SaveType.None);
-        _editor.SetFileSwaps(option, swaps, SaveType.None);
-        _editor.SetManipulations(option, manips, SaveType.None);
-        _editor.ForceSave(option, SaveType.ImmediateSync);
+        _groupEditor.SetFiles(option, redirections, SaveType.None);
+        _groupEditor.SetFileSwaps(option, swaps, SaveType.None);
+        _groupEditor.SetManipulations(option, manips, SaveType.None);
+        _groupEditor.ForceSave(option, SaveType.ImmediateSync);
         return;
 
         bool GetFullPath(FullPath input, out FullPath ret)
@@ -335,7 +325,7 @@ public class ModMerger : IDisposable, IService
     public void SplitIntoMod(string modName)
     {
         var mods = SelectedOptions.ToList();
-        if (mods.Count == 0)
+        if (mods.Count is 0)
             return;
 
         ((List<string>)Warnings).Clear();
@@ -345,18 +335,18 @@ public class ModMerger : IDisposable, IService
         try
         {
             dir = _creator.CreateEmptyMod(_mods.BasePath, modName, $"Split off from {mods[0].Mod.Name}.");
-            if (dir == null)
+            if (dir is null)
                 throw new Exception($"Could not split off mods, unable to create new mod with name {modName}.");
 
             _mods.AddMod(dir, false);
             result = _mods[^1];
-            if (mods.Count == 1)
+            if (mods.Count is 1)
             {
                 var files = CopySubModFiles(mods[0], dir);
-                _editor.SetFiles(result.Default, files, SaveType.None);
-                _editor.SetFileSwaps(result.Default, mods[0].FileSwaps, SaveType.None);
-                _editor.SetManipulations(result.Default, mods[0].Manipulations, SaveType.None);
-                _editor.ForceSave(result.Default);
+                _groupEditor.SetFiles(result.Default, files, SaveType.None);
+                _groupEditor.SetFileSwaps(result.Default, mods[0].FileSwaps, SaveType.None);
+                _groupEditor.SetManipulations(result.Default, mods[0].Manipulations, SaveType.None);
+                _groupEditor.ForceSave(result.Default);
             }
             else
             {
@@ -365,21 +355,21 @@ public class ModMerger : IDisposable, IService
                     if (originalOption.Group is not { } originalGroup)
                     {
                         var files = CopySubModFiles(mods[0], dir);
-                        _editor.SetFiles(result.Default, files);
-                        _editor.SetFileSwaps(result.Default, mods[0].FileSwaps);
-                        _editor.SetManipulations(result.Default, mods[0].Manipulations);
-                        _editor.ForceSave(result.Default);
+                        _groupEditor.SetFiles(result.Default, files);
+                        _groupEditor.SetFileSwaps(result.Default, mods[0].FileSwaps);
+                        _groupEditor.SetManipulations(result.Default, mods[0].Manipulations);
+                        _groupEditor.ForceSave(result.Default);
                     }
                     else
                     {
-                        var (group, _, _)  = _editor.FindOrAddModGroup(result, originalGroup.Type, originalGroup.Name);
-                        var (option, _, _) = _editor.FindOrAddOption(group!, originalOption.GetName());
+                        var (group, _, _)  = _groupEditor.FindOrAddModGroup(result, originalGroup.Type, originalGroup.Name);
+                        var (option, _, _) = _groupEditor.FindOrAddOption(group!, originalOption.GetName());
                         var folder = Path.Combine(dir.FullName, group!.Name, option!.Name);
                         var files  = CopySubModFiles(originalOption, new DirectoryInfo(folder));
-                        _editor.SetFiles((IModDataContainer)option, files, SaveType.None);
-                        _editor.SetFileSwaps((IModDataContainer)option, originalOption.FileSwaps, SaveType.None);
-                        _editor.SetManipulations((IModDataContainer)option, originalOption.Manipulations, SaveType.None);
-                        _editor.ForceSave((IModDataContainer)option);
+                        _groupEditor.SetFiles((IModDataContainer)option, files, SaveType.None);
+                        _groupEditor.SetFileSwaps((IModDataContainer)option, originalOption.FileSwaps, SaveType.None);
+                        _groupEditor.SetManipulations((IModDataContainer)option, originalOption.Manipulations, SaveType.None);
+                        _groupEditor.ForceSave((IModDataContainer)option);
                     }
                 }
             }
@@ -387,9 +377,9 @@ public class ModMerger : IDisposable, IService
         catch (Exception e)
         {
             Error = e;
-            if (result != null)
+            if (result is not null)
                 _mods.DeleteMod(result);
-            else if (dir != null)
+            else if (dir is not null)
                 try
                 {
                     Directory.Delete(dir.FullName);
@@ -434,14 +424,14 @@ public class ModMerger : IDisposable, IService
     {
         foreach (var option in _createdOptions)
         {
-            _editor.DeleteOption(option);
+            _groupEditor.DeleteOption(option);
             Penumbra.Log.Verbose($"[Merger] Removed option {option.FullName}.");
         }
 
         foreach (var group in _createdGroups)
         {
             var groupName = MergeToMod!.Groups[group];
-            _editor.DeleteModGroup(groupName);
+            _groupEditor.DeleteModGroup(groupName);
             Penumbra.Log.Verbose($"[Merger] Removed option group {groupName.Name}.");
         }
 
@@ -480,27 +470,27 @@ public class ModMerger : IDisposable, IService
         }
     }
 
-    private void OnSelectionChange(Mod? oldSelection, Mod? newSelection)
+    public void ResetMod()
     {
-        if (OptionGroupName == "Merges" && OptionName.Length == 0 || OptionName == oldSelection?.Name.Text)
-            OptionName = newSelection?.Name.Text ?? string.Empty;
+        if (OptionGroupName == "Merges" && OptionName.Length == 0)
+            OptionName = MergeFromMod?.Name ?? string.Empty;
 
-        if (MergeToMod == newSelection)
+        if (MergeToMod == MergeFromMod)
             MergeToMod = null;
 
         SelectedOptions.Clear();
     }
 
-    private void OnModPathChange(ModPathChangeType type, Mod mod, DirectoryInfo? _1, DirectoryInfo? _2)
+    private void OnModPathChange(in ModPathChanged.Arguments arguments)
     {
-        switch (type)
+        switch (arguments.Type)
         {
             case ModPathChangeType.Deleted:
             {
-                if (mod == MergeFromMod)
+                if (arguments.Mod == MergeFromMod)
                     SelectedOptions.Clear();
 
-                if (mod == MergeToMod)
+                if (arguments.Mod == MergeToMod)
                     MergeToMod = null;
                 break;
             }

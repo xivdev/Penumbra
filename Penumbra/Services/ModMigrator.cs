@@ -1,6 +1,5 @@
 using Dalamud.Plugin.Services;
-using OtterGui.Classes;
-using OtterGui.Services;
+using Luna;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Files;
@@ -15,7 +14,7 @@ namespace Penumbra.Services;
 
 public class ModMigrator(IDataManager gameData, TextureManager textures) : IService
 {
-    private sealed class FileDataDict : MultiDictionary<string, (string GamePath, IModDataContainer Container)>;
+    private sealed class FileDataDict : ListDictionary<string, (string GamePath, IModDataContainer Container)>;
 
     private readonly Lazy<MtrlFile> _glassReferenceMaterial = new(() =>
     {
@@ -26,19 +25,19 @@ public class ModMigrator(IDataManager gameData, TextureManager textures) : IServ
     private readonly HashSet<Mod> _changedMods = [];
     private readonly HashSet<Mod> _failedMods  = [];
 
-    private readonly FileDataDict Textures  = [];
-    private readonly FileDataDict Models    = [];
-    private readonly FileDataDict Materials = [];
-    private readonly FileDataDict FileSwaps = [];
+    private readonly FileDataDict _textures  = [];
+    private readonly FileDataDict _models    = [];
+    private readonly FileDataDict _materials = [];
+    private readonly FileDataDict _fileSwaps = [];
 
     private readonly ConcurrentBag<string> _messages = [];
 
     public void Update(IEnumerable<Mod> mods)
     {
         CollectFiles(mods);
-        foreach (var (from, (to, container)) in FileSwaps)
+        foreach (var (from, (to, container)) in _fileSwaps)
             MigrateFileSwaps(from, to, container);
-        foreach (var (model, list) in Models.Grouped)
+        foreach (var (model, list) in _models.Grouped)
             MigrateModel(model, (Mod)list[0].Container.Mod);
     }
 
@@ -50,16 +49,16 @@ public class ModMigrator(IDataManager gameData, TextureManager textures) : IServ
             {
                 foreach (var (gamePath, file) in container.Files)
                 {
-                    switch (ResourceTypeExtensions.FromExtension(gamePath.Extension().Span))
+                    switch (ResourceType.FromExtension(gamePath.Extension().Span))
                     {
-                        case ResourceType.Tex:  Textures.TryAdd(file.FullName, (gamePath.ToString(), container)); break;
-                        case ResourceType.Mdl:  Models.TryAdd(file.FullName, (gamePath.ToString(), container)); break;
-                        case ResourceType.Mtrl: Materials.TryAdd(file.FullName, (gamePath.ToString(), container)); break;
+                        case ResourceType.Tex:  _textures.TryAdd(file.FullName, (gamePath.ToString(), container)); break;
+                        case ResourceType.Mdl:  _models.TryAdd(file.FullName, (gamePath.ToString(), container)); break;
+                        case ResourceType.Mtrl: _materials.TryAdd(file.FullName, (gamePath.ToString(), container)); break;
                     }
                 }
 
                 foreach (var (swapFrom, swapTo) in container.FileSwaps)
-                    FileSwaps.TryAdd(swapTo.FullName, (swapFrom.ToString(), container));
+                    _fileSwaps.TryAdd(swapTo.FullName, (swapFrom.ToString(), container));
             }
         }
     }
@@ -146,17 +145,17 @@ public class ModMigrator(IDataManager gameData, TextureManager textures) : IServ
         public readonly MtrlFile File;
         public readonly bool     UsesMaskAsSpecular;
 
-        private readonly Dictionary<TextureUsage, SamplerIndex> Samplers = [];
+        private readonly Dictionary<TextureUsage, SamplerIndex> _samplers = [];
 
         public MaterialPack(MtrlFile file)
         {
             File               = file;
             UsesMaskAsSpecular = File.ShaderPackage.ShaderKeys.Any(x => x.Key is 0xC8BD1DEF && x.Value is 0xA02F4828 or 0x198D11CD);
-            Add(Samplers, TextureUsage.Normal,   ShpkFile.NormalSamplerId);
-            Add(Samplers, TextureUsage.Index,    ShpkFile.IndexSamplerId);
-            Add(Samplers, TextureUsage.Mask,     ShpkFile.MaskSamplerId);
-            Add(Samplers, TextureUsage.Diffuse,  ShpkFile.DiffuseSamplerId);
-            Add(Samplers, TextureUsage.Specular, ShpkFile.SpecularSamplerId);
+            Add(_samplers, TextureUsage.Normal,   ShpkFile.NormalSamplerId);
+            Add(_samplers, TextureUsage.Index,    ShpkFile.IndexSamplerId);
+            Add(_samplers, TextureUsage.Mask,     ShpkFile.MaskSamplerId);
+            Add(_samplers, TextureUsage.Diffuse,  ShpkFile.DiffuseSamplerId);
+            Add(_samplers, TextureUsage.Specular, ShpkFile.SpecularSamplerId);
             return;
 
             void Add(Dictionary<TextureUsage, SamplerIndex> dict, TextureUsage usage, uint samplerId)
@@ -313,8 +312,8 @@ public class ModMigrator(IDataManager gameData, TextureManager textures) : IServ
         if (fromExists && toExists)
             return;
 
-        if (ResourceTypeExtensions.FromExtension(Path.GetExtension(swapFrom.AsSpan())) is not ResourceType.Tex
-         || ResourceTypeExtensions.FromExtension(Path.GetExtension(swapTo.AsSpan())) is not ResourceType.Tex)
+        if (ResourceType.FromExtension(Path.GetExtension(swapFrom.AsSpan())) is not ResourceType.Tex
+         || ResourceType.FromExtension(Path.GetExtension(swapTo.AsSpan())) is not ResourceType.Tex)
         {
             _messages.Add(
                 $"Could not migrate file swap {swapFrom} -> {swapTo} in {container.Mod.Name}: {container.GetFullName()}. Only textures may be migrated.{(fromExists ? "\n\tSource File does not exist." : "")}{(toExists ? "\n\tTarget File does not exist." : "")}");

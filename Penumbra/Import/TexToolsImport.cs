@@ -1,5 +1,5 @@
+using Luna;
 using Newtonsoft.Json;
-using OtterGui.Compression;
 using Penumbra.Import.Structs;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager;
@@ -19,6 +19,7 @@ public partial class TexToolsImporter : IDisposable
     private readonly string        _tmpFile;
 
     private readonly IEnumerable<FileInfo>   _modPackFiles;
+    private readonly int                     _previousModPackCount;
     private readonly int                     _modPackCount;
     private          FileStream?             _tmpFileStream;
     private          StreamDisposer?         _streamDisposer;
@@ -29,30 +30,43 @@ public partial class TexToolsImporter : IDisposable
     public readonly List<(FileInfo File, DirectoryInfo? Mod, Exception? Error)> ExtractedMods;
 
     private readonly Configuration    _config;
-    private readonly ModEditor        _editor;
+    private readonly DuplicateManager _duplicates;
+    private readonly ModNormalizer    _modNormalizer;
     private readonly ModManager       _modManager;
     private readonly FileCompactor    _compactor;
     private readonly MigrationManager _migrationManager;
 
     public TexToolsImporter(int count, IEnumerable<FileInfo> modPackFiles, Action<FileInfo, DirectoryInfo?, Exception?> handler,
-        Configuration config, ModEditor editor, ModManager modManager, FileCompactor compactor, MigrationManager migrationManager)
+        Configuration config, DuplicateManager duplicates, ModNormalizer modNormalizer, ModManager modManager, FileCompactor compactor,
+        MigrationManager migrationManager, TexToolsImporter? previous)
     {
+        if (previous is not null)
+        {
+            if (previous.State is not ImporterState.Done)
+                throw new ArgumentException($"The previous {nameof(TexToolsImporter)} must have completed its job.");
+
+            _previousModPackCount =  previous.ExtractedMods.Count;
+        }
+
         _baseDirectory    = modManager.BasePath;
         _tmpFile          = Path.Combine(_baseDirectory.FullName, TempFileName);
         _modPackFiles     = modPackFiles;
         _config           = config;
-        _editor           = editor;
+        _duplicates       = duplicates;
+        _modNormalizer    = modNormalizer;
         _modManager       = modManager;
         _compactor        = compactor;
         _migrationManager = migrationManager;
-        _modPackCount     = count;
-        ExtractedMods     = new List<(FileInfo, DirectoryInfo?, Exception?)>(count);
+        _modPackCount     = count + _previousModPackCount;
+        ExtractedMods     = new List<(FileInfo, DirectoryInfo?, Exception?)>(count + _previousModPackCount);
         _token            = _cancellation.Token;
+        if (previous is not null)
+            ExtractedMods.AddRange(previous.ExtractedMods);
         Task.Run(ImportFiles, _token)
             .ContinueWith(_ => CloseStreams(), TaskScheduler.Default)
             .ContinueWith(_ =>
             {
-                foreach (var (file, dir, error) in ExtractedMods)
+                foreach (var (file, dir, error) in ExtractedMods.Skip(_previousModPackCount))
                     handler(file, dir, error);
             }, TaskScheduler.Default);
     }
@@ -80,7 +94,7 @@ public partial class TexToolsImporter : IDisposable
     private void ImportFiles()
     {
         State              = ImporterState.None;
-        _currentModPackIdx = 0;
+        _currentModPackIdx = _previousModPackCount;
         foreach (var file in _modPackFiles)
         {
             _currentModDirectory = null;
@@ -97,7 +111,7 @@ public partial class TexToolsImporter : IDisposable
                 if (_config.AutoDeduplicateOnImport)
                 {
                     State = ImporterState.DeduplicatingFiles;
-                    _editor.Duplicates.DeduplicateMod(directory);
+                    _duplicates.DeduplicateMod(directory);
                 }
             }
             catch (Exception e)

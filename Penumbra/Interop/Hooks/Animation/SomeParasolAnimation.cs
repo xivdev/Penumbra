@@ -1,5 +1,5 @@
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
-using OtterGui.Services;
+using Luna;
 using Penumbra.GameData;
 using Penumbra.Interop.PathResolving;
 
@@ -23,9 +23,9 @@ public sealed unsafe class SomeParasolAnimation : FastHook<SomeParasolAnimation.
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private void Detour(DrawObject* drawObject, int unk1)
     {
-        Penumbra.Log.Excessive($"[Some Mount Animation] Invoked on {(nint)drawObject:X} with {unk1}.");
+        Penumbra.Log.Excessive($"[Some Parasol Animation] Invoked on {(nint)drawObject:X} with {unk1}.");
         var last = _state.SetAnimationData(_collectionResolver.IdentifyCollection(drawObject, true));
-        Task.Result.Original(drawObject, unk1);
+        Task.Result!.Original(drawObject, unk1);
         _state.RestoreAnimationData(last);
     }
 }

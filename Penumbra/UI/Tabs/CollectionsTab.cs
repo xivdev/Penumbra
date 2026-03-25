@@ -1,147 +1,53 @@
-using Dalamud.Bindings.ImGui;
-using Dalamud.Plugin;
-using Dalamud.Plugin.Services;
-using OtterGui.Raii;
-using OtterGui.Services;
-using OtterGui.Widgets;
-using Penumbra.Collections.Manager;
-using Penumbra.GameData.Actors;
-using Penumbra.Mods.Manager;
-using Penumbra.Services;
+using ImSharp;
+using Luna;
+using Penumbra.Api.Enums;
+using Penumbra.UI.Classes;
 using Penumbra.UI.CollectionTab;
 
 namespace Penumbra.UI.Tabs;
 
-public sealed class CollectionsTab : IDisposable, ITab, IUiService
+public sealed class CollectionsTab : TwoPanelLayout, ITab<TabType>
 {
-    private readonly EphemeralConfig    _config;
-    private readonly CollectionSelector _selector;
-    private readonly CollectionPanel    _panel;
-    private readonly TutorialService    _tutorial;
-    private readonly IncognitoService   _incognito;
+    private readonly TutorialService _tutorial;
+    private readonly UiConfig        _config;
 
-    public enum PanelMode
-    {
-        SimpleAssignment,
-        IndividualAssignment,
-        GroupAssignment,
-        Details,
-    };
+    public TabType Identifier
+        => TabType.Collections;
 
-    public PanelMode Mode
+    public CollectionsTab(TutorialService tutorial, CollectionButtonFooter leftFooter, CollectionSelector leftPanel, CollectionFilter filter,
+        CollectionModeHeader rightHeader, CollectionPanel rightPanel, UiConfig config)
     {
-        get => _config.CollectionPanel;
-        set
-        {
-            _config.CollectionPanel = value;
-            _config.Save();
-        }
+        LeftHeader  = new FilterHeader<CollectionSelector.Entry>(filter, new StringU8("Filter..."u8));
+        LeftPanel   = leftPanel;
+        LeftFooter  = leftFooter;
+        RightHeader = rightHeader;
+        RightPanel  = rightPanel;
+        RightFooter = NopHeaderFooter.Instance;
+        _tutorial   = tutorial;
+        _config     = config;
     }
 
-    public CollectionsTab(IDalamudPluginInterface pi, Configuration configuration, CommunicatorService communicator, IncognitoService incognito,
-        CollectionManager collectionManager, ModStorage modStorage, ActorManager actors, ITargetManager targets, TutorialService tutorial, SaveService saveService)
-    {
-        _config    = configuration.Ephemeral;
-        _tutorial  = tutorial;
-        _incognito = incognito;
-        _selector  = new CollectionSelector(configuration, communicator, collectionManager.Storage, collectionManager.Active, _tutorial, incognito);
-        _panel     = new CollectionPanel(pi, communicator, collectionManager, _selector, actors, targets, modStorage, saveService, incognito);
-    }
+    protected override float MinimumWidth
+        => LeftFooter.MinimumWidth;
 
-    public void Dispose()
-    {
-        _selector.Dispose();
-        _panel.Dispose();
-    }
+    protected override float MaximumWidth
+        => Im.Window.Width - 690 * Im.Style.GlobalScale;
 
-    public ReadOnlySpan<byte> Label
+    public override ReadOnlySpan<byte> Label
         => "Collections"u8;
 
-    public void DrawContent()
+    protected override void DrawLeftGroup(in TwoPanelWidth width)
     {
-        var width = ImGui.CalcTextSize("nnnnnnnnnnnnnnnnnnnnnnnnnn").X;
-        using (var group = ImRaii.Group())
-        {
-            _selector.Draw(width);
-        }
-
+        base.DrawLeftGroup(width);
         _tutorial.OpenTutorial(BasicTutorialSteps.EditingCollections);
-
-        ImGui.SameLine();
-        using (var group = ImRaii.Group())
-        {
-            DrawHeaderLine();
-            DrawPanel();
-        }
     }
 
-    public void DrawHeader()
-    {
-        _tutorial.OpenTutorial(BasicTutorialSteps.Collections);
-    }
+    public void DrawContent()
+        => Draw(_config.CollectionsTabScale);
 
-    private void DrawHeaderLine()
-    {
-        var       withSpacing = ImGui.GetFrameHeightWithSpacing();
-        using var style       = ImRaii.PushStyle(ImGuiStyleVar.FrameRounding, 0).Push(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
-        var       buttonSize  = new Vector2((ImGui.GetContentRegionAvail().X - withSpacing) / 4f, ImGui.GetFrameHeight());
+    protected override void SetWidth(float width, ScalingMode mode)
+        => _config.CollectionsTabScale = new TwoPanelWidth(width, mode);
 
-        using var _     = ImRaii.Group();
-        using var color = ImRaii.PushColor(ImGuiCol.Button, ImGui.GetColorU32(ImGuiCol.TabActive), Mode is PanelMode.SimpleAssignment);
-        if (ImGui.Button("Simple Assignments", buttonSize))
-            Mode = PanelMode.SimpleAssignment;
-        color.Pop();
-        _tutorial.OpenTutorial(BasicTutorialSteps.SimpleAssignments);
-        ImGui.SameLine();
-
-        color.Push(ImGuiCol.Button, ImGui.GetColorU32(ImGuiCol.TabActive), Mode is PanelMode.IndividualAssignment);
-        if (ImGui.Button("Individual Assignments", buttonSize))
-            Mode = PanelMode.IndividualAssignment;
-        color.Pop();
-        _tutorial.OpenTutorial(BasicTutorialSteps.IndividualAssignments);
-        ImGui.SameLine();
-
-        color.Push(ImGuiCol.Button, ImGui.GetColorU32(ImGuiCol.TabActive), Mode is PanelMode.GroupAssignment);
-        if (ImGui.Button("Group Assignments", buttonSize))
-            Mode = PanelMode.GroupAssignment;
-        color.Pop();
-        _tutorial.OpenTutorial(BasicTutorialSteps.GroupAssignments);
-        ImGui.SameLine();
-
-        color.Push(ImGuiCol.Button, ImGui.GetColorU32(ImGuiCol.TabActive), Mode is PanelMode.Details);
-        if (ImGui.Button("Collection Details", buttonSize))
-            Mode = PanelMode.Details;
-        color.Pop();
-        _tutorial.OpenTutorial(BasicTutorialSteps.CollectionDetails);
-        ImGui.SameLine();
-
-        _incognito.DrawToggle(withSpacing);
-    }
-
-    private void DrawPanel()
-    {
-        using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
-        using var child = ImRaii.Child("##CollectionSettings", new Vector2(ImGui.GetContentRegionAvail().X, 0), true);
-        if (!child)
-            return;
-
-        style.Pop();
-        switch (Mode)
-        {
-            case PanelMode.SimpleAssignment:
-                _panel.DrawSimple();
-                break;
-            case PanelMode.IndividualAssignment:
-                _panel.DrawIndividualPanel();
-                break;
-            case PanelMode.GroupAssignment:
-                _panel.DrawGroupPanel();
-                break;
-            case PanelMode.Details:
-                _panel.DrawDetailsPanel();
-                break;
-        }
-
-        style.Push(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
-    }
+    public void PostTabButton()
+        => _tutorial.OpenTutorial(BasicTutorialSteps.Collections);
 }

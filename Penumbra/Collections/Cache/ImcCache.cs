@@ -1,7 +1,9 @@
+using Luna;
 using Penumbra.GameData.Structs;
 using Penumbra.Meta;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
+using Penumbra.Mods.Editor;
 using Penumbra.String;
 
 namespace Penumbra.Collections.Cache;
@@ -37,13 +39,13 @@ public sealed class ImcCache(MetaFileManager manager, ModCollection collection) 
         Clear();
     }
 
-    protected override void ApplyModInternal(ImcIdentifier identifier, ImcEntry entry)
+    protected override void ApplyModInternal(IMod source, ImcIdentifier identifier, ImcEntry entry)
     {
         Collection.Counters.IncrementImc();
-        ApplyFile(identifier, entry);
+        ApplyFile(source, identifier, entry);
     }
 
-    private void ApplyFile(ImcIdentifier identifier, ImcEntry entry)
+    private void ApplyFile(IMod source, ImcIdentifier identifier, ImcEntry entry)
     {
         var path = identifier.GamePath().Path;
         try
@@ -59,12 +61,11 @@ public sealed class ImcCache(MetaFileManager manager, ModCollection collection) 
         }
         catch (ImcException e)
         {
-            Manager.ValidityChecker.ImcExceptions.Add(e);
-            Penumbra.Log.Error(e.ToString());
+            Penumbra.Messager.AddTaggedMessage(identifier.ToString(), new Notification(e, $"Unable to obtain a default IMC file.\n\nIMC: {identifier.ToStringWithoutImc()}.\nMod:\t{source.Name}\n\nEither your game files are corrupted or this mod manipulates an object that does not exist in your game version.", $"IMC Exception in mod \"{source.Name}\":", TimeSpan.FromSeconds(30)));
         }
         catch (Exception e)
         {
-            Penumbra.Log.Error($"Could not apply IMC Manipulation {identifier}:\n{e}");
+            Penumbra.Log.Error($"Could not apply IMC Manipulation {identifier.ToStringWithoutImc()} for mod \"{source.Name}\":\n{e}");
         }
     }
 
@@ -78,7 +79,7 @@ public sealed class ImcCache(MetaFileManager manager, ModCollection collection) 
         if (!pair.Item2.Remove(identifier))
             return;
 
-        if (pair.Item2.Count == 0)
+        if (pair.Item2.Count is 0)
         {
             _imcFiles.Remove(path);
             pair.Item1.Dispose();

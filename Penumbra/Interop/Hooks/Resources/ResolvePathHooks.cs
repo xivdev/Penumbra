@@ -1,9 +1,8 @@
-using OtterGui.Services;
 using Penumbra.Interop.PathResolving;
 
 namespace Penumbra.Interop.Hooks.Resources;
 
-public sealed unsafe class ResolvePathHooks(HookManager hooks, CharacterBaseVTables vTables, PathState pathState) : IDisposable, IRequiredService
+public sealed unsafe class ResolvePathHooks(Luna.HookManager hooks, CharacterBaseVTables vTables, PathState pathState) : IDisposable, Luna.IRequiredService
 {
     // @formatter:off
     private readonly ResolvePathHooksBase _human     = new("Human",     hooks, pathState, vTables.HumanVTable,     ResolvePathHooksBase.Type.Human);

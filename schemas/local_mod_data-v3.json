@@ -10,8 +10,20 @@
             "minimum": 3,
             "maximum": 3
         },
+        "FileSystemFolder": {
+            "description": "The containing folder in Penumbras custom filesystem for this mod. Can be omitted if the mod is not in a folder.",
+            "type": "string"
+        },
+        "SortOrderName": {
+            "description": "The sort order name of the mod in Penumbras custom filesystem. Can be omitted if the mod uses the default sort order name.",
+            "type": "string"
+        },
         "ImportDate": {
             "description": "The date and time of the installation of the mod as a Unix Epoch millisecond timestamp.",
+            "type": "integer"
+        },
+        "LastConfigEdit": {
+            "description": "The date and time of the last time the configuration for this mod was changed in any collection.",
             "type": "integer"
         },
         "LocalTags": {

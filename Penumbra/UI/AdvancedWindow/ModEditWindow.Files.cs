@@ -1,10 +1,6 @@
 using Dalamud.Interface;
-using Dalamud.Bindings.ImGui;
-using OtterGui;
-using OtterGui.Classes;
-using OtterGui.Extensions;
-using OtterGui.Raii;
-using OtterGui.Text;
+using ImSharp;
+using Luna;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.SubMods;
 using Penumbra.String.Classes;
@@ -16,122 +12,61 @@ public partial class ModEditWindow
 {
     private readonly HashSet<FileRegistry> _selectedFiles = new(256);
     private readonly HashSet<Utf8GamePath> _cutPaths      = [];
-    private          LowerString           _fileFilter    = LowerString.Empty;
+    private          string                _fileFilter    = string.Empty;
     private          bool                  _showGamePaths = true;
     private          string                _gamePathEdit  = string.Empty;
     private          int                   _fileIdx       = -1;
     private          int                   _pathIdx       = -1;
     private          int                   _folderSkip;
     private          bool                  _overviewMode;
-
-    private LowerString _fileOverviewFilter1 = LowerString.Empty;
-    private LowerString _fileOverviewFilter2 = LowerString.Empty;
-    private LowerString _fileOverviewFilter3 = LowerString.Empty;
+    private readonly OverviewTable         _overviewTable;
 
     private bool CheckFilter(FileRegistry registry)
-        => _fileFilter.IsEmpty || registry.File.FullName.Contains(_fileFilter.Lower, StringComparison.OrdinalIgnoreCase);
+        => _fileFilter.Length is 0 || registry.File.FullName.Contains(_fileFilter, StringComparison.OrdinalIgnoreCase);
 
-    private bool CheckFilter((FileRegistry, int) p)
-        => CheckFilter(p.Item1);
+    private bool CheckFilter((int, FileRegistry) p)
+        => CheckFilter(p.Item2);
 
     private void DrawFileTab()
     {
-        using var tab = ImRaii.TabItem("File Redirections");
+        using var tab = Im.TabBar.BeginItem("File Redirections"u8);
         if (!tab)
             return;
 
-        DrawOptionSelectHeader();
+        using var id = Im.Id.Push(Mod!.Identifier);
         DrawButtonHeader();
 
-        if (_overviewMode)
-            DrawFileManagementOverview();
-        else
+        if (!_overviewMode)
             DrawFileManagementNormal();
 
-        using var child = ImRaii.Child("##files", -Vector2.One, true);
+        using var child = Im.Child.Begin("##files"u8, Im.ContentRegion.Available, true);
         if (!child)
             return;
 
         if (_overviewMode)
-            DrawFilesOverviewMode();
+            _overviewTable.Draw();
         else
             DrawFilesNormalMode();
     }
 
-    private void DrawFilesOverviewMode()
-    {
-        var height = ImGui.GetTextLineHeightWithSpacing() + 2 * ImGui.GetStyle().CellPadding.Y;
-        var skips  = ImGuiClip.GetNecessarySkips(height);
-
-        using var list = ImRaii.Table("##table", 3, ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerV, -Vector2.One);
-
-        if (!list)
-            return;
-
-        var width = ImGui.GetContentRegionAvail().X / 8;
-
-        ImGui.TableSetupColumn("##file",   ImGuiTableColumnFlags.WidthFixed, width * 3);
-        ImGui.TableSetupColumn("##path",   ImGuiTableColumnFlags.WidthFixed, width * 3 + ImGui.GetStyle().FrameBorderSize);
-        ImGui.TableSetupColumn("##option", ImGuiTableColumnFlags.WidthFixed, width * 2);
-
-        var idx = 0;
-
-        var files = _editor.Files.Available.SelectMany(f =>
-        {
-            var file = f.RelPath.ToString();
-            return f.SubModUsage.Count == 0
-                ? Enumerable.Repeat((file, "Unused", string.Empty, 0x40000080u), 1)
-                : f.SubModUsage.Select(s => (file, s.Item2.ToString(), s.Item1.GetFullName(),
-                    _editor.Option! == s.Item1 && Mod!.HasOptions ? 0x40008000u : 0u));
-        });
-
-        void DrawLine((string, string, string, uint) data)
-        {
-            using var id = ImRaii.PushId(idx++);
-            ImGui.TableNextColumn();
-            if (data.Item4 != 0)
-                ImGui.TableSetBgColor(ImGuiTableBgTarget.CellBg, data.Item4);
-
-            ImGuiUtil.CopyOnClickSelectable(data.Item1);
-            ImGui.TableNextColumn();
-            if (data.Item4 != 0)
-                ImGui.TableSetBgColor(ImGuiTableBgTarget.CellBg, data.Item4);
-
-            ImGuiUtil.CopyOnClickSelectable(data.Item2);
-            ImGui.TableNextColumn();
-            if (data.Item4 != 0)
-                ImGui.TableSetBgColor(ImGuiTableBgTarget.CellBg, data.Item4);
-
-            ImGuiUtil.CopyOnClickSelectable(data.Item3);
-        }
-
-        bool Filter((string, string, string, uint) data)
-            => _fileOverviewFilter1.IsContained(data.Item1)
-             && _fileOverviewFilter2.IsContained(data.Item2)
-             && _fileOverviewFilter3.IsContained(data.Item3);
-
-        var end = ImGuiClip.FilteredClippedDraw(files, skips, Filter, DrawLine);
-        ImGuiClip.DrawEndDummy(end, height);
-    }
 
     private void DrawFilesNormalMode()
     {
-        using var list = ImRaii.Table("##table", 1);
-
-        if (!list)
+        using var table = Im.Table.Begin("##table"u8, 1);
+        if (!table)
             return;
 
-        foreach (var (registry, i) in _editor.Files.Available.WithIndex().Where(CheckFilter))
+        foreach (var (i, registry) in _editor.Files.Available.Index().Where(CheckFilter))
         {
-            using var id = ImRaii.PushId(i);
-            ImGui.TableNextColumn();
+            using var id = Im.Id.Push(i);
+            table.NextColumn();
 
             DrawSelectable(registry, i);
 
             if (!_showGamePaths)
                 continue;
 
-            using var indent = ImRaii.PushIndent(50f);
+            using var indent = Im.Indent(50f);
             for (var j = 0; j < registry.SubModUsage.Count; ++j)
             {
                 var (subMod, gamePath) = registry.SubModUsage[j];
@@ -155,11 +90,11 @@ public partial class ModEditWindow
             _                      => (null, 0),
         };
 
-        if (text != null && ImGui.IsItemHovered())
+        if (text is not null && Im.Item.Hovered())
         {
-            using var tt = ImUtf8.Tooltip();
-            using var c  = ImRaii.DefaultColors();
-            ImUtf8.Text(string.Join('\n', text));
+            using var tt = Im.Tooltip.Begin();
+            using var c  = ImGuiColor.Text.PushDefault();
+            Im.Text(StringU8.Join((byte)'\n', text));
         }
 
 
@@ -183,9 +118,9 @@ public partial class ModEditWindow
         var selected = _selectedFiles.Contains(registry);
         var color = registry.SubModUsage.Count == 0             ? ColorId.ConflictingMod :
             registry.CurrentUsage == registry.SubModUsage.Count ? ColorId.NewMod : ColorId.InheritedMod;
-        using (ImRaii.PushColor(ImGuiCol.Text, color.Value()))
+        using (ImGuiColor.Text.Push(color.Value()))
         {
-            if (UiHelpers.Selectable(registry.RelPath.Path, selected))
+            if (Im.Selectable(registry.RelPath.Path.Span, selected))
             {
                 if (selected)
                     _selectedFiles.Remove(registry);
@@ -193,13 +128,13 @@ public partial class ModEditWindow
                     _selectedFiles.Add(registry);
             }
 
-            if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
-                ImUtf8.OpenPopup("context"u8);
+            if (Im.Item.RightClicked())
+                Im.Popup.Open("context"u8);
 
             var rightText = DrawFileTooltip(registry, color);
 
-            ImGui.SameLine();
-            ImGuiUtil.RightAlign(rightText);
+            Im.Line.Same();
+            ImEx.TextRightAligned(rightText);
         }
 
         DrawContextMenu(registry, i);
@@ -207,16 +142,16 @@ public partial class ModEditWindow
 
     private void DrawContextMenu(FileRegistry registry, int i)
     {
-        using var context = ImUtf8.Popup("context"u8);
+        using var context = Im.Popup.Begin("context"u8);
         if (!context)
             return;
 
-        if (ImUtf8.Selectable("Copy Full File Path"))
-            ImUtf8.SetClipboardText(registry.File.FullName);
+        if (Im.Selectable("Copy Full File Path"u8))
+            Im.Clipboard.Set(registry.File.FullName);
 
-        using (ImRaii.Disabled(registry.CurrentUsage == 0))
+        using (Im.Disabled(registry.CurrentUsage is 0))
         {
-            if (ImUtf8.Selectable("Copy Game Paths"u8))
+            if (Im.Selectable("Copy Game Paths"u8))
             {
                 _cutPaths.Clear();
                 for (var j = 0; j < registry.SubModUsage.Count; ++j)
@@ -229,9 +164,9 @@ public partial class ModEditWindow
             }
         }
 
-        using (ImRaii.Disabled(registry.CurrentUsage == 0))
+        using (Im.Disabled(registry.CurrentUsage is 0))
         {
-            if (ImUtf8.Selectable("Cut Game Paths"u8))
+            if (Im.Selectable("Cut Game Paths"u8))
             {
                 _cutPaths.Clear();
                 for (var j = 0; j < registry.SubModUsage.Count; ++j)
@@ -245,31 +180,31 @@ public partial class ModEditWindow
             }
         }
 
-        using (ImRaii.Disabled(_cutPaths.Count == 0))
+        using (Im.Disabled(_cutPaths.Count is 0))
         {
-            if (ImUtf8.Selectable("Paste Game Paths"u8))
+            if (Im.Selectable("Paste Game Paths"u8))
                 foreach (var path in _cutPaths)
                     _editor.FileEditor.SetGamePath(_editor.Option!, i, -1, path);
         }
     }
 
-    private void PrintGamePath(int i, int j, FileRegistry registry, IModDataContainer subMod, Utf8GamePath gamePath)
+    private void PrintGamePath(int i, int j, FileRegistry registry, IModDataContainer _, Utf8GamePath gamePath)
     {
-        using var id = ImRaii.PushId(j);
-        ImGui.TableNextColumn();
+        using var id = Im.Id.Push(j);
+        Im.Table.NextColumn();
         var tmp = _fileIdx == i && _pathIdx == j ? _gamePathEdit : gamePath.ToString();
-        var pos = ImGui.GetCursorPosX() - ImGui.GetFrameHeight();
-        ImGui.SetNextItemWidth(-1);
-        if (ImGui.InputText(string.Empty, ref tmp, Utf8GamePath.MaxGamePathLength))
+        var pos = Im.Cursor.X - Im.Style.FrameHeight;
+        Im.Item.SetNextWidth(-1);
+        if (Im.Input.Text(StringU8.Empty, ref tmp, maxLength: Utf8GamePath.MaxGamePathLength))
         {
             _fileIdx      = i;
             _pathIdx      = j;
             _gamePathEdit = tmp;
         }
 
-        ImGuiUtil.HoverTooltip("Clear completely to remove the path from this mod.");
+        Im.Tooltip.OnHover("Clear completely to remove the path from this mod."u8);
 
-        if (ImGui.IsItemDeactivatedAfterEdit())
+        if (Im.Item.DeactivatedAfterEdit)
         {
             if (Utf8GamePath.FromString(_gamePathEdit, out var path))
                 _editor.FileEditor.SetGamePath(_editor.Option!, _fileIdx, _pathIdx, path);
@@ -282,37 +217,32 @@ public partial class ModEditWindow
               && (!Utf8GamePath.FromString(_gamePathEdit, out var path)
                   || !path.IsEmpty && !path.Equals(gamePath) && !_editor.FileEditor.CanAddGamePath(path)))
         {
-            ImGui.SameLine();
-            ImGui.SetCursorPosX(pos);
-            using var font = ImRaii.PushFont(UiBuilder.IconFont);
-            ImGuiUtil.TextColored(0xFF0000FF, FontAwesomeIcon.TimesCircle.ToIconString());
+            Im.Line.Same();
+            Im.Cursor.X = pos;
+            ImEx.Icon.Draw(FontAwesomeIcon.TimesCircle.Icon(), Rgba32.Red);
         }
         else if (tmp.Length > 0 && Path.GetExtension(tmp) != registry.File.Extension)
         {
-            ImGui.SameLine();
-            ImGui.SetCursorPosX(pos);
-            using (var font = ImRaii.PushFont(UiBuilder.IconFont))
-            {
-                ImGuiUtil.TextColored(0xFF00B0B0, FontAwesomeIcon.ExclamationCircle.ToIconString());
-            }
-
-            ImUtf8.HoverTooltip("The game path and the file do not have the same extension."u8);
+            Im.Line.Same();
+            Im.Cursor.X = pos;
+            ImEx.Icon.Draw(FontAwesomeIcon.ExclamationCircle.Icon(), new Rgba32(0xFF00B0B0));
+            Im.Tooltip.OnHover("The game path and the file do not have the same extension."u8);
         }
     }
 
-    private void PrintNewGamePath(int i, FileRegistry registry, IModDataContainer subMod)
+    private void PrintNewGamePath(int i, FileRegistry registry, IModDataContainer _)
     {
         var tmp = _fileIdx == i && _pathIdx == -1 ? _gamePathEdit : string.Empty;
-        var pos = ImGui.GetCursorPosX() - ImGui.GetFrameHeight();
-        ImGui.SetNextItemWidth(-1);
-        if (ImGui.InputTextWithHint("##new", "Add New Path...", ref tmp, Utf8GamePath.MaxGamePathLength))
+        var pos = Im.Cursor.X - Im.Style.FrameHeight;
+        Im.Item.SetNextWidth(-1);
+        if (Im.Input.Text("##new"u8, ref tmp, "Add New Path..."u8, maxLength: Utf8GamePath.MaxGamePathLength))
         {
             _fileIdx      = i;
             _pathIdx      = -1;
             _gamePathEdit = tmp;
         }
 
-        if (ImGui.IsItemDeactivatedAfterEdit())
+        if (Im.Item.DeactivatedAfterEdit)
         {
             if (Utf8GamePath.FromString(_gamePathEdit, out var path) && !path.IsEmpty)
                 _editor.FileEditor.SetGamePath(_editor.Option!, _fileIdx, _pathIdx, path);
@@ -325,64 +255,57 @@ public partial class ModEditWindow
               && (!Utf8GamePath.FromString(_gamePathEdit, out var path)
                   || !path.IsEmpty && !_editor.FileEditor.CanAddGamePath(path)))
         {
-            ImGui.SameLine();
-            ImGui.SetCursorPosX(pos);
-            using var font = ImRaii.PushFont(UiBuilder.IconFont);
-            ImGuiUtil.TextColored(0xFF0000FF, FontAwesomeIcon.TimesCircle.ToIconString());
+            Im.Line.Same();
+            Im.Cursor.X = pos;
+            ImEx.Icon.Draw(FontAwesomeIcon.TimesCircle.Icon(), Rgba32.Red);
         }
         else if (tmp.Length > 0 && Path.GetExtension(tmp) != registry.File.Extension)
         {
-            ImGui.SameLine();
-            ImGui.SetCursorPosX(pos);
-            using (var font = ImRaii.PushFont(UiBuilder.IconFont))
-            {
-                ImGuiUtil.TextColored(0xFF00B0B0, FontAwesomeIcon.ExclamationCircle.ToIconString());
-            }
-
-            ImUtf8.HoverTooltip("The game path and the file do not have the same extension."u8);
+            Im.Line.Same();
+            Im.Cursor.X = pos;
+            ImEx.Icon.Draw(FontAwesomeIcon.ExclamationCircle.Icon(), new Rgba32(0xFF00B0B0));
+            Im.Tooltip.OnHover("The game path and the file do not have the same extension."u8);
         }
     }
 
     private void DrawButtonHeader()
     {
-        ImGui.NewLine();
-
-        using var spacing = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(3 * UiHelpers.Scale, 0));
-        ImGui.SetNextItemWidth(30 * UiHelpers.Scale);
-        ImGui.DragInt("##skippedFolders", ref _folderSkip, 0.01f, 0, 10);
-        ImGuiUtil.HoverTooltip("Skip the first N folders when automatically constructing the game path from the file path.");
-        ImGui.SameLine();
+        using var spacing = ImStyleDouble.ItemSpacing.Push(new Vector2(3 * Im.Style.GlobalScale, 0));
+        Im.Item.SetNextWidthScaled(30);
+        Im.Drag("##skippedFolders"u8, ref _folderSkip, 0, 10, 0.01f);
+        Im.Tooltip.OnHover("Skip the first N folders when automatically constructing the game path from the file path."u8);
+        Im.Line.Same();
         spacing.Pop();
-        if (ImGui.Button("Add Paths"))
+        if (Im.Button("Add Paths"u8))
             _editor.FileEditor.AddPathsToSelected(_editor.Option!, _editor.Files.Available.Where(_selectedFiles.Contains), _folderSkip);
 
-        ImGuiUtil.HoverTooltip(
-            "Add the file path converted to a game path to all selected files for the current option, optionally skipping the first N folders.");
+        Im.Tooltip.OnHover(
+            "Add the file path converted to a game path to all selected files for the current option, optionally skipping the first N folders."u8);
 
 
-        ImGui.SameLine();
-        if (ImGui.Button("Remove Paths"))
+        Im.Line.Same();
+        if (Im.Button("Remove Paths"u8))
             _editor.FileEditor.RemovePathsFromSelected(_editor.Option!, _editor.Files.Available.Where(_selectedFiles.Contains));
 
-        ImGuiUtil.HoverTooltip("Remove all game paths associated with the selected files in the current option.");
+        Im.Tooltip.OnHover("Remove all game paths associated with the selected files in the current option."u8);
 
 
-        ImGui.SameLine();
+        Im.Line.Same();
         var active = _config.DeleteModModifier.IsActive();
         var tt =
             "Delete all selected files entirely from your filesystem, but not their file associations in the mod.\n!!!This can not be reverted!!!";
-        if (_selectedFiles.Count == 0)
+        if (_selectedFiles.Count is 0)
             tt += "\n\nNo files selected.";
         else if (!active)
             tt += $"\n\nHold {_config.DeleteModModifier} to delete.";
 
-        if (ImGuiUtil.DrawDisabledButton("Delete Selected Files", Vector2.Zero, tt, _selectedFiles.Count == 0 || !active))
+        if (ImEx.Button("Delete Selected Files"u8, Vector2.Zero, tt, _selectedFiles.Count is 0 || !active))
             _editor.FileEditor.DeleteFiles(_editor.Mod!, _editor.Option!, _editor.Files.Available.Where(_selectedFiles.Contains));
 
-        ImGui.SameLine();
+        Im.Line.Same();
         var changes = _editor.FileEditor.Changes;
-        tt = changes ? "Apply the current file setup to the currently selected option." : "No changes made.";
-        if (ImGuiUtil.DrawDisabledButton("Apply Changes", Vector2.Zero, tt, !changes))
+        var tt2     = changes ? "Apply the current file setup to the currently selected option."u8 : "No changes made."u8;
+        if (ImEx.Button("Apply Changes"u8, Vector2.Zero, tt2, !changes))
         {
             var failedFiles = _editor.FileEditor.Apply(_editor.Mod!, _editor.Option!);
             if (failedFiles > 0)
@@ -390,60 +313,42 @@ public partial class ModEditWindow
         }
 
 
-        ImGui.SameLine();
-        var label  = changes ? "Revert Changes" : "Reload Files";
-        var length = new Vector2(ImGui.CalcTextSize("Revert Changes").X, 0);
-        if (ImGui.Button(label, length))
+        Im.Line.Same();
+        var label  = changes ? "Revert Changes"u8 : "Reload Files"u8;
+        var length = new Vector2(Im.Font.CalculateSize("Revert Changes"u8).X, 0);
+        if (Im.Button(label, length))
             _editor.FileEditor.Revert(_editor.Mod!, _editor.Option!);
 
-        ImGuiUtil.HoverTooltip("Revert all revertible changes since the last file or option reload or data refresh.");
+        Im.Tooltip.OnHover("Revert all revertible changes since the last file or option reload or data refresh."u8);
 
-        ImGui.SameLine();
-        ImGui.Checkbox("Overview Mode", ref _overviewMode);
+        Im.Line.Same();
+        Im.Checkbox("Overview Mode"u8, ref _overviewMode);
     }
 
     private void DrawFileManagementNormal()
     {
-        ImGui.SetNextItemWidth(250 * UiHelpers.Scale);
-        LowerString.InputWithHint("##filter", "Filter paths...", ref _fileFilter, Utf8GamePath.MaxGamePathLength);
-        ImGui.SameLine();
-        ImGui.Checkbox("Show Game Paths", ref _showGamePaths);
-        ImGui.SameLine();
-        if (ImGui.Button("Unselect All"))
+        Im.Item.SetNextWidthScaled(250);
+        Im.Input.Text("##filter"u8, ref _fileFilter, "Filter paths..."u8);
+        Im.Line.Same();
+        Im.Checkbox("Show Game Paths"u8, ref _showGamePaths);
+        Im.Line.Same();
+        if (Im.Button("Unselect All"u8))
             _selectedFiles.Clear();
 
-        ImGui.SameLine();
-        if (ImGui.Button("Select Visible"))
+        Im.Line.Same();
+        if (Im.Button("Select Visible"u8))
             _selectedFiles.UnionWith(_editor.Files.Available.Where(CheckFilter));
 
-        ImGui.SameLine();
-        if (ImGui.Button("Select Unused"))
+        Im.Line.Same();
+        if (Im.Button("Select Unused"u8))
             _selectedFiles.UnionWith(_editor.Files.Available.Where(f => f.SubModUsage.Count == 0));
 
-        ImGui.SameLine();
-        if (ImGui.Button("Select Used Here"))
+        Im.Line.Same();
+        if (Im.Button("Select Used Here"u8))
             _selectedFiles.UnionWith(_editor.Files.Available.Where(f => f.CurrentUsage > 0));
 
-        ImGui.SameLine();
+        Im.Line.Same();
 
-        ImGuiUtil.RightAlign($"{_selectedFiles.Count} / {_editor.Files.Available.Count} Files Selected");
-    }
-
-    private void DrawFileManagementOverview()
-    {
-        using var style = ImRaii.PushStyle(ImGuiStyleVar.FrameRounding, 0)
-            .Push(ImGuiStyleVar.ItemSpacing,     Vector2.Zero)
-            .Push(ImGuiStyleVar.FrameBorderSize, ImGui.GetStyle().ChildBorderSize);
-
-        var width = ImGui.GetContentRegionAvail().X / 8;
-
-        ImGui.SetNextItemWidth(width * 3);
-        LowerString.InputWithHint("##fileFilter", "Filter file...", ref _fileOverviewFilter1, Utf8GamePath.MaxGamePathLength);
-        ImGui.SameLine();
-        ImGui.SetNextItemWidth(width * 3);
-        LowerString.InputWithHint("##pathFilter", "Filter path...", ref _fileOverviewFilter2, Utf8GamePath.MaxGamePathLength);
-        ImGui.SameLine();
-        ImGui.SetNextItemWidth(width * 2);
-        LowerString.InputWithHint("##optionFilter", "Filter option...", ref _fileOverviewFilter3, Utf8GamePath.MaxGamePathLength);
+        ImEx.TextRightAligned($"{_selectedFiles.Count} / {_editor.Files.Available.Count} Files Selected");
     }
 }

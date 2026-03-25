@@ -2,6 +2,7 @@ using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Meta;
 using Penumbra.Meta.Manipulations;
+using Penumbra.Mods.Editor;
 
 namespace Penumbra.Collections.Cache;
 
@@ -45,7 +46,7 @@ public sealed class ShpCache(MetaFileManager manager, ModCollection collection) 
     protected override void Dispose(bool _)
         => Reset();
 
-    protected override void ApplyModInternal(ShpIdentifier identifier, ShpEntry entry)
+    protected override void ApplyModInternal(IMod source, ShpIdentifier identifier, ShpEntry entry)
     {
         switch (identifier.ConnectorCondition)
         {

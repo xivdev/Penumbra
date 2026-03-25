@@ -38,7 +38,7 @@ internal static class ModCollectionMigration
 
     /// <summary> We treat every completely defaulted setting as inheritance-ready. </summary>
     private static bool SettingIsDefaultV0(ModSettings.SavedSettings setting)
-        => setting is { Enabled: true, Priority.IsDefault: true } && setting.Settings.Values.All(s => s == Setting.Zero);
+        => setting is { Enabled: true, Priority.IsDefault: true } && (setting.Settings?.Values.All(s => s == Setting.Zero) ?? true);
 
     /// <inheritdoc cref="SettingIsDefaultV0(ModSettings.SavedSettings)"/>
     private static bool SettingIsDefaultV0(ModSettings? setting)

@@ -1,6 +1,5 @@
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
-using OtterGui.Services;
-using Penumbra.Collections;
+using Luna;
 using Penumbra.GameData;
 using Penumbra.Interop.PathResolving;
 
@@ -27,13 +26,13 @@ public sealed unsafe class RspSetupCharacter : FastHook<RspSetupCharacter.Delega
         // Skip if we are coming from ChangeCustomize.
         if (_metaState.CustomizeChangeCollection.Valid)
         {
-            Task.Result.Original.Invoke(drawObject, unk2, unk3, unk4, unk5);
+            Task.Result!.Original.Invoke(drawObject, unk2, unk3, unk4, unk5);
             return;
         }
 
         var collection = _collectionResolver.IdentifyCollection(drawObject, true);
         _metaState.RspCollection.Push(collection);
-        Task.Result.Original.Invoke(drawObject, unk2, unk3, unk4, unk5);
+        Task.Result!.Original.Invoke(drawObject, unk2, unk3, unk4, unk5);
         _metaState.RspCollection.Pop();
     }
 }

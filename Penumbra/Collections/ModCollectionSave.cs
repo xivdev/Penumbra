@@ -1,8 +1,11 @@
+using System.Text.Json;
+using Luna;
 using Newtonsoft.Json.Linq;
 using Penumbra.Services;
 using Newtonsoft.Json;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Settings;
+using JsonSerializer = Newtonsoft.Json.JsonSerializer;
 
 namespace Penumbra.Collections;
 
@@ -11,7 +14,7 @@ namespace Penumbra.Collections;
 /// </summary>
 internal readonly struct ModCollectionSave(ModStorage modStorage, ModCollection modCollection) : ISavable
 {
-    public string ToFilename(FilenameService fileNames)
+    public string ToFilePath(FilenameService fileNames)
         => fileNames.CollectionFile(modCollection);
 
     public string LogName(string _)
@@ -20,19 +23,14 @@ internal readonly struct ModCollectionSave(ModStorage modStorage, ModCollection 
     public string TypeName
         => "Collection";
 
-    public void Save(StreamWriter writer)
+    public void Save(Stream stream)
     {
-        using var j = new JsonTextWriter(writer);
-        j.Formatting = Formatting.Indented;
-        var x = JsonSerializer.Create(new JsonSerializerSettings { Formatting = Formatting.Indented });
+        using var j = new Utf8JsonWriter(stream, JsonFunctions.WriterOptions);
         j.WriteStartObject();
-        j.WritePropertyName("Version");
-        j.WriteValue(ModCollection.CurrentVersion);
-        j.WritePropertyName(nameof(ModCollectionIdentity.Id));
-        j.WriteValue(modCollection.Identity.Identifier);
-        j.WritePropertyName(nameof(ModCollectionIdentity.Name));
-        j.WriteValue(modCollection.Identity.Name);
-        j.WritePropertyName("Settings");
+        j.WriteNumber("Version"u8, ModCollection.CurrentVersion);
+        j.WriteString("Id"u8, modCollection.Identity.Identifier);
+        j.WriteString("Name"u8, modCollection.Identity.Name);
+        j.WritePropertyName("Settings"u8);
 
         // Write all used and unused settings by mod directory name.
         j.WriteStartObject();
@@ -40,7 +38,7 @@ internal readonly struct ModCollectionSave(ModStorage modStorage, ModCollection 
         for (var i = 0; i < modCollection.Settings.Count; ++i)
         {
             var settings = modCollection.GetOwnSettings(i);
-            if (settings != null)
+            if (settings is not null)
                 list.Add((modStorage[i].ModPath.Name, new ModSettings.SavedSettings(settings, modStorage[i])));
         }
 
@@ -50,14 +48,17 @@ internal readonly struct ModCollectionSave(ModStorage modStorage, ModCollection 
         foreach (var (modDir, settings) in list)
         {
             j.WritePropertyName(modDir);
-            x.Serialize(j, settings);
+            settings.Write(j);
         }
 
         j.WriteEndObject();
 
         // Inherit by collection name.
-        j.WritePropertyName("Inheritance");
-        x.Serialize(j, modCollection.Inheritance.Identifiers);
+        j.WritePropertyName("Inheritance"u8);
+        j.WriteStartArray();
+        foreach(var i in modCollection.Inheritance.Identifiers)
+            j.WriteStringValue(i);
+        j.WriteEndArray();
         j.WriteEndObject();
     }
 
@@ -80,7 +81,7 @@ internal readonly struct ModCollectionSave(ModStorage modStorage, ModCollection 
             var obj = JObject.Parse(File.ReadAllText(file.FullName));
             version = obj["Version"]?.ToObject<int>() ?? 0;
             name    = obj[nameof(ModCollectionIdentity.Name)]?.ToObject<string>() ?? string.Empty;
-            id      = obj[nameof(ModCollectionIdentity.Id)]?.ToObject<Guid>() ?? (version == 1 ? Guid.NewGuid() : Guid.Empty);
+            id      = obj[nameof(ModCollectionIdentity.Id)]?.ToObject<Guid>() ?? (version is 1 ? Guid.NewGuid() : Guid.Empty);
             // Custom deserialization that is converted with the constructor. 
             settings    = obj["Settings"]?.ToObject<Dictionary<string, ModSettings.SavedSettings>>() ?? settings;
             inheritance = obj["Inheritance"]?.ToObject<List<string>>() ?? inheritance;

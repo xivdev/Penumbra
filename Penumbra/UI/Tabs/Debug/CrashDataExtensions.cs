@@ -1,6 +1,4 @@
-using Dalamud.Bindings.ImGui;
-using OtterGui;
-using OtterGui.Raii;
+using ImSharp;
 using Penumbra.CrashHandler;
 
 namespace Penumbra.UI.Tabs.Debug;
@@ -9,102 +7,105 @@ public static class CrashDataExtensions
 {
     public static void DrawMeta(this CrashData data)
     {
-        using (ImRaii.Group())
+        using (Im.Group())
         {
-            ImGui.TextUnformatted(nameof(data.Mode));
-            ImGui.TextUnformatted(nameof(data.CrashTime));
-            ImGui.TextUnformatted("Current Age");
-            ImGui.TextUnformatted(nameof(data.Version));
-            ImGui.TextUnformatted(nameof(data.GameVersion));
-            ImGui.TextUnformatted(nameof(data.ExitCode));
-            ImGui.TextUnformatted(nameof(data.ProcessId));
-            ImGui.TextUnformatted(nameof(data.TotalModdedFilesLoaded));
-            ImGui.TextUnformatted(nameof(data.TotalCharactersLoaded));
-            ImGui.TextUnformatted(nameof(data.TotalVFXFuncsInvoked));
+            Im.Text("Mode"u8);
+            Im.Text("Crash Time"u8);
+            Im.Text("Current Age"u8);
+            Im.Text("Version"u8);
+            Im.Text("Game Version"u8);
+            Im.Text("Exit Code"u8);
+            Im.Text("Process ID"u8);
+            Im.Text("Total Modded Files Loaded"u8);
+            Im.Text("Total Characters Loaded"u8);
+            Im.Text("Total VFX Functions Invoked"u8);
         }
 
-        ImGui.SameLine();
-        using (ImRaii.Group())
+        Im.Line.Same();
+        using (Im.Group())
         {
-            ImGui.TextUnformatted(data.Mode);
-            ImGui.TextUnformatted(data.CrashTime.ToString());
-            ImGui.TextUnformatted((DateTimeOffset.UtcNow - data.CrashTime).ToString(@"dd\.hh\:mm\:ss"));
-            ImGui.TextUnformatted(data.Version);
-            ImGui.TextUnformatted(data.GameVersion);
-            ImGui.TextUnformatted(data.ExitCode.ToString());
-            ImGui.TextUnformatted(data.ProcessId.ToString());
-            ImGui.TextUnformatted(data.TotalModdedFilesLoaded.ToString());
-            ImGui.TextUnformatted(data.TotalCharactersLoaded.ToString());
-            ImGui.TextUnformatted(data.TotalVFXFuncsInvoked.ToString());
+            Im.Text(data.Mode);
+            Im.Text($"{data.CrashTime}");
+            Im.Text((DateTimeOffset.UtcNow - data.CrashTime).ToString(@"dd\.hh\:mm\:ss"));
+            Im.Text(data.Version);
+            Im.Text(data.GameVersion);
+            Im.Text($"{data.ExitCode}");
+            Im.Text($"{data.ProcessId}");
+            Im.Text($"{data.TotalModdedFilesLoaded}");
+            Im.Text($"{data.TotalCharactersLoaded}");
+            Im.Text($"{data.TotalVFXFuncsInvoked}");
         }
     }
 
     public static void DrawCharacters(this CrashData data)
     {
-        using var tree = ImRaii.TreeNode("Last Characters");
+        using var tree = Im.Tree.Node("Last Characters"u8);
         if (!tree)
             return;
 
-        using var table = ImRaii.Table("##characterTable", 6,
-            ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInner);
+        using var table = Im.Table.Begin("##characterTable"u8, 6,
+            TableFlags.SizingFixedFit | TableFlags.RowBackground | TableFlags.BordersInner);
         if (!table)
             return;
 
-        ImGuiClip.ClippedDraw(data.LastCharactersLoaded, character =>
+        using var clipper = new Im.ListClipper(data.LastCharactersLoaded.Count, Im.Style.TextHeightWithSpacing);
+        foreach (var character in clipper.Iterate(data.LastCharactersLoaded))
         {
-            ImGuiUtil.DrawTableColumn(character.Age.ToString(CultureInfo.InvariantCulture));
-            ImGuiUtil.DrawTableColumn(character.ThreadId.ToString());
-            ImGuiUtil.DrawTableColumn(character.CharacterName);
-            ImGuiUtil.DrawTableColumn(character.CollectionId.ToString());
-            ImGuiUtil.DrawTableColumn(character.CharacterAddress);
-            ImGuiUtil.DrawTableColumn(character.Timestamp.ToString());
-        }, ImGui.GetTextLineHeightWithSpacing());
+            table.DrawColumn($"{character.Age}");
+            table.DrawColumn($"{character.ThreadId}");
+            table.DrawColumn(character.CharacterName);
+            table.DrawColumn($"{character.CollectionId}");
+            table.DrawColumn(character.CharacterAddress);
+            table.DrawColumn($"{character.Timestamp}");
+        }
     }
 
     public static void DrawFiles(this CrashData data)
     {
-        using var tree = ImRaii.TreeNode("Last Files");
+        using var tree = Im.Tree.Node("Last Files"u8);
         if (!tree)
             return;
 
-        using var table = ImRaii.Table("##filesTable", 8,
-            ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInner);
+        using var table = Im.Table.Begin("##filesTable"u8, 8,
+            TableFlags.SizingFixedFit | TableFlags.RowBackground | TableFlags.BordersInner);
         if (!table)
             return;
 
-        ImGuiClip.ClippedDraw(data.LastModdedFilesLoaded, file =>
+        using var clipper = new Im.ListClipper(data.LastModdedFilesLoaded.Count, Im.Style.TextHeightWithSpacing);
+        foreach (var file in clipper.Iterate(data.LastModdedFilesLoaded))
         {
-            ImGuiUtil.DrawTableColumn(file.Age.ToString(CultureInfo.InvariantCulture));
-            ImGuiUtil.DrawTableColumn(file.ThreadId.ToString());
-            ImGuiUtil.DrawTableColumn(file.ActualFileName);
-            ImGuiUtil.DrawTableColumn(file.RequestedFileName);
-            ImGuiUtil.DrawTableColumn(file.CharacterName);
-            ImGuiUtil.DrawTableColumn(file.CollectionId.ToString());
-            ImGuiUtil.DrawTableColumn(file.CharacterAddress);
-            ImGuiUtil.DrawTableColumn(file.Timestamp.ToString());
-        }, ImGui.GetTextLineHeightWithSpacing());
+            table.DrawColumn($"{file.Age}");
+            table.DrawColumn($"{file.ThreadId}");
+            table.DrawColumn(file.ActualFileName);
+            table.DrawColumn(file.RequestedFileName);
+            table.DrawColumn(file.CharacterName);
+            table.DrawColumn($"{file.CollectionId}");
+            table.DrawColumn(file.CharacterAddress);
+            table.DrawColumn($"{file.Timestamp}");
+        }
     }
 
     public static void DrawVfxInvocations(this CrashData data)
     {
-        using var tree = ImRaii.TreeNode("Last VFX Invocations");
+        using var tree = Im.Tree.Node("Last VFX Invocations"u8);
         if (!tree)
             return;
 
-        using var table = ImRaii.Table("##vfxTable", 7,
-            ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInner);
+        using var table = Im.Table.Begin("##vfxTable"u8, 7,
+            TableFlags.SizingFixedFit | TableFlags.RowBackground | TableFlags.BordersInner);
         if (!table)
             return;
 
-        ImGuiClip.ClippedDraw(data.LastVFXFuncsInvoked, vfx =>
+        using var clipper = new Im.ListClipper(data.LastVFXFuncsInvoked.Count, Im.Style.TextHeightWithSpacing);
+        foreach (var vfx in clipper.Iterate(data.LastVFXFuncsInvoked))
         {
-            ImGuiUtil.DrawTableColumn(vfx.Age.ToString(CultureInfo.InvariantCulture));
-            ImGuiUtil.DrawTableColumn(vfx.ThreadId.ToString());
-            ImGuiUtil.DrawTableColumn(vfx.InvocationType);
-            ImGuiUtil.DrawTableColumn(vfx.CharacterName);
-            ImGuiUtil.DrawTableColumn(vfx.CollectionId.ToString());
-            ImGuiUtil.DrawTableColumn(vfx.CharacterAddress);
-            ImGuiUtil.DrawTableColumn(vfx.Timestamp.ToString());
-        }, ImGui.GetTextLineHeightWithSpacing());
+            table.DrawColumn($"{vfx.Age}");
+            table.DrawColumn($"{vfx.ThreadId}");
+            table.DrawColumn(vfx.InvocationType);
+            table.DrawColumn(vfx.CharacterName);
+            table.DrawColumn($"{vfx.CollectionId}");
+            table.DrawColumn(vfx.CharacterAddress);
+            table.DrawColumn($"{vfx.Timestamp}");
+        }
     }
 }
