@@ -22,8 +22,10 @@ public sealed class ModFileSystemCache : FileSystemCache<ModFileSystemCache.ModD
         Parent.Communicator.CollectionChange.Subscribe(OnCollectionChange, CollectionChange.Priority.ModFileSystemCache);
         Parent.Communicator.CollectionInheritanceChanged.Subscribe(OnInheritanceChange,
             CollectionInheritanceChanged.Priority.ModFileSystemCache);
-        Parent.Communicator.ModSettingChanged.Subscribe(OnSettingChangeBeforeConflicts, ModSettingChanged.Priority.ModFileSystemCacheBeforeConflicts);
-        Parent.Communicator.ModSettingChanged.Subscribe(OnSettingChangeAfterConflicts, ModSettingChanged.Priority.ModFileSystemCacheAfterConflicts);
+        Parent.Communicator.ModSettingChanged.Subscribe(OnSettingChangeBeforeConflicts,
+            ModSettingChanged.Priority.ModFileSystemCacheBeforeConflicts);
+        Parent.Communicator.ModSettingChanged.Subscribe(OnSettingChangeAfterConflicts,
+            ModSettingChanged.Priority.ModFileSystemCacheAfterConflicts);
         Parent.Communicator.ModDataChanged.Subscribe(OnModDataChange, ModDataChanged.Priority.ModFileSystemCache);
     }
 
@@ -42,7 +44,8 @@ public sealed class ModFileSystemCache : FileSystemCache<ModFileSystemCache.ModD
           | ModDataChangeType.LocalTags
           | ModDataChangeType.Favorite
           | ModDataChangeType.ImportDate;
-        if ((arguments.Type & relevantFlags) is not 0 && !Filter.IsEmpty)
+        if ((arguments.Type & relevantFlags) is not 0 && !Filter.IsEmpty
+         || arguments.Type.HasFlag(ModDataChangeType.ImportDate) && Parent.SortMode is ImportDate or InverseImportDate)
             VisibleDirty = true;
 
         if (arguments.Mod.Node is { } node && AllNodes.TryGetValue(node, out var cache))
