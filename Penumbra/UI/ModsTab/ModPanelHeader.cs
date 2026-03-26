@@ -16,12 +16,13 @@ public class ModPanelHeader : IDisposable
     private readonly IFontHandle _nameFont;
 
     private readonly CommunicatorService _communicator;
+    private readonly ModSelection        _modSelection;
     private          float               _lastPreSettingsHeight;
-    private          bool                _dirty = true;
 
-    public ModPanelHeader(IDalamudPluginInterface pi, CommunicatorService communicator)
+    public ModPanelHeader(IDalamudPluginInterface pi, CommunicatorService communicator, ModSelection modSelection)
     {
         _communicator = communicator;
+        _modSelection = modSelection;
         _nameFont     = pi.UiBuilder.FontAtlas.NewGameFontHandle(new GameFontStyle(GameFontFamilyAndSize.Jupiter23));
         _communicator.ModDataChanged.Subscribe(OnModDataChange, ModDataChanged.Priority.ModPanelHeader);
     }
@@ -32,7 +33,9 @@ public class ModPanelHeader : IDisposable
     /// </summary>
     public void Draw()
     {
-        UpdateModData();
+        if (!UpdateModData())
+            return;
+
         var height    = Im.ContentRegion.Available.Y;
         var maxHeight = 3 * height / 4;
         using var child = _lastPreSettingsHeight > maxHeight && _communicator.PreSettingsTabBarDraw.HasSubscribers
@@ -45,26 +48,23 @@ public class ModPanelHeader : IDisposable
             DrawSecondRow(offset);
         }
 
-        _communicator.PreSettingsTabBarDraw.Invoke(new PreSettingsTabBarDraw.Arguments(_mod, Im.Item.Size.X, _nameWidth));
+        _communicator.PreSettingsTabBarDraw.Invoke(new PreSettingsTabBarDraw.Arguments(_mod!, Im.Item.Size.X, _nameWidth));
         _lastPreSettingsHeight = Im.Cursor.Position.Y;
-    }
-
-    public void ChangeMod(Mod mod)
-    {
-        _mod   = mod;
-        _dirty = true;
     }
 
     /// <summary>
     /// Update all mod header data. Should someone change frame padding or item spacing,
     /// or his default font, this will break, but he will just have to select a different mod to restore.
     /// </summary>
-    private void UpdateModData()
+    private bool UpdateModData()
     {
-        if (!_dirty)
-            return;
+        if (_mod == _modSelection.Mod)
+            return true;
 
-        _dirty                 = false;
+        _mod = _modSelection.Mod;
+        if (_mod is null)
+            return false;
+
         _lastPreSettingsHeight = 0;
         // Name
         var name = $" {_mod.Name} ";
@@ -104,6 +104,8 @@ public class ModPanelHeader : IDisposable
                 : Im.Font.CalculateSize(_modWebsiteButton).X;
             _secondRowWidth = _modAuthorWidth + _modWebsiteButtonWidth + Im.Style.ItemSpacing.X;
         }
+
+        return true;
     }
 
     public void Dispose()
@@ -113,7 +115,7 @@ public class ModPanelHeader : IDisposable
     }
 
     // Header data.
-    private Mod    _mod              = null!;
+    private Mod?   _mod;
     private string _modName          = string.Empty;
     private string _modAuthor        = string.Empty;
     private string _modVersion       = string.Empty;
@@ -253,6 +255,7 @@ public class ModPanelHeader : IDisposable
     {
         const ModDataChangeType relevantChanges =
             ModDataChangeType.Author | ModDataChangeType.Name | ModDataChangeType.Website | ModDataChangeType.Version;
-        _dirty = (arguments.Type & relevantChanges) is not 0;
+        if ((arguments.Type & relevantChanges) is not 0)
+            _mod = null;
     }
 }
