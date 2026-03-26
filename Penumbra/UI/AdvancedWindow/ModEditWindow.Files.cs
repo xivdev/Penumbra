@@ -22,7 +22,7 @@ public partial class ModEditWindow
     private readonly OverviewTable         _overviewTable;
 
     private bool CheckFilter(FileRegistry registry)
-        => _fileFilter.Length is 0 || registry.File.FullName.Contains(_fileFilter, StringComparison.OrdinalIgnoreCase);
+        => _fileFilter.Length is 0 || registry.File.FullName.Contains(_fileFilter, StringComparison.OrdinalIgnoreCase) || registry.SubModUsage.Any(s => s.Item1 == _editor.Option && s.Item2.Contains(_fileFilter, StringComparison.OrdinalIgnoreCase));
 
     private bool CheckFilter((int, FileRegistry) p)
         => CheckFilter(p.Item2);

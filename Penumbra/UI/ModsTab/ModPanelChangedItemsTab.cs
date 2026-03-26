@@ -140,12 +140,12 @@ public sealed class ModPanelChangedItemsTab(
                     // reversed
                     var preferred = _lastSelected.PreferredChangedItems.Contains(i2.Item.Id)
                         .CompareTo(_lastSelected.PreferredChangedItems.Contains(i1.Item.Id));
-                    if (preferred != 0)
+                    if (preferred is not 0)
                         return preferred;
 
                     // reversed
                     var count = i2.Count.CompareTo(i1.Count);
-                    if (count != 0)
+                    if (count is not 0)
                         return count;
 
                     return string.Compare(i1.Item.Name, i2.Item.Name, StringComparison.Ordinal);
@@ -177,7 +177,7 @@ public sealed class ModPanelChangedItemsTab(
             void AddList(List<IdentifiedItem> list)
             {
                 var mainItem = list[0];
-                if (list.Count == 1)
+                if (list.Count is 1)
                 {
                     Data.Add(Container.Single(mainItem.Item.Name, mainItem));
                 }
@@ -233,12 +233,12 @@ public sealed class ModPanelChangedItemsTab(
             .Push(ImGuiColor.ButtonActive,  Rgba32.Transparent)
             .Push(ImGuiColor.ButtonHovered, Rgba32.Transparent);
 
+        cache.Update(_mod, drawer, config.Filters.ModChangedItemTypeFilter, config.ChangedItemDisplay);
         using var table = Im.Table.Begin("##changedItems"u8, cache.AnyExpandable ? 2 : 1, TableFlags.RowBackground | TableFlags.ScrollY,
             Im.ContentRegion.Available);
         if (!table)
             return;
 
-        cache.Update(_mod, drawer, config.Filters.ModChangedItemTypeFilter, config.ChangedItemDisplay);
         _starColor = ColorId.ChangedItemPreferenceStar.Value();
         if (cache.AnyExpandable)
         {
