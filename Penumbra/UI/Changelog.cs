@@ -69,6 +69,10 @@ public class PenumbraChangelog : IUiService
 
     #region Changelogs
 
+    private static void Add1_6_1_0(Changelog log)
+        => log.NextVersion("Version 1.6.1.0"u8)
+            .RegisterEntry("Anything related to 'forbidden files' has been renamed to 'reserved files' to make it sound less scary."u8);
+
     private static void Add1_6_0_0(Changelog log)
         => log.NextVersion("Version 1.6.0.0"u8)
             .RegisterImportant(

@@ -2,8 +2,8 @@ using ImSharp;
 
 namespace Penumbra.UI.ManagementTab;
 
-public sealed class ForbiddenFileCacheObject(ForbiddenFileRedirection redirection)
-    : RedirectionCacheObject<ForbiddenFileRedirection>(redirection)
+public sealed class ReservedFileCacheObject(ReservedFileRedirection redirection)
+    : RedirectionCacheObject<ReservedFileRedirection>(redirection)
 {
     public static readonly StringPair Missing   = new("Missing", new StringU8("Missing"u8));
     public static readonly StringPair Broken    = new("Broken", new StringU8("Broken"u8));

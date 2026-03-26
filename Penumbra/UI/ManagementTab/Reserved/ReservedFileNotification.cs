@@ -1,4 +1,3 @@
-using System.Collections.Frozen;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.ImGuiNotification.EventArgs;
@@ -7,13 +6,11 @@ using Luna;
 using Penumbra.Api.Enums;
 using Penumbra.Communication;
 using Penumbra.Mods.Editor;
-using Penumbra.Services;
 using Penumbra.String.Classes;
-using Penumbra.UI.ManagementTab;
 
-namespace Penumbra.UI;
+namespace Penumbra.UI.ManagementTab;
 
-public sealed class ForbiddenFileNotification(
+public sealed class ReservedFileNotification(
     Services.MessageService service,
     UiNavigator navigator)
     : INotificationAwareMessage, IService
@@ -22,7 +19,7 @@ public sealed class ForbiddenFileNotification(
 
     public bool IsRedirectionSupported(Utf8GamePath path, IMod mod, bool temporaryCollection)
     {
-        if (ForbiddenFilesTab.ForbiddenFiles.ContainsKey((uint)path.Path.Crc32))
+        if (ReservedFilesTab.ReservedFiles.ContainsKey((uint)path.Path.Crc32))
         {
             if (!temporaryCollection)
                 AddFile(path, mod);
@@ -80,14 +77,14 @@ public sealed class ForbiddenFileNotification(
         => NotificationType;
 
     string IMessage.NotificationMessage
-        => "Redirection of these files is forbidden because unexpected replacements will cause crashes.\n\n"
-          + "See Management -> Forbidden Files for more details.";
+        => "Redirection of these files is disabled because unexpected replacements will cause crashes.\n\n"
+          + "See Management -> Reserved Files for more details.";
 
     TimeSpan IMessage.NotificationDuration
         => NotificationDuration;
 
     string IMessage.NotificationTitle
-        => $"{_gatheredFiles.Count} Forbidden File{(_gatheredFiles.Count is 1 ? string.Empty : "s")} Encountered";
+        => $"{_gatheredFiles.Count} Reserved File{(_gatheredFiles.Count is 1 ? string.Empty : "s")} Encountered";
 
     string IMessage.LogMessage
         => string.Empty;
@@ -128,7 +125,7 @@ public sealed class ForbiddenFileNotification(
         _currentNotification = null;
     }
 
-    private sealed class StoredNotification(ForbiddenFileNotification parent, string file, string mod) : IMessage
+    private sealed class StoredNotification(ReservedFileNotification parent, string file, string mod) : IMessage
     {
         public NotificationType NotificationType
             => NotificationType.Warning;
@@ -147,7 +144,7 @@ public sealed class ForbiddenFileNotification(
         public SeString ChatMessage
             => SeString.Empty;
 
-        public StringU8 StoredMessage { get; } = new($"{file} in {mod}: Forbidden File Redirection.");
+        public StringU8 StoredMessage { get; } = new($"{file} in {mod}: Reserved File Redirection.");
         public StringU8 StoredTooltip { get; } = new($"File: {file}\nMod: {mod}");
 
         public void OnNotificationActions(INotificationDrawArgs args)
@@ -156,7 +153,7 @@ public sealed class ForbiddenFileNotification(
         public void OnRemoval()
         {
             parent._gatheredFiles.Remove((file, mod));
-            if (parent._currentNotification is {} notification)
+            if (parent._currentNotification is { } notification)
             {
                 if (parent._gatheredFiles.Count is 0)
                     notification.DismissNow();

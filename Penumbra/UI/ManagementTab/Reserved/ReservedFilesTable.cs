@@ -10,22 +10,22 @@ using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.ManagementTab;
 
-public sealed class ForbiddenFilesTable(ModManager mods, TextureManager textures, UiNavigator navigator, Configuration config)
-    : TableBase<ForbiddenFileCacheObject, ScannerTabCache<ForbiddenFileCacheObject, ForbiddenFileRedirection>>(new StringU8("##fft"u8),
+public sealed class ReservedFilesTable(ModManager mods, TextureManager textures, UiNavigator navigator, Configuration config)
+    : TableBase<ReservedFileCacheObject, ScannerTabCache<ReservedFileCacheObject, ReservedFileRedirection>>(new StringU8("##fft"u8),
         new ActionColumn(mods, config),
-        new GamePathColumn<ForbiddenFileCacheObject, ForbiddenFileRedirection> { Label = new StringU8("Game Path"u8) },
+        new GamePathColumn<ReservedFileCacheObject, ReservedFileRedirection> { Label = new StringU8("Game Path"u8) },
         new StateColumn { Label                                                        = new StringU8("State"u8) },
-        new TargetColumn<ForbiddenFileCacheObject, ForbiddenFileRedirection> { Label   = new StringU8("Target File"u8) },
+        new TargetColumn<ReservedFileCacheObject, ReservedFileRedirection> { Label   = new StringU8("Target File"u8) },
         new ModColumn(navigator) { Label                                               = new StringU8("Mod"u8) },
         new ContainerColumn(navigator) { Label                                         = new StringU8("Option"u8) })
 {
     private const bool DryRun = false;
 
     /// <remarks> Implemented in the cache due to use of scanner. </remarks>>
-    public override IEnumerable<ForbiddenFileCacheObject> GetItems()
+    public override IEnumerable<ReservedFileCacheObject> GetItems()
         => [];
 
-    protected override void PreDraw(in ScannerTabCache<ForbiddenFileCacheObject, ForbiddenFileRedirection> cache)
+    protected override void PreDraw(in ScannerTabCache<ReservedFileCacheObject, ReservedFileRedirection> cache)
     {
         cache.DrawScanButtons();
 
@@ -50,17 +50,17 @@ public sealed class ForbiddenFilesTable(ModManager mods, TextureManager textures
         }
     }
 
-    protected override ScannerTabCache<ForbiddenFileCacheObject, ForbiddenFileRedirection> CreateCache()
+    protected override ScannerTabCache<ReservedFileCacheObject, ReservedFileRedirection> CreateCache()
         => new Cache(mods, textures, this);
 
-    private sealed class Cache(ModManager mods, TextureManager textures, ForbiddenFilesTable parent)
-        : ScannerTabCache<ForbiddenFileCacheObject, ForbiddenFileRedirection>(parent, new ForbiddenFileScanner(mods, textures))
+    private sealed class Cache(ModManager mods, TextureManager textures, ReservedFilesTable parent)
+        : ScannerTabCache<ReservedFileCacheObject, ReservedFileRedirection>(parent, new ReservedFileScanner(mods, textures))
     {
-        protected override ForbiddenFileCacheObject Convert(ForbiddenFileRedirection obj)
+        protected override ReservedFileCacheObject Convert(ReservedFileRedirection obj)
             => new(obj);
     }
 
-    private sealed class ActionColumn : BasicColumn<ForbiddenFileCacheObject>
+    private sealed class ActionColumn : BasicColumn<ReservedFileCacheObject>
     {
         private readonly ModManager    _mods;
         private readonly Configuration _config;
@@ -73,7 +73,7 @@ public sealed class ForbiddenFilesTable(ModManager mods, TextureManager textures
             Flags   |= TableColumnFlags.NoSort | TableColumnFlags.NoResize;
         }
 
-        public override void PostDraw(in TableCache<ForbiddenFileCacheObject> cache)
+        public override void PostDraw(in TableCache<ReservedFileCacheObject> cache)
         {
             if (_deleteIndex is -1)
                 return;
@@ -82,7 +82,7 @@ public sealed class ForbiddenFilesTable(ModManager mods, TextureManager textures
             _deleteIndex = -1;
         }
 
-        public override void DrawColumn(in ForbiddenFileCacheObject item, int globalIndex)
+        public override void DrawColumn(in ReservedFileCacheObject item, int globalIndex)
         {
             var disabled = !_config.DeleteModModifier.IsActive();
             if (ImEx.Icon.Button(LunaStyle.DeleteIcon,
@@ -101,7 +101,7 @@ public sealed class ForbiddenFilesTable(ModManager mods, TextureManager textures
                             if (!DryRun)
                                 _mods.OptionEditor.SetFileSwaps(container, swaps);
                             Penumbra.Log.Debug(
-                                $"[ForbiddenFiles] Removed forbidden file swap {item.ScannedObject.GamePath} -> {item.ScannedObject.FilePath} in {container.Mod.Name} - {container.GetFullName()}.");
+                                $"[ReservedFiles] Removed reserved file swap {item.ScannedObject.GamePath} -> {item.ScannedObject.FilePath} in {container.Mod.Name} - {container.GetFullName()}.");
                         }
                     }
                     else
@@ -112,7 +112,7 @@ public sealed class ForbiddenFilesTable(ModManager mods, TextureManager textures
                             if (!DryRun)
                                 _mods.OptionEditor.SetFiles(container, redirections);
                             Penumbra.Log.Debug(
-                                $"[ForbiddenFiles] Removed forbidden file redirection {item.ScannedObject.GamePath} -> {item.ScannedObject.FilePath} in {container.Mod.Name} - {container.GetFullName()}.");
+                                $"[ReservedFiles] Removed reserved file redirection {item.ScannedObject.GamePath} -> {item.ScannedObject.FilePath} in {container.Mod.Name} - {container.GetFullName()}.");
                             if (file.Exists && ((Mod)container.Mod).AllDataContainers.All(c => !c.Files.ContainsValue(file)))
                                 DeleteFile(file);
                         }
@@ -126,45 +126,45 @@ public sealed class ForbiddenFilesTable(ModManager mods, TextureManager textures
                 Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"\nHold {_config.DeleteModModifier} while clicking to remove.");
         }
 
-        public override float ComputeWidth(IEnumerable<ForbiddenFileCacheObject> _)
+        public override float ComputeWidth(IEnumerable<ReservedFileCacheObject> _)
             => Im.Style.FrameHeight;
     }
 
-    private sealed class ModColumn(UiNavigator navigator) : ModColumn<ForbiddenFileCacheObject>(navigator)
+    private sealed class ModColumn(UiNavigator navigator) : ModColumn<ReservedFileCacheObject>(navigator)
     {
-        protected override Mod? GetMod(in ForbiddenFileCacheObject item, int globalIndex)
+        protected override Mod? GetMod(in ReservedFileCacheObject item, int globalIndex)
             => item.ScannedObject.Container.TryGetTarget(out var c) ? c.Mod as Mod : null;
 
-        protected override StringPair GetModName(in ForbiddenFileCacheObject item, int globalIndex)
+        protected override StringPair GetModName(in ReservedFileCacheObject item, int globalIndex)
             => item.Mod;
 
         private string _lastMod = string.Empty;
 
-        protected override bool MatchesLastItem(in ForbiddenFileCacheObject item)
+        protected override bool MatchesLastItem(in ReservedFileCacheObject item)
         {
             var ret = _lastMod == item.Mod.Utf16;
             _lastMod = item.Mod.Utf16;
             return ret;
         }
 
-        public override void PostDraw(in TableCache<ForbiddenFileCacheObject> cache)
+        public override void PostDraw(in TableCache<ReservedFileCacheObject> cache)
         {
             _lastMod = string.Empty;
         }
     }
 
-    private sealed class ContainerColumn(UiNavigator navigator) : ModColumn<ForbiddenFileCacheObject>(navigator)
+    private sealed class ContainerColumn(UiNavigator navigator) : ModColumn<ReservedFileCacheObject>(navigator)
     {
-        protected override Mod? GetMod(in ForbiddenFileCacheObject item, int globalIndex)
+        protected override Mod? GetMod(in ReservedFileCacheObject item, int globalIndex)
             => item.ScannedObject.Container.TryGetTarget(out var c) ? c.Mod as Mod : null;
 
-        protected override StringPair GetModName(in ForbiddenFileCacheObject item, int globalIndex)
+        protected override StringPair GetModName(in ReservedFileCacheObject item, int globalIndex)
             => item.Container;
 
         private string _lastMod       = string.Empty;
         private string _lastContainer = string.Empty;
 
-        protected override bool MatchesLastItem(in ForbiddenFileCacheObject item)
+        protected override bool MatchesLastItem(in ReservedFileCacheObject item)
         {
             var ret = _lastMod == item.Mod.Utf16 && _lastContainer == item.Container.Utf16;
             _lastMod       = item.Mod.Utf16;
@@ -172,22 +172,22 @@ public sealed class ForbiddenFilesTable(ModManager mods, TextureManager textures
             return ret;
         }
 
-        public override void PostDraw(in TableCache<ForbiddenFileCacheObject> cache)
+        public override void PostDraw(in TableCache<ReservedFileCacheObject> cache)
         {
             _lastMod       = string.Empty;
             _lastContainer = string.Empty;
         }
     }
 
-    private sealed class StateColumn : TextColumn<ForbiddenFileCacheObject>
+    private sealed class StateColumn : TextColumn<ReservedFileCacheObject>
     {
-        protected override string ComparisonText(in ForbiddenFileCacheObject item, int globalIndex)
+        protected override string ComparisonText(in ReservedFileCacheObject item, int globalIndex)
             => item.State;
 
-        protected override StringU8 DisplayText(in ForbiddenFileCacheObject item, int globalIndex)
+        protected override StringU8 DisplayText(in ReservedFileCacheObject item, int globalIndex)
             => item.State;
 
-        protected override void DrawTooltip(in ForbiddenFileCacheObject item, int globalIndex)
+        protected override void DrawTooltip(in ReservedFileCacheObject item, int globalIndex)
         {
             using var tt = Im.Tooltip.Begin();
             Im.Text(item.ScannedObject.FileSwap
@@ -201,7 +201,7 @@ public sealed class ForbiddenFilesTable(ModManager mods, TextureManager textures
                             : "This file is conceptually different from the original game file. The mod may have to be fixed by its creator.\n\nYou can freely remove this redirection to silence the warning, as it is not applied either way, but the mod may not work as intended."u8);
         }
 
-        public override void DrawColumn(in ForbiddenFileCacheObject item, int globalIndex)
+        public override void DrawColumn(in ReservedFileCacheObject item, int globalIndex)
         {
             base.DrawColumn(in item, globalIndex);
             if (item.State.Utf16 is not "Different")
@@ -213,11 +213,11 @@ public sealed class ForbiddenFilesTable(ModManager mods, TextureManager textures
                 DrawTooltip(item, globalIndex);
         }
 
-        public override float ComputeWidth(IEnumerable<ForbiddenFileCacheObject> _)
-            => ForbiddenFileCacheObject.Different.Utf8.CalculateSize().X + Im.Style.FrameHeightWithSpacing;
+        public override float ComputeWidth(IEnumerable<ReservedFileCacheObject> _)
+            => ReservedFileCacheObject.Different.Utf8.CalculateSize().X + Im.Style.FrameHeightWithSpacing;
     }
 
-    private void RemoveRedundant(ScannerTabCache<ForbiddenFileCacheObject, ForbiddenFileRedirection> cache)
+    private void RemoveRedundant(ScannerTabCache<ReservedFileCacheObject, ReservedFileRedirection> cache)
     {
         var files   = new SetDictionary<Mod, FullPath>();
         var indices = new List<int>(cache.AllItems.Count);
@@ -236,7 +236,7 @@ public sealed class ForbiddenFilesTable(ModManager mods, TextureManager textures
                 {
                     swaps.Remove(redirection.GamePath);
                     Penumbra.Log.Debug(
-                        $"[ForbiddenFiles] Removed forbidden file swap {redirection.GamePath} -> {redirection.FilePath} in {container.Mod.Name} - {container.GetFullName()}.");
+                        $"[ReservedFiles] Removed reserved file swap {redirection.GamePath} -> {redirection.FilePath} in {container.Mod.Name} - {container.GetFullName()}.");
                     indices.Add(index);
                 }
                 else if (redirection.ConceptuallyEqual || redirection.Missing || redirection.Broken)
@@ -244,7 +244,7 @@ public sealed class ForbiddenFilesTable(ModManager mods, TextureManager textures
                     redirections.Remove(redirection.GamePath, out var file);
                     files.TryAdd((Mod)container.Mod, file);
                     Penumbra.Log.Debug(
-                        $"[ForbiddenFiles] Removed forbidden file redirection {redirection.GamePath} -> {redirection.FilePath} in {container.Mod.Name} - {container.GetFullName()} because the target file was {(redirection.Broken ? "broken." : redirection.Missing ? "missing." : "conceptually equal.")}");
+                        $"[ReservedFiles] Removed reserved file redirection {redirection.GamePath} -> {redirection.FilePath} in {container.Mod.Name} - {container.GetFullName()} because the target file was {(redirection.Broken ? "broken." : redirection.Missing ? "missing." : "conceptually equal.")}");
                     indices.Add(index);
                 }
             }
@@ -252,7 +252,7 @@ public sealed class ForbiddenFilesTable(ModManager mods, TextureManager textures
             if (swaps.Count < container.FileSwaps.Count)
             {
                 Penumbra.Log.Information(
-                    $"[ForbiddenFiles] Removed {container.FileSwaps.Count - swaps.Count} forbidden file swaps in {container.Mod.Name} - {container.GetFullName()}.");
+                    $"[ReservedFiles] Removed {container.FileSwaps.Count - swaps.Count} reserved file swaps in {container.Mod.Name} - {container.GetFullName()}.");
                 if (!DryRun)
                     mods.OptionEditor.SetFileSwaps(container, swaps);
             }
@@ -260,7 +260,7 @@ public sealed class ForbiddenFilesTable(ModManager mods, TextureManager textures
             if (redirections.Count < container.Files.Count)
             {
                 Penumbra.Log.Information(
-                    $"[ForbiddenFiles] Removed {container.Files.Count - redirections.Count} forbidden file redirections in {container.Mod.Name} - {container.GetFullName()}.");
+                    $"[ReservedFiles] Removed {container.Files.Count - redirections.Count} reserved file redirections in {container.Mod.Name} - {container.GetFullName()}.");
                 if (!DryRun)
                     mods.OptionEditor.SetFiles(container, redirections);
             }
@@ -291,12 +291,12 @@ public sealed class ForbiddenFilesTable(ModManager mods, TextureManager textures
             if (!DryRun)
                 File.Delete(file.FullName);
             Penumbra.Log.Information(
-                $"[ForbiddenFiles] Deleted now unused file {file.FullName} after removing it from forbidden file redirections.");
+                $"[ReservedFiles] Deleted now unused file {file.FullName} after removing it from reserved file redirections.");
         }
         catch (Exception ex)
         {
             Penumbra.Log.Error(
-                $"[ForbiddenFiles] Unable to delete forbidden file {file.FullName} removed from all redirections:\n{ex}");
+                $"[ReservedFiles] Unable to delete reserved file {file.FullName} removed from all redirections:\n{ex}");
         }
     }
 }

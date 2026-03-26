@@ -3,7 +3,7 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.UI.ManagementTab;
 
-public sealed class ForbiddenFileRedirection(
+public sealed class ReservedFileRedirection(
     Utf8GamePath path,
     FullPath redirection,
     IModDataContainer container,
