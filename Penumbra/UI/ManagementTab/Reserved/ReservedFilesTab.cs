@@ -53,7 +53,7 @@ public sealed class ReservedFilesTab(ModManager mods, TextureManager textures, U
     }
 
     public ManagementTabType Identifier
-        => ManagementTabType.ForbiddenFiles;
+        => ManagementTabType.ReservedFiles;
 
     private static void DrawTooltip()
     {

@@ -106,7 +106,7 @@ public sealed class ReservedFileNotification(
             navigator.OpenTo(TabType.Messages);
         Im.Line.SameInner();
         if (Im.Button("Open Management"u8, width))
-            navigator.OpenTo(ManagementTabType.ForbiddenFiles);
+            navigator.OpenTo(ManagementTabType.ReservedFiles);
     }
 
     void INotificationAwareMessage.OnNotificationCreated(IActiveNotification notification)
