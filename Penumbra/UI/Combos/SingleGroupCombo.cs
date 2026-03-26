@@ -15,7 +15,13 @@ public sealed class SingleGroupCombo : FilterComboBase<SingleGroupCombo.GroupCac
     }
 
     public SingleGroupCombo()
-        => Filter  = new OptionFilter();
+    {
+        Filter       = new OptionFilter();
+        ComputeWidth = true;
+    }
+
+    protected override FilterComboBaseCache<GroupCache> CreateCache()
+        => new Cache(this);
 
     public readonly record struct GroupCache(int OptionIndex, StringU8 Name, StringU8 Description);
 
@@ -54,4 +60,13 @@ public sealed class SingleGroupCombo : FilterComboBase<SingleGroupCombo.GroupCac
 
     protected override bool IsSelected(GroupCache item, int globalIndex)
         => item.OptionIndex == _currentOption.AsIndex;
+
+    private sealed class Cache(SingleGroupCombo parent) : FilterComboBaseCache<GroupCache>(parent)
+    {
+        protected override void ComputeWidth()
+        {
+            ComboWidth = AllItems.Max(i => i.Name.CalculateSize().X + (i.Description.Length > 0 ? Im.Style.FrameHeightWithSpacing : 0))
+              + 2 * Im.Style.FramePadding.X + Im.Style.ScrollbarSize;
+        }
+    }
 }
