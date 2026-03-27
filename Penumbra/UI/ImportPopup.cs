@@ -3,9 +3,12 @@ using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.ImGuiNotification.EventArgs;
 using ImSharp;
 using Luna;
+using Penumbra.Api.Enums;
+using Penumbra.Communication;
 using Penumbra.Import.Structs;
 using Penumbra.Mods.Manager;
 using MessageService = Penumbra.Services.MessageService;
+using MouseButton = ImSharp.MouseButton;
 using Notification = Luna.Notification;
 
 namespace Penumbra.UI;
@@ -15,10 +18,12 @@ public sealed class ImportPopup : Window, INotificationAwareMessage
 {
     public const string WindowLabel = "Penumbra Import Status";
 
-    private readonly        ModImportManager _modImportManager;
-    private readonly        MessageService   _messageService;
-    private readonly        Configuration    _configuration;
-    private static readonly Vector2          OneHalf = Vector2.One / 2;
+    private readonly ModImportManager _modImportManager;
+    private readonly MessageService   _messageService;
+    private readonly Configuration    _configuration;
+    private readonly UiNavigator      _navigator;
+
+    private static readonly Vector2 OneHalf = Vector2.One / 2;
 
     private IActiveNotification? _notification;
     private string               _notificationTitle      = string.Empty;
@@ -34,7 +39,7 @@ public sealed class ImportPopup : Window, INotificationAwareMessage
     public bool WasDrawn      { get; private set; }
     public bool PopupWasDrawn { get; private set; }
 
-    public ImportPopup(ModImportManager modImportManager, MessageService messageService, Configuration configuration)
+    public ImportPopup(ModImportManager modImportManager, MessageService messageService, Configuration configuration, UiNavigator navigator)
         : base(WindowLabel,
             WindowFlags.NoCollapse
           | WindowFlags.NoDecoration
@@ -50,6 +55,7 @@ public sealed class ImportPopup : Window, INotificationAwareMessage
         _modImportManager   = modImportManager;
         _messageService     = messageService;
         _configuration      = configuration;
+        _navigator          = navigator;
         DisableWindowSounds = true;
         IsOpen              = true;
         RespectCloseHotkey  = false;
@@ -105,7 +111,10 @@ public sealed class ImportPopup : Window, INotificationAwareMessage
                 _notification?.DismissNow();
             }
             else if (_notification is null)
+            {
                 _messageService.AddMessage(this, false, true, false);
+            }
+
             return;
         }
 
@@ -135,7 +144,7 @@ public sealed class ImportPopup : Window, INotificationAwareMessage
         }
 
         terminate |= import.State is ImporterState.Done
-            ? Im.Button("Close"u8, Im.ContentRegion.Available with { Y = 0} )
+            ? Im.Button("Close"u8, Im.ContentRegion.Available with { Y = 0 })
             : import.DrawCancelButton(Im.ContentRegion.Available with { Y = 0 });
         if (terminate)
             _modImportManager.ClearImport();
@@ -185,27 +194,29 @@ public sealed class ImportPopup : Window, INotificationAwareMessage
 
     void IMessage.OnNotificationActions(INotificationDrawArgs args)
     {
+        var width = new Vector2((Im.ContentRegion.Available.X - Im.GetStyle().ItemSpacing.X) * 0.5f, 0);
         if (_notificationEnded)
         {
-            if (Im.Button("Open Report"u8, Im.ContentRegion.Available with { Y = 0 }))
-            {
-                _openPopup = true;
-                _notification?.DismissNow();
-            }
-
-            if (Im.Window.Hovered() && Im.Mouse.IsClicked(MouseButton.Middle))
-                _notification?.DismissNow();
-        }
-        else
-        {
-            if (Im.Button("Show Details"u8, new Vector2((Im.ContentRegion.Available.X - Im.GetStyle().ItemSpacing.X) * 0.5f, 0.0f)))
+            if (Im.Button("Open Report"u8, width))
             {
                 _openPopup = true;
                 _notification?.DismissNow();
             }
 
             Im.Line.Same();
-            if (_modImportManager.IsImporting(out var import) && import.DrawCancelButton(-Vector2.UnitX))
+            if (Im.Button("Open Mods"u8, width))
+                _navigator.OpenTo(TabType.Mods);
+        }
+        else
+        {
+            if (Im.Button("Show Details"u8, width))
+            {
+                _openPopup = true;
+                _notification?.DismissNow();
+            }
+
+            Im.Line.Same();
+            if (_modImportManager.IsImporting(out var import) && import.DrawCancelButton(width))
             {
                 _modImportManager.ClearImport();
                 _notification?.DismissNow();
