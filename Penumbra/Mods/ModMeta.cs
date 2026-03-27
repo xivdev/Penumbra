@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Dalamud.Interface.ImGuiNotification;
 using ImSharp;
 using Luna;
 using Newtonsoft.Json.Linq;
@@ -83,7 +84,7 @@ public readonly struct ModMeta(Mod mod) : ISavable
 
         if (!File.Exists(metaFile))
         {
-            Penumbra.Log.Debug($"No mod meta found for {mod.ModPath.Name}.");
+            Penumbra.Messager.NotificationMessage(new Exception("File Missing."), $"No Metadata found for\n\n\t{mod.ModPath.Name}\n\nSkipped loading mod.", $"No mod meta found for {mod.ModPath.Name}.", NotificationType.Error);
             return ModDataChangeType.Deletion;
         }
 
@@ -167,7 +168,8 @@ public readonly struct ModMeta(Mod mod) : ISavable
         }
         catch (Exception e)
         {
-            Penumbra.Log.Error($"Could not load mod meta for {metaFile}:\n{e}");
+            Penumbra.Messager.NotificationMessage(e, $"Failure reading Metadata for\n\n\t{mod.ModPath.Name}\n\nSkipped loading Mod.",
+                $"Could not load mod meta for {metaFile}", NotificationType.Error);
             return ModDataChangeType.Deletion;
         }
 

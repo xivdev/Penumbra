@@ -6,6 +6,7 @@ using Penumbra.GameData.Enums;
 using Penumbra.GameData.Files.AtchStructs;
 using Penumbra.GameData.Interop;
 using Penumbra.GameData.Structs;
+using Penumbra.Mods.SubMods;
 using Penumbra.Util;
 using ImcEntry = Penumbra.GameData.Structs.ImcEntry;
 
@@ -928,6 +929,12 @@ public class MetaDictionary
         return array;
     }
 
+    private static readonly ThreadLocal<WeakReference<IModDataContainer>> CurrentContainer =
+        new(() => new WeakReference<IModDataContainer>(null!));
+
+    public static void SetCurrentContainer(IModDataContainer? container)
+        => CurrentContainer.Value!.SetTarget(container!);
+
     private class Converter : JsonConverter<MetaDictionary>
     {
         public override void WriteJson(JsonWriter writer, MetaDictionary? value, JsonSerializer serializer)
@@ -985,8 +992,11 @@ public class MetaDictionary
                         var entry      = manip["Entry"]?.ToObject<ImcEntry>();
                         if (identifier.HasValue && entry.HasValue)
                             dict.TryAdd(identifier.Value, entry.Value);
+                        else if (CurrentContainer.IsValueCreated && CurrentContainer.Value!.TryGetTarget(out var container))
+                            Penumbra.Log.Warning($"Invalid IMC Manipulation encountered in {container.Mod.Name} - {container.GetFullName()}.");
                         else
                             Penumbra.Log.Warning("Invalid IMC Manipulation encountered.");
+
                         break;
                     }
                     case MetaManipulationType.Eqdp:
@@ -995,6 +1005,8 @@ public class MetaDictionary
                         var entry      = (EqdpEntry?)manip["Entry"]?.ToObject<ushort>();
                         if (identifier.HasValue && entry.HasValue)
                             dict.TryAdd(identifier.Value, entry.Value);
+                        else if (CurrentContainer.IsValueCreated && CurrentContainer.Value!.TryGetTarget(out var container))
+                            Penumbra.Log.Warning($"Invalid EQDP Manipulation encountered in {container.Mod.Name} - {container.GetFullName()}.");
                         else
                             Penumbra.Log.Warning("Invalid EQDP Manipulation encountered.");
                         break;
@@ -1005,6 +1017,8 @@ public class MetaDictionary
                         var entry      = (EqpEntry?)manip["Entry"]?.ToObject<ulong>();
                         if (identifier.HasValue && entry.HasValue)
                             dict.TryAdd(identifier.Value, entry.Value);
+                        else if (CurrentContainer.IsValueCreated && CurrentContainer.Value!.TryGetTarget(out var container))
+                            Penumbra.Log.Warning($"Invalid EQP Manipulation encountered in {container.Mod.Name} - {container.GetFullName()}.");
                         else
                             Penumbra.Log.Warning("Invalid EQP Manipulation encountered.");
                         break;
@@ -1015,6 +1029,8 @@ public class MetaDictionary
                         var entry      = manip["Entry"]?.ToObject<EstEntry>();
                         if (identifier.HasValue && entry.HasValue)
                             dict.TryAdd(identifier.Value, entry.Value);
+                        else if (CurrentContainer.IsValueCreated && CurrentContainer.Value!.TryGetTarget(out var container))
+                            Penumbra.Log.Warning($"Invalid EST Manipulation encountered in {container.Mod.Name} - {container.GetFullName()}.");
                         else
                             Penumbra.Log.Warning("Invalid EST Manipulation encountered.");
                         break;
@@ -1025,6 +1041,8 @@ public class MetaDictionary
                         var entry      = manip["Entry"]?.ToObject<GmpEntry>();
                         if (identifier.HasValue && entry.HasValue)
                             dict.TryAdd(identifier.Value, entry.Value);
+                        else if (CurrentContainer.IsValueCreated && CurrentContainer.Value!.TryGetTarget(out var container))
+                            Penumbra.Log.Warning($"Invalid GMP Manipulation encountered in {container.Mod.Name} - {container.GetFullName()}.");
                         else
                             Penumbra.Log.Warning("Invalid GMP Manipulation encountered.");
                         break;
@@ -1035,6 +1053,8 @@ public class MetaDictionary
                         var entry      = manip["Entry"]?.ToObject<RspEntry>();
                         if (identifier.HasValue && entry.HasValue)
                             dict.TryAdd(identifier.Value, entry.Value);
+                        else if (CurrentContainer.IsValueCreated && CurrentContainer.Value!.TryGetTarget(out var container))
+                            Penumbra.Log.Warning($"Invalid RSP Manipulation encountered in {container.Mod.Name} - {container.GetFullName()}.");
                         else
                             Penumbra.Log.Warning("Invalid RSP Manipulation encountered.");
                         break;
@@ -1045,6 +1065,8 @@ public class MetaDictionary
                         var entry      = AtchEntry.FromJson(manip["Entry"] as JObject);
                         if (identifier.HasValue && entry.HasValue)
                             dict.TryAdd(identifier.Value, entry.Value);
+                        else if (CurrentContainer.IsValueCreated && CurrentContainer.Value!.TryGetTarget(out var container))
+                            Penumbra.Log.Warning($"Invalid ATCH Manipulation encountered in {container.Mod.Name} - {container.GetFullName()}.");
                         else
                             Penumbra.Log.Warning("Invalid ATCH Manipulation encountered.");
                         break;
@@ -1055,6 +1077,8 @@ public class MetaDictionary
                         var entry      = new ShpEntry(manip["Entry"]?.Value<bool>() ?? true);
                         if (identifier.HasValue)
                             dict.TryAdd(identifier.Value, entry);
+                        else if (CurrentContainer.IsValueCreated && CurrentContainer.Value!.TryGetTarget(out var container))
+                            Penumbra.Log.Warning($"Invalid SHP Manipulation encountered in {container.Mod.Name} - {container.GetFullName()}.");
                         else
                             Penumbra.Log.Warning("Invalid SHP Manipulation encountered.");
                         break;
@@ -1065,6 +1089,8 @@ public class MetaDictionary
                         var entry      = new AtrEntry(manip["Entry"]?.Value<bool>() ?? true);
                         if (identifier.HasValue)
                             dict.TryAdd(identifier.Value, entry);
+                        else if (CurrentContainer.IsValueCreated && CurrentContainer.Value!.TryGetTarget(out var container))
+                            Penumbra.Log.Warning($"Invalid ATR Manipulation encountered in {container.Mod.Name} - {container.GetFullName()}.");
                         else
                             Penumbra.Log.Warning("Invalid ATR Manipulation encountered.");
                         break;
@@ -1074,6 +1100,9 @@ public class MetaDictionary
                         var identifier = GlobalEqpManipulation.FromJson(manip);
                         if (identifier.HasValue)
                             dict.TryAdd(identifier.Value);
+                        else if (CurrentContainer.IsValueCreated && CurrentContainer.Value!.TryGetTarget(out var container))
+                            Penumbra.Log.Warning(
+                                $"Invalid Global EQP Manipulation encountered in {container.Mod.Name} - {container.GetFullName()}.");
                         else
                             Penumbra.Log.Warning("Invalid Global EQP Manipulation encountered.");
                         break;
