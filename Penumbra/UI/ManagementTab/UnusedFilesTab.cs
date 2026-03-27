@@ -1,5 +1,6 @@
 using ImSharp;
 using Luna;
+using Penumbra.Api.Enums;
 using Penumbra.Communication;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
@@ -55,6 +56,10 @@ public sealed class UnusedFilesTab(ModManager mods, UiNavigator navigator) : ITa
             protected override bool DoCreateFile(string fileName, Mod mod)
             {
                 if (!File.Exists(fileName))
+                    return false;
+
+                // Ignore files that are not related to the game.
+                if (!ResourceType.FromPath(fileName).Known)
                     return false;
 
                 foreach (var container in mod.AllDataContainers)
