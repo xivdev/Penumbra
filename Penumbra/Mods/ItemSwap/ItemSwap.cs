@@ -15,7 +15,9 @@ public static class ItemSwap
     public class InvalidItemTypeException : Exception
     { }
 
-    public class MissingFileException(ResourceType type, object path) : Exception($"Could not load {type} File Data for \"{path}\".")
+    public class MissingFileException(ResourceType type, object path) : Exception(type is ResourceType.Mdl or ResourceType.Mtrl
+        ? $"Could not load {type} File Data for \"{path}\". Make sure that the item's EQDP entries do not pretend that there are racial {(type is ResourceType.Mdl ? "Models" : "Materials")} that do not exist."
+        : $"Could not load {type} File Data for \"{path}\".")
     {
         public readonly ResourceType Type = type;
     }
