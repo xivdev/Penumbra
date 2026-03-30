@@ -31,7 +31,7 @@ public sealed class ReservedFilesTable(ModManager mods, TextureManager textures,
 
         var active = config.DeleteModModifier.IsActive();
         if (ImEx.Button("Remove All Simple Redirections"u8, default, !active))
-            RemoveRedundant(cache);
+            RemoveRedundant(cache, false);
 
         if (Im.Item.Hovered(HoveredFlags.AllowWhenDisabled))
         {
@@ -44,6 +44,23 @@ public sealed class ReservedFilesTable(ModManager mods, TextureManager textures,
                 "Remove all redirections listed as 'Equal', as the target files are equivalent to the game files and thus the redirections are not meaningful."u8);
             Im.BulletText("Delete all target files who have no remaining redirections in their mods left afterwards."u8);
             Im.Text("\nTHIS IS NOT REVERTIBLE."u8, Colors.RegexWarningBorder);
+
+            if (!active)
+                Im.Text($"\nHold {config.DeleteModModifier} while clicking.");
+        }
+
+        Im.Line.Same();
+        if (ImEx.Button("Remove All Reserved Redirections"u8, default, !active))
+            RemoveRedundant(cache, true);
+
+        if (Im.Item.Hovered(HoveredFlags.AllowWhenDisabled))
+        {
+            using var tt = Im.Tooltip.Begin();
+            Im.Text("Executing this will"u8);
+            Im.BulletText("Do everything 'Remove Simple Redirections' does."u8);
+            Im.BulletText("Also remove all redirections listed as 'Different'. Any mod with any of those redirections may not be working correctly anymore, but removing the redirection will not change that."u8);
+            Im.Text("\nTHIS IS NOT REVERTIBLE."u8, Colors.RegexWarningBorder);
+            Im.Text("\nAfter executing this, the next scan of this tab should yield no redirections and all warnings should be gone, but you will have no idea what mods where previously affected and might be broken now unless you took note beforehand."u8);
 
             if (!active)
                 Im.Text($"\nHold {config.DeleteModModifier} while clicking.");
@@ -217,7 +234,7 @@ public sealed class ReservedFilesTable(ModManager mods, TextureManager textures,
             => ReservedFileCacheObject.Different.Utf8.CalculateSize().X + Im.Style.FrameHeightWithSpacing;
     }
 
-    private void RemoveRedundant(ScannerTabCache<ReservedFileCacheObject, ReservedFileRedirection> cache)
+    private void RemoveRedundant(ScannerTabCache<ReservedFileCacheObject, ReservedFileRedirection> cache, bool removeAll)
     {
         var files   = new SetDictionary<Mod, FullPath>();
         var indices = new List<int>(cache.AllItems.Count);
@@ -229,6 +246,7 @@ public sealed class ReservedFilesTable(ModManager mods, TextureManager textures,
 
             var swaps        = container.FileSwaps.ToDictionary();
             var redirections = container.Files.ToDictionary();
+            var different    = 0;
 
             foreach (var (redirection, index) in group)
             {
@@ -247,6 +265,14 @@ public sealed class ReservedFilesTable(ModManager mods, TextureManager textures,
                         $"[ReservedFiles] Removed reserved file redirection {redirection.GamePath} -> {redirection.FilePath} in {container.Mod.Name} - {container.GetFullName()} because the target file was {(redirection.Broken ? "broken." : redirection.Missing ? "missing." : "conceptually equal.")}");
                     indices.Add(index);
                 }
+                else if (removeAll)
+                {
+                    ++different;
+                    redirections.Remove(redirection.GamePath, out var file);
+                    files.TryAdd((Mod)container.Mod, file);
+                    Penumbra.Log.Debug($"[ReservedFiles] Removed reserved file redirection {redirection.GamePath} -> {redirection.FilePath} in {container.Mod.Name} - {container.GetFullName()} despite the target file being different from the source.");
+                    indices.Add(index);
+                }
             }
 
             if (swaps.Count < container.FileSwaps.Count)
@@ -260,7 +286,7 @@ public sealed class ReservedFilesTable(ModManager mods, TextureManager textures,
             if (redirections.Count < container.Files.Count)
             {
                 Penumbra.Log.Information(
-                    $"[ReservedFiles] Removed {container.Files.Count - redirections.Count} reserved file redirections in {container.Mod.Name} - {container.GetFullName()}.");
+                    $"[ReservedFiles] Removed {container.Files.Count - redirections.Count} reserved file redirections in {container.Mod.Name} - {container.GetFullName()}{(different > 0 ? $" (including {different} Differing redirections)." : ".")}");
                 if (!DryRun)
                     mods.OptionEditor.SetFiles(container, redirections);
             }
