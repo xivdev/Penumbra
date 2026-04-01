@@ -3,7 +3,7 @@ using Luna;
 namespace Penumbra.Communication;
 
 /// <summary> Triggered whenever mods are prepared to be rediscovered. </summary>
-public sealed class ModDiscoveryStarted(Logger log) : EventBase<ModDiscoveryStarted.Priority>(nameof(ModDiscoveryStarted), log)
+public sealed class ModDiscoveryStarted(LunaLogger log) : EventBase<ModDiscoveryStarted.Priority>(nameof(ModDiscoveryStarted), log)
 {
     public enum Priority
     {

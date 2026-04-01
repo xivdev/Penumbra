@@ -32,7 +32,7 @@ public class ModPanelTabBar : TabBar<ModPanelTab>, IDisposable
 
     public ModPanelTabBar(ModEditWindowFactory modEditWindowFactory, ModPanelSettingsTab settings, ModPanelDescriptionTab description,
         ModPanelConflictsTab conflicts, ModPanelChangedItemsTab changedItems, ModPanelEditTab edit, ModManager modManager,
-        TutorialService tutorial, ModPanelCollectionsTab collections, Logger log, Configuration config, UiNavigator navigator)
+        TutorialService tutorial, ModPanelCollectionsTab collections, LunaLogger log, Configuration config, UiNavigator navigator)
         : base(nameof(ModPanelTabBar), log, settings, description, conflicts, changedItems, collections, edit)
     {
         Flags                     =  TabBarFlags.NoTooltip | TabBarFlags.FittingPolicyScroll;

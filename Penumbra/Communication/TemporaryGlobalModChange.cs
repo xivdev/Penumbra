@@ -4,7 +4,7 @@ using Penumbra.Mods;
 namespace Penumbra.Communication;
 
 /// <summary> Triggered whenever a temporary mod for all collections is changed. </summary>
-public sealed class TemporaryGlobalModChange(Logger log)
+public sealed class TemporaryGlobalModChange(LunaLogger log)
     : EventBase<TemporaryGlobalModChange.Arguments, TemporaryGlobalModChange.Priority>(nameof(TemporaryGlobalModChange), log)
 {
     public enum Priority

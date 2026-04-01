@@ -6,7 +6,7 @@ using Penumbra.Mods;
 namespace Penumbra.Communication;
 
 /// <summary> Triggered when the character.json file for a .pcp file is parsed and applied. </summary>
-public sealed class PcpParsing(Logger log) : EventBase<PcpParsing.Arguments, PcpParsing.Priority>(nameof(PcpParsing), log)
+public sealed class PcpParsing(LunaLogger log) : EventBase<PcpParsing.Arguments, PcpParsing.Priority>(nameof(PcpParsing), log)
 {
     public enum Priority
     {

@@ -4,7 +4,7 @@ using Penumbra.Services;
 namespace Penumbra.Mods.Manager;
 
 public sealed class ModFileSystemSaver(
-    Logger log,
+    LunaLogger log,
     BaseFileSystem fileSystem,
     SaveService saveService,
     ModStorage mods,

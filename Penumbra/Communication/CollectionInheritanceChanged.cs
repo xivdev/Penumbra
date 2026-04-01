@@ -10,7 +10,7 @@ namespace Penumbra.Communication;
 ///     <item>Parameter is whether the change was itself inherited, i.e. if it happened in a direct parent (false) or a more removed ancestor (true). </item>
 /// </list>
 /// </summary>
-public sealed class CollectionInheritanceChanged(Logger log)
+public sealed class CollectionInheritanceChanged(LunaLogger log)
     : EventBase<CollectionInheritanceChanged.Arguments, CollectionInheritanceChanged.Priority>(nameof(CollectionInheritanceChanged), log)
 {
     public enum Priority

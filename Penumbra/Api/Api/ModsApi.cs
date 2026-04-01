@@ -16,10 +16,10 @@ public sealed class ModsApi : IPenumbraApiMods, IApiService, IDisposable
     private readonly ModFileSystem       _modFileSystem;
     private readonly MigrationManager    _migrationManager;
     private readonly ModConfigUpdater    _modConfigUpdater;
-    private readonly Logger              _log;
+    private readonly LunaLogger          _log;
 
     public ModsApi(ModManager modManager, ModImportManager modImportManager, Configuration config, ModFileSystem modFileSystem,
-        CommunicatorService communicator, MigrationManager migrationManager, Logger log, ModConfigUpdater modConfigUpdater)
+        CommunicatorService communicator, MigrationManager migrationManager, LunaLogger log, ModConfigUpdater modConfigUpdater)
     {
         _modManager       = modManager;
         _modImportManager = modImportManager;

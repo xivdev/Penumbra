@@ -2,7 +2,7 @@ using Luna;
 
 namespace Penumbra.Import.Models;
 
-public record IoNotifier(Logger Log)
+public record IoNotifier(LunaLogger Log)
 {
     private readonly List<string> _messages = [];
     private          string       _context  = "";
@@ -13,7 +13,7 @@ public record IoNotifier(Logger Log)
 
     /// <summary> Send a warning with any current context to notification channels. </summary>
     public void Warning(string content)
-        => SendMessage(content, Logger.LogLevel.Warning);
+        => SendMessage(content, LogLevel.Warning);
 
     /// <summary> Get the current warnings for this notifier. </summary>
     /// <remarks> This does not currently filter to notifications with the current notifier's context - it will return all IO notifications from all notifiers. </remarks>
@@ -31,7 +31,7 @@ public record IoNotifier(Logger Log)
         where TException : Exception, new()
         => (TException)Activator.CreateInstance(typeof(TException), $"{_context}{message}")!;
 
-    private void SendMessage(string message, Logger.LogLevel type)
+    private void SendMessage(string message, LogLevel type)
     {
         var fullText = $"{_context}{message}";
         Log.Message(type, fullText);

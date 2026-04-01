@@ -7,7 +7,7 @@ using Penumbra.Services;
 namespace Penumbra.Communication;
 
 /// <summary> Triggered whenever a character base draw object is being created by the game. </summary>
-public sealed class CreatingCharacterBase(Logger log)
+public sealed class CreatingCharacterBase(LunaLogger log)
     : EventBase<CreatingCharacterBase.Arguments, CreatingCharacterBase.Priority>(nameof(CreatingCharacterBase), log)
 {
     public enum Priority

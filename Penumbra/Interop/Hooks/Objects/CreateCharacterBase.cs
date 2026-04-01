@@ -14,7 +14,7 @@ public sealed unsafe class CreateCharacterBase : EventBase<CreateCharacterBase.A
         MetaState = 0,
     }
 
-    public CreateCharacterBase(Logger log, HookManager hooks)
+    public CreateCharacterBase(LunaLogger log, HookManager hooks)
         : base("Create CharacterBase", log)
     {
         _postEvent = new PostEvent("Created CharacterBase", log);
@@ -64,7 +64,7 @@ public sealed unsafe class CreateCharacterBase : EventBase<CreateCharacterBase.A
         _postEvent.Dispose();
     }
 
-    public class PostEvent(string name, Logger log) : EventBase<PostEvent.Arguments, PostEvent.Priority>(name, log)
+    public class PostEvent(string name, LunaLogger log) : EventBase<PostEvent.Arguments, PostEvent.Priority>(name, log)
     {
         public enum Priority
         {

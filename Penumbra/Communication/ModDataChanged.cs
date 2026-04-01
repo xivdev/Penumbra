@@ -5,7 +5,7 @@ using Penumbra.Mods.Manager;
 namespace Penumbra.Communication;
 
 /// <summary> Triggered whenever mod meta data or local data is changed. </summary>
-public sealed class ModDataChanged(Logger log) : EventBase<ModDataChanged.Arguments, ModDataChanged.Priority>(nameof(ModDataChanged), log)
+public sealed class ModDataChanged(LunaLogger log) : EventBase<ModDataChanged.Arguments, ModDataChanged.Priority>(nameof(ModDataChanged), log)
 {
     public enum Priority
     {

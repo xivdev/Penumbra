@@ -7,7 +7,7 @@ using Penumbra.String.Classes;
 namespace Penumbra.Communication;
 
 /// <summary> Triggered whenever an existing file in a mod is overwritten by Penumbra. </summary>
-public sealed class ModFileChanged(Logger log) : EventBase<ModFileChanged.Arguments, ModFileChanged.Priority>(nameof(ModFileChanged), log)
+public sealed class ModFileChanged(LunaLogger log) : EventBase<ModFileChanged.Arguments, ModFileChanged.Priority>(nameof(ModFileChanged), log)
 {
     public enum Priority
     {

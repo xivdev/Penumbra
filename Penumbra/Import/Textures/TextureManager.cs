@@ -16,10 +16,11 @@ using Image = SixLabors.ImageSharp.Image;
 
 namespace Penumbra.Import.Textures;
 
-public sealed class TextureManager(IDataManager gameData, Logger logger, ITextureProvider textureProvider, IUiBuilder uiBuilder)
+public sealed class TextureManager(IDataManager gameData, LunaLogger logger, ITextureProvider textureProvider, IUiBuilder uiBuilder)
     : SingleTaskQueue, IDisposable, IService
 {
-    private readonly Logger _logger = logger;
+    private readonly LunaLogger       _logger  = logger;
+    public readonly  ITextureProvider Provider = textureProvider;
 
     private readonly ConcurrentDictionary<IAction, (Task, CancellationTokenSource)> _tasks = new();
     private          bool                                                           _disposed;
@@ -331,7 +332,7 @@ public sealed class TextureManager(IDataManager gameData, Logger logger, ITextur
 
     /// <summary> Load a texture wrap for a given image. </summary>
     public IDalamudTextureWrap LoadTextureWrap(byte[] rgba, int width, int height)
-        => textureProvider.CreateFromRaw(RawImageSpecification.Rgba32(width, height), rgba, "Penumbra.Texture");
+        => Provider.CreateFromRaw(RawImageSpecification.Rgba32(width, height), rgba, "Penumbra.Texture");
 
     /// <summary> Load any supported file from game data or drive depending on extension and if the path is rooted. </summary>
     public (BaseImage, TextureType) Load(string path)

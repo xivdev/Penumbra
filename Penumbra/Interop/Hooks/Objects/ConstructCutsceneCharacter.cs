@@ -17,7 +17,7 @@ public sealed unsafe class ConstructCutsceneCharacter : EventBase<ConstructCutsc
         CutsceneService = 0,
     }
 
-    public ConstructCutsceneCharacter(Logger log, GameState gameState, HookManager hooks, ObjectManager objects)
+    public ConstructCutsceneCharacter(LunaLogger log, GameState gameState, HookManager hooks, ObjectManager objects)
         : base("ConstructCutsceneCharacter", log)
     {
         _gameState = gameState;

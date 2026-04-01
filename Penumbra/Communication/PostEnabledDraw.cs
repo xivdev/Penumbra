@@ -5,7 +5,7 @@ using Penumbra.Mods;
 namespace Penumbra.Communication;
 
 /// <summary> Triggered after the Enabled Checkbox line in settings is drawn, but before options are drawn. </summary>
-public sealed class PostEnabledDraw(Logger log) : EventBase<PostEnabledDraw.Arguments, PostEnabledDraw.Priority>(nameof(PostEnabledDraw), log)
+public sealed class PostEnabledDraw(LunaLogger log) : EventBase<PostEnabledDraw.Arguments, PostEnabledDraw.Priority>(nameof(PostEnabledDraw), log)
 {
     public enum Priority
     {

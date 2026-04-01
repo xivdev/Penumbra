@@ -5,7 +5,7 @@ using Penumbra.GameData.Structs;
 namespace Penumbra.Communication;
 
 /// <summary> Triggered when the character.json file for a .pcp file is written. </summary>
-public sealed class PcpCreation(Logger log) : EventBase<PcpCreation.Arguments, PcpCreation.Priority>(nameof(PcpCreation), log)
+public sealed class PcpCreation(LunaLogger log) : EventBase<PcpCreation.Arguments, PcpCreation.Priority>(nameof(PcpCreation), log)
 {
     public enum Priority
     {

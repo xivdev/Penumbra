@@ -6,7 +6,7 @@ using Penumbra.GameData.Data;
 namespace Penumbra.Communication;
 
 /// <summary> Triggered when a Changed Item in Penumbra is clicked. </summary>
-public sealed class ChangedItemClick(Logger log)
+public sealed class ChangedItemClick(LunaLogger log)
     : EventBase<ChangedItemClick.Arguments, ChangedItemClick.Priority>(nameof(ChangedItemClick), log)
 {
     public enum Priority

@@ -1,17 +1,16 @@
 using Dalamud.Plugin;
 using Luna;
 using Penumbra.Api.Api;
-using Serilog.Events;
 
 namespace Penumbra.Api;
 
 public sealed class IpcLaunchingProvider : IApiService
 {
-    public IpcLaunchingProvider(IDalamudPluginInterface pi, Logger log)
+    public IpcLaunchingProvider(IDalamudPluginInterface pi, LunaLogger log)
     {
         try
         {
-            using var subscriber = log.MainLogger.IsEnabled(LogEventLevel.Debug)
+            using var subscriber = log.IsEnabled(LogLevel.Debug)
                 ? IpcSubscribers.Launching.Subscriber(pi,
                     (major, minor) => log.Debug($"[IPC] Invoked Penumbra.Launching IPC with API Version {major}.{minor}."))
                 : null;

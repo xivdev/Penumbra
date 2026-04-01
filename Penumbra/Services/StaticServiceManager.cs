@@ -1,6 +1,4 @@
-using Dalamud.Interface.DragDrop;
 using Dalamud.Plugin;
-using Dalamud.Plugin.Services;
 using Luna;
 using Microsoft.Extensions.DependencyInjection;
 using Penumbra.Api.Api;
@@ -17,9 +15,9 @@ namespace Penumbra.Services;
 
 public static class StaticServiceManager
 {
-    public static ServiceManager CreateProvider(Penumbra penumbra, IDalamudPluginInterface pi, Logger log)
+    public static ServiceManager CreateProvider(Penumbra penumbra, IDalamudPluginInterface pi, MainLogger log)
     {
-        var services = new ServiceManager(log, Logger.GlobalPluginName)
+        var services = new ServiceManager(log, log.PluginName)
             .AddDalamudServices(pi)
             .AddExistingService(log)
             .AddExistingService(penumbra);

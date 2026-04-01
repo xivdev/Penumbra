@@ -47,7 +47,7 @@ public sealed class PenumbraErrorWindow(IDalamudPluginInterface pi)
 
 public class Penumbra : IDalamudPlugin
 {
-    public static readonly Logger         Log = new("Penumbra");
+    public static readonly MainLogger     Log = new("Penumbra");
     public static          MessageService Messager { get; private set; } = null!;
     public static          DynamisIpc     Dynamis  { get; private set; } = null!;
 

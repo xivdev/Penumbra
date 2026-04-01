@@ -5,7 +5,7 @@ using Penumbra.Mods;
 namespace Penumbra.Communication;
 
 /// <summary> Triggered after the settings panel is drawn. </summary>
-public sealed class PostSettingsPanelDraw(Logger log) : EventBase<PostSettingsPanelDraw.Arguments, PostSettingsPanelDraw.Priority>(nameof(PostSettingsPanelDraw), log)
+public sealed class PostSettingsPanelDraw(LunaLogger log) : EventBase<PostSettingsPanelDraw.Arguments, PostSettingsPanelDraw.Priority>(nameof(PostSettingsPanelDraw), log)
 {
     public enum Priority
     {

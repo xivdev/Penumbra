@@ -23,7 +23,7 @@ public class ModSelection : EventBase<ModSelection.Arguments, ModSelection.Prior
     private readonly ModFileSystem       _modFileSystem;
     private readonly UiNavigator         _navigator;
 
-    public ModSelection(Logger log, CommunicatorService communicator, ModManager mods, ActiveCollections collections, EphemeralConfig config,
+    public ModSelection(LunaLogger log, CommunicatorService communicator, ModManager mods, ActiveCollections collections, EphemeralConfig config,
         ModFileSystem modFileSystem, UiNavigator navigator)
         : base(nameof(ModSelection), log)
     {

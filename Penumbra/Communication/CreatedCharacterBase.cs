@@ -6,7 +6,7 @@ using Penumbra.GameData.Interop;
 namespace Penumbra.Communication;
 
 /// <summary> Invoked whenever a draw object is created for a game object. </summary>
-public sealed class CreatedCharacterBase(Logger log)
+public sealed class CreatedCharacterBase(LunaLogger log)
     : EventBase<CreatedCharacterBase.Arguments, CreatedCharacterBase.Priority>(nameof(CreatedCharacterBase), log)
 {
     public enum Priority

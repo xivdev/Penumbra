@@ -8,7 +8,7 @@ using Penumbra.UI.MainWindow;
 namespace Penumbra.Communication;
 
 /// <summary> Triggered whenever a redirection in a mod collection cache is manipulated. </summary>
-public sealed class ResolvedFileChanged(Logger log) : EventBase<ResolvedFileChanged.Arguments, ResolvedFileChanged.Priority>(
+public sealed class ResolvedFileChanged(LunaLogger log) : EventBase<ResolvedFileChanged.Arguments, ResolvedFileChanged.Priority>(
     nameof(ResolvedFileChanged), log)
 {
     public enum Type
@@ -49,7 +49,7 @@ public sealed class ResolvedFileChanged(Logger log) : EventBase<ResolvedFileChan
 }
 
 /// <summary> Triggered whenever a meta edit in a mod collection cache is manipulated. </summary>
-public sealed class ResolvedMetaChanged(Logger log) : EventBase<ResolvedMetaChanged.Arguments, ResolvedMetaChanged.Priority>(
+public sealed class ResolvedMetaChanged(LunaLogger log) : EventBase<ResolvedMetaChanged.Arguments, ResolvedMetaChanged.Priority>(
     nameof(ResolvedMetaChanged), log)
 {
     public enum Type

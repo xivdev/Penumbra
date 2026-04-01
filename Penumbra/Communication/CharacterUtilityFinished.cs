@@ -5,7 +5,7 @@ using Penumbra.Interop.Services;
 namespace Penumbra.Communication;
 
 /// <summary> Triggered when the Character Utility becomes ready. </summary>
-public sealed class CharacterUtilityFinished(Logger log) : EventBase<CharacterUtilityFinished.Priority>(nameof(CharacterUtilityFinished), log)
+public sealed class CharacterUtilityFinished(LunaLogger log) : EventBase<CharacterUtilityFinished.Priority>(nameof(CharacterUtilityFinished), log)
 {
     public enum Priority
     {

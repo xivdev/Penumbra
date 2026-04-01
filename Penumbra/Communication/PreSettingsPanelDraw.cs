@@ -5,7 +5,7 @@ using Penumbra.Mods;
 namespace Penumbra.Communication;
 
 /// <summary> Triggered before the settings panel is drawn. </summary>
-public sealed class PreSettingsPanelDraw(Logger log) : EventBase<PreSettingsPanelDraw.Arguments, PreSettingsPanelDraw.Priority>(nameof(PreSettingsPanelDraw), log)
+public sealed class PreSettingsPanelDraw(LunaLogger log) : EventBase<PreSettingsPanelDraw.Arguments, PreSettingsPanelDraw.Priority>(nameof(PreSettingsPanelDraw), log)
 {
     public enum Priority
     {

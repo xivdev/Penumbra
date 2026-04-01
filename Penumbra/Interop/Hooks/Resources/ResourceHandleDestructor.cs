@@ -23,7 +23,7 @@ public sealed unsafe class ResourceHandleDestructor : EventBase<ResourceHandleDe
         ResourceWatcher,
     }
 
-    public ResourceHandleDestructor(Logger log, HookManager hooks)
+    public ResourceHandleDestructor(LunaLogger log, HookManager hooks)
         : base("Destroy ResourceHandle", log)
         => _task = hooks.CreateHook<Delegate>(Name, Sigs.ResourceHandleDestructor, Detour,
             !HookOverrides.Instance.Resources.ResourceHandleDestructor);

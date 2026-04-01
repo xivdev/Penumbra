@@ -28,7 +28,7 @@ public sealed class ModEditWindowFactory(
     ResourceTreeViewerFactory resourceTreeViewerFactory,
     IFramework framework,
     WindowSystem windowSystem,
-    Logger log,
+    LunaLogger log,
     FileEditorRegistry fileEditorRegistry,
     CombiningTextureEditorFactory textureEditorFactory,
     ModMergerFactory modMergerFactory,
