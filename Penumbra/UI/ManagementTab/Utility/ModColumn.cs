@@ -29,13 +29,24 @@ public abstract class ModColumn<TCacheObject> : TextColumn<TCacheObject>
             Im.Tooltip.OnHover("Click to move to mod."u8);
     }
 
-    protected abstract bool MatchesLastItem(in TCacheObject item);
-
     protected ModColumn(UiNavigator navigator)
     {
         _navigator          = navigator;
         WidthDependsOnItems = true;
     }
+
+    private string _lastMod = string.Empty;
+
+    protected virtual  bool MatchesLastItem(in TCacheObject item)
+    {
+        var name = ComparisonText(item, 0);
+        var ret  = _lastMod == name;
+        _lastMod = name;
+        return ret;
+    }
+
+    public override void PostDraw(in TableCache<TCacheObject> cache)
+        => _lastMod = string.Empty;
 
     protected abstract Mod?       GetMod(in TCacheObject item, int globalIndex);
     protected abstract StringPair GetModName(in TCacheObject item, int globalIndex);

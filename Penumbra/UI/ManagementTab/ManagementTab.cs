@@ -26,7 +26,7 @@ public sealed class ManagementTab : TabBar<ManagementTabType>, ITab<TabType>, ID
     public TabType Identifier
         => TabType.Management;
 
-    public ManagementTab(Logger log,
+    public ManagementTab(LunaLogger log,
         EphemeralConfig config,
         UnusedModsTab unusedMods,
         DuplicateModsTab duplicateMods,

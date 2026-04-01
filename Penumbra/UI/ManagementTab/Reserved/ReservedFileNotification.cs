@@ -19,7 +19,7 @@ public sealed class ReservedFileNotification(
 
     public bool IsRedirectionSupported(Utf8GamePath path, IMod mod, bool temporaryCollection)
     {
-        if (ReservedFilesTab.ReservedFiles.ContainsKey((uint)path.Path.Crc32))
+        if (ReservedFiles.Files.ContainsKey((uint)path.Path.Crc32))
         {
             if (!temporaryCollection)
                 AddFile(path, mod);

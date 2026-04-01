@@ -154,7 +154,7 @@ public partial class ModEditWindow
             if (editor.FileEditor.Changes)
                 return new QuickImportAction(editor, optionName, gamePath, QuickImportNonExecutableReason.EditorDirty);
 
-            if (ReservedFilesTab.ReservedFiles.ContainsKey(unchecked((uint)gamePath.Path.Crc32)))
+            if (ReservedFiles.Files.ContainsKey(unchecked((uint)gamePath.Path.Crc32)))
                 return new QuickImportAction(editor, optionName, gamePath, QuickImportNonExecutableReason.GamePathReserved);
 
             if (subMod.Files.ContainsKey(gamePath) || subMod.FileSwaps.ContainsKey(gamePath))

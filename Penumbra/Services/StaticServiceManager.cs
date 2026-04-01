@@ -7,6 +7,7 @@ using Penumbra.GameData.Structs;
 using Penumbra.Interop.PathResolving;
 using Penumbra.Meta;
 using Penumbra.Mods.Manager;
+using Penumbra.UI.ManagementTab;
 using IPenumbraApi = Penumbra.Api.Api.IPenumbraApi;
 
 namespace Penumbra.Services;
@@ -20,7 +21,9 @@ public static class StaticServiceManager
         var services = new ServiceManager(log, log.PluginName)
             .AddDalamudServices(pi)
             .AddExistingService(log)
-            .AddExistingService(penumbra);
+            .AddExistingService(penumbra)
+            .AddGenericSingleton(typeof(ManagementLog<>));
+
         services.AddIServices(typeof(EquipItem).Assembly);
         services.AddIServices(typeof(Penumbra).Assembly);
         services.AddIServices(typeof(IService).Assembly);

@@ -21,6 +21,7 @@ public sealed class FilenameService(IDalamudPluginInterface pi) : BaseFilePathPr
     public readonly string FileSystemExpandedFolders = Path.Combine(pi.ConfigDirectory.FullName, "mod_filesystem", "expanded_folders.json");
     public readonly string FileSystemLockedNodes     = Path.Combine(pi.ConfigDirectory.FullName, "mod_filesystem", "locked_nodes.json");
     public readonly string FileSystemSelectedNodes   = Path.Combine(pi.ConfigDirectory.FullName, "mod_filesystem", "selected_nodes.json");
+    public readonly string ManagementLog             = Path.Combine(pi.ConfigDirectory.FullName, "management.log");
 
     public readonly string CrashHandlerExe =
         Path.Combine(pi.AssemblyLocation.DirectoryName!, "Penumbra.CrashHandler.exe");

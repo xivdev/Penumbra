@@ -7,9 +7,9 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.UI.ManagementTab;
 
-public sealed class ReservedFileScanner(ModManager mods, TextureManager textures) : RedirectionScanner<ReservedFileRedirection>(mods)
+public sealed class ReservedFileScanner(ModManager mods, TextureManager textures, ManagementLog<ReservedFiles> log) : RedirectionScanner<ReservedFileRedirection>(mods, log)
 {
-    private readonly FrozenDictionary<uint, Rgba32>? _originalFiles = ReservedFilesTab.ReservedFiles.ToFrozenDictionary(kvp => kvp.Key, kvp =>
+    private readonly FrozenDictionary<uint, Rgba32>? _originalFiles = ReservedFiles.Files.ToFrozenDictionary(kvp => kvp.Key, kvp =>
     {
         var file = textures.LoadTex(kvp.Value.ToString());
         var data = file.IsSolidColor();
@@ -68,5 +68,5 @@ public sealed class ReservedFileScanner(ModManager mods, TextureManager textures
     }
 
     protected override bool DoCreateRedirection(Utf8GamePath path, FullPath redirection, IModDataContainer container, bool swap)
-        => ReservedFilesTab.ReservedFiles.ContainsKey((uint)path.Path.Crc32);
+        => ReservedFiles.Files.ContainsKey((uint)path.Path.Crc32);
 }

@@ -9,14 +9,17 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.UI.ManagementTab;
 
-public sealed class RedundantFilesTab(ModManager mods, IDataManager dataManager, UiNavigator navigator) : ITab<ManagementTabType>
+public class RedundantFiles
+{}
+
+public sealed class RedundantFilesTab(ModManager mods, IDataManager dataManager, UiNavigator navigator, ManagementLog<RedundantFiles> log) : ITab<ManagementTabType>
 {
     public ReadOnlySpan<byte> Label
         => "Redundant Files (WIP)"u8;
 
     public void DrawContent()
     {
-        var cache = CacheManager.Instance.GetOrCreateCache(Im.Id.Current, () => new Cache(mods, dataManager));
+        var cache = CacheManager.Instance.GetOrCreateCache(Im.Id.Current, () => new Cache(mods, dataManager, log));
         ManagementTab.DrawScanButtons(cache.Scanner);
 
         using var table = Im.Table.Begin("t"u8, 4, TableFlags.RowBackground | TableFlags.SizingFixedFit, Im.ContentRegion.Available);
@@ -42,7 +45,7 @@ public sealed class RedundantFilesTab(ModManager mods, IDataManager dataManager,
         }
     }
 
-    private sealed class Cache(ModManager mods, IDataManager dataManager) : BasicCache(TimeSpan.FromMinutes(10))
+    private sealed class Cache(ModManager mods, IDataManager dataManager, ManagementLog<RedundantFiles> log) : BasicCache(TimeSpan.FromMinutes(10))
     {
         public sealed class RedundantScannedRedirection(Utf8GamePath gamePath, FullPath redirection, IModDataContainer container, bool swap)
             : BaseScannedRedirection(gamePath, redirection, container, swap)
@@ -50,8 +53,8 @@ public sealed class RedundantFilesTab(ModManager mods, IDataManager dataManager,
             public readonly long Size = File.Exists(redirection.FullName) ? new FileInfo(redirection.FullName).Length : -1;
         }
 
-        public sealed class RedundantRedirectionScanner(ModManager mods, IDataManager dataManager)
-            : RedirectionScanner<RedundantScannedRedirection>(mods)
+        public sealed class RedundantRedirectionScanner(ModManager mods, IDataManager dataManager, ManagementLog<RedundantFiles> log)
+            : RedirectionScanner<RedundantScannedRedirection>(mods, log)
         {
             protected override RedundantScannedRedirection Create(Utf8GamePath gamePath, FullPath redirection, IModDataContainer container,
                 bool swap)
@@ -76,7 +79,7 @@ public sealed class RedundantFilesTab(ModManager mods, IDataManager dataManager,
             }
         }
 
-        public readonly RedundantRedirectionScanner Scanner = new(mods, dataManager);
+        public readonly RedundantRedirectionScanner Scanner = new(mods, dataManager, log);
 
         public override void Update()
         { }

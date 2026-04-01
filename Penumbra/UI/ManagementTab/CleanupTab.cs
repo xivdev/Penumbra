@@ -32,15 +32,15 @@ public sealed class CleanupTab(CleanupService cleanup, Configuration config) : I
             Im.Line.New();
         }
 
-        if (ImEx.Button("Clear Unused Local Mod Data Files"u8, default,
-                "Delete all local mod data files that do not correspond to currently installed mods."u8,
+        if (ImEx.Button("Clear Unused Local Mod Data Entries"u8, default,
+                "Delete all local mod data entries that do not correspond to currently installed mods."u8,
                 !enabled || cleanup.IsRunning))
             cleanup.CleanUnusedLocalData();
         if (!enabled)
-            Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"Hold {config.DeleteModModifier} while clicking to delete files.");
+            Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"Hold {config.DeleteModModifier} while clicking to delete entries.");
 
         if (ImEx.Button("Clear Backup Files"u8, default,
-                "Delete all backups of .json configuration files in your configuration folder and all backups of mod group files in your mod directory."u8,
+                "Delete all backups of .json configuration files in your configuration folder and all backups of mod group files in your mod directory, as well as the management log file."u8,
                 !enabled || cleanup.IsRunning))
             cleanup.CleanBackupFiles();
         if (!enabled)

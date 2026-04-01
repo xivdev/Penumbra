@@ -5,22 +5,25 @@ using Penumbra.Communication;
 using Penumbra.Import.Textures;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
-using Penumbra.String.Classes;
 using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.ManagementTab;
 
-public sealed class ReservedFilesTable(ModManager mods, TextureManager textures, UiNavigator navigator, Configuration config)
+public sealed class ReservedFilesTable(
+    ModManager mods,
+    TextureManager textures,
+    UiNavigator navigator,
+    Configuration config,
+    ReservedFiles reservedFiles,
+    ManagementLog<ReservedFiles> log)
     : TableBase<ReservedFileCacheObject, ScannerTabCache<ReservedFileCacheObject, ReservedFileRedirection>>(new StringU8("##fft"u8),
-        new ActionColumn(mods, config),
+        new ActionColumn(reservedFiles, config),
         new GamePathColumn<ReservedFileCacheObject, ReservedFileRedirection> { Label = new StringU8("Game Path"u8) },
-        new StateColumn { Label                                                        = new StringU8("State"u8) },
+        new StateColumn { Label                                                      = new StringU8("State"u8) },
         new TargetColumn<ReservedFileCacheObject, ReservedFileRedirection> { Label   = new StringU8("Target File"u8) },
-        new ModColumn(navigator) { Label                                               = new StringU8("Mod"u8) },
-        new ContainerColumn(navigator) { Label                                         = new StringU8("Option"u8) })
+        new ModColumn(navigator) { Label                                             = new StringU8("Mod"u8) },
+        new ContainerColumn(navigator) { Label                                       = new StringU8("Option"u8) })
 {
-    private const bool DryRun = false;
-
     /// <remarks> Implemented in the cache due to use of scanner. </remarks>>
     public override IEnumerable<ReservedFileCacheObject> GetItems()
         => [];
@@ -29,9 +32,9 @@ public sealed class ReservedFilesTable(ModManager mods, TextureManager textures,
     {
         cache.DrawScanButtons();
 
-        var active = config.DeleteModModifier.IsActive();
+        var active = config.IncognitoModifier.IsActive();
         if (ImEx.Button("Remove All Simple Redirections"u8, default, !active))
-            RemoveRedundant(cache, false);
+            reservedFiles.RemoveRedundant(cache, false);
 
         if (Im.Item.Hovered(HoveredFlags.AllowWhenDisabled))
         {
@@ -46,21 +49,28 @@ public sealed class ReservedFilesTable(ModManager mods, TextureManager textures,
             Im.Text("\nTHIS IS NOT REVERTIBLE."u8, Colors.RegexWarningBorder);
 
             if (!active)
-                Im.Text($"\nHold {config.DeleteModModifier} while clicking.");
+                Im.Text($"\nHold {config.IncognitoModifier} while clicking.");
         }
 
+        active = config.DeleteModModifier.IsActive();
         Im.Line.Same();
-        if (ImEx.Button("Remove All Reserved Redirections"u8, default, !active))
-            RemoveRedundant(cache, true);
+        using (ImGuiColor.Text.Push(Colors.RegexWarningBorder))
+        {
+            if (ImEx.Button("Remove All"u8, default, !active))
+                reservedFiles.RemoveRedundant(cache, true);
+        }
 
         if (Im.Item.Hovered(HoveredFlags.AllowWhenDisabled))
         {
             using var tt = Im.Tooltip.Begin();
             Im.Text("Executing this will"u8);
             Im.BulletText("Do everything 'Remove Simple Redirections' does."u8);
-            Im.BulletText("Also remove all redirections listed as 'Different'. Any mod with any of those redirections may not be working correctly anymore, but removing the redirection will not change that."u8);
+            Im.BulletText(
+                "Also remove all redirections listed as 'Different'. Any mod with any of those redirections may not be working correctly anymore, but removing the redirection will not change that."u8);
             Im.Text("\nTHIS IS NOT REVERTIBLE."u8, Colors.RegexWarningBorder);
-            Im.Text("\nAfter executing this, the next scan of this tab should yield no redirections and all warnings should be gone, but you will have no idea what mods where previously affected and might be broken now unless you took note beforehand."u8);
+            Im.Text(
+                "\nAfter executing this, the next scan of this tab should yield no redirections and all warnings should be gone, but you will have no idea what mods where previously affected and might be broken now unless you took note beforehand."u8,
+                Colors.RegexWarningBorder);
 
             if (!active)
                 Im.Text($"\nHold {config.DeleteModModifier} while clicking.");
@@ -68,10 +78,10 @@ public sealed class ReservedFilesTable(ModManager mods, TextureManager textures,
     }
 
     protected override ScannerTabCache<ReservedFileCacheObject, ReservedFileRedirection> CreateCache()
-        => new Cache(mods, textures, this);
+        => new Cache(mods, textures, log, this);
 
-    private sealed class Cache(ModManager mods, TextureManager textures, ReservedFilesTable parent)
-        : ScannerTabCache<ReservedFileCacheObject, ReservedFileRedirection>(parent, new ReservedFileScanner(mods, textures))
+    private sealed class Cache(ModManager mods, TextureManager textures, ManagementLog<ReservedFiles> log, ReservedFilesTable parent)
+        : ScannerTabCache<ReservedFileCacheObject, ReservedFileRedirection>(parent, new ReservedFileScanner(mods, textures, log))
     {
         protected override ReservedFileCacheObject Convert(ReservedFileRedirection obj)
             => new(obj);
@@ -79,15 +89,15 @@ public sealed class ReservedFilesTable(ModManager mods, TextureManager textures,
 
     private sealed class ActionColumn : BasicColumn<ReservedFileCacheObject>
     {
-        private readonly ModManager    _mods;
-        private readonly Configuration _config;
-        private          int           _deleteIndex = -1;
+        private readonly ReservedFiles _service;
+        private readonly Configuration       _config;
+        private          int                 _deleteIndex = -1;
 
-        public ActionColumn(ModManager mods, Configuration config)
+        public ActionColumn(ReservedFiles service, Configuration config)
         {
-            _mods   =  mods;
-            _config =  config;
-            Flags   |= TableColumnFlags.NoSort | TableColumnFlags.NoResize;
+            _service =  service;
+            _config  =  config;
+            Flags    |= TableColumnFlags.NoSort | TableColumnFlags.NoResize;
         }
 
         public override void PostDraw(in TableCache<ReservedFileCacheObject> cache)
@@ -108,34 +118,7 @@ public sealed class ReservedFilesTable(ModManager mods, TextureManager textures,
                         : "Remove this redirection and delete the target file if it was the last redirection in the mod referencing it."u8,
                     disabled))
             {
-                if (item.ScannedObject.Container.TryGetTarget(out var container))
-                {
-                    if (item.ScannedObject.FileSwap)
-                    {
-                        var swaps = container.FileSwaps.ToDictionary();
-                        if (swaps.Remove(item.ScannedObject.GamePath, out _))
-                        {
-                            if (!DryRun)
-                                _mods.OptionEditor.SetFileSwaps(container, swaps);
-                            Penumbra.Log.Debug(
-                                $"[ReservedFiles] Removed reserved file swap {item.ScannedObject.GamePath} -> {item.ScannedObject.FilePath} in {container.Mod.Name} - {container.GetFullName()}.");
-                        }
-                    }
-                    else
-                    {
-                        var redirections = container.Files.ToDictionary();
-                        if (redirections.Remove(item.ScannedObject.GamePath, out var file))
-                        {
-                            if (!DryRun)
-                                _mods.OptionEditor.SetFiles(container, redirections);
-                            Penumbra.Log.Debug(
-                                $"[ReservedFiles] Removed reserved file redirection {item.ScannedObject.GamePath} -> {item.ScannedObject.FilePath} in {container.Mod.Name} - {container.GetFullName()}.");
-                            if (file.Exists && ((Mod)container.Mod).AllDataContainers.All(c => !c.Files.ContainsValue(file)))
-                                DeleteFile(file);
-                        }
-                    }
-                }
-
+                _service.DeleteItem(item.ScannedObject);
                 _deleteIndex = globalIndex;
             }
 
@@ -154,20 +137,6 @@ public sealed class ReservedFilesTable(ModManager mods, TextureManager textures,
 
         protected override StringPair GetModName(in ReservedFileCacheObject item, int globalIndex)
             => item.Mod;
-
-        private string _lastMod = string.Empty;
-
-        protected override bool MatchesLastItem(in ReservedFileCacheObject item)
-        {
-            var ret = _lastMod == item.Mod.Utf16;
-            _lastMod = item.Mod.Utf16;
-            return ret;
-        }
-
-        public override void PostDraw(in TableCache<ReservedFileCacheObject> cache)
-        {
-            _lastMod = string.Empty;
-        }
     }
 
     private sealed class ContainerColumn(UiNavigator navigator) : ModColumn<ReservedFileCacheObject>(navigator)
@@ -178,20 +147,18 @@ public sealed class ReservedFilesTable(ModManager mods, TextureManager textures,
         protected override StringPair GetModName(in ReservedFileCacheObject item, int globalIndex)
             => item.Container;
 
-        private string _lastMod       = string.Empty;
         private string _lastContainer = string.Empty;
 
         protected override bool MatchesLastItem(in ReservedFileCacheObject item)
         {
-            var ret = _lastMod == item.Mod.Utf16 && _lastContainer == item.Container.Utf16;
-            _lastMod       = item.Mod.Utf16;
+            var ret = base.MatchesLastItem(item) && _lastContainer == item.Container.Utf16;
             _lastContainer = item.Container.Utf16;
             return ret;
         }
 
         public override void PostDraw(in TableCache<ReservedFileCacheObject> cache)
         {
-            _lastMod       = string.Empty;
+            base.PostDraw(cache);
             _lastContainer = string.Empty;
         }
     }
@@ -232,97 +199,5 @@ public sealed class ReservedFilesTable(ModManager mods, TextureManager textures,
 
         public override float ComputeWidth(IEnumerable<ReservedFileCacheObject> _)
             => ReservedFileCacheObject.Different.Utf8.CalculateSize().X + Im.Style.FrameHeightWithSpacing;
-    }
-
-    private void RemoveRedundant(ScannerTabCache<ReservedFileCacheObject, ReservedFileRedirection> cache, bool removeAll)
-    {
-        var files   = new SetDictionary<Mod, FullPath>();
-        var indices = new List<int>(cache.AllItems.Count);
-        foreach (var group in cache.AllItems.Select((r, i) => (r.ScannedObject, i))
-                     .GroupBy(r => r.ScannedObject.Container.TryGetTarget(out var container) ? container : null).ToList())
-        {
-            if (group.Key is not { } container)
-                continue;
-
-            var swaps        = container.FileSwaps.ToDictionary();
-            var redirections = container.Files.ToDictionary();
-            var different    = 0;
-
-            foreach (var (redirection, index) in group)
-            {
-                if (redirection.FileSwap)
-                {
-                    swaps.Remove(redirection.GamePath);
-                    Penumbra.Log.Debug(
-                        $"[ReservedFiles] Removed reserved file swap {redirection.GamePath} -> {redirection.FilePath} in {container.Mod.Name} - {container.GetFullName()}.");
-                    indices.Add(index);
-                }
-                else if (redirection.ConceptuallyEqual || redirection.Missing || redirection.Broken)
-                {
-                    redirections.Remove(redirection.GamePath, out var file);
-                    files.TryAdd((Mod)container.Mod, file);
-                    Penumbra.Log.Debug(
-                        $"[ReservedFiles] Removed reserved file redirection {redirection.GamePath} -> {redirection.FilePath} in {container.Mod.Name} - {container.GetFullName()} because the target file was {(redirection.Broken ? "broken." : redirection.Missing ? "missing." : "conceptually equal.")}");
-                    indices.Add(index);
-                }
-                else if (removeAll)
-                {
-                    ++different;
-                    redirections.Remove(redirection.GamePath, out var file);
-                    files.TryAdd((Mod)container.Mod, file);
-                    Penumbra.Log.Debug($"[ReservedFiles] Removed reserved file redirection {redirection.GamePath} -> {redirection.FilePath} in {container.Mod.Name} - {container.GetFullName()} despite the target file being different from the source.");
-                    indices.Add(index);
-                }
-            }
-
-            if (swaps.Count < container.FileSwaps.Count)
-            {
-                Penumbra.Log.Information(
-                    $"[ReservedFiles] Removed {container.FileSwaps.Count - swaps.Count} reserved file swaps in {container.Mod.Name} - {container.GetFullName()}.");
-                if (!DryRun)
-                    mods.OptionEditor.SetFileSwaps(container, swaps);
-            }
-
-            if (redirections.Count < container.Files.Count)
-            {
-                Penumbra.Log.Information(
-                    $"[ReservedFiles] Removed {container.Files.Count - redirections.Count} reserved file redirections in {container.Mod.Name} - {container.GetFullName()}{(different > 0 ? $" (including {different} Differing redirections)." : ".")}");
-                if (!DryRun)
-                    mods.OptionEditor.SetFiles(container, redirections);
-            }
-        }
-
-        indices.Sort();
-        foreach (var idx in indices.AsEnumerable().Reverse())
-            cache.DeleteSingleItem(idx);
-
-        foreach (var (mod, modFiles) in files.Grouped)
-        {
-            var collectedUsage = mod.AllDataContainers.SelectMany(m => m.Files.Values).ToHashSet();
-            foreach (var file in modFiles)
-            {
-                if (!file.Exists)
-                    continue;
-
-                if (!collectedUsage.Contains(file))
-                    DeleteFile(file);
-            }
-        }
-    }
-
-    private static void DeleteFile(in FullPath file)
-    {
-        try
-        {
-            if (!DryRun)
-                File.Delete(file.FullName);
-            Penumbra.Log.Information(
-                $"[ReservedFiles] Deleted now unused file {file.FullName} after removing it from reserved file redirections.");
-        }
-        catch (Exception ex)
-        {
-            Penumbra.Log.Error(
-                $"[ReservedFiles] Unable to delete reserved file {file.FullName} removed from all redirections:\n{ex}");
-        }
     }
 }
