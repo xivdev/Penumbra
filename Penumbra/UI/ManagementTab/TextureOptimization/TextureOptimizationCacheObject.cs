@@ -10,4 +10,7 @@ public sealed class TextureOptimizationCacheObject(OptimizableTexture obj) : Fil
     public readonly StringPair Height     = new($"{obj.Height}");
     public readonly StringPair SolidColor = obj.SolidColor.IsDefault ? StringPair.Empty : new StringPair(obj.SolidColor.Color!.ToString()!);
     public readonly StringPair Size       = new(FormattingFunctions.HumanReadableSize(obj.Size));
+    public readonly StringPair MipMaps    = new($"{obj.MipMaps}");
+    public          Task?      CompressionTask;
+    public          Task?      ResizeTask;
 }

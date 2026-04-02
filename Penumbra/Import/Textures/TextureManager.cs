@@ -343,7 +343,16 @@ public sealed class TextureManager(IDataManager gameData, LunaLogger logger, ITe
             ".tga"            => (LoadImageSharp(path), TextureType.Targa),
             ".bmp"            => (LoadImageSharp(path), TextureType.Bitmap),
             ".tex" or ".atex" => (LoadTex(path), TextureType.Tex),
-            _                 => throw new Exception($"Extension {Path.GetExtension(path)} unknown."),
+            ".bak" => GetTextureTypeForPath(path[..^4]) switch
+            {
+                TextureType.Dds    => (LoadDds(path), TextureType.Dds),
+                TextureType.Png    => (LoadImageSharp(path), TextureType.Png),
+                TextureType.Targa  => (LoadImageSharp(path), TextureType.Targa),
+                TextureType.Bitmap => (LoadImageSharp(path), TextureType.Bitmap),
+                TextureType.Tex    => (LoadTex(path), TextureType.Tex),
+                _                  => throw new Exception(path[..^4]),
+            },
+            _ => throw new Exception($"Extension {Path.GetExtension(path)} unknown."),
         };
 
     public static TextureType GetTextureTypeForPath(string path)

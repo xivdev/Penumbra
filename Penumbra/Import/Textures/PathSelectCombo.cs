@@ -62,7 +62,7 @@ public abstract class PathSelectCombo(IDataManager dataManager) : FilterComboBas
 
         Im.Tooltip.OnHover(item.IsGame
             ? "This is a game path and refers to an unmanipulated file from your game data."u8
-            : "This is a path to a modded file on your file system."u8);
+            : "This is a path to a modded file on your file system."u8, true);
         return ret;
     }
 

@@ -140,7 +140,7 @@ public sealed partial class IndividualCollections
 
     internal bool Add(ActorIdentifier[] identifiers, ModCollection collection)
     {
-        if (identifiers.Length == 0 || !identifiers[0].IsValid)
+        if (identifiers.Length is 0 || !identifiers[0].IsValid)
             return false;
 
         var name = DisplayString(identifiers[0]);
@@ -149,8 +149,8 @@ public sealed partial class IndividualCollections
 
     private bool Add(string displayName, ActorIdentifier[] identifiers, ModCollection collection)
     {
-        if (CanAdd(identifiers) != AddResult.Valid
-         || displayName.Length == 0
+        if (CanAdd(identifiers) is not AddResult.Valid
+         || displayName.Length is 0
          || _assignments.Any(a => a.DisplayName.Equals(displayName, StringComparison.OrdinalIgnoreCase)))
             return false;
 

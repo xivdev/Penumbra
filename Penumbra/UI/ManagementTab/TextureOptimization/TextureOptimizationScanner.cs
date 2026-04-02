@@ -6,7 +6,7 @@ using Penumbra.Mods.Manager;
 
 namespace Penumbra.UI.ManagementTab;
 
-public sealed class TextureOptimizationScanner(ModManager mods, TextureOptimizationTable table, ManagementLog<TextureOptimization> log)
+public sealed class TextureOptimizationScanner(ModManager mods, TextureOptimizationConfig config, ManagementLog<TextureOptimization> log)
     : ModFileScanner<OptimizableTexture>(mods, log)
 {
     protected override unsafe OptimizableTexture Create(string fileName, Mod mod)
@@ -18,17 +18,17 @@ public sealed class TextureOptimizationScanner(ModManager mods, TextureOptimizat
             var size     = fileInfo.Length;
             if (size <= sizeof(TexFile.TexHeader))
                 return new OptimizableTexture(fileName, mod);
-            if (size <= table.LowerSizeLimit)
+            if (size <= config.LowerSizeLimit)
                 return new OptimizableTexture(fileName, mod, true);
 
             using var stream = fileInfo.OpenRead();
             var       data   = TexFileParser.Parse(stream);
-            if (data.Meta.Width <= table.SmallDimensionLimit
-             && data.Meta.Height <= table.SmallDimensionLimit)
+            if (data.Meta.Width <= config.SmallDimensionLimit
+             && data.Meta.Height <= config.SmallDimensionLimit)
                 return new OptimizableTexture(fileName, mod, true);
 
-            var large = data.Meta.Width >= table.LargeDimensionLimit
-             || data.Meta.Height >= table.LargeDimensionLimit;
+            var large = data.Meta.Width >= config.LargeDimensionLimit
+             || data.Meta.Height >= config.LargeDimensionLimit;
             var uncompressed = !data.Meta.Format.IsCompressed();
             if (data.IsSolidColor(out var color))
                 return new OptimizableTexture(fileName, mod, size, data.Meta.Format, color, data.Meta.Width, data.Meta.Height,
