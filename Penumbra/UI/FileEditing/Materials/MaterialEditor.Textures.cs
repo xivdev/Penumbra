@@ -122,7 +122,7 @@ public partial class MaterialEditor
             var       tmp      = Mtrl.Textures[textureI].Path;
             var       unfolded = UnfoldedTextures.Contains(samplerI);
             table.NextColumn();
-            if (ImEx.Icon.Button(unfolded ? LunaStyle.TreeExpandIcon : LunaStyle.TreeCollapseIcon,
+            if (ImEx.Icon.Button(unfolded ? LunaStyle.TreeCollapseIcon : LunaStyle.TreeExpandIcon,
                     "Settings for this texture and the associated sampler"u8))
             {
                 unfolded = !unfolded;
