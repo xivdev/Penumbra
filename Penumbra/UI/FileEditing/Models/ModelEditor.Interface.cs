@@ -174,7 +174,7 @@ public partial class ModelEditor
 
         var size = Im.ContentRegion.Available with { Y = 0 };
         using var frame = ImEx.FramedGroup("Exceptions"u8, LunaStyle.ErrorIcon, default, StringU8.Empty, ColorParameter.Default,
-            LunaStyle.ErrorBorderColor, size);
+            LunaStyle.ErrorForeground, size);
 
         var spaceAvail = Im.ContentRegion.Available.X - Im.Style.ItemSpacing.X - 100;
         foreach (var (index, exception) in IoExceptions.Index())
@@ -201,7 +201,7 @@ public partial class ModelEditor
 
         var size = Im.ContentRegion.Available with { Y = 0 };
         using var frame = ImEx.FramedGroup("Warnings"u8, LunaStyle.WarningIcon, default, StringU8.Empty, ColorParameter.Default,
-            LunaStyle.WarningBorderColor, size);
+            LunaStyle.WarningForeground, size);
 
         var spaceAvail = Im.ContentRegion.Available.X - Im.Style.ItemSpacing.X - 100;
         foreach (var (index, warning) in IoWarnings.Index())
