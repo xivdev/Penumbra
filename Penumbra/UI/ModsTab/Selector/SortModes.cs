@@ -15,7 +15,13 @@ public readonly struct ImportDate : ISortMode
         => "In each folder, sort all subfolders lexicographically, then sort all leaves using their import date."u8;
 
     public IEnumerable<IFileSystemNode> GetChildren(IFileSystemFolder f)
-        => f.GetSubFolders().Cast<IFileSystemNode>().Concat(f.GetLeaves().OfType<IFileSystemData<Mod>>().OrderBy(l => l.Value.ImportDate));
+        => ISortMode.GetFolderLike(f)
+            .Concat(ISortMode.GetLeaveLike(f).OrderBy(l => l switch
+            {
+                IFileSystemData<Mod> m => m.Value.ImportDate,
+                IFileSystemSeparator s => s.CreationDate,
+                _                      => 0L,
+            }));
 }
 
 public readonly struct InverseImportDate : ISortMode
@@ -29,8 +35,13 @@ public readonly struct InverseImportDate : ISortMode
         => "In each folder, sort all subfolders lexicographically, then sort all leaves using their inverse import date."u8;
 
     public IEnumerable<IFileSystemNode> GetChildren(IFileSystemFolder f)
-        => f.GetSubFolders().Cast<IFileSystemNode>()
-            .Concat(f.GetLeaves().OfType<IFileSystemData<Mod>>().OrderByDescending(l => l.Value.ImportDate));
+        => ISortMode.GetFolderLike(f)
+            .Concat(ISortMode.GetLeaveLike(f).OrderByDescending(l => l switch
+            {
+                IFileSystemData<Mod> m => m.Value.ImportDate,
+                IFileSystemSeparator s => s.CreationDate,
+                _                      => 0L,
+            }));
 }
 
 public static class SortModeExtensions
