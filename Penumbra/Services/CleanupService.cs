@@ -74,6 +74,7 @@ public class CleanupService(SaveService saveService, ModManager mods, Collection
         _task = Task.Run(() =>
         {
             var configFiles = Directory.EnumerateFiles(saveService.FileNames.ConfigurationDirectory, "*.json.bak", SearchOption.AllDirectories)
+                .Append(saveService.FileNames.ManagementLog)
                 .ToList();
             Progress = 0.1;
             if (_cancel.IsCancellationRequested)

@@ -13,6 +13,7 @@ using Penumbra.Mods.Settings;
 using Penumbra.Services;
 using Penumbra.String.Classes;
 using Penumbra.UI;
+using Penumbra.UI.ManagementTab;
 
 namespace Penumbra.Collections.Cache;
 
@@ -28,7 +29,7 @@ public class CollectionCacheManager : IDisposable, IService
     internal readonly ResolvedFileChanged       ResolvedFileChanged;
     internal readonly MetaFileManager           MetaFileManager;
     internal readonly ResourceLoader            ResourceLoader;
-    internal readonly ForbiddenFileNotification ForbiddenNotification;
+    internal readonly ReservedFileNotification ReservedNotification;
 
     private readonly ConcurrentQueue<CollectionCache.ChangeData> _changeQueue = new();
 
@@ -42,7 +43,7 @@ public class CollectionCacheManager : IDisposable, IService
 
     public CollectionCacheManager(FrameworkManager framework, CommunicatorService communicator, TempModManager tempMods, ModStorage modStorage,
         MetaFileManager metaFileManager, ActiveCollections active, CollectionStorage storage, ResourceLoader resourceLoader,
-        Configuration config, ForbiddenFileNotification forbiddenNotification)
+        Configuration config, ReservedFileNotification reservedNotification)
     {
         _framework            = framework;
         _communicator         = communicator;
@@ -53,7 +54,7 @@ public class CollectionCacheManager : IDisposable, IService
         _storage              = storage;
         ResourceLoader        = resourceLoader;
         Config                = config;
-        ForbiddenNotification = forbiddenNotification;
+        ReservedNotification = reservedNotification;
         ResolvedFileChanged   = _communicator.ResolvedFileChanged;
 
         if (!_active.Individuals.IsLoaded)

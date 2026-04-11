@@ -7,36 +7,36 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.UI.ManagementTab;
 
-public sealed class ForbiddenFileScanner(ModManager mods, TextureManager textures) : RedirectionScanner<ForbiddenFileRedirection>(mods)
+public sealed class ReservedFileScanner(ModManager mods, TextureManager textures, ManagementLog<ReservedFiles> log) : RedirectionScanner<ReservedFileRedirection>(mods, log)
 {
-    private readonly FrozenDictionary<uint, Rgba32>? _originalFiles = ForbiddenFilesTab.ForbiddenFiles.ToFrozenDictionary(kvp => kvp.Key, kvp =>
+    private readonly FrozenDictionary<uint, Rgba32>? _originalFiles = ReservedFiles.Files.ToFrozenDictionary(kvp => kvp.Key, kvp =>
     {
         var file = textures.LoadTex(kvp.Value.ToString());
         var data = file.IsSolidColor();
         return data.IsDefault
-            ? throw new Exception($"Forbidden file {kvp.Value} could not be loaded from game files.")
+            ? throw new Exception($"Reserved file {kvp.Value} could not be loaded from game files.")
             : data.Color!.Value;
     });
 
-    protected override ForbiddenFileRedirection Create(Utf8GamePath path, FullPath redirection, IModDataContainer container, bool swap)
+    protected override ReservedFileRedirection Create(Utf8GamePath path, FullPath redirection, IModDataContainer container, bool swap)
     {
         if (swap)
-            return new ForbiddenFileRedirection(path, redirection, container, true, false, false);
+            return new ReservedFileRedirection(path, redirection, container, true, false, false);
 
         try
         {
             if (!File.Exists(redirection.FullName))
-                return new ForbiddenFileRedirection(path, redirection, container, false, false, false);
+                return new ReservedFileRedirection(path, redirection, container, false, false, false);
 
             var data             = textures.LoadTex(redirection.FullName);
             var redirectionColor = data.IsSolidColor();
-            return new ForbiddenFileRedirection(path, redirection, container, false, false,
+            return new ReservedFileRedirection(path, redirection, container, false, false,
                 ContextuallyEqual((uint)path.Path.Crc32, redirectionColor));
         }
         catch (Exception ex)
         {
-            Penumbra.Log.Warning($"Could not read forbidden file redirection file {redirection}:\n{ex}");
-            return new ForbiddenFileRedirection(path, redirection, container, false, false, false, true);
+            Penumbra.Log.Warning($"Could not read reserved file redirection file {redirection}:\n{ex}");
+            return new ReservedFileRedirection(path, redirection, container, false, false, false, true);
         }
     }
 
@@ -68,5 +68,5 @@ public sealed class ForbiddenFileScanner(ModManager mods, TextureManager texture
     }
 
     protected override bool DoCreateRedirection(Utf8GamePath path, FullPath redirection, IModDataContainer container, bool swap)
-        => ForbiddenFilesTab.ForbiddenFiles.ContainsKey((uint)path.Path.Crc32);
+        => ReservedFiles.Files.ContainsKey((uint)path.Path.Crc32);
 }

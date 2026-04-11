@@ -140,12 +140,12 @@ public sealed class ModPanelChangedItemsTab(
                     // reversed
                     var preferred = _lastSelected.PreferredChangedItems.Contains(i2.Item.Id)
                         .CompareTo(_lastSelected.PreferredChangedItems.Contains(i1.Item.Id));
-                    if (preferred != 0)
+                    if (preferred is not 0)
                         return preferred;
 
                     // reversed
                     var count = i2.Count.CompareTo(i1.Count);
-                    if (count != 0)
+                    if (count is not 0)
                         return count;
 
                     return string.Compare(i1.Item.Name, i2.Item.Name, StringComparison.Ordinal);
@@ -177,7 +177,7 @@ public sealed class ModPanelChangedItemsTab(
             void AddList(List<IdentifiedItem> list)
             {
                 var mainItem = list[0];
-                if (list.Count == 1)
+                if (list.Count is 1)
                 {
                     Data.Add(Container.Single(mainItem.Item.Name, mainItem));
                 }
@@ -233,38 +233,43 @@ public sealed class ModPanelChangedItemsTab(
             .Push(ImGuiColor.ButtonActive,  Rgba32.Transparent)
             .Push(ImGuiColor.ButtonHovered, Rgba32.Transparent);
 
+        var state = Im.State.Storage;
+        cache.Update(_mod, drawer, config.Filters.ModChangedItemTypeFilter, config.ChangedItemDisplay);
         using var table = Im.Table.Begin("##changedItems"u8, cache.AnyExpandable ? 2 : 1, TableFlags.RowBackground | TableFlags.ScrollY,
             Im.ContentRegion.Available);
         if (!table)
             return;
 
-        cache.Update(_mod, drawer, config.Filters.ModChangedItemTypeFilter, config.ChangedItemDisplay);
+        using var clipper = new Im.ListClipper(cache.Data.Count, _buttonSize.Y);
         _starColor = ColorId.ChangedItemPreferenceStar.Value();
+        var idx = 0;
         if (cache.AnyExpandable)
         {
             table.SetupColumn("##exp"u8,  TableColumnFlags.WidthFixed, _buttonSize.Y);
             table.SetupColumn("##text"u8, TableColumnFlags.WidthStretch);
-            Im.ListClipper.Draw(cache.Data, DrawContainerExpandable, _buttonSize.Y);
+            foreach (var item in clipper.Iterate(cache.Data))
+                DrawContainerExpandable(state, item, idx++);
         }
         else
         {
-            Im.ListClipper.Draw(cache.Data, DrawContainer, _buttonSize.Y);
+            foreach (var item in clipper.Iterate(cache.Data))
+                DrawContainer(item, idx++);
         }
     }
 
-    private void DrawContainerExpandable(ChangedItemsCache.Container obj, int idx)
+    private void DrawContainerExpandable(Im.StateStorage state, ChangedItemsCache.Container obj, int idx)
     {
         using var id = Im.Id.Push(idx);
         Im.Table.NextColumn();
         if (obj.Expandable)
         {
-            if (ImEx.Icon.Button(obj.Expanded ? LunaStyle.ExpandDownIcon : LunaStyle.CollapseUpIcon,
+            if (ImEx.Icon.Button(obj.Expanded ? LunaStyle.TreeExpandIcon : LunaStyle.TreeCollapseIcon,
                     obj.Expanded     ? "Hide the other items using the same model."u8 :
                     obj.Children > 1 ? $"Show {obj.Children} other items using the same model." :
                                        "Show one other item using the same model."u8,
                     _buttonSize))
             {
-                Im.State.Storage.SetBool(obj.Id, !obj.Expanded);
+                state.SetBool(obj.Id, !obj.Expanded);
                 if (CacheManager.Instance.TryGetCache<ChangedItemsCache>(_id, out var cache))
                     cache.Reset();
             }

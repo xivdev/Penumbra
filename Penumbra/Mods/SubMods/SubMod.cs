@@ -64,9 +64,11 @@ public static class SubMod
                     data.FileSwaps.TryAdd(p, new FullPath(property.Value.ToObject<string>()!));
             }
 
+        MetaDictionary.SetCurrentContainer(data);
         var manips = json[nameof(data.Manipulations)]?.ToObject<MetaDictionary>();
         if (manips is not null)
             data.Manipulations.UnionWith(manips);
+        MetaDictionary.SetCurrentContainer(null!);
     }
 
     /// <summary> Load the relevant data for a selectable option from a JToken of that option. </summary>

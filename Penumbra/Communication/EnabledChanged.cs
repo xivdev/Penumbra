@@ -3,7 +3,7 @@ using Luna;
 namespace Penumbra.Communication;
 
 /// <summary> Triggered when the general Enabled state of Penumbra is changed. </summary>
-public sealed class EnabledChanged(Logger log) : EventBase<EnabledChanged.Arguments, EnabledChanged.Priority>(nameof(EnabledChanged), log)
+public sealed class EnabledChanged(LunaLogger log) : EventBase<EnabledChanged.Arguments, EnabledChanged.Priority>(nameof(EnabledChanged), log)
 {
     public enum Priority
     {

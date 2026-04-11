@@ -136,8 +136,8 @@ public class ModPanelConflictsTab(CollectionManager collectionManager, ModSelect
     private void DrawExpandButton(IMod mod, bool expanded, Vector2 buttonSize)
     {
         var (icon, tt) = expanded
-            ? RefTuple.Create(LunaStyle.CollapseUpIcon, "Hide the conflicting files for this mod."u8)
-            : RefTuple.Create(LunaStyle.ExpandDownIcon, "Show the conflicting files for this mod."u8);
+            ? RefTuple.Create(LunaStyle.TreeCollapseIcon, "Hide the conflicting files for this mod."u8)
+            : RefTuple.Create(LunaStyle.TreeExpandIcon, "Show the conflicting files for this mod."u8);
         if (ImEx.Icon.Button(icon, tt, buttonSize))
         {
             if (expanded)

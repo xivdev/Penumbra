@@ -28,7 +28,7 @@ public sealed unsafe class AttributeHook : EventBase<AttributeHook.Arguments, At
     private readonly CollectionResolver _resolver;
     private readonly Configuration      _config;
 
-    public AttributeHook(Logger log, HookManager hooks, Configuration config, CollectionResolver resolver)
+    public AttributeHook(LunaLogger log, HookManager hooks, Configuration config, CollectionResolver resolver)
         : base("Update Model Attributes", log)
     {
         _config   = config;

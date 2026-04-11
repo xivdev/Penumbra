@@ -28,6 +28,9 @@ public partial class Configuration : IPluginConfiguration, ISavable, IService
     public readonly FilterConfig Filters;
 
     [JsonIgnore]
+    public readonly TextureOptimizationConfig TextureOptimization;
+
+    [JsonIgnore]
     public readonly UiConfig Ui;
 
     public int Version { get; set; } = Constants.CurrentVersion;
@@ -157,12 +160,13 @@ public partial class Configuration : IPluginConfiguration, ISavable, IService
     /// Includes adding new colors and migrating from old versions.
     /// </summary>
     public Configuration(CharacterUtility utility, ConfigMigrationService migrator, SaveService saveService, EphemeralConfig ephemeral,
-        UiConfig ui, FilterConfig filters)
+        UiConfig ui, FilterConfig filters, TextureOptimizationConfig textureOptimization)
     {
-        _saveService = saveService;
-        Ephemeral    = ephemeral;
-        Ui           = ui;
-        Filters      = filters;
+        _saveService        = saveService;
+        Ephemeral           = ephemeral;
+        Ui                  = ui;
+        Filters             = filters;
+        TextureOptimization = textureOptimization;
         Load(utility, migrator);
     }
 
@@ -201,9 +205,9 @@ public partial class Configuration : IPluginConfiguration, ISavable, IService
     /// <summary> Contains some default values or boundaries for config values. </summary>
     public static class Constants
     {
-        public const int   CurrentVersion      = 13;
-        public const int   MinimumSizeX        = 900;
-        public const int   MinimumSizeY        = 675;
+        public const int CurrentVersion = 13;
+        public const int MinimumSizeX   = 900;
+        public const int MinimumSizeY   = 675;
     }
 
     /// <summary> Convert SortMode Types to their name. </summary>

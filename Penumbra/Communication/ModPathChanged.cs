@@ -7,7 +7,7 @@ using Penumbra.Services;
 namespace Penumbra.Communication;
 
 /// <summary> Triggered whenever a mod is added, deleted, moved or reloaded. </summary>
-public sealed class ModPathChanged(Logger log)
+public sealed class ModPathChanged(LunaLogger log)
     : EventBase<ModPathChanged.Arguments, ModPathChanged.Priority>(nameof(ModPathChanged), log)
 {
     public enum Priority

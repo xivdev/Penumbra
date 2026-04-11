@@ -41,7 +41,7 @@ public sealed class ChangedItemsTab(
             _drawer       = drawer;
             _filterConfig = config.Filters;
             if (!config.RememberChangedItemFilters)
-                Clear();
+                ClearOnStart();
             _filterConfig.ChangedItemTypeFilterChanged += OnChangedItemTypeFilterChanged;
         }
 
@@ -90,13 +90,18 @@ public sealed class ChangedItemsTab(
             if (!changes)
                 return false;
 
+            ClearOnStart();
+            FilterChanged?.Invoke();
+            return true;
+        }
+
+        public void ClearOnStart()
+        {
             _filterConfig.ChangedItemModFilter  = string.Empty;
             _filterConfig.ChangedItemItemFilter = string.Empty;
             _ownUpdate                          = true;
             _filterConfig.ChangedItemTypeFilter = ChangedItemFlagExtensions.DefaultFlags;
             _ownUpdate                          = false;
-            FilterChanged?.Invoke();
-            return true;
         }
 
         public bool IsEmpty

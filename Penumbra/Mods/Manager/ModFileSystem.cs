@@ -11,7 +11,7 @@ public sealed class ModFileSystem : BaseFileSystem, IDisposable, IRequiredServic
     private readonly CommunicatorService _communicator;
     private readonly ModFileSystemSaver  _saver;
 
-    public ModFileSystem(Configuration config, CommunicatorService communicator, SaveService saveService, Logger log, ModStorage modStorage, LocalModDatabase database)
+    public ModFileSystem(Configuration config, CommunicatorService communicator, SaveService saveService, LunaLogger log, ModStorage modStorage, LocalModDatabase database)
         : base("ModFileSystem", log, true)
     {
         _config       = config;

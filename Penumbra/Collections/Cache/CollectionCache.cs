@@ -1,4 +1,3 @@
-using Dalamud.Interface.ImGuiNotification;
 using Luna;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
@@ -7,7 +6,6 @@ using Penumbra.Mods.Editor;
 using Penumbra.String.Classes;
 using Penumbra.Util;
 using Penumbra.GameData.Data;
-using Penumbra.Interop.PathResolving;
 
 namespace Penumbra.Collections.Cache;
 
@@ -280,28 +278,6 @@ public sealed class CollectionCache : IDisposable
             _manager.ResolvedFileChanged.Invoke(new ResolvedFileChanged.Arguments(type, collection, key, value, old, mod));
     }
 
-    private sealed class ForbiddenFileNotification : Luna.Notification
-    {
-
-        public ForbiddenFileNotification(string content, NotificationType type = NotificationType.Warning)
-            : base(content, type)
-        { }
-
-        public ForbiddenFileNotification(string content, TimeSpan duration, NotificationType type = NotificationType.Warning)
-            : base(content, duration, type)
-        { }
-
-        public ForbiddenFileNotification(Exception ex, string content1, string content2, NotificationType type = NotificationType.Error)
-            : base(ex, content1, content2, type)
-        { }
-
-        public ForbiddenFileNotification(Exception ex, string content1, string content2, TimeSpan duration, NotificationType type = NotificationType.Error)
-            : base(ex, content1, content2, duration, type)
-        { }
-    }
-
-
-
     // Add a specific file redirection, handling potential conflicts.
     // For different mods, higher mod priority takes precedence before option group priority,
     // which takes precedence before option priority, which takes precedence before ordering.
@@ -311,7 +287,7 @@ public sealed class CollectionCache : IDisposable
         if (!CheckFullPath(path, file))
             return;
 
-        if (!_manager.ForbiddenNotification.IsRedirectionSupported(path, mod, _collection.Identity.Index <= 0))
+        if (!_manager.ReservedNotification.IsRedirectionSupported(path, mod, _collection.Identity.Index <= 0))
             return;
 
         try

@@ -17,7 +17,7 @@ public sealed unsafe class CharacterBaseDestructor : EventBase<CharacterBaseDest
         MtrlTab = -1000,
     }
 
-    public CharacterBaseDestructor(Logger log, HookManager hooks)
+    public CharacterBaseDestructor(LunaLogger log, HookManager hooks)
         : base("Destroy CharacterBase", log)
         => _task = hooks.CreateHook<Delegate>(Name, Address, Detour, !HookOverrides.Instance.Objects.CharacterBaseDestructor);
 

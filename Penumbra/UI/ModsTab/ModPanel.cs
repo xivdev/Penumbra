@@ -20,7 +20,7 @@ public class ModPanel : IDisposable, IPanel
         _selection     = selection;
         _tabs          = tabs;
         _multiModPanel = multiModPanel;
-        _header        = new ModPanelHeader(pi, communicator);
+        _header        = new ModPanelHeader(pi, communicator, selection);
         _selection.Subscribe(OnSelectionChange, ModSelection.Priority.ModPanel);
         OnSelectionChange(new ModSelection.Arguments(null, _selection.Mod));
     }
@@ -70,7 +70,6 @@ public class ModPanel : IDisposable, IPanel
         {
             _valid = true;
             _mod   = arguments.NewSelection;
-            _header.ChangeMod(_mod);
             _tabs.Settings.Reset();
             _tabs.Edit.Reset();
         }

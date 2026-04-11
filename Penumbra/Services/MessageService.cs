@@ -3,14 +3,15 @@ using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Plugin.Services;
 using Lumina.Excel.Sheets;
+using Luna;
 using Penumbra.GameData.Data;
 using Penumbra.Mods.Manager;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Services;
 
-public class MessageService(Luna.Logger log, IChatGui chat, INotificationManager notificationManager)
-    : Luna.MessageService(log, chat, notificationManager), Luna.IService
+public class MessageService(LunaLogger log, IChatGui chat, INotificationManager notificationManager)
+    : Luna.MessageService(log, chat, notificationManager), IService
 {
     public void LinkItem(in Item item)
     {
@@ -46,7 +47,8 @@ public class MessageService(Luna.Logger log, IChatGui chat, INotificationManager
             return;
 
         AddTaggedMessage($"{fullPath}.{messageComplement}",
-            new Luna.Notification(
-                $"Cowardly refusing to load replacement for\n\t{originalGamePath.Filename().ToString().ToLowerInvariant()}\nby\n\t{mod.Name}{(messageComplement.Length > 0 ? ":\n" : ".")}{messageComplement}", TimeSpan.FromSeconds(10)));
+            new Notification(
+                $"Cowardly refusing to load replacement for\n\t{originalGamePath.Filename().ToString().ToLowerInvariant()}\nby\n\t{mod.Name}{(messageComplement.Length > 0 ? ":\n" : ".")}{messageComplement}",
+                TimeSpan.FromSeconds(10)));
     }
 }

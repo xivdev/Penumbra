@@ -3,7 +3,7 @@ using Penumbra.Collections;
 
 namespace Penumbra.Communication;
 
-public sealed class CollectionRename(Logger log)
+public sealed class CollectionRename(LunaLogger log)
     : EventBase<CollectionRename.Arguments, CollectionRename.Priority>(nameof(CollectionRename), log)
 {
     public enum Priority

@@ -43,11 +43,11 @@ public enum GlobalEqpType
     [Tooltip("Forces the game to hide Au Ra horns regardless of headwear.")]
     HideHorns,
 
-    [Name("Always Hide Horns (Viera)")]
+    [Name("Always Hide Ears (Viera)")]
     [Tooltip("Forces the game to hide Viera ears regardless of headwear.")]
     HideVieraEars,
 
-    [Name("Always Hide Horns (Miqo'te)")]
+    [Name("Always Hide Ears (Miqo'te)")]
     [Tooltip("Forces the game to hide Miqo'te ears regardless of headwear.")]
     HideMiqoteEars,
 }

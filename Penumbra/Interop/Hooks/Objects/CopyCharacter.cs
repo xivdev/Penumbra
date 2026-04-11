@@ -13,7 +13,7 @@ public sealed unsafe class CopyCharacter : EventBase<CopyCharacter.Arguments, Co
         CutsceneService = 0,
     }
 
-    public CopyCharacter(Logger log, HookManager hooks)
+    public CopyCharacter(LunaLogger log, HookManager hooks)
         : base("Copy Character", log)
         => _task = hooks.CreateHook<Delegate>(Name, Address, Detour, !HookOverrides.Instance.Objects.CopyCharacter);
 

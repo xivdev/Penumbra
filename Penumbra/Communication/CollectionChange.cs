@@ -7,7 +7,7 @@ using Penumbra.UI.MainWindow;
 namespace Penumbra.Communication;
 
 /// <summary> Triggered whenever collection setup is changed. </summary>
-public sealed class CollectionChange(Logger log)
+public sealed class CollectionChange(LunaLogger log)
     : EventBase<CollectionChange.Arguments, CollectionChange.Priority>(nameof(CollectionChange), log)
 {
     public enum Priority

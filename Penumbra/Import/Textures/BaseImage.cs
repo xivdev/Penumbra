@@ -124,7 +124,7 @@ public readonly struct BaseImage : IDisposable, IEquatable<BaseImage>, IEquality
                     throw new NotImplementedException();
 
                 ref readonly var image = ref scratch.Images[lod];
-                var downscaled = ScratchImage.Initialize2D(meta.Format, image.Width, image.Height, meta.ArraySize, meta.MipLevels - lod);
+                var downscaled = ScratchImage.Initialize2D(meta.Format, image.Width , image.Height, meta.ArraySize, meta.MipLevels - lod);
                 fixed (byte* ptr = downscaled.Pixels)
                 {
                     var span = new Span<byte>(ptr, downscaled.Pixels.Length);

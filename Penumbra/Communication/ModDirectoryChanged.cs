@@ -5,7 +5,7 @@ using Penumbra.UI.Classes;
 namespace Penumbra.Communication;
 
 /// <summary> Triggered whenever the mod root directory changes. </summary>
-public sealed class ModDirectoryChanged(Logger log)
+public sealed class ModDirectoryChanged(LunaLogger log)
     : EventBase<ModDirectoryChanged.Arguments, ModDirectoryChanged.Priority>(nameof(ModDirectoryChanged), log)
 {
     public enum Priority

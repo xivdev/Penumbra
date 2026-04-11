@@ -277,7 +277,7 @@ public class ResourceTreeViewer(
                 var unfoldable = hasVisibleChildren && visibility != NodeVisibility.DescendentsOnly;
                 if (unfoldable)
                 {
-                    var icon   = unfolded ? LunaStyle.CollapseUpIcon : LunaStyle.ExpandDownIcon;
+                    var icon   = unfolded ? LunaStyle.TreeCollapseIcon : LunaStyle.TreeExpandIcon;
                     var offset = (Im.Style.FrameHeight - ImEx.Icon.CalculateSize(icon).X) / 2;
                     Im.Cursor.X += offset;
                     ImEx.Icon.Draw(icon);

@@ -3,10 +3,13 @@ using Penumbra.Mods;
 
 namespace Penumbra.UI.ManagementTab;
 
+internal static class CacheObject
+{
+    public static readonly StringPair None = new("<None>", new StringU8("<None>"u8));
+}
+
 public class RedirectionCacheObject<T> where T : BaseScannedRedirection
 {
-    private static readonly StringPair  None = new("<None>", new StringU8("<None>"));
-
     public readonly T          ScannedObject;
     public readonly StringPair GamePath;
     public readonly StringPair Target;
@@ -20,7 +23,7 @@ public class RedirectionCacheObject<T> where T : BaseScannedRedirection
         Target        = GetTarget(redirection);
         (Container, Mod) = redirection.Container.TryGetTarget(out var container)
             ? (new StringPair(container.GetFullName()), new StringPair(container.Mod.Name))
-            : (None, None);
+            : (CacheObject.None, CacheObject.None);
     }
 
     private static StringPair GetTarget(T redirection)
@@ -34,5 +37,19 @@ public class RedirectionCacheObject<T> where T : BaseScannedRedirection
             return new StringPair(redirection.Redirection.FullName);
 
         return new StringPair(path.Path.Span);
+    }
+}
+
+public class FileCacheObject<T> where T : BaseScannedFile
+{
+    public readonly T          ScannedObject;
+    public readonly StringPair File;
+    public readonly StringPair Mod;
+
+    protected FileCacheObject(T file)
+    {
+        ScannedObject = file;
+        Mod           = file.Mod.TryGetTarget(out var m) ? new StringPair(m.Name) : CacheObject.None;
+        File          = new StringPair(file.RelativePath);
     }
 }

@@ -9,7 +9,7 @@ public enum ManagementTabType
 {
     UnusedMods,
     DuplicateMods,
-    ForbiddenFiles,
+    ReservedFiles,
     Cleanup,
     UnusedFiles,
     RedundantFiles,
@@ -26,17 +26,17 @@ public sealed class ManagementTab : TabBar<ManagementTabType>, ITab<TabType>, ID
     public TabType Identifier
         => TabType.Management;
 
-    public ManagementTab(Logger log,
+    public ManagementTab(LunaLogger log,
         EphemeralConfig config,
         UnusedModsTab unusedMods,
         DuplicateModsTab duplicateMods,
-        ForbiddenFilesTab forbiddenFiles,
+        ReservedFilesTab reservedFiles,
         UnusedFilesTab unusedFiles,
         RedundantFilesTab redundantFiles,
         TextureOptimizationTab textureOptimization,
         CleanupTab cleanup,
         UiNavigator navigator)
-        : base("Management", log, unusedMods, duplicateMods, forbiddenFiles, unusedFiles, redundantFiles, textureOptimization, cleanup)
+        : base("Management", log, unusedMods, duplicateMods, reservedFiles, unusedFiles, redundantFiles, textureOptimization, cleanup)
     {
         _navigator = navigator;
         NextTab    = config.SelectedManagementTab;

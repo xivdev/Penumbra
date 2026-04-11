@@ -1,3 +1,4 @@
+using Dalamud.Interface.ImGuiNotification;
 using Luna;
 using Penumbra.Communication;
 using Penumbra.Interop;
@@ -146,7 +147,7 @@ public sealed class ModManager : ModStorage, IDisposable, IService
         if (!Creator.ReloadMod(mod, true, false, out var metaChange))
         {
             if (mod.RequiredFeatures is not FeatureFlags.Invalid)
-                Penumbra.Log.Warning(mod.Name.Length == 0
+                Penumbra.Log.Warning(mod.Name.Length is 0
                     ? $"Reloading mod {oldName} has failed, new name is empty. Removing from loaded mods instead."
                     : $"Reloading mod {oldName} failed, {mod.ModPath.FullName} does not exist anymore or it has invalid data. Removing from loaded mods instead.");
             RemoveMod(mod);
@@ -340,7 +341,7 @@ public sealed class ModManager : ModStorage, IDisposable, IService
                 }
                 catch (Exception ex)
                 {
-                    Penumbra.Log.Warning($"Failed to load mod at {dir}:\n{ex}");
+                    Penumbra.Messager.NotificationMessage(ex, $"Failed to load mod {dir.Name}.", $"Failed to load mod at {dir.FullName}", NotificationType.Error);
                 }
             });
 

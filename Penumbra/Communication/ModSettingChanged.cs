@@ -9,7 +9,7 @@ using Penumbra.UI.ModsTab.Selector;
 namespace Penumbra.Communication;
 
 /// <summary> Triggered whenever a mod setting is changed. </summary>
-public sealed class ModSettingChanged(Logger log)
+public sealed class ModSettingChanged(LunaLogger log)
     : EventBase<ModSettingChanged.Arguments, ModSettingChanged.Priority>(nameof(ModSettingChanged), log)
 {
     public enum Priority

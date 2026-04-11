@@ -37,7 +37,7 @@ public class BaseScannedRedirection(Utf8GamePath path, FullPath redirection, IMo
         => Redirection.FullName;
 }
 
-public abstract class RedirectionScanner<T>(ModManager mods) : ObjectScanner<T>(mods)
+public abstract class RedirectionScanner<T>(ModManager mods, LunaLogger log) : ObjectScanner<T>(mods, log)
     where T : BaseScannedRedirection
 {
     protected virtual bool DoCreateRedirection(Utf8GamePath path, FullPath redirection, IModDataContainer container, bool swap)
@@ -49,7 +49,9 @@ public abstract class RedirectionScanner<T>(ModManager mods) : ObjectScanner<T>(
     {
         StableList.Clear();
         Cancel();
-        var mods  = Mods.ToArray();
+        Log.Information("Starting new Scan...");
+        Timer.Restart();
+        var mods = Mods.ToArray();
         var token = CancelSource.Token;
         ScanTask = Task.Run(() =>
         {
@@ -89,7 +91,7 @@ public abstract class RedirectionScanner<T>(ModManager mods) : ObjectScanner<T>(
     }
 }
 
-public abstract class ModFileScanner<T>(ModManager mods) : ObjectScanner<T>(mods)
+public abstract class ModFileScanner<T>(ModManager mods, LunaLogger log) : ObjectScanner<T>(mods, log)
     where T : BaseScannedFile
 {
     protected virtual bool DoCreateFile(string fileName, Mod mod)
@@ -101,6 +103,8 @@ public abstract class ModFileScanner<T>(ModManager mods) : ObjectScanner<T>(mods
     {
         StableList.Clear();
         Cancel();
+        Log.Information("Starting new Scan...");
+        Timer.Restart();
         var mods  = Mods.ToArray();
         var token = CancelSource.Token;
         ScanTask = Task.Run(() =>
@@ -137,12 +141,14 @@ public abstract class ModFileScanner<T>(ModManager mods) : ObjectScanner<T>(mods
     }
 }
 
-public abstract class ObjectScanner<T>(ModManager mods) : ObjectScanner, IDisposable
+public abstract class ObjectScanner<T>(ModManager mods, LunaLogger log) : ObjectScanner, IDisposable
     where T : IScannedObject
 {
+    protected readonly LunaLogger              Log  = log;
     protected readonly ModManager              Mods = mods;
     protected          Task?                   ScanTask;
     protected          CancellationTokenSource CancelSource = new();
+    protected readonly Stopwatch               Timer        = new();
 
     protected readonly ConcurrentQueue<T> Cache      = [];
     protected readonly List<T>            StableList = [];
@@ -180,6 +186,8 @@ public abstract class ObjectScanner<T>(ModManager mods) : ObjectScanner, IDispos
         if (ScanTask is null)
             return;
 
+        Timer.Stop();
+        Log.Information($"Canceled Scan after {Timer.Elapsed}.");
         ScanTask = null;
         CancelSource.Cancel();
         CancelSource = new CancellationTokenSource();

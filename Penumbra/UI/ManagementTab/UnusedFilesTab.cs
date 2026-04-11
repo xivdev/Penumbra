@@ -1,19 +1,23 @@
 using ImSharp;
 using Luna;
+using Penumbra.Api.Enums;
 using Penumbra.Communication;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 
 namespace Penumbra.UI.ManagementTab;
 
-public sealed class UnusedFilesTab(ModManager mods, UiNavigator navigator) : ITab<ManagementTabType>
+public class UnusedFiles
+{}
+
+public sealed class UnusedFilesTab(ModManager mods, UiNavigator navigator, ManagementLog<UnusedFiles> log) : ITab<ManagementTabType>
 {
     public ReadOnlySpan<byte> Label
         => "Unused Files (WIP)"u8;
 
     public void DrawContent()
     {
-        var cache = CacheManager.Instance.GetOrCreateCache(Im.Id.Current, () => new Cache(mods));
+        var cache = CacheManager.Instance.GetOrCreateCache(Im.Id.Current, () => new Cache(mods, log));
         ManagementTab.DrawScanButtons(cache.Scanner);
 
         using var table = Im.Table.Begin("t"u8, 3, TableFlags.RowBackground | TableFlags.SizingFixedFit, Im.ContentRegion.Available);
@@ -40,14 +44,14 @@ public sealed class UnusedFilesTab(ModManager mods, UiNavigator navigator) : ITa
     public ManagementTabType Identifier
         => ManagementTabType.UnusedFiles;
 
-    private sealed class Cache(ModManager mods) : BasicCache(TimeSpan.FromMinutes(10))
+    private sealed class Cache(ModManager mods, ManagementLog<UnusedFiles> log) : BasicCache(TimeSpan.FromMinutes(10))
     {
         public sealed class UnusedScannedFile(string filePath, Mod mod) : BaseScannedFile(filePath, mod)
         {
             public readonly long Size = new FileInfo(filePath).Length;
         }
 
-        public sealed class UnusedFileScanner(ModManager mods) : ModFileScanner<UnusedScannedFile>(mods)
+        public sealed class UnusedFileScanner(ModManager mods, ManagementLog<UnusedFiles> log) : ModFileScanner<UnusedScannedFile>(mods, log)
         {
             protected override UnusedScannedFile Create(string fileName, Mod mod)
                 => new(fileName, mod);
@@ -55,6 +59,10 @@ public sealed class UnusedFilesTab(ModManager mods, UiNavigator navigator) : ITa
             protected override bool DoCreateFile(string fileName, Mod mod)
             {
                 if (!File.Exists(fileName))
+                    return false;
+
+                // Ignore files that are not related to the game.
+                if (!ResourceType.FromPath(fileName).Known)
                     return false;
 
                 foreach (var container in mod.AllDataContainers)
@@ -67,7 +75,7 @@ public sealed class UnusedFilesTab(ModManager mods, UiNavigator navigator) : ITa
             }
         }
 
-        public readonly UnusedFileScanner Scanner = new(mods);
+        public readonly UnusedFileScanner Scanner = new(mods, log);
 
         public override void Update()
         { }

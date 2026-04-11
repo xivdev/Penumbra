@@ -3,6 +3,7 @@ using Luna;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Penumbra.Api.Enums;
+using Penumbra.Collections.Cache;
 using Penumbra.GameData.Data;
 using Penumbra.Import;
 using Penumbra.Import.Structs;
@@ -60,8 +61,6 @@ public partial class ModCreator(
         if (ReloadMod(mod, incorporateMetaChanges, deleteDefaultMetaChanges, out _))
             return mod;
 
-        // Can not be base path not existing because that is checked before.
-        Penumbra.Log.Warning($"Mod at {modPath} without name is not supported.");
         return null;
     }
 
@@ -73,7 +72,14 @@ public partial class ModCreator(
             return false;
 
         modDataChange = ModMeta.Load(dataEditor, this, mod);
-        if (modDataChange.HasFlag(ModDataChangeType.Deletion) || mod.Name.Length is 0 || mod.RequiredFeatures is FeatureFlags.Invalid)
+        if (mod.Name.Length is 0)
+        {
+            // Can not be base path not existing because that is checked before.
+            Penumbra.Log.Warning($"Mod at {mod.ModPath.Name} without name is not supported.");
+            return false;
+        }
+
+        if (modDataChange.HasFlag(ModDataChangeType.Deletion) || mod.RequiredFeatures is FeatureFlags.Invalid)
             return false;
 
         modDataChange |= localModDatabase.AddData(mod);

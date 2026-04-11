@@ -3,7 +3,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Penumbra.Services;
 
-public sealed class BackupService(Logger log, FilenameService provider) : BaseBackupService<FilenameService>(log, provider)
+public sealed class BackupService(MainLogger log, FilenameService provider) : BaseBackupService<FilenameService>(log, provider)
 {
     /// <summary> Try to parse a file to JObject and check backups if this does not succeed. </summary>
     public static JObject? GetJObjectForFile(FilenameService fileNames, string fileName)

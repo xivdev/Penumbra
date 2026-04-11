@@ -13,7 +13,7 @@ public sealed class MainTabBar : TabBar<TabType>, IDisposable
     private readonly EphemeralConfig _config;
     private readonly UiNavigator     _navigator;
 
-    public MainTabBar(Logger log,
+    public MainTabBar(LunaLogger log,
         SettingsTab settings,
         ModTab mods,
         CollectionsTab collections,

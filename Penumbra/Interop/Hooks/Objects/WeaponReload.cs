@@ -14,7 +14,7 @@ public sealed unsafe class WeaponReload : EventBase<WeaponReload.Arguments, Weap
         DrawObjectState = 0,
     }
 
-    public WeaponReload(Logger log, HookManager hooks)
+    public WeaponReload(LunaLogger log, HookManager hooks)
         : base("Reload Weapon", log)
     {
         _postEvent = new PostEvent("Created CharacterBase", log);
@@ -63,7 +63,7 @@ public sealed unsafe class WeaponReload : EventBase<WeaponReload.Arguments, Weap
         _postEvent.Dispose();
     }
 
-    public class PostEvent(string name, Logger log) : EventBase<PostEvent.Arguments, PostEvent.Priority>(name, log)
+    public class PostEvent(string name, LunaLogger log) : EventBase<PostEvent.Arguments, PostEvent.Priority>(name, log)
     {
         public enum Priority
         {

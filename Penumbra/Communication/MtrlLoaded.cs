@@ -5,7 +5,7 @@ using Penumbra.Interop.Hooks.PostProcessing;
 namespace Penumbra.Communication;
 
 /// <summary> Invoked whenever a material is loaded. </summary>
-public sealed class MtrlLoaded(Logger log) : EventBase<MtrlLoaded.Arguments, MtrlLoaded.Priority>(nameof(MtrlLoaded), log)
+public sealed class MtrlLoaded(LunaLogger log) : EventBase<MtrlLoaded.Arguments, MtrlLoaded.Priority>(nameof(MtrlLoaded), log)
 {
     public enum Priority
     {

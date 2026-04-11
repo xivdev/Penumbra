@@ -20,7 +20,7 @@ public sealed unsafe class CharacterDestructor : EventBase<CharacterDestructor.A
         DrawObjectState = 0,
     }
 
-    public CharacterDestructor(Logger log, HookManager hooks)
+    public CharacterDestructor(LunaLogger log, HookManager hooks)
         : base("Character Destructor", log)
         => _task = hooks.CreateHook<Delegate>(Name, Sigs.CharacterDestructor, Detour, !HookOverrides.Instance.Objects.CharacterDestructor);
 

@@ -154,8 +154,8 @@ public partial class ModEditWindow
             if (editor.FileEditor.Changes)
                 return new QuickImportAction(editor, optionName, gamePath, QuickImportNonExecutableReason.EditorDirty);
 
-            if (ForbiddenFilesTab.ForbiddenFiles.ContainsKey(unchecked((uint)gamePath.Path.Crc32)))
-                return new QuickImportAction(editor, optionName, gamePath, QuickImportNonExecutableReason.GamePathForbidden);
+            if (ReservedFiles.Files.ContainsKey(unchecked((uint)gamePath.Path.Crc32)))
+                return new QuickImportAction(editor, optionName, gamePath, QuickImportNonExecutableReason.GamePathReserved);
 
             if (subMod.Files.ContainsKey(gamePath) || subMod.FileSwaps.ContainsKey(gamePath))
                 return new QuickImportAction(editor, optionName, gamePath, QuickImportNonExecutableReason.GamePathAlreadyInUse);
@@ -234,8 +234,8 @@ public partial class ModEditWindow
         NoGamePath,
 
         [Tooltip(
-            "This file is too generically used to change.\n\nPlease manually edit the parent file to reference another path for this slot, and manually import this file at the new path.")]
-        GamePathForbidden,
+            "This file is reserved because it is too generically used to change.\n\nPlease manually edit the parent file to reference another path for this slot, and manually import this file at the new path.")]
+        GamePathReserved,
 
         [Tooltip("The current option already has a file installed at this game path.")]
         GamePathAlreadyInUse,

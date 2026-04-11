@@ -23,14 +23,14 @@ using Schema2 = SharpGLTF.Schema2;
 using LuminaMaterial = Lumina.Models.Materials.Material;
 
 public sealed class ModelManager(
-    Logger log,
+    LunaLogger log,
     IFramework framework,
     MetaFileManager metaFileManager,
     ActiveCollections collections,
     GamePathParser parser)
     : SingleTaskQueue, IDisposable, IService
 {
-    public readonly  Logger     Log        = log;
+    public readonly  LunaLogger Log        = log;
     private readonly IFramework _framework = framework;
 
     private readonly ConcurrentDictionary<IAction, (Task, CancellationTokenSource)> _tasks = new();

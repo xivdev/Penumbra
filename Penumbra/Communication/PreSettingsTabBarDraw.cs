@@ -4,7 +4,7 @@ using Penumbra.Mods;
 namespace Penumbra.Communication;
 
 /// <summary> Triggered before the settings tab bar for a mod is drawn, after the title group is drawn. </summary>
-public sealed class PreSettingsTabBarDraw(Logger log)
+public sealed class PreSettingsTabBarDraw(LunaLogger log)
     : EventBase<PreSettingsTabBarDraw.Arguments, PreSettingsTabBarDraw.Priority>(nameof(PreSettingsTabBarDraw), log)
 {
     public enum Priority

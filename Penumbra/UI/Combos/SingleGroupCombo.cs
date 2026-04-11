@@ -6,18 +6,24 @@ using Penumbra.UI.ModsTab.Groups;
 
 namespace Penumbra.UI;
 
-public sealed class SingleGroupCombo : FilterComboBase<SingleGroupCombo.Test>, IUiService
+public sealed class SingleGroupCombo : FilterComboBase<SingleGroupCombo.GroupCache>, IUiService
 {
-    private class OptionFilter : Utf8FilterBase<Test>
+    private class OptionFilter : Utf8FilterBase<GroupCache>
     {
-        protected override ReadOnlySpan<byte> ToFilterString(in Test item, int globalIndex)
+        protected override ReadOnlySpan<byte> ToFilterString(in GroupCache item, int globalIndex)
             => item.Name;
     }
 
     public SingleGroupCombo()
-        => Filter  = new OptionFilter();
+    {
+        Filter       = new OptionFilter();
+        ComputeWidth = true;
+    }
 
-    public readonly record struct Test(int OptionIndex, StringU8 Name, StringU8 Description);
+    protected override FilterComboBaseCache<GroupCache> CreateCache()
+        => new Cache(this);
+
+    public readonly record struct GroupCache(int OptionIndex, StringU8 Name, StringU8 Description);
 
     private readonly WeakReference<SingleModGroup> _group = new(null!);
     private          Setting                       _currentOption;
@@ -32,15 +38,15 @@ public sealed class SingleGroupCombo : FilterComboBase<SingleGroupCombo.Test>, I
             parent.SetModSetting(group, groupIndex, Setting.Single(newOption.OptionIndex));
     }
 
-    protected override IEnumerable<Test> GetItems()
+    protected override IEnumerable<GroupCache> GetItems()
         => _group.TryGetTarget(out var target)
-            ? target.OptionData.Select(o => new Test(o.GetIndex(), new StringU8(o.Name), new StringU8(o.Description)))
+            ? target.OptionData.Select(o => new GroupCache(o.GetIndex(), new StringU8(o.Name), new StringU8(o.Description)))
             : [];
 
     protected override float ItemHeight
         => Im.Style.TextHeightWithSpacing;
 
-    protected override bool DrawItem(in Test item, int globalIndex, bool selected)
+    protected override bool DrawItem(in GroupCache item, int globalIndex, bool selected)
     {
         var ret = Im.Selectable(item.Name, selected);
         if (item.Description.Length > 0)
@@ -52,6 +58,15 @@ public sealed class SingleGroupCombo : FilterComboBase<SingleGroupCombo.Test>, I
         return ret;
     }
 
-    protected override bool IsSelected(Test item, int globalIndex)
+    protected override bool IsSelected(GroupCache item, int globalIndex)
         => item.OptionIndex == _currentOption.AsIndex;
+
+    private sealed class Cache(SingleGroupCombo parent) : FilterComboBaseCache<GroupCache>(parent)
+    {
+        protected override void ComputeWidth()
+        {
+            ComboWidth = AllItems.Max(i => i.Name.CalculateSize().X + (i.Description.Length > 0 ? Im.Style.FrameHeightWithSpacing : 0))
+              + 2 * Im.Style.FramePadding.X + Im.Style.ScrollbarSize;
+        }
+    }
 }
