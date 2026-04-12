@@ -1,5 +1,4 @@
 using Dalamud.Game.ClientState.Conditions;
-using Dalamud.Game.ClientState.Objects;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Game.ClientState.Objects.Types;
@@ -12,8 +11,6 @@ using Penumbra.Communication;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Interop;
 using Penumbra.Interop.Structs;
-using Penumbra.Mods;
-using Penumbra.Mods.Editor;
 using Penumbra.Services;
 using Character = FFXIVClientStructs.FFXIV.Client.Game.Character.Character;
 

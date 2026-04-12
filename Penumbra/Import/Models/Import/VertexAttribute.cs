@@ -4,10 +4,10 @@ using SharpGLTF.Schema2;
 
 namespace Penumbra.Import.Models.Import;
 
-using BuildFn = Func<int, byte[]>;
-using HasMorphFn = Func<int, int, bool>;
-using BuildMorphFn = Func<int, int, byte[]>;
 using Accessors = IReadOnlyDictionary<string, Accessor>;
+using BuildFn = Func<int, byte[]>;
+using BuildMorphFn = Func<int, int, byte[]>;
+using HasMorphFn = Func<int, int, bool>;
 
 public class VertexAttribute
 {

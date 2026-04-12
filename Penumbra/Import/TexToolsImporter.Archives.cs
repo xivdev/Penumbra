@@ -9,7 +9,6 @@ using SharpCompress.Archives;
 using SharpCompress.Archives.Rar;
 using SharpCompress.Archives.SevenZip;
 using SharpCompress.Common;
-using SharpCompress.Readers;
 using ZipArchive = SharpCompress.Archives.Zip.ZipArchive;
 
 namespace Penumbra.Import;

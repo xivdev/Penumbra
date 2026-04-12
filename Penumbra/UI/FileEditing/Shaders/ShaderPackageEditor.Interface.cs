@@ -4,8 +4,8 @@ using Luna;
 using Penumbra.GameData;
 using Penumbra.GameData.Files;
 using Penumbra.GameData.Interop;
-using static Penumbra.GameData.Files.ShpkFile;
 using Penumbra.GameData.Structs;
+using static Penumbra.GameData.Files.ShpkFile;
 
 namespace Penumbra.UI.FileEditing.Shaders;
 

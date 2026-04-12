@@ -11,7 +11,6 @@ using Penumbra.GameData.Actors;
 using Penumbra.Interop.Services;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
-using Penumbra.UI;
 using Penumbra.UI.Knowledge;
 using Penumbra.UI.MainWindow;
 

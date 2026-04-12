@@ -2,6 +2,7 @@ using Luna;
 using Penumbra.Api.Enums;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
+using Penumbra.Files;
 using Penumbra.Services;
 
 namespace Penumbra.Mods.Manager;

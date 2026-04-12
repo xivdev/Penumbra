@@ -4,7 +4,6 @@ using ImSharp;
 using Luna;
 using Penumbra.Communication;
 using Penumbra.GameData.Data;
-using Penumbra.Mods;
 using Penumbra.Mods.Editor;
 using Penumbra.Services;
 using Penumbra.String.Classes;

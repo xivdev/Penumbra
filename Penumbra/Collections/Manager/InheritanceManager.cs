@@ -1,6 +1,7 @@
 using Dalamud.Interface.ImGuiNotification;
 using Luna;
 using Penumbra.Communication;
+using Penumbra.Files;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
 

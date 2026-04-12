@@ -1,4 +1,3 @@
-using Dalamud.Interface.Utility.Table;
 using Dalamud.Plugin;
 using ImSharp;
 using Luna;

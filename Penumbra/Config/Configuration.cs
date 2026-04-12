@@ -5,6 +5,7 @@ using Luna;
 using Luna.Generators;
 using Newtonsoft.Json;
 using Penumbra.Api.Enums;
+using Penumbra.Files;
 using Penumbra.Import.Structs;
 using Penumbra.Interop.Services;
 using Penumbra.Services;

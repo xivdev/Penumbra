@@ -1,12 +1,12 @@
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
-using Penumbra.Meta.Manipulations;
-using Penumbra.Mods;
-using Penumbra.Services;
-using Penumbra.String.Classes;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
+using Penumbra.Meta.Manipulations;
+using Penumbra.Mods;
 using Penumbra.Mods.Settings;
+using Penumbra.Services;
+using Penumbra.String.Classes;
 
 namespace Penumbra.Api;
 

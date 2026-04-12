@@ -1,10 +1,10 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Penumbra.Api.Enums;
+using Penumbra.Files;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
-using Penumbra.Services;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Mods.Manager;

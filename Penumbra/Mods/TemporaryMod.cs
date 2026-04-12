@@ -1,4 +1,5 @@
 using Penumbra.Collections;
+using Penumbra.Files;
 using Penumbra.Interop.PathResolving;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Editor;
@@ -6,7 +7,6 @@ using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
-using Penumbra.Services;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Mods;

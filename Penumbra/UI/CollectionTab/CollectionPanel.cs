@@ -8,6 +8,7 @@ using ImSharp;
 using Luna;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
+using Penumbra.Files;
 using Penumbra.GameData.Actors;
 using Penumbra.GameData.Enums;
 using Penumbra.Mods.Manager;

@@ -1,5 +1,6 @@
 using Dalamud.Utility;
 using Penumbra.Communication;
+using Penumbra.Files;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Structs;
 using Penumbra.Services;

@@ -1,8 +1,8 @@
 using Dalamud.Plugin.Services;
 using Penumbra.GameData.Interop;
-using Object = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.Object;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.Hooks.Objects;
+using Object = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.Object;
 
 namespace Penumbra.Interop.PathResolving;
 

@@ -1,5 +1,6 @@
 using Luna;
 using Penumbra.Communication;
+using Penumbra.Files;
 using Penumbra.GameData.Data;
 using Penumbra.Mods.Manager.OptionEditor;
 using Penumbra.Services;

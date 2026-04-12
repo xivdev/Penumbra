@@ -12,7 +12,6 @@ using Penumbra.Mods.Manager.OptionEditor;
 using Penumbra.Mods.Settings;
 using Penumbra.Services;
 using Penumbra.String.Classes;
-using Penumbra.UI;
 using Penumbra.UI.ManagementTab;
 
 namespace Penumbra.Collections.Cache;

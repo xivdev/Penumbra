@@ -1,8 +1,8 @@
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using FFXIVClientStructs.STD;
-using Penumbra.Api.Enums;
 using ImSharp;
+using Penumbra.Api.Enums;
 
 namespace Penumbra.Interop.Hooks.ResourceLoading;
 

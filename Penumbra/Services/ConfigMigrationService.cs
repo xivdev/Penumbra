@@ -6,6 +6,7 @@ using Newtonsoft.Json.Linq;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.Enums;
+using Penumbra.Files;
 using Penumbra.Interop.Services;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager;

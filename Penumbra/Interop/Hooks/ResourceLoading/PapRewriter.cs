@@ -1,10 +1,10 @@
 using System.Text.Unicode;
 using Dalamud.Hooking;
 using Iced.Intel;
-using static Iced.Intel.AssemblerRegisters;
 using Luna;
 using Penumbra.String.Classes;
 using Swan;
+using static Iced.Intel.AssemblerRegisters;
 
 namespace Penumbra.Interop.Hooks.ResourceLoading;
 

@@ -3,10 +3,10 @@ using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Interface.ImGuiNotification;
 using Luna;
 using Newtonsoft.Json.Linq;
+using Penumbra.Files;
 using Penumbra.GameData.Actors;
 using Penumbra.GameData.DataContainers.Bases;
 using Penumbra.GameData.Structs;
-using Penumbra.Services;
 using Penumbra.String;
 
 namespace Penumbra.Collections.Manager;

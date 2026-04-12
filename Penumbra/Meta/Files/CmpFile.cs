@@ -1,7 +1,7 @@
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
-using Penumbra.Interop.Structs;
 using Penumbra.Interop.Services;
+using Penumbra.Interop.Structs;
 using Penumbra.Meta.Manipulations;
 using Penumbra.String.Functions;
 
