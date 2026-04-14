@@ -319,6 +319,27 @@ public sealed class DebugTab : Window, ITab<TabType>
             }
         }
 
+        using (var tree = Im.Tree.Node("Misc"u8))
+        {
+            if (tree)
+            {
+                var active = _config.DeleteModModifier.IsActive();
+                if (ImEx.Button("Move ALL Mod Tags to Local Tags"u8, default, "THIS IS NOT REVERTIBLE!"u8, !active))
+                    foreach (var mod in _modManager)
+                    {
+                        var modTags = mod.ModTags.ToArray();
+                        // Delete all mod tags first.
+                        while(mod.ModTags.Count > 0)
+                            _modManager.DataEditor.ChangeModTag(mod, 0, string.Empty);
+                        // Add all mod tags to local tags. Duplicates or conflicts are not possible.
+                        foreach (var tag in modTags)
+                            _modManager.DataEditor.ChangeLocalTag(mod, mod.LocalTags.Count, tag);
+                    }
+
+                if (!active)
+                    Im.Tooltip.OnHover($"\nHold {_config.DeleteModModifier} to click.");
+            }
+        }
 
         var issues = _modManager.Index().Count(p => p.Index != p.Item.Index);
         using (var tree = Im.Tree.Node($"Mods ({issues} Issues)###Mods"))
@@ -658,7 +679,6 @@ public sealed class DebugTab : Window, ITab<TabType>
             {
                 using var table = Im.Table.Begin("###EarmarkedTable"u8, 3, TableFlags.SizingFixedFit);
                 if (table)
-                {
                     foreach (var ((crc, collection), resolve) in _subfileHelper.EarmarkedFiles)
                     {
                         table.DrawColumn($"0x{crc:X}");
@@ -666,7 +686,6 @@ public sealed class DebugTab : Window, ITab<TabType>
                         table.NextColumn();
                         Penumbra.Dynamis.DrawPointer(resolve.AssociatedGameObject);
                     }
-                }
             }
         }
 
