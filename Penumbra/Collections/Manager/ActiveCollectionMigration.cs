@@ -2,6 +2,7 @@ using Dalamud.Interface.ImGuiNotification;
 using Luna;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Penumbra.Files;
 using Penumbra.Services;
 
 namespace Penumbra.Collections.Manager;

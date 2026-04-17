@@ -1,6 +1,6 @@
 using Luna;
 using Penumbra.Files;
-using Penumbra.Services;
+using Penumbra.UI.ModsTab.Selector;
 
 namespace Penumbra.Mods.Manager;
 
@@ -18,11 +18,14 @@ public sealed class ModFileSystemSaver(
     protected override string ExpandedFile(FilenameService provider)
         => provider.FileSystemExpandedFolders;
 
-    protected override string EmptyFoldersFile(FilenameService provider)
-        => provider.FileSystemEmptyFolders;
+    protected override string EmptyFoldersMigrationFile(FilenameService provider)
+        => provider.FileSystemEmptyFoldersMigration;
 
     protected override string SelectionFile(FilenameService provider)
         => provider.FileSystemSelectedNodes;
+
+    protected override string OrganizationFile(FilenameService provider)
+        => provider.FileSystemOrganization;
 
     protected override string MigrationFile(FilenameService provider)
         => provider.OldFilesystemFile;
@@ -54,6 +57,9 @@ public sealed class ModFileSystemSaver(
             }
         }
     }
+
+    protected override ISortMode? ParseSortMode(string name)
+        => ISortMode.Valid.GetValueOrDefault(name);
 
     protected override void SaveDataValue(IFileSystemValue value)
     {

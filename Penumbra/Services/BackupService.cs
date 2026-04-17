@@ -1,5 +1,6 @@
 using Luna;
 using Newtonsoft.Json.Linq;
+using Penumbra.Files;
 
 namespace Penumbra.Services;
 

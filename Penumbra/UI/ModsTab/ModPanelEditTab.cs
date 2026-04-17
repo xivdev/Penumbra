@@ -2,6 +2,7 @@ using Dalamud.Interface;
 using Dalamud.Interface.ImGuiNotification;
 using ImSharp;
 using Luna;
+using Penumbra.Files;
 using Penumbra.Mods;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Groups;

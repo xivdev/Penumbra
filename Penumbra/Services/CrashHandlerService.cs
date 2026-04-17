@@ -5,6 +5,7 @@ using Penumbra.Collections;
 using Penumbra.Communication;
 using Penumbra.CrashHandler;
 using Penumbra.CrashHandler.Buffers;
+using Penumbra.Files;
 using Penumbra.GameData.Actors;
 using Penumbra.Interop.Hooks.ResourceLoading;
 using Penumbra.Interop.PathResolving;

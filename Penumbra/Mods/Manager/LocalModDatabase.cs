@@ -1,6 +1,7 @@
 using System.Text.Json;
 using LiteDB;
 using Luna;
+using Penumbra.Files;
 using Penumbra.GameData.Structs;
 using Penumbra.Services;
 
