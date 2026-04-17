@@ -19,8 +19,8 @@ using SixLabors.ImageSharp.PixelFormats;
 
 namespace Penumbra.Import.Models;
 
-using Schema2 = SharpGLTF.Schema2;
 using LuminaMaterial = Lumina.Models.Materials.Material;
+using Schema2 = SharpGLTF.Schema2;
 
 public sealed class ModelManager(
     LunaLogger log,

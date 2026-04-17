@@ -3,6 +3,7 @@ using Luna;
 using Luna.Generators;
 using Newtonsoft.Json.Linq;
 using Penumbra.Enums;
+using Penumbra.Files;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
 using Penumbra.UI.ModsTab.Selector;

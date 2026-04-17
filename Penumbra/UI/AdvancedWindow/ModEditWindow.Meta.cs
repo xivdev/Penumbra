@@ -12,6 +12,7 @@ namespace Penumbra.UI.AdvancedWindow;
 
 public partial class ModEditWindow
 {
+    private const    int                  _numTabs = 10;
     private readonly MetaDrawers          _metaDrawers;
     private          MetaManipulationType _selected = MetaManipulationType.Eqp;
 
@@ -49,38 +50,39 @@ public partial class ModEditWindow
         DrawAtchDragDrop();
 
         Im.Cursor.Y += Im.Style.ItemSpacing.Y;
-        var buttonSize = new Vector2(Im.ContentRegion.Available.X / 10, Im.Style.FrameHeight);
-        DrawEditHeader(MetaManipulationType.Eqp,       buttonSize);
-        DrawVerticalSeparator();
-        DrawEditHeader(MetaManipulationType.Eqdp,      buttonSize);
-        DrawVerticalSeparator();
-        DrawEditHeader(MetaManipulationType.Imc,       buttonSize);
-        DrawVerticalSeparator();
-        DrawEditHeader(MetaManipulationType.Est,       buttonSize);
-        DrawVerticalSeparator();
-        DrawEditHeader(MetaManipulationType.Gmp,       buttonSize);
-        DrawVerticalSeparator();
-        DrawEditHeader(MetaManipulationType.Rsp,       buttonSize);
-        DrawVerticalSeparator();
-        DrawEditHeader(MetaManipulationType.Atch,      buttonSize);
-        DrawVerticalSeparator();
-        DrawEditHeader(MetaManipulationType.Shp,       buttonSize);
-        DrawVerticalSeparator();
-        DrawEditHeader(MetaManipulationType.Atr,       buttonSize);
-        DrawVerticalSeparator();
-        DrawEditHeader(MetaManipulationType.GlobalEqp, buttonSize);
+
+        // Reinvent tab-bar to support button padding for border numbers.
+        var buttonSize = new Vector2((Im.ContentRegion.Available.X - (_numTabs - 1) * Im.Style.ItemInnerSpacing.X) / _numTabs,
+            Im.Style.TextHeight + Im.Style.FramePadding.Y);
+        using (ImStyleDouble.FramePadding.PushY(0).PushY(ImStyleDouble.ButtonTextAlign, 0.5f))
+        {
+            using var color = ImGuiColor.ButtonHovered.Push(Im.Style[ImGuiColor.TabHovered])
+                .Push(ImGuiColor.Button,       Im.Style[ImGuiColor.Tab])
+                .Push(ImGuiColor.ButtonActive, Im.Style[ImGuiColor.TabHovered]);
+            DrawEditHeader(MetaManipulationType.Eqp, buttonSize);
+            Im.Line.SameInner();
+            DrawEditHeader(MetaManipulationType.Eqdp, buttonSize);
+            Im.Line.SameInner();
+            DrawEditHeader(MetaManipulationType.Imc, buttonSize);
+            Im.Line.SameInner();
+            DrawEditHeader(MetaManipulationType.Est, buttonSize);
+            Im.Line.SameInner();
+            DrawEditHeader(MetaManipulationType.Gmp, buttonSize);
+            Im.Line.SameInner();
+            DrawEditHeader(MetaManipulationType.Rsp, buttonSize);
+            Im.Line.SameInner();
+            DrawEditHeader(MetaManipulationType.Atch, buttonSize);
+            Im.Line.SameInner();
+            DrawEditHeader(MetaManipulationType.Shp, buttonSize);
+            Im.Line.SameInner();
+            DrawEditHeader(MetaManipulationType.Atr, buttonSize);
+            Im.Line.SameInner();
+            DrawEditHeader(MetaManipulationType.GlobalEqp, buttonSize);
+        }
 
         Im.Cursor.Y -= Im.Style.ItemSpacing.Y;
         if (_metaDrawers.Get(_selected) is { } drawer)
             DrawTable(drawer);
-    }
-
-    private static void DrawVerticalSeparator()
-    {
-        var lowerRight = Im.Item.LowerRightCorner;
-        var upperLeft  = Im.Item.UpperLeftCorner with { X = lowerRight.X };
-        Im.Window.DrawList.Shape.Line(upperLeft, lowerRight, ImGuiColor.Separator.Get(), Im.Style.GlobalScale);
-        Im.Line.NoSpacing();
     }
 
     private void DrawAtchDragDrop()
@@ -131,52 +133,52 @@ public partial class ModEditWindow
             return;
 
         var otherData = _editor.MetaEditor.OtherData[type];
-        using (Im.Style.Push(ImStyleSingle.FrameRounding, 0))
+        using (Im.Color.Push(ImGuiColor.Button, Im.Style[ImGuiColor.TabSelected], _selected == type))
         {
-            var color = Im.Color.Push(ImGuiColor.Button, Im.Style[ImGuiColor.ButtonHovered], _selected == type)
-                .Push(ImGuiColor.ButtonHovered,  Im.Style[ImGuiColor.ButtonHovered], _selected == type)
-                .Push(ImGuiColor.ButtonActive,   Im.Style[ImGuiColor.ButtonHovered], _selected == type);
-
-            //if (Im.Button($"{(drawer.Count > 0 ? $"{drawer.Count} " : StringU8.Empty)}{drawer.Header}{(otherData.TotalCount > 0 ? $" ({otherData.TotalCount})" : StringU8.Empty)}###{drawer.Label}", buttonSize))
-            if (Im.Button(drawer.Header, buttonSize))
+            if (ImEx.ButtonCorners(drawer.Header, buttonSize, ButtonFlags.MouseButtonLeft, Corners.Top))
                 _selected = type;
-            if (drawer.Count > 0)
-            {
-                var position = Im.Item.UpperLeftCorner + Im.Style.FramePadding;
-                Im.Window.DrawList.Text(position, ColorId.NewMod.Value().FullAlpha(), $"({drawer.Count})");
-            }
+        }
+
+        if (drawer.Count > 0)
+        {
+            var position = Im.Item.UpperLeftCorner + Im.Style.FramePadding;
+            Im.Window.DrawList.Text(position, ColorId.NewMod.Value().FullAlpha(), $"({drawer.Count})");
+        }
+
+        if (otherData.TotalCount > 0)
+        {
+            var position = Im.Item.LowerRightCorner - Im.Style.FramePadding - Im.Font.CalculateSize($"({otherData.TotalCount})");
+            Im.Window.DrawList.Text(position, ColorId.RedundantAssignment.Value().FullAlpha(), $"({otherData.TotalCount})");
+        }
+
+        if (Im.Item.Hovered())
+        {
+            using var tt = Im.Tooltip.Begin();
+            Im.Text(drawer.Tooltip);
+            Im.Cursor.Y += Im.Style.ItemInnerSpacing.Y;
+            Im.Separator();
+            Im.Cursor.Y += Im.Style.ItemInnerSpacing.Y;
+            Im.Text($"{drawer.Count} Edits in this Option.");
+            Im.Text($"{otherData.TotalCount} Edits in {otherData.Count} other Option{(otherData.Count is not 1 ? "s"u8 : StringU8.Empty)}.");
             if (otherData.TotalCount > 0)
             {
-                var position = Im.Item.LowerRightCorner - Im.Style.FramePadding - Im.Font.CalculateSize($"({otherData.TotalCount})");
-                Im.Window.DrawList.Text(position, ColorId.RedundantAssignment.Value().FullAlpha(), $"({otherData.TotalCount})");
-            }
-            color.Dispose();
-
-            if (Im.Item.Hovered())
-            {
-                using var tt = Im.Tooltip.Begin();
-                Im.Text(drawer.Tooltip);
                 Im.Cursor.Y += Im.Style.ItemInnerSpacing.Y;
                 Im.Separator();
                 Im.Cursor.Y += Im.Style.ItemInnerSpacing.Y;
-                Im.Text($"{drawer.Count} Edits in this Option.");
-                Im.Text($"{otherData.TotalCount} Edits in {otherData.Count} other Option{(otherData.Count is not 1 ? "s"u8 : StringU8.Empty)}.");
-                if (otherData.TotalCount > 0)
-                {
-                    Im.Cursor.Y += Im.Style.ItemInnerSpacing.Y;
-                    Im.Separator();
-                    Im.Cursor.Y += Im.Style.ItemInnerSpacing.Y;
-                    foreach (var name in otherData)
-                        Im.BulletText(name);
-                }
+                foreach (var name in otherData)
+                    Im.BulletText(name);
             }
         }
     }
 
     private static void DrawTable(IMetaDrawer drawer)
     {
-        const TableFlags flags = TableFlags.RowBackground | TableFlags.SizingFixedFit | TableFlags.BordersInnerVertical | TableFlags.BordersOuter | TableFlags.ScrollY;
-        using var        table = Im.Table.Begin(drawer.Label, drawer.NumColumns, flags, Im.ContentRegion.Available);
+        const TableFlags flags = TableFlags.RowBackground
+          | TableFlags.SizingFixedFit
+          | TableFlags.BordersInnerVertical
+          | TableFlags.BordersOuter
+          | TableFlags.ScrollY;
+        using var table = Im.Table.Begin(drawer.Label, drawer.NumColumns, flags, Im.ContentRegion.Available);
         if (!table)
             return;
 

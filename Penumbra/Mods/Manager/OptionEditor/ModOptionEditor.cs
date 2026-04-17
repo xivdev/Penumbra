@@ -1,5 +1,6 @@
 using Luna;
 using Penumbra.Communication;
+using Penumbra.Files;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;

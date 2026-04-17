@@ -1,11 +1,11 @@
 using Luna;
+using Penumbra.Communication;
+using Penumbra.GameData.Data;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
-using Penumbra.Communication;
 using Penumbra.Mods.Editor;
 using Penumbra.String.Classes;
 using Penumbra.Util;
-using Penumbra.GameData.Data;
 
 namespace Penumbra.Collections.Cache;
 

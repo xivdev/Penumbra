@@ -2,7 +2,6 @@ using Penumbra.Api.Enums;
 using Penumbra.Mods;
 using Penumbra.String;
 using Penumbra.String.Classes;
-using Penumbra.UI;
 using Penumbra.UI.Classes;
 
 namespace Penumbra.Interop.ResourceTree;

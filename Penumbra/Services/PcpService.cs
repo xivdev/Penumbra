@@ -6,6 +6,7 @@ using Newtonsoft.Json.Linq;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
+using Penumbra.Files;
 using Penumbra.GameData.Actors;
 using Penumbra.GameData.Interop;
 using Penumbra.GameData.Structs;

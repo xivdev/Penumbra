@@ -3,7 +3,7 @@ using Luna;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Penumbra.Api.Enums;
-using Penumbra.Collections.Cache;
+using Penumbra.Files;
 using Penumbra.GameData.Data;
 using Penumbra.Import;
 using Penumbra.Import.Structs;
@@ -13,7 +13,6 @@ using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
-using Penumbra.Services;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Mods;
@@ -142,12 +141,12 @@ public partial class ModCreator(
     public static DirectoryInfo CreateModFolder(DirectoryInfo outDirectory, string modListName, bool onlyAscii, bool create)
     {
         var name = modListName;
-        if (name.Length == 0)
+        if (name.Length is 0)
             name = "_";
 
         var newModFolderBase = NewOptionDirectory(outDirectory, name, onlyAscii);
-        var newModFolder     = FileSystemUtility.ObtainUniqueFile(newModFolderBase.FullName);
-        if (newModFolder.Length == 0)
+        var newModFolder     = newModFolderBase.FullName.ObtainUniqueFile();
+        if (newModFolder.Length is 0)
             throw new IOException("Could not create mod folder: too many folders of the same name exist.");
 
         if (create)

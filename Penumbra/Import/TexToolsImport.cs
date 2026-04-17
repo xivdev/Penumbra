@@ -81,13 +81,13 @@ public partial class TexToolsImporter : IDisposable
     public void Dispose()
     {
         _cancellation.Cancel(true);
-        if (State != ImporterState.WritingPackToDisk)
+        if (State is not ImporterState.WritingPackToDisk)
         {
             _tmpFileStream?.Dispose();
             _tmpFileStream = null;
         }
 
-        if (State != ImporterState.ExtractingModFiles)
+        if (State is not ImporterState.ExtractingModFiles)
             ResetStreamDisposer();
     }
 

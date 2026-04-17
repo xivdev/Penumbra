@@ -9,7 +9,6 @@ using SharpCompress.Archives;
 using SharpCompress.Archives.Rar;
 using SharpCompress.Archives.SevenZip;
 using SharpCompress.Common;
-using SharpCompress.Readers;
 using ZipArchive = SharpCompress.Archives.Zip.ZipArchive;
 
 namespace Penumbra.Import;
@@ -77,8 +76,8 @@ public partial class TexToolsImporter
                 using var t   = new StreamReader(s);
                 using var j   = new JsonTextReader(t);
                 var       obj = JObject.Load(j);
-                name = obj[nameof(Mod.Name)]?.Value<string>()?.RemoveInvalidFileNameSymbols() ?? string.Empty;
-                if (name.Length == 0)
+                name = obj[nameof(Mod.Name)]?.Value<string>()?.ReplaceBadXivSymbols(_config.ReplaceNonAsciiOnImport) ?? string.Empty;
+                if (name.Length is 0)
                     throw new Exception("Invalid mod archive: mod meta has no name.");
 
                 using var f = File.OpenWrite(Path.Combine(_currentModDirectory.FullName, reader.Entry.Key!));

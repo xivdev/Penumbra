@@ -1,4 +1,5 @@
 using Penumbra.Collections.Manager;
+using Penumbra.Files;
 using Penumbra.Mods.Manager;
 
 namespace Penumbra.Services;

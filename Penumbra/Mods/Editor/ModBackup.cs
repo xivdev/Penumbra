@@ -1,5 +1,4 @@
 using Penumbra.Mods.Manager;
-using Penumbra.Services;
 using Penumbra.Util;
 
 namespace Penumbra.Mods.Editor;

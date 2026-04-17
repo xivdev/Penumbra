@@ -2,7 +2,6 @@ using Luna;
 using Penumbra.Api;
 using Penumbra.Communication;
 using Penumbra.GameData.Actors;
-using Penumbra.Mods;
 using Penumbra.Services;
 using Penumbra.String;
 

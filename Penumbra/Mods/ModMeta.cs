@@ -3,6 +3,7 @@ using Dalamud.Interface.ImGuiNotification;
 using ImSharp;
 using Luna;
 using Newtonsoft.Json.Linq;
+using Penumbra.Files;
 using Penumbra.GameData.Structs;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;

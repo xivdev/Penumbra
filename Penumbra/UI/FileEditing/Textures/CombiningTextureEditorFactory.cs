@@ -4,7 +4,6 @@ using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using Penumbra.Api.Enums;
 using Penumbra.Import.Textures;
 using Penumbra.Interop.ResourceTree;
-using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.UI.Classes;

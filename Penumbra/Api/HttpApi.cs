@@ -4,7 +4,6 @@ using EmbedIO.Routing;
 using EmbedIO.WebApi;
 using Penumbra.Api.Api;
 using Penumbra.Api.Enums;
-using Penumbra.Mods.Settings;
 
 namespace Penumbra.Api;
 

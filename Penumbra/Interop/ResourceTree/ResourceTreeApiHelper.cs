@@ -3,7 +3,6 @@ using Newtonsoft.Json.Linq;
 using Penumbra.Api.Enums;
 using Penumbra.Api.Helpers;
 using Penumbra.String.Classes;
-using Penumbra.UI;
 using Penumbra.UI.Classes;
 
 namespace Penumbra.Interop.ResourceTree;

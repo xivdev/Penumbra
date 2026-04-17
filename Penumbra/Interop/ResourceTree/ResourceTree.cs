@@ -8,7 +8,6 @@ using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.Hooks.PostProcessing;
-using Penumbra.UI;
 using Penumbra.UI.Classes;
 using CustomizeData = FFXIVClientStructs.FFXIV.Client.Game.Character.CustomizeData;
 using CustomizeIndex = Dalamud.Game.ClientState.Objects.Enums.CustomizeIndex;

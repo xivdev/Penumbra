@@ -1,5 +1,6 @@
 using Penumbra.Api.Enums;
 using Penumbra.Communication;
+using Penumbra.Files;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Settings;

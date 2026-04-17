@@ -1,6 +1,3 @@
-using Dalamud.Memory;
-using Penumbra.String.Functions;
-
 namespace Penumbra.Interop.Structs;
 
 [StructLayout(LayoutKind.Explicit)]

@@ -4,6 +4,7 @@ using ImSharp;
 using Luna;
 using Newtonsoft.Json.Linq;
 using Penumbra.Communication;
+using Penumbra.Files;
 using Penumbra.GameData.Actors;
 using Penumbra.GameData.Enums;
 using Penumbra.Services;

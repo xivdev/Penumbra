@@ -2,13 +2,13 @@ using System.Collections.Frozen;
 using ImSharp;
 using Luna;
 using Penumbra.Collections.Cache;
+using Penumbra.Files;
 using Penumbra.Meta;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager.OptionEditor;
 using Penumbra.Mods.SubMods;
-using Penumbra.Services;
 
 namespace Penumbra.Mods.Editor;
 
