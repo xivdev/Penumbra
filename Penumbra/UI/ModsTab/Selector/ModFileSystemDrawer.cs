@@ -43,19 +43,10 @@ public sealed class ModFileSystemDrawer : FileSystemDrawer<ModFileSystemCache.Mo
         FolderContext.AddButton(new SetDescendantsButton(this, false, null),  10);
         FolderContext.AddButton(new SetDescendantsButton(this, true,  true),  6);
         FolderContext.AddButton(new SetDescendantsButton(this, true,  false), 5);
-        FolderContext.RemoveButtons<LockFolderButton>();
-        FolderContext.RemoveButtons<DissolveFolderButton>();
         var setFolderButtons = new SubMenuButton<IFileSystemFolder>(new StringU8("Set Folder as..."u8));
         setFolderButtons.Entries.AddButton(new SetDefaultImportFolderButton(this), 100);
         setFolderButtons.Entries.AddButton(new SetQuickMoveFoldersButtons(this),   0);
         FolderContext.AddButton(setFolderButtons, -50);
-        var editFolderButtons = new SubMenuButton<IFileSystemFolder>(new StringU8("Edit Folder"u8));
-        editFolderButtons.Entries.AddButton(new LockFolderButton(fileSystem), 20);
-        editFolderButtons.Entries.AddButton(new DissolveFolderButton(fileSystem), 15);
-        editFolderButtons.Entries.AddButton(new MenuSeparator<IFileSystemFolder>(), 12);
-        editFolderButtons.Entries.AddButton(new FolderColorEdits(this),       10);
-        editFolderButtons.Entries.AddButton(new SortModeSelector(this),       0);
-        FolderContext.AddButton(editFolderButtons, 0);
 
         DataContext.AddButton(new ToggleFavoriteButton(this),          10);
         DataContext.AddButton(new TemporaryButtons(this),              20);
