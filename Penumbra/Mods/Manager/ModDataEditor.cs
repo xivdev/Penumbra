@@ -129,15 +129,24 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
         communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.Favorite, mod, null));
     }
 
-    public void ResetModImportDate(Mod mod)
+    public void ChangeModImportDate(Mod mod, long timeStamp)
     {
-        var newDate = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        if (mod.ImportDate == newDate)
+        if (mod.ImportDate == timeStamp)
             return;
 
-        mod.ImportDate = newDate;
+        mod.ImportDate = timeStamp;
         database.UpsertImportDate(mod);
         communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.ImportDate, mod, null));
+    }
+
+    public void ChangeLastConfigEdit(Mod mod, long timeStamp)
+    {
+        if (mod.LastConfigEdit == timeStamp)
+            return;
+
+        mod.LastConfigEdit = timeStamp;
+        database.UpsertLastConfigEdit(mod);
+        communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.LastConfigEdit, mod, null));
     }
 
     public void ChangeModNote(Mod mod, string newNote)

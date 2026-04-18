@@ -386,8 +386,9 @@ public sealed class SettingsTab : ITab<TabType>
     /// <summary> Draw the window hiding state checkboxes.  </summary>
     private void DrawHidingSettings()
     {
-        Checkbox("Open Config Window at Game Start"u8, "Whether the Penumbra main window should be open or closed after launching the game."u8,
-            _config.OpenWindowAtStart,                 v => _config.OpenWindowAtStart = v);
+        Checkbox("Open Config Window at Game Start"u8,
+            "Whether the Penumbra main window should be open or closed after launching the game."u8,
+            _config.OpenWindowAtStart, v => _config.OpenWindowAtStart = v);
 
         Checkbox("Hide Config Window when UI is Hidden"u8,
             "Hide the Penumbra main window when you manually hide the in-game user interface."u8, _config.HideUiWhenUiHidden,
@@ -443,8 +444,9 @@ public sealed class SettingsTab : ITab<TabType>
             _config.PrintSuccessfulCommandsToChat, v => _config.PrintSuccessfulCommandsToChat = v);
         Checkbox("Hide Redraw Bar in Mod Panel"u8, "Hides the lower redraw buttons in the mod panel in your Mods tab."u8,
             _config.HideRedrawBar,                 v => _config.HideRedrawBar = v);
-        Checkbox("Hide Changed Item Filters"u8, "Hides the category filter line in the Changed Items tab and the Changed Items mod panel."u8,
-            _config.HideChangedItemFilters,     v =>
+        Checkbox("Hide Changed Item Filters"u8,
+            "Hides the category filter line in the Changed Items tab and the Changed Items mod panel."u8,
+            _config.HideChangedItemFilters, v =>
             {
                 _config.HideChangedItemFilters = v;
                 if (v)
@@ -510,22 +512,11 @@ public sealed class SettingsTab : ITab<TabType>
     /// <summary> Different supported sort modes as a combo. </summary>
     private void DrawFolderSortType()
     {
-        var sortMode = _config.SortMode;
-        Im.Item.SetNextWidth(UiHelpers.InputTextWidth.X);
-        using (var combo = Im.Combo.Begin("##sortMode"u8, sortMode.Name))
+        if (SortModeCombo.DrawCombo(ISortMode.Valid.Values, "##sortMode"u8, _config.SortMode, out var newSortMode, false, UiHelpers.InputTextWidth.X))
         {
-            if (combo)
-                foreach (var val in ISortMode.Valid.Values)
-                {
-                    if (Im.Selectable(val.Name, val.Equals(sortMode)) && !val.Equals(sortMode))
-                    {
-                        _config.SortMode              = val;
-                        _modFileSystemDrawer.SortMode = val;
-                        _config.Save();
-                    }
-
-                    Im.Tooltip.OnHover(val.Description);
-                }
+            _config.SortMode              = newSortMode!;
+            _modFileSystemDrawer.SortMode = newSortMode!;
+            _config.Save();
         }
 
         LunaStyle.DrawAlignedHelpMarkerLabel("Sort Mode"u8, "Choose the sort mode for the mod selector in the mods tab."u8);
@@ -589,7 +580,8 @@ public sealed class SettingsTab : ITab<TabType>
             "When you make any changes to your collection, apply them as temporary changes first and require a click to 'turn permanent' if you want to keep them."u8,
             _config.DefaultTemporaryMode, v => _config.DefaultTemporaryMode = v);
         Checkbox("Replace Non-Standard Symbols On Import"u8,
-            "Replace all non-ASCII symbols in mod and option names with underscores when importing mods."u8, _config.ReplaceNonAsciiOnImport,
+            "Replace all non-ASCII symbols in mod and option names with underscores when importing mods."u8,
+            _config.ReplaceNonAsciiOnImport,
             v => _config.ReplaceNonAsciiOnImport = v);
         Checkbox("Always Open Import at Default Directory"u8,
             "Open the import window at the location specified here every time, forgetting your previous path."u8,
@@ -916,7 +908,8 @@ public sealed class SettingsTab : ITab<TabType>
         if (ImEx.Button("Compress Existing Files"u8, Vector2.Zero,
                 "Try to compress all files in your root directory. This will take a while."u8,
                 _compactor.MassCompactRunning || !_modManager.Valid))
-            _compactor.StartMassCompact(_modManager.BasePath.EnumerateFiles("*.*", SearchOption.AllDirectories), CompressionAlgorithm.Xpress8K,
+            _compactor.StartMassCompact(_modManager.BasePath.EnumerateFiles("*.*", SearchOption.AllDirectories),
+                CompressionAlgorithm.Xpress8K,
                 true);
 
         Im.Line.Same();

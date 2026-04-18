@@ -10,7 +10,6 @@ namespace Penumbra.Mods.Manager;
 public class ModConfigUpdater : IDisposable, IRequiredService
 {
     private readonly CommunicatorService _communicator;
-    private readonly SaveService         _saveService;
     private readonly ModStorage          _mods;
     private readonly CollectionStorage   _collections;
     private readonly LocalModDatabase    _localModDatabase;
@@ -19,7 +18,6 @@ public class ModConfigUpdater : IDisposable, IRequiredService
         LocalModDatabase localModDatabase)
     {
         _communicator     = communicator;
-        _saveService      = saveService;
         _mods             = mods;
         _collections      = collections;
         _localModDatabase = localModDatabase;

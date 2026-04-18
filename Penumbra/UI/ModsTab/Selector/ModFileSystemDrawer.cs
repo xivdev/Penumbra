@@ -1,3 +1,4 @@
+using ImSharp;
 using Luna;
 using Penumbra.Collections.Manager;
 using Penumbra.Mods;
@@ -42,8 +43,19 @@ public sealed class ModFileSystemDrawer : FileSystemDrawer<ModFileSystemCache.Mo
         FolderContext.AddButton(new SetDescendantsButton(this, false, null),  10);
         FolderContext.AddButton(new SetDescendantsButton(this, true,  true),  6);
         FolderContext.AddButton(new SetDescendantsButton(this, true,  false), 5);
-        FolderContext.AddButton(new SetDefaultImportFolderButton(this),       -50);
-        FolderContext.AddButton(new SetQuickMoveFoldersButtons(this),         -70);
+        FolderContext.RemoveButtons<LockFolderButton>();
+        FolderContext.RemoveButtons<DissolveFolderButton>();
+        var setFolderButtons = new SubMenuButton<IFileSystemFolder>(new StringU8("Set Folder as..."u8));
+        setFolderButtons.Entries.AddButton(new SetDefaultImportFolderButton(this), 100);
+        setFolderButtons.Entries.AddButton(new SetQuickMoveFoldersButtons(this),   0);
+        FolderContext.AddButton(setFolderButtons, -50);
+        var editFolderButtons = new SubMenuButton<IFileSystemFolder>(new StringU8("Edit Folder"u8));
+        editFolderButtons.Entries.AddButton(new LockFolderButton(fileSystem), 20);
+        editFolderButtons.Entries.AddButton(new DissolveFolderButton(fileSystem), 15);
+        editFolderButtons.Entries.AddButton(new MenuSeparator<IFileSystemFolder>(), 12);
+        editFolderButtons.Entries.AddButton(new FolderColorEdits(this),       10);
+        editFolderButtons.Entries.AddButton(new SortModeSelector(this),       0);
+        FolderContext.AddButton(editFolderButtons, 0);
 
         DataContext.AddButton(new ToggleFavoriteButton(this),          10);
         DataContext.AddButton(new TemporaryButtons(this),              20);
@@ -61,6 +73,18 @@ public sealed class ModFileSystemDrawer : FileSystemDrawer<ModFileSystemCache.Mo
 
     protected override FileSystemCache<ModFileSystemCache.ModData> CreateCache()
         => new ModFileSystemCache(this);
+
+    public override Vector4 CollapsedFolderColor
+        => ColorId.FolderCollapsed.Value().ToVector();
+
+    public override Vector4 ExpandedFolderColor
+        => ColorId.FolderExpanded.Value().ToVector();
+
+    public override Vector4 FolderLineColor
+        => ColorId.FolderLine.Value().ToVector();
+
+    public override IEnumerable<ISortMode> ValidSortModes
+        => ISortMode.Valid.Values;
 
     public void SetDescendants(IFileSystemFolder folder, bool enabled, bool? inherit)
     {

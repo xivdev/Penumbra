@@ -2,13 +2,13 @@ using Dalamud.Interface;
 using Dalamud.Interface.ImGuiNotification;
 using ImSharp;
 using Luna;
+using Penumbra.Communication;
 using Penumbra.Files;
 using Penumbra.Mods;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Settings;
-using Penumbra.Services;
 using Penumbra.UI.ModsTab.Groups;
 
 namespace Penumbra.UI.ModsTab;
@@ -114,17 +114,17 @@ public class ModPanelEditTab(
         if (!table)
             return;
 
-        table.SetupColumn("Index"u8, TableColumnFlags.WidthFixed, Im.Font.CalculateSize("Group #00  "u8).X);
-        table.SetupColumn("Group"u8, TableColumnFlags.WidthStretch);
-        table.SetupColumn("Type"u8, TableColumnFlags.WidthFixed, Im.Font.CalculateSize("Combining  "u8).X);
-        table.SetupColumn("Options"u8, TableColumnFlags.WidthFixed, Im.Font.CalculateSize("1000 Options  "u8).X);
+        table.SetupColumn("Index"u8,             TableColumnFlags.WidthFixed, Im.Font.CalculateSize("Group #00  "u8).X);
+        table.SetupColumn("Group"u8,             TableColumnFlags.WidthStretch);
+        table.SetupColumn("Type"u8,              TableColumnFlags.WidthFixed, Im.Font.CalculateSize("Combining  "u8).X);
+        table.SetupColumn("Options"u8,           TableColumnFlags.WidthFixed, Im.Font.CalculateSize("1000 Options  "u8).X);
         table.SetupColumn("Priority##actions"u8, TableColumnFlags.WidthFixed, Im.Style.FrameHeight * 3 + Im.Style.ItemInnerSpacing.X);
         table.HeaderRow();
 
         var        active   = config.DeleteModModifier.IsActive();
         using var  clip     = new Im.ListClipper(mod.Groups.Count, Im.Style.FrameHeightWithSpacing);
         IModGroup? deletion = null;
-        foreach(var i in clip)
+        foreach (var i in clip)
         {
             using var id    = Im.Id.Push(i);
             var       group = mod.Groups[i];
@@ -167,6 +167,7 @@ public class ModPanelEditTab(
             if (!active)
                 Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"Hold {config.DeleteModModifier} to delete.");
         }
+
         if (deletion is not null)
             modManager.OptionEditor.DeleteModGroup(deletion);
     }
@@ -273,26 +274,49 @@ public class ModPanelEditTab(
     private void EditLocalData()
     {
         DrawImportDate();
-        ImEx.TextFramed($"{DateTimeOffset.FromUnixTimeMilliseconds(_mod.LastConfigEdit).ToLocalTime():yyyy/MM/dd HH:mm}",
-            UiHelpers.InputTextWidth with { Y = 0 }, ImGuiColor.FrameBackground.Get(0.5f));
-        Im.Line.SameInner();
-        Im.Text("Last Config Edit"u8);
+        DrawConfigEditDate();
     }
 
     private void DrawImportDate()
     {
+        using var id = Im.Id.Push(1);
         ImEx.TextFramed($"{DateTimeOffset.FromUnixTimeMilliseconds(_mod.ImportDate).ToLocalTime():yyyy/MM/dd HH:mm}",
             new Vector2(UiHelpers.InputTextMinusButton3, 0), ImGuiColor.FrameBackground.Get(0.5f));
-        Im.Line.Same(0, 3 * Im.Style.GlobalScale);
+        if (Im.Item.Clicked())
+            Im.Clipboard.Set($"{_mod.ImportDate}");
+        Im.Tooltip.OnHover($"Click to copy timestamp: {_mod.ImportDate}");
 
+        Im.Line.Same(0, 3 * Im.Style.GlobalScale);
         var canRefresh = config.DeleteModModifier.IsActive();
         if (ImEx.Icon.Button(LunaStyle.RefreshIcon, canRefresh
                     ? "Reset the import date to the current date and time."u8
                     : $"Reset the import date to the current date and time.\nHold {config.DeleteModModifier} while clicking to refresh.",
                 !canRefresh))
-            modManager.DataEditor.ResetModImportDate(_mod);
+            modManager.DataEditor.ChangeModImportDate(_mod, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+
         Im.Line.SameInner();
         Im.Text("Import Date"u8);
+    }
+
+    private void DrawConfigEditDate()
+    {
+        using var id = Im.Id.Push(2);
+        ImEx.TextFramed($"{DateTimeOffset.FromUnixTimeMilliseconds(_mod.LastConfigEdit).ToLocalTime():yyyy/MM/dd HH:mm}",
+            new Vector2(UiHelpers.InputTextMinusButton3, 0), ImGuiColor.FrameBackground.Get(0.5f));
+        if (Im.Item.Clicked())
+            Im.Clipboard.Set($"{_mod.LastConfigEdit}");
+        Im.Tooltip.OnHover($"Click to copy timestamp: {_mod.LastConfigEdit}");
+
+        Im.Line.Same(0, 3 * Im.Style.GlobalScale);
+        var canRefresh = config.IncognitoModifier.IsActive();
+        if (ImEx.Icon.Button(LunaStyle.RefreshIcon, canRefresh
+                    ? "Reset the last config edit date to the current date and time."u8
+                    : $"Reset the last config edit date to the current date and time.\nHold {config.IncognitoModifier} while clicking to refresh.",
+                !canRefresh))
+            modManager.DataEditor.ChangeLastConfigEdit(_mod, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+
+        Im.Line.SameInner();
+        Im.Text("Last Config Edit"u8);
     }
 
     private void DrawOpenDefaultMod()

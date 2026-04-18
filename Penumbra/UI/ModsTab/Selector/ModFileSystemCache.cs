@@ -223,17 +223,6 @@ public sealed class ModFileSystemCache : FileSystemCache<ModFileSystemCache.ModD
         }
     }
 
-    public override void Update()
-    {
-        if (!ColorsDirty)
-            return;
-
-        CollapsedFolderColor =  ColorId.FolderCollapsed.Value().ToVector();
-        ExpandedFolderColor  =  ColorId.FolderExpanded.Value().ToVector();
-        LineColor            =  ColorId.FolderLine.Value().ToVector();
-        Dirty                &= ~IManagedCache.DirtyFlags.Colors;
-    }
-
     protected override void Dispose(bool disposing)
     {
         base.Dispose(disposing);
