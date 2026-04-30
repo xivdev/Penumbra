@@ -79,7 +79,7 @@ public partial class MaterialEditor
         "weather.shpk",
     ];
 
-    private static readonly byte[] UnknownShadersString = "Vertex Shaders: ???\nPixel Shaders: ???"u8.ToArray();
+    private static readonly StringU8 UnknownShadersString = new("Vertex Shaders: ???\nPixel Shaders: ???"u8);
 
     private string[]? _shpkNames;
 
@@ -100,10 +100,13 @@ public partial class MaterialEditor
         List<(string Label, int Index, string Description, bool MonoFont, IReadOnlyList<(string Label, uint Value, string Description)>
             Values)> _shaderKeys = new(16);
 
-    private readonly HashSet<int>         _vertexShaders = new(16);
-    private readonly HashSet<int>         _pixelShaders  = new(16);
-    private          bool                 _shadersKnown;
-    private          ReadOnlyMemory<byte> _shadersString = UnknownShadersString;
+    private readonly HashSet<int> _vertexShaders   = new(16);
+    private readonly HashSet<int> _pixelShaders    = new(16);
+    private readonly HashSet<int> _hullShaders     = new(16);
+    private readonly HashSet<int> _domainShaders   = new(16);
+    private readonly HashSet<int> _geometryShaders = new(16);
+    private          bool         _shadersKnown;
+    private          StringU8     _shadersString = UnknownShadersString;
 
     private string[] GetShpkNames()
     {
@@ -241,11 +244,52 @@ public partial class MaterialEditor
             passSet.Add(shaderIndex);
         }
 
+        static void CollectShaders(StringBuilder builder, Dictionary<uint, HashSet<int>> byPassSets, string label,
+            ReadOnlySpan<Dictionary<uint, HashSet<int>>> previousSets, ReadOnlySpan<(Dictionary<uint, HashSet<int>>, string)> nextSets)
+        {
+            foreach (var (passId, passVertexShader) in byPassSets)
+            {
+                var skip = false;
+                foreach (var previous in previousSets)
+                {
+                    if (previous.ContainsKey(passId))
+                    {
+                        skip = true;
+                        break;
+                    }
+                }
+
+                if (skip)
+                    continue;
+
+                if (builder.Length > 0)
+                    builder.Append("\n\n");
+
+                var passName = Names.KnownNames.TryResolve(passId);
+                var shaders  = passVertexShader.OrderBy(i => i).Select(i => $"#{i}");
+                builder.Append($"{label} ({passName}): {string.Join(", ", shaders)}");
+                foreach (var (next, nextLabel) in nextSets)
+                {
+                    if (next.TryGetValue(passId, out var passPixelShader))
+                    {
+                        shaders = passPixelShader.OrderBy(i => i).Select(i => $"#{i}");
+                        builder.Append($"\n{nextLabel} ({passName}): {string.Join(", ", shaders)}");
+                    }
+                }
+            }
+        }
+
         _vertexShaders.Clear();
         _pixelShaders.Clear();
+        _hullShaders.Clear();
+        _domainShaders.Clear();
+        _geometryShaders.Clear();
 
-        var vertexShadersByPass = new Dictionary<uint, HashSet<int>>();
-        var pixelShadersByPass  = new Dictionary<uint, HashSet<int>>();
+        var vertexShadersByPass   = new Dictionary<uint, HashSet<int>>();
+        var pixelShadersByPass    = new Dictionary<uint, HashSet<int>>();
+        var hullShadersByPass     = new Dictionary<uint, HashSet<int>>();
+        var domainShadersByPass   = new Dictionary<uint, HashSet<int>>();
+        var geometryShadersByPass = new Dictionary<uint, HashSet<int>>();
 
         if (_associatedShpk == null || !_associatedShpk.IsExhaustiveNodeAnalysisFeasible())
         {
@@ -273,6 +317,12 @@ public partial class MaterialEditor
                             {
                                 AddShader(_vertexShaders, vertexShadersByPass, pass.Id, (int)pass.VertexShader);
                                 AddShader(_pixelShaders,  pixelShadersByPass,  pass.Id, (int)pass.PixelShader);
+                                if (pass.HullShader is not uint.MaxValue)
+                                    AddShader(_hullShaders, hullShadersByPass, pass.Id, (int)pass.HullShader);
+                                if (pass.DomainShader is not uint.MaxValue)
+                                    AddShader(_domainShaders, domainShadersByPass, pass.Id, (int)pass.DomainShader);
+                                if (pass.GeometryShader is not uint.MaxValue)
+                                    AddShader(_geometryShaders, geometryShadersByPass, pass.Id, (int)pass.GeometryShader);
                             }
                         else
                             _shadersKnown = false;
@@ -284,35 +334,20 @@ public partial class MaterialEditor
         if (_shadersKnown)
         {
             var builder = new StringBuilder();
-            foreach (var (passId, passVertexShader) in vertexShadersByPass)
-            {
-                if (builder.Length > 0)
-                    builder.Append("\n\n");
-
-                var passName = Names.KnownNames.TryResolve(passId);
-                var shaders  = passVertexShader.OrderBy(i => i).Select(i => $"#{i}");
-                builder.Append($"Vertex Shaders ({passName}): {string.Join(", ", shaders)}");
-                if (pixelShadersByPass.TryGetValue(passId, out var passPixelShader))
-                {
-                    shaders = passPixelShader.OrderBy(i => i).Select(i => $"#{i}");
-                    builder.Append($"\nPixel Shaders ({passName}): {string.Join(", ", shaders)}");
-                }
-            }
-
-            foreach (var (passId, passPixelShader) in pixelShadersByPass)
-            {
-                if (vertexShadersByPass.ContainsKey(passId))
-                    continue;
-
-                if (builder.Length > 0)
-                    builder.Append("\n\n");
-
-                var passName = Names.KnownNames.TryResolve(passId);
-                var shaders  = passPixelShader.OrderBy(i => i).Select(i => $"#{i}");
-                builder.Append($"Pixel Shaders ({passName}): {string.Join(", ", shaders)}");
-            }
-
-            _shadersString = Encoding.UTF8.GetBytes(builder.ToString());
+            CollectShaders(builder, vertexShadersByPass, "Vertex Shaders", [],
+            [
+                (pixelShadersByPass, "Pixel Shaders"), (hullShadersByPass, "Hull Shaders"), (domainShadersByPass, "Domain Shaders"),
+                (geometryShadersByPass, "Geometry Shaders")
+            ]);
+            CollectShaders(builder, pixelShadersByPass, "Pixel Shaders", [vertexShadersByPass],
+                [(hullShadersByPass, "Hull Shaders"), (domainShadersByPass, "Domain Shaders"), (geometryShadersByPass, "Geometry Shaders")]);
+            CollectShaders(builder, hullShadersByPass, "Hull Shaders", [vertexShadersByPass, pixelShadersByPass],
+                [(domainShadersByPass, "Domain Shaders"), (geometryShadersByPass, "Geometry Shaders")]);
+            CollectShaders(builder, domainShadersByPass, "Domain Shaders", [vertexShadersByPass, pixelShadersByPass, hullShadersByPass],
+                [(geometryShadersByPass, "Geometry Shaders")]);
+            CollectShaders(builder,                                                                geometryShadersByPass, "Geometry Shaders",
+                [vertexShadersByPass, pixelShadersByPass, hullShadersByPass, domainShadersByPass], []);
+            _shadersString = new StringU8(builder.ToString());
         }
         else
         {
