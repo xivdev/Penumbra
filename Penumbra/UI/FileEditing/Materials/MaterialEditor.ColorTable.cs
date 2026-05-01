@@ -2,6 +2,7 @@ using ImSharp;
 using Luna;
 using Penumbra.GameData.Files.MaterialStructs;
 using Penumbra.GameData.Files.StainMapStructs;
+using Penumbra.GameData.Structs;
 using Penumbra.Services;
 
 namespace Penumbra.UI.FileEditing.Materials;
@@ -592,7 +593,7 @@ public partial class MaterialEditor
         ref var dye = ref dyeTable[rowIdx];
 
         Im.Item.SetNextWidth(scalarSize);
-        ret |= CtDragScalar("Dye Channel"u8, default, dye.Channel + 1, "%d"u8, 1, StainService.ChannelCount, 0.1f,
+        ret |= CtDragScalar("Dye Channel"u8, default, dye.Channel + 1, "%d"u8, 1, StainService.GetUiChannelCount(_config), 0.1f,
             value => dyeTable[rowIdx].Channel = (byte)(Math.Clamp(value, 1, StainService.ChannelCount) - 1));
         Im.Line.Same(subColWidth);
         Im.Item.SetNextWidth(scalarSize);
@@ -608,10 +609,11 @@ public partial class MaterialEditor
         Im.Line.Same(Im.ContentRegion.Available.X - applyButtonWidth + Im.Style.ItemSpacing.X);
         using var dis = Im.Disabled(!dyePack.HasValue);
         if (Im.Button("Apply Preview Dye"u8))
-            ret |= Mtrl.ApplyDyeToRow(_stainService.GudStmFile, [
-                _stainService.StainCombo1.CurrentSelection.Id,
-                _stainService.StainCombo2.CurrentSelection.Id,
-            ], rowIdx);
+        {
+            Span<StainId> stainIds = stackalloc StainId[StainService.ChannelCount];
+            _stainService.GetCurrentSelection(stainIds);
+            ret |= Mtrl.ApplyDyeToRow(_stainService.GudStmFile, stainIds, rowIdx);
+        }
 
         return ret;
     }
