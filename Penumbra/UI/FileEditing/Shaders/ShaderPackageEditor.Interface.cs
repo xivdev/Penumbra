@@ -743,11 +743,12 @@ public partial class ShaderPackageEditor
                 foreach (var alias in subCluster.Aliases)
                     Im.Tree.Leaf($"#{alias.Node:D5}: Selector: 0x{alias.Selector:X8}");
 
-                var additionalData = MemoryMarshal.AsBytes(subCluster.AdditionalData);
-                if (additionalData.IndexOfAnyExcept((byte)0) >= 0)
+                var additionalData = subCluster.AdditionalData;
+                additionalData = additionalData[..(additionalData.LastIndexOfAnyExcept(0u) + 1)];
+                if (additionalData.Length >= 0)
                 {
                     using var indent = Im.Indent(2);
-                    ImEx.HexViewer(additionalData);
+                    ImEx.HexViewer(MemoryMarshal.AsBytes(additionalData));
                 }
             }
         }
