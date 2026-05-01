@@ -77,6 +77,7 @@ public class PenumbraChangelog : IUiService
             .RegisterHighlight("Added some new features to the mod filesystem:"u8)
             .RegisterEntry("You can now add separator lines to your mod filesystem. You can edit these lines by right-clicking them to choose their color, whether they are sorted among folders or files, and how they are sorted."u8, 1)
             .RegisterEntry("The context menu for folders in the mod filesystem has been slightly edited. Using the 'Edit Folder' sub menu you can now specify individual colors and sort-modes for specific folders only."u8, 1)
+            .RegisterEntry("Added a default-off setting to show all four theoretically supported dye channels in advanced material editing. The two additional channels will only be useful in the material editor itself for the time being, but there might be support implemented for them in Glamourer at a later time (Thanks Ny!)."u8)
             .RegisterEntry("Importing archives now replaces invalid symbols with underscores instead of removing them."u8)
             .RegisterEntry("Made the new meta edit tabs more obviously tabs."u8)
             .RegisterEntry("Fixed some inverted caret icons."u8)
