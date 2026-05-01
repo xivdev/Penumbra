@@ -75,7 +75,7 @@ public sealed class ShpkPathPreProcessor(ResourceManagerService resourceManager,
         {
             SanityCheckResult.IoError  => "Cannot read the modded file.",
             SanityCheckResult.NotFound => "The modded file does not exist.",
-            SanityCheckResult.Obsolete => "This mod is not compatible with Dawntrail post patch 7.2. Get an updated version, if possible, or disable it.",
+            SanityCheckResult.Obsolete => "This mod is not compatible with Dawntrail post patch 7.5. Get an updated version, if possible, or disable it.",
             _                          => string.Empty,
         };
 
