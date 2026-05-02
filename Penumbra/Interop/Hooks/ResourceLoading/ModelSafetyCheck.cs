@@ -15,7 +15,7 @@ public sealed class ModelSafetyCheck(PeSigScanner sigScanner) : AsmHookBase(sigS
         if (!SigScanner.TryScanText(sig, out var address))
             throw new Exception($"Signature for {name} [{sig}] could not be found.");
 
-        var assembler = new Assembler(32);
+        var assembler = new Assembler(64);
         
         var labelNullPath = assembler.CreateLabel("null_path");
         var labelEnd      = assembler.CreateLabel("end");
@@ -35,6 +35,7 @@ public sealed class ModelSafetyCheck(PeSigScanner sigScanner) : AsmHookBase(sigS
         
         // Easy label to jump over the test shenanigans, preserving the original cmp flags
         assembler.Label(ref labelEnd);
+        assembler.nop();
         
         base.Setup(name, address, AssembleToBytes(assembler), AsmHookBehaviour.DoNotExecuteOriginal).Enable();
     }
