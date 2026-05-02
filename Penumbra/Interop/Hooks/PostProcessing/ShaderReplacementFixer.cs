@@ -7,6 +7,7 @@ using Luna;
 using Penumbra.Communication;
 using Penumbra.GameData;
 using Penumbra.GameData.Files.MaterialStructs;
+using Penumbra.Interop.Hooks.Objects;
 using Penumbra.Interop.Hooks.Resources;
 using Penumbra.Interop.Structs;
 using Penumbra.Services;
@@ -336,12 +337,18 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
 
     private nint OnRenderHumanMaterial(CharacterBase* human, CSModelRenderer.OnRenderMaterialParams* param)
     {
+        // This is ugly and might make some kinds of transient issues persist until a redraw, but if it can avoid a crash...
+        CharacterSetupSlotModel.MitigateMaterialLoadErrors(param->Model);
+
         // If we don't have any on-screen instances of modded skin.shpk, we don't need the slow path at all.
         if (!Enabled || GetTotalMaterialCountForHumanRender() is 0)
             return _humanOnRenderMaterialHook!.Original(human, param);
 
-        var index        = GetMaterialIndex(param);
-        var material     = param->Model->Materials[index];
+        var index    = GetMaterialIndex(param);
+        var material = param->Model->Materials[index];
+        if (material is null)
+            return _humanOnRenderMaterialHook!.Original(human, param);
+
         var mtrlResource = material->MaterialResourceHandle;
         var shpkState    = GetStateForHumanRender(mtrlResource);
         if (shpkState == null || shpkState.MaterialCount is 0)
