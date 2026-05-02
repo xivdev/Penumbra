@@ -1,3 +1,4 @@
+#if false
 using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using FFXIVClientStructs.Interop;
@@ -43,3 +44,4 @@ public sealed unsafe class CharacterSetupSlotModel : FastHook<CharacterSetupSlot
         return ret;
     }
 }
+#endif
