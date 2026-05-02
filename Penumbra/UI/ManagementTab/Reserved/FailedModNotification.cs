@@ -12,7 +12,9 @@ public sealed class FailedModNotification(Services.MessageService service, UiNav
     : AmassingNotification<(string Mod, Exception Error)>(service), IService
 {
     public void AddMissingMeta(Mod mod)
-        => AddObject((mod.ModPath.Name, new FileNotFoundException("No Metadata found.", Path.Combine(mod.ModPath.FullName, "meta.json"))));
+        => AddObject((mod.ModPath.Name, new FileNotFoundException("No Metadata found.\n\n"
+          + "The folder mentioned is not an installed mod, please reserve the Penumbra root folder for Penumbra and do not place your own folders in there.\n\n"
+          + "Delete this folder or move it out of the root folder to get rid of the warning.", Path.Combine(mod.ModPath.FullName, "meta.json"))));
 
     public void AddInvalidMeta(Mod mod, Exception ex)
         => AddObject((mod.ModPath.Name, ex));
