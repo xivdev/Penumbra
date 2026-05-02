@@ -16,8 +16,9 @@ public sealed class SingleGroupCombo : FilterComboBase<SingleGroupCombo.GroupCac
 
     public SingleGroupCombo()
     {
-        Filter       = new OptionFilter();
-        ComputeWidth = true;
+        Filter                   = new OptionFilter();
+        ComputeWidth             = true;
+        DirtyCacheOnClosingPopup = true;
     }
 
     protected override FilterComboBaseCache<GroupCache> CreateCache()
