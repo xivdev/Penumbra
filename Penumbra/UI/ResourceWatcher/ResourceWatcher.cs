@@ -178,6 +178,8 @@ public sealed class ResourceWatcher : IDisposable, ITab<TabType>
 
     private unsafe void OnResourceLoaded(ResourceHandle* handle, Utf8GamePath path, FullPath? manipulatedPath, ResolveData data)
     {
+        LogIfFailed(handle, path, false);
+
         if (_config.ResourceLoggerWriteToLog)
         {
             var log   = Filter(path.Path, out var name);
@@ -208,6 +210,8 @@ public sealed class ResourceWatcher : IDisposable, ITab<TabType>
     {
         if (!isAsync)
             return;
+
+        LogIfFailed(resource, original, true);
 
         if (_config.ResourceLoggerWriteToLog && Filter(path, out var match))
             Penumbra.Log.Information(
@@ -273,6 +277,15 @@ public sealed class ResourceWatcher : IDisposable, ITab<TabType>
         }
 
         return $"0x{resolve.AssociatedGameObject:X}";
+    }
+
+    private static unsafe void LogIfFailed(ResourceHandle* resource, Utf8GamePath originalPath, bool isAsync)
+    {
+        if (resource is null || resource->UnkState is not 2 || resource->LoadState <= LoadState.Success)
+            return;
+
+        Penumbra.Log.Warning(
+            $"Failed to {(isAsync ? "asynchronously" : "synchronously")} load resource {resource->CsHandle.FileName}, original path: {originalPath}, state: {resource->UnkState}:{resource->LoadState}");
     }
 
     private void Enqueue(Record record)

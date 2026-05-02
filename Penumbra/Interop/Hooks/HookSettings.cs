@@ -79,6 +79,7 @@ public class HookOverrides
         public bool WeaponReload;
         public bool SetupPlayerNpc;
         public bool ConstructCutsceneCharacter;
+        public bool CharacterSetupSlotModel;
     }
 
     public struct PostProcessingHooks
