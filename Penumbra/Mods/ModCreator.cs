@@ -14,6 +14,7 @@ using Penumbra.Mods.Manager;
 using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
 using Penumbra.String.Classes;
+using Penumbra.UI.ManagementTab;
 
 namespace Penumbra.Mods;
 
@@ -23,10 +24,12 @@ public partial class ModCreator(
     ModDataEditor dataEditor,
     MetaFileManager metaFileManager,
     GamePathParser gamePathParser,
-    LocalModDatabase localModDatabase) : IService
+    LocalModDatabase localModDatabase,
+    FailedModNotification failedMod) : IService
 {
-    public const    FeatureFlags  SupportedFeatures = FeatureFlags.Atch | FeatureFlags.Shp | FeatureFlags.Atr;
-    public readonly Configuration Config            = config;
+    public const    FeatureFlags          SupportedFeatures = FeatureFlags.Atch | FeatureFlags.Shp | FeatureFlags.Atr;
+    public readonly Configuration         Config            = config;
+    public readonly FailedModNotification FailedMod         = failedMod;
 
     /// <summary> Creates directory and files necessary for a new mod without adding it to the manager. </summary>
     public DirectoryInfo? CreateEmptyMod(DirectoryInfo basePath, string newName, string description = "", string? author = null,
