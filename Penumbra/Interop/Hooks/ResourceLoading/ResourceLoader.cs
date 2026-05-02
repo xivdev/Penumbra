@@ -174,6 +174,7 @@ public unsafe class ResourceLoader : IDisposable, Luna.IService
         _fileReadService.ReadSqPack      -= ReadSqPackDetour;
         _destructor.Unsubscribe(ResourceDestructorHandler);
         _papHandler.Dispose();
+        _modelSafetyCheck.Dispose();
     }
 
     private void ResourceHandler(ref ResourceCategory category, ref ResourceType type, ref int hash, ref Utf8GamePath path,
