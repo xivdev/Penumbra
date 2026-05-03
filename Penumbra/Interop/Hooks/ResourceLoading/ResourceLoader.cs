@@ -18,6 +18,7 @@ public unsafe class ResourceLoader : IDisposable, Luna.IService
     private readonly FileReadService          _fileReadService;
     private readonly RsfService               _rsfService;
     private readonly PapHandler               _papHandler;
+    private readonly ModelSafetyCheck         _modelSafetyCheck;
     private readonly Configuration            _config;
     private readonly ResourceHandleDestructor _destructor;
 
@@ -50,6 +51,9 @@ public unsafe class ResourceLoader : IDisposable, Luna.IService
 
         _papHandler = new PapHandler(sigScanner, PapResourceHandler);
         _papHandler.Enable();
+        _modelSafetyCheck = new ModelSafetyCheck(sigScanner);
+        _modelSafetyCheck.Setup();
+        _modelSafetyCheck.Enable();
     }
 
     private int PapResourceHandler(void* self, byte* path, int length)
@@ -170,6 +174,7 @@ public unsafe class ResourceLoader : IDisposable, Luna.IService
         _fileReadService.ReadSqPack      -= ReadSqPackDetour;
         _destructor.Unsubscribe(ResourceDestructorHandler);
         _papHandler.Dispose();
+        _modelSafetyCheck.Dispose();
     }
 
     private void ResourceHandler(ref ResourceCategory category, ref ResourceType type, ref int hash, ref Utf8GamePath path,
