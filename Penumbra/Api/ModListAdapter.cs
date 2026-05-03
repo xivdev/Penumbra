@@ -31,11 +31,5 @@ public sealed class ModListAdapter(ModStorage storage) : IReadOnlyList<IDisposab
     }
 
     public void Dispose()
-    {
-        _storage.SetTarget(null!);
-        GC.SuppressFinalize(this);
-    }
-
-    ~ModListAdapter()
-        => Dispose();
+        => _storage.SetTarget(null!);
 }
