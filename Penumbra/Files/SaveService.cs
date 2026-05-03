@@ -11,9 +11,14 @@ namespace Penumbra.Files;
 public interface ISavable : ISavable<FilenameService>
 { }
 
-public sealed class SaveService(LunaLogger log, FrameworkManager framework, FilenameService fileNames, BackupService backupService)
-    : BaseSaveService<FilenameService>(log, framework, fileNames, backupService.Awaiter), IService
+public sealed class SaveService : BaseSaveService<FilenameService>, IService
 {
+    public SaveService(LunaLogger log, FrameworkManager framework, FilenameService fileNames, BackupService backupService)
+        : base(log, framework, fileNames, backupService.Awaiter)
+    {
+        BackupMode = BackupMode.SingleBackup;
+    }
+
     /// <summary> Immediately delete all existing option group files for a mod and save them anew. </summary>
     public void SaveAllOptionGroups(Mod mod, bool backup, bool onlyAscii)
     {

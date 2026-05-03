@@ -725,10 +725,10 @@ public sealed class CollectionPanel(
                 (new StringU8($"♀ {race.ToShortName()} (NPC)"), color.ToVector());
         }
 
-        ret[CollectionType.MalePlayerCharacter]      = (new StringU8("♂ Player"), Vector4.Zero);
-        ret[CollectionType.FemalePlayerCharacter]    = (new StringU8("♀ Player"), Vector4.Zero);
-        ret[CollectionType.MaleNonPlayerCharacter]   = (new StringU8("♂ NPC"), Vector4.Zero);
-        ret[CollectionType.FemaleNonPlayerCharacter] = (new StringU8("♀ NPC"), Vector4.Zero);
+        ret[CollectionType.MalePlayerCharacter]      = (new StringU8("♂ Player"u8), Vector4.Zero);
+        ret[CollectionType.FemalePlayerCharacter]    = (new StringU8("♀ Player"u8), Vector4.Zero);
+        ret[CollectionType.MaleNonPlayerCharacter]   = (new StringU8("♂ NPC"u8), Vector4.Zero);
+        ret[CollectionType.FemaleNonPlayerCharacter] = (new StringU8("♀ NPC"u8), Vector4.Zero);
         return ret;
     }
 

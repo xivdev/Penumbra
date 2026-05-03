@@ -816,6 +816,10 @@ public sealed class SettingsTab : ITab<TabType>
         Checkbox("Advanced Editing: Always Highlight Color Row Pair when Hovering Selection Button"u8,
             "Make the whole color row pair selection button highlight the pair in game, instead of just the crosshair, even without holding Control."u8,
             _config.WholePairSelectorAlwaysHighlights, v => _config.WholePairSelectorAlwaysHighlights = v);
+
+        Checkbox("Advanced Editing: Unlock More Dye Chanels"u8,
+            "Although the vanilla game is limited to two dye channels, the current material file format supports four.\nThis option will allow the use of those four dye channels in the material editor.\nPlease note, though, that this has limited usefulness: at the time of writing, those four channels are only usable within the material editor."u8,
+            _config.AllDyeChannels, v => _config.AllDyeChannels = v);
     }
 
     #endregion
@@ -984,6 +988,7 @@ public sealed class SettingsTab : ITab<TabType>
         if (!RenderTargetHdrEnabler.HdrModeSupported)
             return;
 
+#pragma warning disable CS0162 // Unreachable code detected
         Im.Item.SetNextWidth(Im.Font.CalculateSize("M"u8).X * 5.0f + Im.Style.FrameHeight);
         using (var combo = Im.Combo.Begin("##hdrRenderTarget"u8, _config.HdrRenderTargets ? "HDR"u8 : "SDR"u8))
         {
@@ -1006,6 +1011,7 @@ public sealed class SettingsTab : ITab<TabType>
         LunaStyle.DrawAlignedHelpMarkerLabel("Diffuse Dynamic Range"u8,
             "Set the dynamic range that can be used for diffuse colors in materials without causing visual artifacts.\n"u8
           + "Changing this setting requires a game restart. It also only works if Wait for Plugins on Startup is enabled."u8);
+#pragma warning restore CS0162 // Unreachable code detected
     }
 
     /// <summary> Draw a checkbox for the HTTP API that creates and destroys the web server when toggled. </summary>

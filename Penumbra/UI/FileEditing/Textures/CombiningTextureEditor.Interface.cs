@@ -366,13 +366,13 @@ public partial class CombiningTextureEditor
     private void DrawOverlayCollapseButton()
     {
         var (icon, iconPosition, label, tooltip) = _overlayCollapsed
-            ? RefTuple.Create(LunaStyle.CollapseLeftIcon, ImEx.Icon.IconPosition.BeforeLabel, "Show Overlay"u8,
+            ? RefTuple.Create(LunaStyle.CollapseLeftIcon, ImEx.Icon.IconFlags.BeforeLabel, "Show Overlay"u8,
                 "Show a third panel in which you can import an additional texture as an overlay for the primary texture."u8)
-            : RefTuple.Create(LunaStyle.ExpandRightIcon, ImEx.Icon.IconPosition.AfterLabel, "Hide Overlay"u8,
+            : RefTuple.Create(LunaStyle.ExpandRightIcon, ImEx.Icon.IconFlags.AfterLabel, "Hide Overlay"u8,
                 "Hide the overlay texture panel and clear the currently loaded overlay texture, if any."u8);
         Im.Dummy(Im.ContentRegion.Available.X - ImEx.Icon.CalculateLabeledButtonSize(icon, label).X);
         Im.Line.NoSpacing();
-        if (ImEx.Icon.LabeledButton(icon, label, tooltip, iconPosition: iconPosition))
+        if (ImEx.Icon.LabeledButton(icon, label, tooltip, iconFlags: iconPosition))
             _overlayCollapsed = !_overlayCollapsed;
     }
 

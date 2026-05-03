@@ -2,6 +2,7 @@ using ImSharp;
 using Luna;
 using Penumbra.GameData.Files.MaterialStructs;
 using Penumbra.GameData.Files.StainMapStructs;
+using Penumbra.GameData.Structs;
 using Penumbra.Services;
 using TableFlags = ImSharp.TableFlags;
 
@@ -290,7 +291,7 @@ public partial class MaterialEditor
         {
             Im.Table.NextColumn();
             Im.Item.SetNextWidth(byteSize);
-            ret |= CtDragScalar("##DyeChannel"u8, "Dye Channel"u8, dye.Channel + 1, "%hhd"u8, 1, StainService.ChannelCount, 0.25f,
+            ret |= CtDragScalar("##DyeChannel"u8, "Dye Channel"u8, dye.Channel + 1, "%hhd"u8, 1, StainService.ChannelCount, 0.1f,
                 value => dyeTable[rowIdx].Channel = (byte)(Math.Clamp(value, 1, StainService.ChannelCount) - 1));
             Im.Line.SameInner();
             if (_stainService.LegacyTemplateCombo.Draw("##dyeTemplate"u8, dye.Template, dye.Channel, StringU8.Empty, out var newSelection,
@@ -337,11 +338,12 @@ public partial class MaterialEditor
 
         var ret = ImEx.Icon.Button(LunaStyle.DyeIcon, "Apply the selected dye to this row."u8, disabled);
 
-        ret = ret
-         && Mtrl.ApplyDyeToRow(_stainService.LegacyStmFile, [
-                _stainService.StainCombo1.CurrentSelection.Id,
-                _stainService.StainCombo2.CurrentSelection.Id,
-            ], rowIdx);
+        if (ret)
+        {
+            Span<StainId> stainIds = stackalloc StainId[StainService.ChannelCount];
+            _stainService.GetCurrentSelection(stainIds);
+            ret = Mtrl.ApplyDyeToRow(_stainService.LegacyStmFile, stainIds, rowIdx);
+        }
 
         Im.Line.Same();
         DrawLegacyDyePreview(values, floatSize);

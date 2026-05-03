@@ -3,6 +3,7 @@ using ImSharp;
 using Luna;
 using Penumbra.GameData;
 using Penumbra.GameData.Files;
+using Penumbra.GameData.Files.ShaderStructs;
 using Penumbra.GameData.Interop;
 using Penumbra.GameData.Structs;
 using static Penumbra.GameData.Files.ShpkFile;
@@ -25,11 +26,35 @@ public partial class ShaderPackageEditor
         DrawShaderPackageFilterSection();
 
         var ret = false;
-        Im.Dummy(dummyHeight);
-        ret |= DrawShaderPackageShaderArray("Vertex Shader", Shpk.VertexShaders, disabled);
+        if (Shpk.VertexShaders.Length > 0)
+        {
+            Im.Dummy(dummyHeight);
+            ret |= DrawShaderPackageShaderArray("Vertex Shader", Shpk.VertexShaders, disabled);
+        }
 
-        Im.Dummy(dummyHeight);
-        ret |= DrawShaderPackageShaderArray("Pixel Shader", Shpk.PixelShaders, disabled);
+        if (Shpk.PixelShaders.Length > 0)
+        {
+            Im.Dummy(dummyHeight);
+            ret |= DrawShaderPackageShaderArray("Pixel Shader", Shpk.PixelShaders, disabled);
+        }
+
+        if (Shpk.HullShaders.Length > 0)
+        {
+            Im.Dummy(dummyHeight);
+            ret |= DrawShaderPackageShaderArray("Hull Shader", Shpk.HullShaders, disabled);
+        }
+
+        if (Shpk.DomainShaders.Length > 0)
+        {
+            Im.Dummy(dummyHeight);
+            ret |= DrawShaderPackageShaderArray("Domain Shader", Shpk.DomainShaders, disabled);
+        }
+
+        if (Shpk.GeometryShaders.Length > 0)
+        {
+            Im.Dummy(dummyHeight);
+            ret |= DrawShaderPackageShaderArray("Geometry Shader", Shpk.GeometryShaders, disabled);
+        }
 
         Im.Dummy(dummyHeight);
         ret |= DrawShaderPackageMaterialParamLayout(disabled);
@@ -68,6 +93,10 @@ public partial class ShaderPackageEditor
         {
             'V' => $"vs{idx}",
             'P' => $"ps{idx}",
+            'H' => $"hs{idx}",
+            'D' => $"ds{idx}",
+            'G' => $"gs{idx}",
+            'C' => $"cs{idx}",
             _   => throw new NotImplementedException(),
         };
 
@@ -136,6 +165,9 @@ public partial class ShaderPackageEditor
 
     private static unsafe void DrawRawDisassembly(Shader shader)
     {
+        if (shader.Disassembly is null)
+            return;
+
         using var tree = Im.Tree.Node("Raw Program Disassembly"u8);
         if (!tree)
             return;
@@ -143,7 +175,7 @@ public partial class ShaderPackageEditor
         using var font = Im.Font.PushMono();
         var       size = Im.ContentRegion.Available with { Y = Im.Style.TextHeight * 20 };
         Im.Input.MultiLine(DisassemblyLabel,
-            new Span<byte>(shader.Disassembly!.RawDisassembly.Path, shader.Disassembly.RawDisassembly.Length + 1), out ulong _, size,
+            new Span<byte>(shader.Disassembly.RawDisassembly.Path, shader.Disassembly.RawDisassembly.Length + 1), out ulong _, size,
             InputTextFlags.ReadOnly);
     }
 
@@ -616,7 +648,7 @@ public partial class ShaderPackageEditor
 
     private void DrawShaderPackageNodes()
     {
-        if (Shpk.Nodes.Length <= 0)
+        if (Shpk.Nodes.Length is 0)
             return;
 
         using var t = Im.Tree.Node($"Nodes ({Shpk.Nodes.Length})###Nodes");
@@ -662,7 +694,62 @@ public partial class ShaderPackageEditor
             foreach (var (passIdx, pass) in node.Passes.Index())
             {
                 Im.Tree.Leaf(
-                    $"Pass #{passIdx}: ID: {TryResolveName(pass.Id)}, Vertex Shader #{pass.VertexShader}, Pixel Shader #{pass.PixelShader}");
+                    $"Pass #{passIdx}: ID: {TryResolveName(pass.Id)}, Vertex Shader #{pass.VertexShader}, Pixel Shader #{pass.PixelShader}{(pass.HullShader is uint.MaxValue ? "" : $", Hull Shader #{pass.HullShader}")}{(pass.DomainShader is uint.MaxValue ? "" : $", Domain Shader #{pass.DomainShader}")}{(pass.GeometryShader is uint.MaxValue ? "" : $", Geometry Shader #{pass.GeometryShader}")}");
+            }
+        }
+    }
+
+    private void DrawShaderPackageNodeSelectors()
+    {
+        if (Shpk.NodeSelectors.Count is 0)
+            return;
+
+        using var t = Im.Tree.Node($"Node Selectors ({Shpk.NodeSelectors.Count})###NodeSelectors");
+        if (!t)
+            return;
+
+        using var font = Im.Font.PushMono();
+        foreach (var selector in Shpk.NodeSelectors)
+            Im.Tree.Leaf($"#{selector.Value:D5}: Selector: 0x{selector.Key:X8}");
+    }
+
+    private void DrawShaderPackageNodeAliasClusters()
+    {
+        if (Shpk.NodeAliasClusters.Length is 0)
+            return;
+
+        using var t = Im.Tree.Node($"Node Alias Clusters ({Shpk.NodeAliasClusters.Length})###NodeAliasClusters");
+        if (!t)
+            return;
+
+        using var font = Im.Font.PushMono();
+        var       i    = -1;
+        foreach (var cluster in Shpk.NodeAliasClusters)
+        {
+            ++i;
+            using var ct = Im.Tree.Node(
+                $"#{i}: {Names.KnownNames.TryResolve(cluster.SubViewValue1)} | {Names.KnownNames.TryResolve(cluster.SubViewValue2)} | 0x{cluster.Unk141E:X8}###{i}");
+            if (!ct)
+                continue;
+
+            var j = -1;
+            foreach (var subCluster in cluster.SubClusters)
+            {
+                ++j;
+                using var sct = Im.Tree.Node($"#{subCluster.OwnIndex}###{j}");
+                if (!sct)
+                    continue;
+
+                foreach (var alias in subCluster.Aliases)
+                    Im.Tree.Leaf($"#{alias.Node:D5}: Selector: 0x{alias.Selector:X8}");
+
+                var additionalData = subCluster.AdditionalData;
+                additionalData = additionalData[..(additionalData.LastIndexOfAnyExcept(0u) + 1)];
+                if (additionalData.Length >= 0)
+                {
+                    using var indent = Im.Indent(2);
+                    ImEx.HexViewer(MemoryMarshal.AsBytes(additionalData));
+                }
             }
         }
     }
@@ -678,13 +765,8 @@ public partial class ShaderPackageEditor
         DrawKeyArray("Sub-View Keys"u8, false, Shpk.SubViewKeys);
 
         DrawShaderPackageNodes();
-        using var t = Im.Tree.Node($"Node Selectors ({Shpk.NodeSelectors.Count})###NodeSelectors");
-        if (t)
-        {
-            using var font = Im.Font.PushMono();
-            foreach (var selector in Shpk.NodeSelectors)
-                Im.Tree.Leaf($"#{selector.Value:D4}: Selector: 0x{selector.Key:X8}");
-        }
+        DrawShaderPackageNodeSelectors();
+        DrawShaderPackageNodeAliasClusters();
     }
 
     private void DrawOtherShaderPackageDetails()

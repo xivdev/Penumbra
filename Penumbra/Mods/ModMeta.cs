@@ -85,13 +85,13 @@ public readonly struct ModMeta(Mod mod) : ISavable
 
         if (!File.Exists(metaFile))
         {
-            Penumbra.Messager.NotificationMessage(new Exception("File Missing."), $"No Metadata found for\n\n\t{mod.ModPath.Name}\n\nSkipped loading mod.", $"No mod meta found for {mod.ModPath.Name}.", NotificationType.Error);
+            creator.FailedMod.AddMissingMeta(mod);
             return ModDataChangeType.Deletion;
         }
 
         try
         {
-            var data   = JsonFunctions.ReadUtf8Bytes(metaFile);
+            var data   = JsonFunctions.ReadUtf8Bytes(metaFile, out _);
             var reader = new Utf8JsonReader(data.Span, JsonFunctions.ReaderOptions);
 
             while (reader.Read())
@@ -169,8 +169,7 @@ public readonly struct ModMeta(Mod mod) : ISavable
         }
         catch (Exception e)
         {
-            Penumbra.Messager.NotificationMessage(e, $"Failure reading Metadata for\n\n\t{mod.ModPath.Name}\n\nSkipped loading Mod.",
-                $"Could not load mod meta for {metaFile}", NotificationType.Error);
+            creator.FailedMod.AddInvalidMeta(mod, e);
             return ModDataChangeType.Deletion;
         }
 

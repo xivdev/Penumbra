@@ -258,11 +258,8 @@ public partial class MaterialEditor
         var dyeRows = Mtrl.DyeTable is not null ? ColorDyeTable.CastOrConvert(Mtrl.DyeTable) : null;
         if (dyeRows is not null)
         {
-            ReadOnlySpan<StainId> stainIds =
-            [
-                _stainService.StainCombo1.CurrentSelection.Id,
-                _stainService.StainCombo2.CurrentSelection.Id,
-            ];
+            Span<StainId> stainIds = stackalloc StainId[StainService.ChannelCount];
+            _stainService.GetCurrentSelection(stainIds);
             rows.ApplyDye(_stainService.LegacyStmFile, stainIds, dyeRows);
             rows.ApplyDye(_stainService.GudStmFile,    stainIds, dyeRows);
         }

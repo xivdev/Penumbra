@@ -253,7 +253,7 @@ public sealed partial class ModEditWindow : IndexedWindow, IDisposable
     private static readonly FrozenDictionary<GenderRace, StringU8> RaceCodeNames = GenderRace.Values.ToFrozenDictionary(v => v, v =>
     {
         if (v is GenderRace.Unknown)
-            return new StringU8("All Races and Genders");
+            return new StringU8("All Races and Genders"u8);
 
         var (gender, race) = v.Split();
         return new StringU8($"({v.ToRaceCode()}) {race.ToNameU8()} {gender.ToNameU8()} ");

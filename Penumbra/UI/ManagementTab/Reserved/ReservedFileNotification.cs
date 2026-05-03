@@ -1,4 +1,3 @@
-using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.ImGuiNotification.EventArgs;
 using ImSharp;
@@ -13,16 +12,14 @@ namespace Penumbra.UI.ManagementTab;
 public sealed class ReservedFileNotification(
     Services.MessageService service,
     UiNavigator navigator)
-    : INotificationAwareMessage, IService
+    : AmassingNotification<(string Path, string Mod)>(service), IService
 {
-    private IActiveNotification? _currentNotification;
-
     public bool IsRedirectionSupported(Utf8GamePath path, IMod mod, bool temporaryCollection)
     {
         if (ReservedFiles.Files.ContainsKey((uint)path.Path.Crc32))
         {
             if (!temporaryCollection)
-                AddFile(path, mod);
+                AddObject((path.ToString(), mod.Name));
             return false;
         }
 
@@ -45,60 +42,20 @@ public sealed class ReservedFileNotification(
         }
     }
 
-    private void AddFile(Utf8GamePath path, IMod mod)
-    {
-        var t = (path.ToString(), mod.Name);
-        if (_gatheredFiles.Contains(t))
-            return;
-
-        _gatheredFiles.Add(t);
-        service.AddMessage(new StoredNotification(this, t.Item1, t.Name), true, false, true, false);
-        if (_currentNotification is null)
-        {
-            service.AddMessage(this, false, true, false, false);
-        }
-        else
-        {
-            _currentNotification.Title         = ((IMessage)this).NotificationTitle;
-            _currentNotification.MinimizedText = _currentNotification.Title;
-            _currentNotification.ExtendBy(TimeSpan.FromSeconds(30));
-        }
-    }
-
-    private readonly List<(string File, string Mod)> _gatheredFiles = [];
-
-    private NotificationType NotificationType
+    public override NotificationType NotificationType
         => NotificationType.Warning;
 
-    private TimeSpan NotificationDuration
-        => TimeSpan.FromSeconds(30);
-
-    NotificationType IMessage.NotificationType
-        => NotificationType;
-
-    string IMessage.NotificationMessage
+    public override string NotificationMessage
         => "Redirection of these files is disabled because unexpected replacements will cause crashes.\n\n"
           + "See Management -> Reserved Files for more details.";
 
-    TimeSpan IMessage.NotificationDuration
-        => NotificationDuration;
+    public override string NotificationTitle
+        => $"{Count} Reserved File{(Count is 1 ? string.Empty : "s")} Encountered";
 
-    string IMessage.NotificationTitle
-        => $"{_gatheredFiles.Count} Reserved File{(_gatheredFiles.Count is 1 ? string.Empty : "s")} Encountered";
+    protected override StoredNotification CreateStored(in (string Path, string Mod) @object)
+        => new Stored(this, @object.Path, @object.Mod);
 
-    string IMessage.LogMessage
-        => string.Empty;
-
-    SeString IMessage.ChatMessage
-        => SeString.Empty;
-
-    StringU8 IMessage.StoredMessage
-        => StringU8.Empty;
-
-    StringU8 IMessage.StoredTooltip
-        => StringU8.Empty;
-
-    void IMessage.OnNotificationActions(INotificationDrawArgs args)
+    public override void NotificationActions(INotificationDrawArgs args)
     {
         var width = Im.ContentRegion.Available with { Y = 0 };
         width.X = (width.X - Im.Style.ItemInnerSpacing.X) / 2;
@@ -109,57 +66,10 @@ public sealed class ReservedFileNotification(
             navigator.OpenTo(ManagementTabType.ReservedFiles);
     }
 
-    void INotificationAwareMessage.OnNotificationCreated(IActiveNotification notification)
+    private sealed class Stored(ReservedFileNotification parent, string file, string mod) : StoredNotification(parent, (file, mod))
     {
-        _currentNotification       =  notification;
-        notification.Dismiss       += OnNotificationDismissed;
-        notification.MinimizedText =  _currentNotification.Title;
-    }
-
-    private void OnNotificationDismissed(INotificationDismissArgs args)
-    {
-        if (args.Notification != _currentNotification)
-            return;
-
-        _gatheredFiles.Clear();
-        _currentNotification = null;
-    }
-
-    private sealed class StoredNotification(ReservedFileNotification parent, string file, string mod) : IMessage
-    {
-        public NotificationType NotificationType
-            => NotificationType.Warning;
-
-        public string NotificationMessage
-            => string.Empty;
-
-        public string NotificationTitle
-            => string.Empty;
-
-        public TimeSpan NotificationDuration
-            => TimeSpan.Zero;
-
-        public string LogMessage { get; } = $"Redirection of {file} in mod {mod} stopped.";
-
-        public SeString ChatMessage
-            => SeString.Empty;
-
-        public StringU8 StoredMessage { get; } = new($"{file} in {mod}: Reserved File Redirection.");
-        public StringU8 StoredTooltip { get; } = new($"File: {file}\nMod: {mod}");
-
-        public void OnNotificationActions(INotificationDrawArgs args)
-        { }
-
-        public void OnRemoval()
-        {
-            parent._gatheredFiles.Remove((file, mod));
-            if (parent._currentNotification is { } notification)
-            {
-                if (parent._gatheredFiles.Count is 0)
-                    notification.DismissNow();
-                notification.Title         = ((IMessage)parent).NotificationTitle;
-                notification.MinimizedText = notification.Title;
-            }
-        }
+        public override string   LogMessage    { get; } = $"Redirection of {file} in mod {mod} stopped.";
+        public override StringU8 StoredMessage { get; } = new($"{file} in {mod}: Reserved File Redirection.");
+        public override StringU8 StoredTooltip { get; } = new($"File: {file}\nMod: {mod}");
     }
 }

@@ -148,6 +148,7 @@ public partial class Configuration : IPluginConfiguration, ISavable, IService
     public bool DefaultEditWindowModPinned        { get; set; } = true;
     public bool EditRawTileTransforms             { get; set; } = false;
     public bool WholePairSelectorAlwaysHighlights { get; set; } = false;
+    public bool AllDyeChannels                    { get; set; } = false;
 
     public bool HdrRenderTargets { get; set; } = true;
 

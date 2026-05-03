@@ -14,7 +14,8 @@ namespace Penumbra.UI.Tabs.Debug;
 public unsafe class GlobalVariablesDrawer(
     CharacterUtility characterUtility,
     ResidentResourceManager residentResources,
-    SchedulerResourceManagementService scheduler) : Luna.IUiService
+    SchedulerResourceManagementService scheduler,
+    CmpDrawer cmpDrawer) : Luna.IUiService
 {
     /// <summary> Draw information about some game global variables. </summary>
     public void Draw()
@@ -51,9 +52,19 @@ public unsafe class GlobalVariablesDrawer(
         }
 
         DrawCharacterUtility();
+        DrawCmp();
         DrawResidentResources();
         DrawSchedulerResourcesMap();
         DrawSchedulerResourcesList();
+    }
+
+    private void DrawCmp()
+    {
+        using var tree = Im.Tree.Node("human.cmp"u8);
+        if (!tree)
+            return;
+
+        cmpDrawer.Draw();
     }
 
 
