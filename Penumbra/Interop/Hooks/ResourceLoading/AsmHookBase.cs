@@ -6,22 +6,18 @@ namespace Penumbra.Interop.Hooks.ResourceLoading;
 
 public abstract class AsmHookBase(PeSigScanner sigScanner) : IDisposable
 {
+    protected readonly PeSigScanner              SigScanner       = sigScanner;
     protected readonly Dictionary<nint, AsmHook> Hooks            = [];
     protected readonly List<nint>                NativeAllocCaves = [];
-    
-    protected PeSigScanner SigScanner { get; } = sigScanner;
-
 
     protected AsmHook Setup(string hookName, nint hookAddress, byte[] bytecode, AsmHookBehaviour behaviour = AsmHookBehaviour.ExecuteFirst)
     {
         var hook = new AsmHook(hookAddress, bytecode, hookName, behaviour);
-
         Hooks.Add(hookAddress, hook);
-        
+
         return hook;
     }
-    
-    
+
     protected static AssemblerRegister64 GetRegister64(Register reg)
         => reg switch
         {
@@ -43,7 +39,7 @@ public abstract class AsmHookBase(PeSigScanner sigScanner) : IDisposable
             Register.R15 => r15,
             _            => throw new ArgumentOutOfRangeException(nameof(reg), reg, "Unsupported register."),
         };
-    
+
     protected static byte[] AssembleToBytes(Assembler assembler)
     {
         using var stream = new MemoryStream();
@@ -51,7 +47,7 @@ public abstract class AsmHookBase(PeSigScanner sigScanner) : IDisposable
         assembler.Assemble(writer, 0);
         return stream.ToArray();
     }
-    
+
     protected unsafe nint NativeAllocCave(nuint size)
     {
         var caveLoc = (nint)NativeMemory.Alloc(size);
@@ -59,24 +55,29 @@ public abstract class AsmHookBase(PeSigScanner sigScanner) : IDisposable
 
         return caveLoc;
     }
-    
+
     protected static unsafe void NativeFree(nint mem)
         => NativeMemory.Free((void*)mem);
-
 
     public virtual void Enable()
     {
         foreach (var hook in Hooks.Values)
             hook.Enable();
     }
-    
+
     public virtual void Disable()
     {
         foreach (var hook in Hooks.Values)
             hook.Disable();
     }
-    
-    public virtual void Dispose()
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
     {
         foreach (var hook in Hooks.Values)
         {
@@ -91,4 +92,7 @@ public abstract class AsmHookBase(PeSigScanner sigScanner) : IDisposable
 
         NativeAllocCaves.Clear();
     }
+
+    ~AsmHookBase()
+        => Dispose(false);
 }

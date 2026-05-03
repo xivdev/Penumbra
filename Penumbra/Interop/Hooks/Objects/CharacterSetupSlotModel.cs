@@ -1,3 +1,4 @@
+// Unused for the moment as ModelSafetyCheck.cs should supersede its function.
 #if false
 using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
