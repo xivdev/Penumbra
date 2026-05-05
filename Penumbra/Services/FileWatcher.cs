@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using ImSharp;
 using Luna;
 using Penumbra.Mods.Manager;
@@ -11,17 +10,17 @@ namespace Penumbra.Services;
 
 public sealed class FileWatcher : IDisposable, IService
 {
-    private readonly ConcurrentSet<string> _pending = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentSet<string>              _pending = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, long> _ignored = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, long> _extractedArchives = new(StringComparer.OrdinalIgnoreCase);
-    private readonly ModImportManager _modImportManager;
-    private readonly MessageService _messageService;
-    private readonly Configuration _config;
+    private readonly ModImportManager                   _modImportManager;
+    private readonly MessageService                     _messageService;
+    private readonly Configuration                      _config;
 
-    private bool _pausedConsumer;
-    private FileSystemWatcher? _fsw;
+    private bool                     _pausedConsumer;
+    private FileSystemWatcher?       _fsw;
     private CancellationTokenSource? _cts = new();
-    private Task? _consumer;
+    private Task?                    _consumer;
 
     /// <summary> The time-to-live of ignore entries, in the same unit as <see cref="Environment.TickCount64"/>, namely milliseconds. </summary>
     private const long IgnoreTimeToLive = 60000L;
@@ -40,8 +39,8 @@ public sealed class FileWatcher : IDisposable, IService
     public FileWatcher(ModImportManager modImportManager, MessageService messageService, Configuration config)
     {
         _modImportManager = modImportManager;
-        _messageService = messageService;
-        _config = config;
+        _messageService   = messageService;
+        _config           = config;
 
         WipeTempRoot();
 
@@ -118,8 +117,8 @@ public sealed class FileWatcher : IDisposable, IService
         _fsw = new FileSystemWatcher
         {
             IncludeSubdirectories = false,
-            NotifyFilter = NotifyFilters.FileName | NotifyFilters.CreationTime,
-            InternalBufferSize = 32 * 1024,
+            NotifyFilter          = NotifyFilters.FileName | NotifyFilters.CreationTime,
+            InternalBufferSize    = 32 * 1024,
         };
 
         // Only wake us for the exact patterns we care about.
@@ -179,7 +178,7 @@ public sealed class FileWatcher : IDisposable, IService
         }
         else
         {
-            _fsw.Path = newPath;
+            _fsw.Path                = newPath;
             _fsw.EnableRaisingEvents = true;
         }
     }
@@ -268,8 +267,8 @@ public sealed class FileWatcher : IDisposable, IService
     private static async Task<bool> WaitForStableAsync(string path, CancellationToken token)
     {
         const int maxTries = 40;
-        long lastLen = -1;
-        var sw = Stopwatch.StartNew();
+        long lastLen       = -1;
+        var sw             = Stopwatch.StartNew();
 
         for (var i = 0; i < maxTries && !token.IsCancellationRequested; i++)
         {
@@ -325,9 +324,9 @@ public sealed class FileWatcher : IDisposable, IService
         if (!await WaitForStableAsync(path, token).ConfigureAwait(false))
             return;
 
-        var ext = Path.GetExtension(path);
+        var ext            = Path.GetExtension(path);
         string? archiveDir = null;
-        var extractedNow = new List<string>();
+        var extractedNow   = new List<string>();
 
         try
         {
@@ -449,7 +448,7 @@ public sealed class FileWatcher : IDisposable, IService
         {
             ".zip" => ZipArchive.Open(path),
             ".rar" => RarArchive.Open(path),
-            ".7z" => SevenZipArchive.Open(path),
+            ".7z"  => SevenZipArchive.Open(path),
             _ => null,
         };
 
@@ -567,14 +566,14 @@ public sealed class FileWatcher : IDisposable, IService
             table.DrawColumn(StringU8.Join((byte)'\n', fileWatcher._ignored.Select(entry =>
                 (entry.Value - Environment.TickCount64) switch
                 {
-                    <= 0 => $"<EXPIRED> {entry.Key}",
+                    <= 0    => $"<EXPIRED> {entry.Key}",
                     var ttl => $"<{ttl}ms> {entry.Key}",
                 }).ToList()));
 
             table.DrawColumn("Extracted Archives"u8);
             table.DrawColumn(StringU8.Join((byte)'\n', fileWatcher._extractedArchives.Select(entry =>
             {
-                var ageSec = (Environment.TickCount64 - entry.Value) / 1000;
+                var ageSec    = (Environment.TickCount64 - entry.Value) / 1000;
                 var fileCount = TryCountFiles(entry.Key);
                 return $"<{ageSec}s, {fileCount} files> {entry.Key}";
             }).ToList()));
