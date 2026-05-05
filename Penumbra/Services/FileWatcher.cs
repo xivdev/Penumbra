@@ -379,15 +379,17 @@ public sealed class FileWatcher : IDisposable, IService
                 try
                 {
                     var extractSw = Stopwatch.StartNew();
+                    long bytesWritten;
                     await using (var input = entry.OpenEntryStream())
                     await using (var output = new FileStream(tempPath, FileMode.CreateNew, FileAccess.Write,
                                      FileShare.None, 81920, useAsync: true))
                     {
                         await input.CopyToAsync(output, 81920, token).ConfigureAwait(false);
+                        bytesWritten = output.Position;
                     }
 
                     Penumbra.Log.Verbose(
-                        $"[FileWatcher] Extracted '{safeName}' ({new FileInfo(tempPath).Length} bytes) in {extractSw.ElapsedMilliseconds}ms.");
+                        $"[FileWatcher] Extracted '{safeName}' ({bytesWritten} bytes) in {extractSw.ElapsedMilliseconds}ms.");
                     extractedNow.Add(tempPath);
                 }
                 catch (OperationCanceledException)
