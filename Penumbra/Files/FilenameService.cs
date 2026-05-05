@@ -92,7 +92,7 @@ public sealed class FilenameService(IDalamudPluginInterface pi) : BaseFilePathPr
         list.Add(new FileInfo(ActiveCollectionsFile));
         list.Add(new FileInfo(PredefinedTagFile));
         list.Add(new FileInfo(FileSystemLockedNodes));
-        list.Add(new FileInfo(FileSystemEmptyFoldersMigration));
+        list.Add(new FileInfo(FileSystemOrganization));
         // Do not back up expanded folders, selected nodes, ui configuration or ephemeral config.
         return list;
     }

@@ -62,7 +62,7 @@ public class ModBackup
         try
         {
             newBasePath ??= Path.GetDirectoryName(Name) ?? string.Empty;
-            newName     =   newName == null ? Path.GetFileName(Name) : newName + ".pmp";
+            newName     =   newName is null ? Path.GetFileName(Name) : newName + ".pmp";
             var newPath = Path.Combine(newBasePath, newName);
             File.Move(Name, newPath);
         }
@@ -90,7 +90,7 @@ public class ModBackup
         {
             Delete();
             _modExport.IgnoreExportedFile(Name);
-            ArchiveUtility.CreateFromDirectory(_mod.ModPath.FullName, Name);
+            ArchiveUtility.CreateFromDirectoryNoBackupFiles(_mod.ModPath.FullName, Name);
             Penumbra.Log.Debug($"Created export file {Name} from {_mod.ModPath.FullName}.");
         }
         catch (Exception e)

@@ -124,19 +124,30 @@ public partial class Configuration : IPluginConfiguration, ISavable, IService
     [JsonProperty(Order = int.MaxValue)]
     public ISortMode SortMode = ISortMode.FoldersFirst;
 
-    public bool           OpenFoldersByDefault          { get; set; } = false;
-    public int            SingleGroupRadioMax           { get; set; } = 2;
-    public string         DefaultImportFolder           { get; set; } = string.Empty;
-    public string         QuickMoveFolder1              { get; set; } = string.Empty;
-    public string         QuickMoveFolder2              { get; set; } = string.Empty;
-    public string         QuickMoveFolder3              { get; set; } = string.Empty;
-    public DoubleModifier DeleteModModifier             { get; set; } = new(ModifierHotkey.Control, ModifierHotkey.Shift);
-    public DoubleModifier IncognitoModifier             { get; set; } = new(ModifierHotkey.Control);
-    public bool           PrintSuccessfulCommandsToChat { get; set; } = true;
-    public bool           AutoDeduplicateOnImport       { get; set; } = true;
-    public bool           AutoReduplicateUiOnImport     { get; set; } = true;
-    public bool           UseFileSystemCompression      { get; set; } = true;
-    public bool           EnableHttpApi                 { get; set; } = true;
+    public bool   OpenFoldersByDefault { get; set; } = false;
+    public int    SingleGroupRadioMax  { get; set; } = 2;
+    public string DefaultImportFolder  { get; set; } = string.Empty;
+    public string QuickMoveFolder1     { get; set; } = string.Empty;
+    public string QuickMoveFolder2     { get; set; } = string.Empty;
+    public string QuickMoveFolder3     { get; set; } = string.Empty;
+
+    public DoubleModifier DeleteModModifier
+    {
+        get => LunaStyle.Modifier.Destructive.Modifier;
+        set => LunaStyle.Modifier.Destructive.Set(value);
+    }
+
+    public DoubleModifier IncognitoModifier
+    {
+        get => LunaStyle.Modifier.Misclick.Modifier;
+        set => LunaStyle.Modifier.Misclick.Set(value);
+    }
+
+    public bool PrintSuccessfulCommandsToChat { get; set; } = true;
+    public bool AutoDeduplicateOnImport       { get; set; } = true;
+    public bool AutoReduplicateUiOnImport     { get; set; } = true;
+    public bool UseFileSystemCompression      { get; set; } = true;
+    public bool EnableHttpApi                 { get; set; } = true;
 
     public bool MigrateImportedModelsToV6        { get; set; } = true;
     public bool MigrateImportedMaterialsToLegacy { get; set; } = true;

@@ -371,8 +371,6 @@ public sealed partial class ModEditWindow : IndexedWindow, IDisposable
                 _editor.Duplicates.Clear();
         }
 
-        var modifier = _config.DeleteModModifier.IsActive();
-
         if (_editor.ModNormalizer.Running)
         {
             Im.ProgressBar((float)_editor.ModNormalizer.Step / _editor.ModNormalizer.TotalSteps,
@@ -383,14 +381,14 @@ public sealed partial class ModEditWindow : IndexedWindow, IDisposable
                      "Tries to create a unique copy of a file for every game path manipulated and put them in [Groupname]/[Optionname]/[GamePath] order.\n"u8
                    + "This will also delete all unused files and directories if it succeeds.\n"u8
                    + "Care was taken that a failure should not destroy the mod but revert to its original state, but you use this at your own risk anyway."u8,
-                     !_allowReduplicate && !modifier))
+                     !_allowReduplicate && !LunaStyle.Modifier.Destructive))
         {
             _editor.ModNormalizer.Normalize(Mod!);
             _editor.ModNormalizer.Worker.ContinueWith(_ => _editor.LoadMod(Mod!, _editor.GroupIdx, _editor.DataIdx), TaskScheduler.Default);
         }
 
-        if (_allowReduplicate && !modifier)
-            Im.Tooltip.OnHover($"\n\nNo duplicates detected! Hold {_config.DeleteModModifier} to force normalization anyway.");
+        if (_allowReduplicate && !LunaStyle.Modifier.Destructive)
+            Im.Tooltip.OnHover($"\n\nNo duplicates detected! Hold {LunaStyle.Modifier.Destructive} to force normalization anyway.");
 
         if (!_editor.Duplicates.Worker.IsCompleted)
             return;

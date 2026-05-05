@@ -22,6 +22,20 @@ public static class ArchiveUtility
         //archive.SaveTo(filePath, DefaultArchiveOptions);
     }
 
+    public static void CreateFromDirectoryNoBackupFiles(string directoryPath, string filePath)
+        => CreateFromDirectory(directoryPath, filePath, f => !string.Equals(Path.GetExtension(f), ".bak", StringComparison.OrdinalIgnoreCase));
+
+    public static void CreateFromDirectory(string directoryPath, string filePath, Func<string, bool> addFile)
+    {
+        using var fs      = new FileStream(filePath, FileMode.Create);
+        using var archive = new ZipArchive(fs, ZipArchiveMode.Create);
+        foreach (var file in Directory.EnumerateFiles(directoryPath, "*", SearchOption.AllDirectories).Where(addFile))
+        {
+            var relativePath = Path.GetRelativePath(directoryPath, file);
+            archive.CreateEntryFromFile(file, relativePath);
+        }
+    }
+
     public static void ExtractToDirectory(string filePath, string directoryPath)
     {
         Directory.CreateDirectory(directoryPath);
