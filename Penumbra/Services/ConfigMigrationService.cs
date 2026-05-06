@@ -182,7 +182,6 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
         _config.Ephemeral.SelectedTab     = _data["SelectedTab"]?.ToObject<TabType>() ?? _config.Ephemeral.SelectedTab;
         _config.Filters.ChangedItemTypeFilter = _data["ChangedItemFilter"]?.ToObject<ChangedItemIconFlag>()
          ?? _config.Filters.ChangedItemTypeFilter;
-        _config.Ephemeral.FixMainWindow = _data["FixMainWindow"]?.ToObject<bool>() ?? _config.Ephemeral.FixMainWindow;
         _config.Ephemeral.Save();
     }
 
