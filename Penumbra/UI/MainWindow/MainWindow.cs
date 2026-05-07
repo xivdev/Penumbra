@@ -55,10 +55,6 @@ public sealed class MainWindow : Window
 
     public override void PreDraw()
     {
-        if (_config.Ephemeral.FixMainWindow)
-            Flags |= WindowFlags.NoResize | WindowFlags.NoMove;
-        else
-            Flags &= ~(WindowFlags.NoResize | WindowFlags.NoMove);
         SizeConstraints = new WindowSizeConstraints
         {
             MinimumSize = _config.MinimumSize,

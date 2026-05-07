@@ -13,27 +13,30 @@ public class ModImportManager(
     DuplicateManager duplicates,
     ModNormalizer modNormalizer,
     MigrationManager migrationManager,
-    FileCompactor compactor) : IDisposable, Luna.IService
+    FileCompactor compactor) : IDisposable, IService
 {
-    private readonly ConcurrentQueue<string[]> _modsToUnpack = new();
+    private readonly  Dictionary<string, DateTime> _uniqueModsToUnpack = new(StringComparer.OrdinalIgnoreCase);
+    internal readonly Queue<List<string>>          ModsToUnpack        = new();
 
     /// <summary> Mods need to be added thread-safely outside of iteration. </summary>
     private readonly ConcurrentQueue<DirectoryInfo> _modsToAdd = new();
 
     private TexToolsImporter? _import;
 
-
-    internal IEnumerable<string[]> ModBatches
-        => _modsToUnpack;
-
     internal IEnumerable<DirectoryInfo> AddableMods
         => _modsToAdd;
 
-
     public void TryUnpacking()
     {
-        if (Importing && _import!.State is not ImporterState.Done || !_modsToUnpack.TryDequeue(out var newMods))
+        if (Importing && _import!.State is not ImporterState.Done)
             return;
+
+        List<string> newMods;
+        lock (ModsToUnpack)
+        {
+            if (!ModsToUnpack.TryDequeue(out newMods!))
+                return;
+        }
 
         var files = newMods.Where(s =>
         {
@@ -63,12 +66,38 @@ public class ModImportManager(
     }
 
     public void AddUnpack(IEnumerable<string> paths)
-        => AddUnpack(paths.ToArray());
+        => AddUnpack(paths.ToList());
 
-    public void AddUnpack(params string[] paths)
+    public void AddUnpack(params List<string> paths)
     {
-        Penumbra.Log.Debug($"Adding mods to install: {string.Join("\n\t", paths)}");
-        _modsToUnpack.Enqueue(paths);
+        lock (ModsToUnpack)
+        {
+            var now       = DateTime.UtcNow;
+            var nowOffset = now.AddSeconds(-2);
+            for (var i = 0; i < paths.Count; ++i)
+            {
+                var path = paths[i];
+                if (_uniqueModsToUnpack.TryGetValue(path, out var lastInstallTime))
+                {
+                    _uniqueModsToUnpack[path] = now;
+                    if (lastInstallTime >= nowOffset)
+                    {
+                        paths.RemoveAt(i--);
+                        Penumbra.Log.Debug($"Skipped installing mod {path} since it was last installed {(lastInstallTime - now).TotalSeconds} seconds ago.");
+                    }
+                }
+                else
+                {
+                    _uniqueModsToUnpack.Add(path, now);
+                }
+            }
+
+            if (paths.Count > 0)
+            {
+                Penumbra.Log.Debug($"Adding mods to install: {string.Join("\n\t", paths)}");
+                ModsToUnpack.Enqueue(paths);
+            }
+        }
     }
 
     public void ClearImport()
@@ -93,7 +122,11 @@ public class ModImportManager(
     {
         ClearImport();
         _modsToAdd.Clear();
-        _modsToUnpack.Clear();
+        lock (ModsToUnpack)
+        {
+            ModsToUnpack.Clear();
+            _uniqueModsToUnpack.Clear();
+        }
     }
 
     /// <summary>

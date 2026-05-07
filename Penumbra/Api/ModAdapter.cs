@@ -55,11 +55,5 @@ public sealed class ModAdapter(Mod mod) : IReadOnlyList<object?>, IDisposable
     }
 
     public void Dispose()
-    {
-        _mod.SetTarget(null!);
-        GC.SuppressFinalize(this);
-    }
-
-    ~ModAdapter()
-        => Dispose();
+        => _mod.SetTarget(null!);
 }

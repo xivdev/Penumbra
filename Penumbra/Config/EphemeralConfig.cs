@@ -3,7 +3,6 @@ using Luna;
 using Luna.Generators;
 using Newtonsoft.Json;
 using Penumbra.Files;
-using Penumbra.Services;
 using Penumbra.UI;
 using Penumbra.UI.ManagementTab;
 using Penumbra.UI.ModsTab;
@@ -31,7 +30,6 @@ public sealed partial class EphemeralConfig : ISavable, IService
     [ConfigProperty]
     private ModPanelTab _selectedModPanelTab = ModPanelTab.Settings;
 
-    public bool            FixMainWindow                  { get; set; } = false;
     public HashSet<string> AdvancedEditingOpenForModPaths { get; set; } = [];
     public bool            ForceRedrawOnFileChange        { get; set; } = false;
     public bool            IncognitoMode                  { get; set; } = false;

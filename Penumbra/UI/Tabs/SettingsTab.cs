@@ -107,8 +107,7 @@ public sealed class SettingsTab : ITab<TabType>
             return;
 
         DrawEnabledBox();
-        EphemeralCheckbox("Lock Main Window"u8, "Prevent the main window from being resized or moved."u8, _config.Ephemeral.FixMainWindow,
-            v => _config.Ephemeral.FixMainWindow = v);
+        Im.Line.New();
 
         Im.Line.New();
         DrawRootFolder();
