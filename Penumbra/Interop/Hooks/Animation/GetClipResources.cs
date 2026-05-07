@@ -48,7 +48,7 @@ public sealed unsafe class GetClipResources : FastHook<GetClipResources.Delegate
         }
 
         var last = _state.SetSoundData(data);
-        _crashHandler.LogAnimation(data.AssociatedGameObject, data.ModCollection, AnimationInvocationType.ScheduleClipUpdate);
+        _crashHandler.LogAnimation(data.AssociatedGameObject, data.ModCollection, AnimationInvocationType.GetClipResources);
         var ret = Task.Result!.Original(clip);
         _state.RestoreAnimationData(last);
         Penumbra.Log.Excessive(
