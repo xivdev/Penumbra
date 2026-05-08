@@ -1,5 +1,6 @@
 using FFXIVClientStructs.FFXIV.Client.System.Scheduler.Clip;
 using Luna;
+using Penumbra.Collections;
 using Penumbra.CrashHandler.Buffers;
 using Penumbra.GameData;
 using Penumbra.GameData.Interop;
@@ -39,7 +40,7 @@ public sealed unsafe class GetClipResources : FastHook<GetClipResources.Delegate
             return Task.Result!.Original(clip);
 
         var gameObject = _clipGameObject(clip);
-        var data       = _collectionResolver.IdentifyCollection(gameObject.AsObject, true);
+        var data       = gameObject.Valid ? _collectionResolver.IdentifyCollection(gameObject.AsObject, true) : ResolveData.Invalid;
         if (!data.Valid)
         {
             var ret2 = Task.Result!.Original(clip);
