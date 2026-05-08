@@ -51,7 +51,7 @@ public sealed unsafe class GetClipResources : FastHook<GetClipResources.Delegate
         var last = _state.SetSoundData(data);
         _crashHandler.LogAnimation(data.AssociatedGameObject, data.ModCollection, AnimationInvocationType.GetClipResources);
         var ret = Task.Result!.Original(clip);
-        _state.RestoreAnimationData(last);
+        _state.RestoreSoundData(last);
         Penumbra.Log.Excessive(
             $"[Get Clip Resources] Invoked on {(nint)clip:X} for {data.AssociatedGameObject:X} ({data.ModCollection}) -> {ret:X}.");
         return ret;
