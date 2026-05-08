@@ -205,7 +205,6 @@ public sealed class ModGroupDrawer(Configuration config, CollectionManager colle
                     draw();
                 }
 
-
                 var width  = Math.Max(Im.Item.Size.X, minWidth);
                 var endPos = Im.Cursor.Position;
                 Im.Cursor.Position = pos;

@@ -16,13 +16,13 @@ public sealed unsafe class CmpFile : MetaBaseFile
     public static readonly CharacterUtility.InternalIndex InternalIndex =
         CharacterUtility.ReverseIndices[(int)MetaIndex.HumanCmp];
 
-    public new GameData.Files.CmpData* Data
-        => (GameData.Files.CmpData*)base.Data;
+    public new CmpData* Data
+        => (CmpData*)base.Data;
 
     public RspEntry this[SubRace subRace, RspAttribute attribute]
     {
-        get => new(Data->GetScale(subRace).Get(attribute));
-        set => Data->GetScale(subRace).Get(attribute) = value.Value;
+        get => new(Data->GetScaleWrite(subRace).Get(attribute));
+        set => Data->GetScaleWrite(subRace).Get(attribute) = value.Value;
     }
 
     public override void Reset()
@@ -43,15 +43,15 @@ public sealed unsafe class CmpFile : MetaBaseFile
 
     public static RspEntry GetDefault(MetaFileManager manager, SubRace subRace, RspAttribute attribute)
     {
-        var data = (GameData.Files.CmpData*)manager.CharacterUtility.DefaultResource(InternalIndex).Address;
-        return new RspEntry(data->GetScale(subRace).Get(attribute));
+        var data = (CmpData*)manager.CharacterUtility.DefaultResource(InternalIndex).Address;
+        return new RspEntry(data->GetScaleWrite(subRace).Get(attribute));
     }
 
     public static RspEntry* GetDefaults(MetaFileManager manager, SubRace subRace, RspAttribute attribute)
     {
         {
-            var data = (GameData.Files.CmpData*)manager.CharacterUtility.DefaultResource(InternalIndex).Address;
-            return (RspEntry*)Unsafe.AsPointer(ref data->GetScale(subRace).Get(attribute));
+            var data = (CmpData*)manager.CharacterUtility.DefaultResource(InternalIndex).Address;
+            return (RspEntry*)Unsafe.AsPointer(ref data->GetScaleWrite(subRace).Get(attribute));
         }
     }
 }

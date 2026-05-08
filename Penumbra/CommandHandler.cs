@@ -80,7 +80,6 @@ public class CommandHandler : IDisposable, IApiService
             "toggle"        => SetPenumbraState(arguments, null),
             "reload"        => Reload(arguments),
             "redraw"        => Redraw(arguments),
-            "lockui"        => SetUiLockState(arguments),
             "size"          => SetUiMinimumSize(arguments),
             "debug"         => SetDebug(arguments),
             "collection"    => SetCollection(arguments),
@@ -112,9 +111,6 @@ public class CommandHandler : IDisposable, IApiService
         _chat.Print(new SeStringBuilder().AddCommand("reload", "Rediscover the mod directory and reload all mods.").BuiltString);
         _chat.Print(new SeStringBuilder()
             .AddCommand("redraw", "Redraw all game objects. Specify a placeholder or a name to redraw specific objects.").BuiltString);
-        _chat.Print(new SeStringBuilder()
-            .AddCommand("lockui", "Toggle the locked state of the main Penumbra window. Can be used with [on|off] to force specific state.")
-            .BuiltString);
         _chat.Print(new SeStringBuilder().AddCommand("size", "Reset the minimum config window size to its default values.").BuiltString);
         _chat.Print(new SeStringBuilder()
             .AddCommand("debug", "Toggle debug mode for Penumbra. Can be used with [on|off] to force specific state.").BuiltString);
@@ -200,28 +196,6 @@ public class CommandHandler : IDisposable, IApiService
             ? "Your mods have been enabled."
             : "Your mods have been disabled.");
         return _penumbra.SetEnabled(value);
-    }
-
-    private bool SetUiLockState(string arguments)
-    {
-        var value = ParseTrueFalseToggle(arguments) ?? !_config.Ephemeral.FixMainWindow;
-        if (value == _config.Ephemeral.FixMainWindow)
-            return false;
-
-        if (value)
-        {
-            Print("Penumbra UI locked in place.");
-            _mainWindow.Flags |= WindowFlags.NoMove | WindowFlags.NoResize;
-        }
-        else
-        {
-            Print("Penumbra UI unlocked.");
-            _mainWindow.Flags &= ~(WindowFlags.NoMove | WindowFlags.NoResize);
-        }
-
-        _config.Ephemeral.FixMainWindow = value;
-        _config.Ephemeral.Save();
-        return true;
     }
 
     private bool SetUiMinimumSize(string _)

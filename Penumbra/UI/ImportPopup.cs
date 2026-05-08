@@ -11,12 +11,11 @@ using Penumbra.Mods.Manager;
 using MessageService = Penumbra.Services.MessageService;
 using MouseButton = ImSharp.MouseButton;
 using Notification = Luna.Notification;
-using Window = Luna.Window;
 
 namespace Penumbra.UI;
 
 /// <summary> Draw the progress information for import. </summary>
-public sealed class ImportPopup : Window, INotificationAwareMessage
+public sealed class ImportPopup : OverlayWindow, INotificationAwareMessage
 {
     public const string WindowLabel = "Penumbra Import Status";
 
