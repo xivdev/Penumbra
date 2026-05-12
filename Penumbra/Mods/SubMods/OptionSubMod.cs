@@ -16,6 +16,8 @@ public abstract class OptionSubMod(IModGroup group) : IModOption, IModDataContai
     public string Name        { get; set; } = "Option";
     public string Description { get; set; } = string.Empty;
 
+    public ICondition<ModSettingContext>? Condition { get; set; }
+
     public string FullName
         => $"{Group.Name}: {Name}";
 

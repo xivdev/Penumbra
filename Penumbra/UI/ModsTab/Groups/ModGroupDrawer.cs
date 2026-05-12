@@ -1,72 +1,163 @@
 using ImSharp;
 using Luna;
+using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
+using Penumbra.Communication;
 using Penumbra.Mods;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
+using Penumbra.Services;
 
 namespace Penumbra.UI.ModsTab.Groups;
 
-public sealed class ModGroupDrawer(Configuration config, CollectionManager collectionManager, SingleGroupCombo combo)
+public sealed class ModSettingsCache : BasicCache
+{
+    public sealed class ModGroupCache
+    {
+        public GroupDrawBehaviour Behaviour
+            => Group.Behaviour;
+
+        public          IModGroup                                                                 Group = null!;
+        public          int                                                                       Index;
+        public          bool                                                                      IsCombo;
+        public          StringU8                                                                  Name;
+        public          StringU8                                                                  Description;
+        public          float                                                                     NameWidth;
+        public          float                                                                     ComboWidth;
+        public readonly List<(StringU8 Option, StringU8 Description, Setting Value, float Width)> Options = [];
+    }
+
+    public           int                 Count        = 0;
+    public readonly  List<ModGroupCache> SingleGroups = [];
+    public readonly  List<ModGroupCache> MultiGroups  = [];
+    private readonly ModSelection        _selection;
+    private readonly Configuration       _config;
+    private readonly CommunicatorService _communicator;
+
+    public ModSettingsCache(ModSelection selection, Configuration config, CommunicatorService communicator)
+    {
+        _selection    = selection;
+        _config       = config;
+        _communicator = communicator;
+        _selection.Subscribe(OnSelectionChanged, ModSelection.Priority.ModPanel);
+        _communicator.ModOptionChanged.Subscribe(OnModOptionChanged, ModOptionChanged.Priority.ModCacheManager);
+    }
+
+    private void OnModOptionChanged(in ModOptionChanged.Arguments arguments)
+    {
+        if (arguments.Mod == _selection.Mod)
+            Dirty |= IManagedCache.DirtyFlags.Custom;
+    }
+
+    private void OnSelectionChanged(in ModSelection.Arguments arguments)
+        => Dirty |= IManagedCache.DirtyFlags.Custom;
+
+    protected override void Dispose(bool disposing)
+    {
+        _selection.Unsubscribe(OnSelectionChanged);
+        _communicator.ModOptionChanged.Unsubscribe(OnModOptionChanged);
+    }
+
+    public override void Update()
+    {
+        if (!AnyDirty)
+            return;
+
+        Dirty = IManagedCache.DirtyFlags.Clean;
+        SingleGroups.Clear();
+        MultiGroups.Clear();
+        if (_selection.Mod is not null)
+        {
+            SingleGroups.EnsureCapacity(_selection.Mod.Groups.Count);
+            MultiGroups.EnsureCapacity(_selection.Mod.Groups.Count);
+            foreach (var (index, group) in _selection.Mod.Groups.Index())
+            {
+                if (Create(group, index) is not { } cache)
+                    continue;
+
+                if (cache.Behaviour is GroupDrawBehaviour.SingleSelection)
+                    SingleGroups.Add(cache);
+                else
+                    MultiGroups.Add(cache);
+            }
+        }
+
+        Count = SingleGroups.Count + MultiGroups.Count;
+    }
+
+    public ModGroupCache? Create(IModGroup group, int groupIndex)
+    {
+        if (!group.IsOption)
+            return null;
+
+        var ret = new ModGroupCache
+        {
+            Group       = group,
+            Index       = groupIndex,
+            Name        = new StringU8(group.Name),
+            Description = new StringU8(group.Description),
+            IsCombo     = group.Behaviour is GroupDrawBehaviour.SingleSelection && group.Options.Count > _config.SingleGroupRadioMax,
+        };
+        ret.NameWidth = ret.Name.CalculateSize().X;
+        if (!ret.Description.IsEmpty && ret.IsCombo)
+            ret.NameWidth += Im.Style.ItemInnerSpacing.X + LunaStyle.HelpMarker.CalculateSize().X;
+
+        ret.Options.EnsureCapacity(group.Options.Count);
+        foreach (var (index, option) in group.Options.Index())
+        {
+            var name        = new StringU8(option.Name);
+            var description = new StringU8(option.Description);
+            var width       = name.CalculateSize().X;
+            if (!description.IsEmpty)
+                width += Im.Style.ItemInnerSpacing.X + LunaStyle.HelpMarker.CalculateSize().X;
+            ret.Options.Add((name, description, group.Type is GroupType.Single ? Setting.Single(index) : Setting.Multi(index), width));
+            if (width > ret.ComboWidth)
+                ret.ComboWidth = width;
+        }
+
+        return ret;
+    }
+}
+
+public sealed class ModGroupDrawer(
+    Configuration config,
+    CollectionManager collectionManager,
+    SingleGroupCombo combo,
+    ModSelection selection,
+    CommunicatorService communicator)
     : IUiService
 {
-    private readonly List<(IModGroup, int)> _blockGroupCache = [];
-    private          bool                   _temporary;
-    private          bool                   _locked;
-    private          TemporaryModSettings?  _tempSettings;
-    private          ModSettings?           _settings;
+    private bool                  _temporary;
+    private bool                  _locked;
+    private TemporaryModSettings? _tempSettings;
+    private ModSettings?          _settings;
 
     public void Draw(Mod mod, ModSettings settings, TemporaryModSettings? tempSettings)
     {
-        if (mod.Groups.Count <= 0)
+        var cache = CacheManager.Instance.GetOrCreateCache(Im.Id.Current, () => new ModSettingsCache(selection, config, communicator));
+        if (cache.Count is 0)
             return;
 
-        _blockGroupCache.Clear();
         _settings     = settings;
         _tempSettings = tempSettings;
         _temporary    = tempSettings is not null;
         _locked       = (tempSettings?.Lock ?? 0) > 0;
-        var useDummy = true;
-        foreach (var (idx, group) in mod.Groups.Index())
+
+        Im.Dummy(UiHelpers.DefaultSpace);
+        foreach (var single in cache.SingleGroups)
+            DrawSingleGroupCombo(single.Group, single.Index, settings.IsEmpty ? single.Group.DefaultSettings : settings.Settings[single.Index]);
+
+        if (cache.MultiGroups.Count > 0)
+            Im.Dummy(UiHelpers.DefaultSpace);
+        foreach (var multi in cache.MultiGroups)
         {
-            if (!group.IsOption)
-                continue;
-
-            switch (group.Behaviour)
-            {
-                case GroupDrawBehaviour.SingleSelection when group.Options.Count <= config.SingleGroupRadioMax:
-                case GroupDrawBehaviour.MultiSelection:
-                    _blockGroupCache.Add((group, idx));
-                    break;
-
-                case GroupDrawBehaviour.SingleSelection:
-                    if (useDummy)
-                    {
-                        Im.Dummy(UiHelpers.DefaultSpace);
-                        useDummy = false;
-                    }
-
-                    DrawSingleGroupCombo(group, idx, settings.IsEmpty ? group.DefaultSettings : settings.Settings[idx]);
-                    break;
-            }
-        }
-
-        useDummy = true;
-        foreach (var (group, idx) in _blockGroupCache)
-        {
-            if (useDummy)
-            {
-                Im.Dummy(UiHelpers.DefaultSpace);
-                useDummy = false;
-            }
-
-            var option = settings.IsEmpty ? group.DefaultSettings : settings.Settings[idx];
-            if (group.Behaviour is GroupDrawBehaviour.MultiSelection)
-                DrawMultiGroup(group, idx, option);
+            var option = settings.IsEmpty ? multi.Group.DefaultSettings : settings.Settings[multi.Index];
+            if (multi.Behaviour is GroupDrawBehaviour.MultiSelection)
+                DrawMultiGroup(multi.Group, multi.Index, option);
             else
-                DrawSingleGroupRadio(group, idx, option);
+                DrawSingleGroupRadio(multi.Group, multi.Index, option);
         }
     }
 
@@ -76,8 +167,8 @@ public sealed class ModGroupDrawer(Configuration config, CollectionManager colle
     /// </summary>
     private void DrawSingleGroupCombo(IModGroup group, int groupIdx, Setting setting)
     {
-        using var id             = Im.Id.Push(groupIdx);
-        using var disabled       = Im.Disabled(_locked);
+        using var id       = Im.Id.Push(groupIdx);
+        using var disabled = Im.Disabled(_locked);
         combo.Draw(this, (SingleModGroup)group, groupIdx, setting);
         if (group.Description.Length > 0)
         {

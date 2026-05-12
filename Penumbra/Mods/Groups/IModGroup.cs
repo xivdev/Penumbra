@@ -1,3 +1,4 @@
+using Luna;
 using Newtonsoft.Json;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Data;
@@ -18,13 +19,11 @@ public enum GroupDrawBehaviour
 {
     SingleSelection,
     MultiSelection,
-    Complex,
 }
 
 public interface IModGroup
 {
     public const int MaxMultiOptions     = 32;
-    public const int MaxComplexOptions   = MaxMultiOptions;
     public const int MaxCombiningOptions = 8;
 
     public Mod    Mod         { get; }
@@ -42,6 +41,9 @@ public interface IModGroup
     public int Page { get; set; }
 
     public Setting DefaultSettings { get; set; }
+
+    public string?                        ParentSetting { get; set; }
+    public ICondition<ModSettingContext>? Condition   { get; set; }
 
     public FullPath?   FindBestMatch(Utf8GamePath gamePath);
     public IModOption? AddOption(string name, string description = "");

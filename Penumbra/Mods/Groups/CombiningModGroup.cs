@@ -22,15 +22,17 @@ public sealed class CombiningModGroup : IModGroup
     public GroupDrawBehaviour Behaviour
         => GroupDrawBehaviour.MultiSelection;
 
-    public          Mod                         Mod             { get; }
-    public          string                      Name            { get; set; } = "Group";
-    public          string                      Description     { get; set; } = string.Empty;
-    public          string                      Image           { get; set; } = string.Empty;
-    public          ModPriority                 Priority        { get; set; }
-    public          int                         Page            { get; set; }
-    public          Setting                     DefaultSettings { get; set; }
-    public readonly List<CombiningSubMod>       OptionData = [];
-    public          List<CombinedDataContainer> Data { get; private set; }
+    public          Mod                            Mod             { get; }
+    public          string                         Name            { get; set; } = "Group";
+    public          string                         Description     { get; set; } = string.Empty;
+    public          string                         Image           { get; set; } = string.Empty;
+    public          ModPriority                    Priority        { get; set; }
+    public          int                            Page            { get; set; }
+    public          Setting                        DefaultSettings { get; set; }
+    public          string?                        ParentSetting   { get; set; }
+    public          ICondition<ModSettingContext>? Condition       { get; set; }
+    public readonly List<CombiningSubMod>          OptionData = [];
+    public          List<CombinedDataContainer>    Data { get; private set; }
 
     /// <summary> Groups that allow all available options to be selected at once. </summary>
     public CombiningModGroup(Mod mod)

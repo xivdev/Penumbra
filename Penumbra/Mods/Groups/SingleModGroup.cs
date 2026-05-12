@@ -21,13 +21,15 @@ public sealed class SingleModGroup(Mod mod) : IModGroup, ITexToolsGroup
     public GroupDrawBehaviour Behaviour
         => GroupDrawBehaviour.SingleSelection;
 
-    public Mod         Mod             { get; }      = mod;
-    public string      Name            { get; set; } = "Option";
-    public string      Description     { get; set; } = string.Empty;
-    public string      Image           { get; set; } = string.Empty;
-    public ModPriority Priority        { get; set; }
-    public int         Page            { get; set; }
-    public Setting     DefaultSettings { get; set; }
+    public Mod                            Mod             { get; }      = mod;
+    public string                         Name            { get; set; } = "Option";
+    public string                         Description     { get; set; } = string.Empty;
+    public string                         Image           { get; set; } = string.Empty;
+    public ModPriority                    Priority        { get; set; }
+    public int                            Page            { get; set; }
+    public Setting                        DefaultSettings { get; set; }
+    public string?                        ParentSetting   { get; set; }
+    public ICondition<ModSettingContext>? Condition       { get; set; }
 
     public readonly List<SingleSubMod> OptionData = [];
 

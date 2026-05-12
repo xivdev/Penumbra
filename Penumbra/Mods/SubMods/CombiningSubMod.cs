@@ -1,3 +1,4 @@
+using Luna;
 using Newtonsoft.Json.Linq;
 using Penumbra.Mods.Groups;
 
@@ -12,6 +13,8 @@ public class CombiningSubMod(IModGroup group) : IModOption
 
     public string Name        { get; set; } = "Option";
     public string Description { get; set; } = string.Empty;
+
+    public ICondition<ModSettingContext>? Condition { get; set; }
 
     public string FullName
         => $"{Group.Name}: {Name}";

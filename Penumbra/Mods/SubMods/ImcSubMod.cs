@@ -1,3 +1,4 @@
+using Luna;
 using Newtonsoft.Json.Linq;
 using Penumbra.GameData.Structs;
 using Penumbra.Mods.Groups;
@@ -42,6 +43,8 @@ public class ImcSubMod(ImcModGroup group) : IModOption
         => $"{Group.Name}: {Name}";
 
     public string Description { get; set; } = string.Empty;
+
+    public ICondition<ModSettingContext>? Condition { get; set; }
 
     public int GetIndex()
         => SubMod.GetIndex(this);
