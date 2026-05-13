@@ -42,7 +42,8 @@ public class ImcSubMod(ImcModGroup group) : IModOption
     public string FullName
         => $"{Group.Name}: {Name}";
 
-    public string Description { get; set; } = string.Empty;
+    public string            Description { get; set; } = string.Empty;
+    public ModSettingsLayout Layout      { get; set; }
 
     public ICondition<ModSettingContext>? Condition { get; set; }
 

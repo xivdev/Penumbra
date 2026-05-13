@@ -11,8 +11,9 @@ public class CombiningSubMod(IModGroup group) : IModOption
     public Mod Mod
         => Group.Mod;
 
-    public string Name        { get; set; } = "Option";
-    public string Description { get; set; } = string.Empty;
+    public string            Name        { get; set; } = "Option";
+    public string            Description { get; set; } = string.Empty;
+    public ModSettingsLayout Layout      { get; set; }
 
     public ICondition<ModSettingContext>? Condition { get; set; }
 

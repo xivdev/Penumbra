@@ -30,7 +30,8 @@ public class ImcModGroup(Mod mod) : IModGroup
     public ModPriority                    Priority        { get; set; } = ModPriority.Default;
     public int                            Page            { get; set; }
     public Setting                        DefaultSettings { get; set; } = Setting.Zero;
-    public string?                        ParentSetting   { get; set; }
+    public ModSettingsLayout              Layout          { get; set; }
+    public ParentSetting                  ParentSetting   { get; set; } = ParentSetting.None;
     public ICondition<ModSettingContext>? Condition       { get; set; }
 
     public ImcIdentifier Identifier;
@@ -62,9 +63,6 @@ public class ImcModGroup(Mod mod) : IModGroup
             }
         }
     }
-
-    public bool DefaultDisabled
-        => IsDisabled(DefaultSettings);
 
     public IModOption? AddOption(string name, string description = "")
     {
@@ -111,12 +109,16 @@ public class ImcModGroup(Mod mod) : IModGroup
         return DefaultEntry with { AttributeMask = mask };
     }
 
-    public void AddData(Setting setting, Dictionary<Utf8GamePath, FullPath> redirections, MetaDictionary manipulations)
+    public void AddData(ModSettings settings, Setting setting, Dictionary<Utf8GamePath, FullPath> redirections, MetaDictionary manipulations)
     {
-        if (IsDisabled(setting))
+        var context = new ModSettingContext(Mod, settings);
+        if (IsDisabled(context, setting))
             return;
 
-        var mask = GetCurrentMask(setting);
+        if (Condition is not null && !Condition.Evaluate(context))
+            return;
+
+        var mask = GetCurrentMask(context, setting);
         if (AllVariants)
         {
             var count = ImcChecker.GetVariantCount(Identifier);
@@ -229,20 +231,25 @@ public class ImcModGroup(Mod mod) : IModGroup
         return ret;
     }
 
-    private bool IsDisabled(Setting setting)
+    private bool IsDisabled(in ModSettingContext context, Setting setting)
     {
         if (!CanBeDisabled)
             return false;
 
         var idx = OptionData.IndexOf(m => m.IsDisableSubMod);
         if (idx >= 0)
-            return setting.HasFlag(idx);
+        {
+            if (OptionData[idx].Condition is not {} condition || condition.Evaluate(context))
+                return setting.HasFlag(idx);
+
+            return false;
+        }
 
         Penumbra.Log.Warning("A IMC Group should be able to be disabled, but does not contain a disable option.");
         return false;
     }
 
-    private ushort GetCurrentMask(Setting setting)
+    private ushort GetCurrentMask(in ModSettingContext context, Setting setting)
     {
         var mask = DefaultEntry.AttributeMask;
         for (var i = 0; i < OptionData.Count; ++i)
@@ -251,7 +258,8 @@ public class ImcModGroup(Mod mod) : IModGroup
                 continue;
 
             var option = OptionData[i];
-            mask ^= option.AttributeMask;
+            if(option.Condition is null || option.Condition.Evaluate(context))
+                mask ^= option.AttributeMask;
         }
 
         return mask;

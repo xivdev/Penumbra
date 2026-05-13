@@ -21,6 +21,29 @@ public enum GroupDrawBehaviour
     MultiSelection,
 }
 
+public readonly struct ParentSetting
+{
+    public readonly string? Group;
+    public readonly string? Option;
+
+    public static readonly ParentSetting None = new(null);
+
+    public bool IsNone
+        => Group is null;
+
+    public ParentSetting(string? group = null)
+    {
+        Group  = group;
+        Option = null;
+    }
+
+    public ParentSetting(string group, string? option = null)
+    {
+        Group  = group;
+        Option = option;
+    }
+}
+
 public interface IModGroup
 {
     public const int MaxMultiOptions     = 32;
@@ -42,8 +65,9 @@ public interface IModGroup
 
     public Setting DefaultSettings { get; set; }
 
-    public string?                        ParentSetting { get; set; }
-    public ICondition<ModSettingContext>? Condition   { get; set; }
+    public ModSettingsLayout              Layout        { get; set; }
+    public ParentSetting                  ParentSetting { get; set; }
+    public ICondition<ModSettingContext>? Condition     { get; set; }
 
     public FullPath?   FindBestMatch(Utf8GamePath gamePath);
     public IModOption? AddOption(string name, string description = "");
@@ -56,7 +80,7 @@ public interface IModGroup
 
     public IModGroupEditDrawer EditDrawer(ModGroupEditDrawer editDrawer);
 
-    public void AddData(Setting setting, Dictionary<Utf8GamePath, FullPath> redirections, MetaDictionary manipulations);
+    public void AddData(ModSettings settings, Setting setting, Dictionary<Utf8GamePath, FullPath> redirections, MetaDictionary manipulations);
     public void AddChangedItems(ObjectIdentification identifier, IDictionary<string, IIdentifiedObjectData> changedItems);
 
     /// <summary> Ensure that a value is valid for a group. </summary>

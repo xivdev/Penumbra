@@ -7,131 +7,74 @@ namespace Penumbra.Mods.Groups;
 
 public readonly record struct ModSettingContext(Mod Mod, ModSettings Settings);
 
-public sealed record MultiSettingAllCondition(string Group, string[] Options) : ICondition<ModSettingContext>
+public sealed class MultiSettingAllCondition(string group, params IReadOnlyCollection<string> options) : MultiSettingCondition(group, options)
 {
-    public bool Evaluate(in ModSettingContext context)
+    protected override ReadOnlySpan<byte> Type
+        => "MultiSettingAll"u8;
+
+    public override ICondition<ModSettingContext> DeepCopy()
+        => new MultiSettingAllCondition(Group, this);
+
+    protected override bool EvaluateGroup(IModGroup group, Setting settings)
     {
-        if (Options.Length is 0)
-            return true;
-
-        foreach (var (index, group) in context.Mod.Groups.Index())
+        var matches = 0;
+        foreach (var option in this)
         {
-            if (group.Name != Group)
-                continue;
+            var optionIndex = group.Options.IndexOf(o => o.Name == option);
+            if (optionIndex < 0)
+                break;
 
-            if (group.Type is GroupType.Single && Options.Length > 1)
-                continue;
-
-            var settings = context.Settings.Settings[index];
-            var matches  = 0;
-            foreach (var option in Options)
+            if (group.Type is GroupType.Single)
             {
-                var optionIndex = group.Options.IndexOf(o => o.Name == option);
-                if (optionIndex < 0)
-                    break;
-
-                if (group.Type is GroupType.Single)
-                {
-                    if (optionIndex == settings.AsIndex)
-                        ++matches;
-                }
-                else if (settings.HasFlag(optionIndex))
-                {
+                if (optionIndex == settings.AsIndex)
                     ++matches;
-                }
             }
-
-            if (matches == Options.Length)
-                return true;
-        }
-
-        return false;
-    }
-
-
-    public ICondition<ModSettingContext> Reduce()
-    {
-        var options = Options.Distinct().ToArray();
-        return options.Length < Options.Length ? this with { Options = options } : this;
-    }
-
-    public void WriteJson(Utf8JsonWriter j)
-    {
-        j.WriteStartObject();
-        j.WriteString("Type"u8,  "MultiSettingAll"u8);
-        j.WriteString("Group"u8, Group);
-        j.WriteStartArray("Options"u8);
-        foreach (var option in Options)
-            j.WriteStringValue(option);
-        j.WriteEndArray();
-        j.WriteEndObject();
-    }
-
-    /// <inheritdoc/>
-    public ICondition<ModSettingContext> DeepCopy()
-        => new MultiSettingAllCondition(Group, Options.ToArray());
-}
-
-public sealed record MultiSettingAnyCondition(string Group, string[] Options) : ICondition<ModSettingContext>
-{
-    public bool Evaluate(in ModSettingContext context)
-    {
-        if (Options.Length is 0)
-            return false;
-
-        foreach (var (index, group) in context.Mod.Groups.Index())
-        {
-            if (group.Name != Group)
-                continue;
-
-            var settings = context.Settings.Settings[index];
-            foreach (var option in Options)
+            else if (settings.HasFlag(optionIndex))
             {
-                var optionIndex = group.Options.IndexOf(o => o.Name == option);
-                if (optionIndex < 0)
-                    break;
+                ++matches;
+            }
+        }
 
-                if (group.Type is GroupType.Single)
-                {
-                    if (optionIndex == settings.AsIndex)
-                        return true;
-                }
-                else if (settings.HasFlag(optionIndex))
-                {
+        return matches == Count;
+    }
+}
+
+public sealed class MultiSettingAnyCondition(string group, params IReadOnlyCollection<string> options) : MultiSettingCondition(group, options)
+{
+    protected override ReadOnlySpan<byte> Type
+        => "MultiSettingAny"u8;
+
+    public override ICondition<ModSettingContext> DeepCopy()
+        => new MultiSettingAnyCondition(Group, this);
+
+    protected override bool EvaluateGroup(IModGroup group, Setting settings)
+    {
+        foreach (var option in this)
+        {
+            var optionIndex = group.Options.IndexOf(o => o.Name == option);
+            if (optionIndex < 0)
+                break;
+
+            if (group.Type is GroupType.Single)
+            {
+                if (optionIndex == settings.AsIndex)
                     return true;
-                }
+            }
+            else if (settings.HasFlag(optionIndex))
+            {
+                return true;
             }
         }
 
         return false;
     }
-
-
-    public ICondition<ModSettingContext> Reduce()
-    {
-        var options = Options.Distinct().ToArray();
-        return options.Length < Options.Length ? this with { Options = options } : this;
-    }
-
-    public void WriteJson(Utf8JsonWriter j)
-    {
-        j.WriteStartObject();
-        j.WriteString("Type"u8,  "MultiSettingAny"u8);
-        j.WriteString("Group"u8, Group);
-        j.WriteStartArray("Options"u8);
-        foreach (var option in Options)
-            j.WriteStringValue(option);
-        j.WriteEndArray();
-        j.WriteEndObject();
-    }
-
-    /// <inheritdoc/>
-    public ICondition<ModSettingContext> DeepCopy()
-        => this with { Options = Options.ToArray() };
 }
 
-public sealed record SingleSettingCondition(string Group, string Option) : ICondition<ModSettingContext>
+public sealed class SingleSettingCondition(string group, string option) : ICondition<ModSettingContext>
 {
+    public string Group  = group;
+    public string Option = option;
+
     public bool Evaluate(in ModSettingContext context)
     {
         foreach (var (index, group) in context.Mod.Groups.Index())
@@ -171,4 +114,71 @@ public sealed record SingleSettingCondition(string Group, string Option) : ICond
     /// <inheritdoc/>
     public ICondition<ModSettingContext> DeepCopy()
         => new SingleSettingCondition(Group, Option);
+
+    public IEnumerable<ICondition<ModSettingContext>> Subconditions
+        => [];
+
+    public int RemoveSubconditions(Func<ICondition<ModSettingContext>, bool> predicate)
+        => 0;
+}
+
+public abstract class MultiSettingCondition(string group) : List<string>, ICondition<ModSettingContext>
+{
+    protected MultiSettingCondition(string group, IReadOnlyCollection<string> options)
+        : this(group)
+    {
+        EnsureCapacity(options.Count);
+        AddRange(options);
+    }
+
+    public string Group = group;
+
+    public abstract    ICondition<ModSettingContext> DeepCopy();
+    protected abstract ReadOnlySpan<byte>            Type { get; }
+    protected abstract bool                          EvaluateGroup(IModGroup group, Setting settings);
+
+    public bool Evaluate(in ModSettingContext context)
+    {
+        if (Count is 0)
+            return true;
+
+        foreach (var (index, group) in context.Mod.Groups.Index())
+        {
+            if (group.Name != Group)
+                continue;
+
+            if (group.Type is GroupType.Single && Count > 1)
+                continue;
+
+            var settings = context.Settings.Settings[index];
+            if (EvaluateGroup(group, settings))
+                return true;
+        }
+
+        return false;
+    }
+
+    public ICondition<ModSettingContext> Reduce()
+    {
+        this.RemoveDuplicates();
+        return this;
+    }
+
+    public void WriteJson(Utf8JsonWriter j)
+    {
+        j.WriteStartObject();
+        j.WriteString("Type"u8,  Type);
+        j.WriteString("Group"u8, Group);
+        j.WriteStartArray("Options"u8);
+        foreach (var option in this)
+            j.WriteStringValue(option);
+        j.WriteEndArray();
+        j.WriteEndObject();
+    }
+
+    public IEnumerable<ICondition<ModSettingContext>> Subconditions
+        => [];
+
+    public int RemoveSubconditions(Func<ICondition<ModSettingContext>, bool> predicate)
+        => 0;
 }

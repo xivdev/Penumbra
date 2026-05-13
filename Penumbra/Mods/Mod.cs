@@ -108,7 +108,7 @@ public sealed class Mod : IMod, IFileSystemValue<Mod>
         foreach (var (groupIndex, group) in Groups.Index().Reverse().OrderByDescending(g => g.Item.Priority))
         {
             var config = settings.Settings[groupIndex];
-            group.AddData(config, dictRedirections, setManips);
+            group.AddData(settings, config, dictRedirections, setManips);
         }
 
         Default.AddTo(dictRedirections, setManips);

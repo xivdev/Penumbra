@@ -29,7 +29,8 @@ public sealed class MultiModGroup(Mod mod) : IModGroup, ITexToolsGroup
     public          ModPriority                    Priority        { get; set; }
     public          int                            Page            { get; set; }
     public          Setting                        DefaultSettings { get; set; }
-    public          string?                        ParentSetting   { get; set; }
+    public          ModSettingsLayout              Layout          { get; set; }
+    public          ParentSetting                  ParentSetting   { get; set; } = ParentSetting.None;
     public          ICondition<ModSettingContext>? Condition       { get; set; }
     public readonly List<MultiSubMod>              OptionData = [];
 
@@ -114,11 +115,18 @@ public sealed class MultiModGroup(Mod mod) : IModGroup, ITexToolsGroup
     public IModGroupEditDrawer EditDrawer(ModGroupEditDrawer editDrawer)
         => new MultiModGroupEditDrawer(editDrawer, this);
 
-    public void AddData(Setting setting, Dictionary<Utf8GamePath, FullPath> redirections, MetaDictionary manipulations)
+    public void AddData(ModSettings settings, Setting setting, Dictionary<Utf8GamePath, FullPath> redirections, MetaDictionary manipulations)
     {
+        var context = new ModSettingContext(Mod, settings);
+        if (Condition is not null && !Condition.Evaluate(context))
+            return;
+
         foreach (var (index, option) in OptionData.Index().OrderByDescending(o => o.Item.Priority))
         {
-            if (setting.HasFlag(index))
+            if (!setting.HasFlag(index))
+                continue;
+
+            if (option.Condition is null || option.Condition.Evaluate(context))
                 option.AddDataTo(redirections, manipulations);
         }
     }

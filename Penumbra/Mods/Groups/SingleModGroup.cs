@@ -28,7 +28,8 @@ public sealed class SingleModGroup(Mod mod) : IModGroup, ITexToolsGroup
     public ModPriority                    Priority        { get; set; }
     public int                            Page            { get; set; }
     public Setting                        DefaultSettings { get; set; }
-    public string?                        ParentSetting   { get; set; }
+    public ModSettingsLayout              Layout          { get; set; }
+    public ParentSetting                  ParentSetting   { get; set; } = ParentSetting.None;
     public ICondition<ModSettingContext>? Condition       { get; set; }
 
     public readonly List<SingleSubMod> OptionData = [];
@@ -101,9 +102,17 @@ public sealed class SingleModGroup(Mod mod) : IModGroup, ITexToolsGroup
     public IModGroupEditDrawer EditDrawer(ModGroupEditDrawer editDrawer)
         => new SingleModGroupEditDrawer(editDrawer, this);
 
-    public void AddData(Setting setting, Dictionary<Utf8GamePath, FullPath> redirections, MetaDictionary manipulations)
+    public void AddData(ModSettings settings, Setting setting, Dictionary<Utf8GamePath, FullPath> redirections, MetaDictionary manipulations)
     {
-        if (OptionData.Count == 0)
+        if (OptionData.Count is 0)
+            return;
+
+        var context = new ModSettingContext(Mod, settings);
+        if (Condition is not null && !Condition.Evaluate(context))
+            return;
+
+        var option = OptionData[setting.AsIndex];
+        if (option.Condition is not null && !option.Condition.Evaluate(context))
             return;
 
         OptionData[setting.AsIndex].AddDataTo(redirections, manipulations);
@@ -116,7 +125,7 @@ public sealed class SingleModGroup(Mod mod) : IModGroup, ITexToolsGroup
     }
 
     public Setting FixSetting(Setting setting)
-        => OptionData.Count == 0 ? Setting.Zero : new Setting(Math.Min(setting.Value, (ulong)(OptionData.Count - 1)));
+        => OptionData.Count is 0 ? Setting.Zero : new Setting(Math.Min(setting.Value, (ulong)(OptionData.Count - 1)));
 
     public (int Redirections, int Swaps, int Manips) GetCounts()
         => ModGroup.GetCountsBase(this);
