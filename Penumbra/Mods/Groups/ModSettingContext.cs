@@ -82,7 +82,7 @@ public sealed class SingleSettingCondition(string group, string option) : ICondi
             if (group.Name != Group)
                 continue;
 
-            var settings = context.Settings.Settings[index];
+            var settings = context.Settings.IsEmpty ? group.DefaultSettings : context.Settings.Settings[index];
             var option   = group.Options.IndexOf(o => o.Name == Option);
             if (option < 0)
                 continue;
@@ -150,7 +150,7 @@ public abstract class MultiSettingCondition(string group) : List<string>, ICondi
             if (group.Type is GroupType.Single && Count > 1)
                 continue;
 
-            var settings = context.Settings.Settings[index];
+            var settings = context.Settings.IsEmpty ? group.DefaultSettings : context.Settings.Settings[index];
             if (EvaluateGroup(group, settings))
                 return true;
         }

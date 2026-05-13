@@ -21,7 +21,7 @@ public readonly struct CombiningModGroupEditDrawer(ModGroupEditDrawer editor, Co
             editor.DrawOptionName(option);
 
             Im.Line.SameInner();
-            editor.DrawOptionDescription(option);
+            editor.DrawOptionButtons(option);
 
             Im.Line.SameInner();
             editor.DrawOptionDelete(option);

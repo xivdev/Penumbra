@@ -4,6 +4,7 @@ using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Mods;
 using Penumbra.Mods.Settings;
+using Penumbra.UI.ModsTab.Groups;
 using Penumbra.UI.ModsTab.Selector;
 
 namespace Penumbra.Communication;
@@ -22,6 +23,9 @@ public sealed class ModSettingChanged(LunaLogger log)
 
         /// <seealso cref="Mods.Manager.ModConfigUpdater.OnModSettingChanged"/>
         ModConfigUpdater = -10,
+
+        /// <seealso cref="ModSettingsCache.OnModSettingChanged"/>
+        ModGroupCache = -5,
 
         /// <seealso cref="Collections.Cache.CollectionCacheManager.OnModSettingChange"/>
         CollectionCacheManager = 0,
