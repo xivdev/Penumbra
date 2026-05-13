@@ -25,9 +25,8 @@ public sealed class FailedModNotification(Services.MessageService service, UiNav
     public override string NotificationTitle
         => $"{Count} Mod{(Count is 1 ? string.Empty : "s")} failed to load";
 
-    // TODO: add management tab for this
     public override string NotificationMessage
-        => "One or more Mods failed to load.\n\n See the Messages tab for details.\n\nA management tab for handling these cases more easily will be added later.";
+        => "One or more Mods failed to load.\n\n See the Messages tab for details. See Management -> Broken Mods to fix the issues.";
 
     public override void NotificationActions(INotificationDrawArgs args)
     {
@@ -37,7 +36,7 @@ public sealed class FailedModNotification(Services.MessageService service, UiNav
             navigator.OpenTo(TabType.Messages);
         Im.Line.SameInner();
         if (ImEx.Button("Open Management"u8, width, true))
-            navigator.OpenTo(ManagementTabType.ReservedFiles); // TODO
+            navigator.OpenTo(ManagementTabType.BrokenMods);
     }
 
     protected override StoredNotification CreateStored(in (string Mod, Exception Error) @object)

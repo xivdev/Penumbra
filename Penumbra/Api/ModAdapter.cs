@@ -2,7 +2,7 @@ using ImSharp;
 using Penumbra.Api.Enums;
 using Penumbra.Mods;
 
-namespace Penumbra.Api;
+namespace Penumbra.Api; 
 
 public sealed class ModAdapter(Mod mod) : IReadOnlyList<object?>, IDisposable
 {

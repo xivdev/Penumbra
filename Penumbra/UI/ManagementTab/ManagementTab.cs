@@ -14,6 +14,7 @@ public enum ManagementTabType
     UnusedFiles,
     RedundantFiles,
     TextureOptimization,
+    BrokenMods,
 }
 
 public sealed class ManagementTab : TabBar<ManagementTabType>, ITab<TabType>, IDisposable
@@ -30,18 +31,21 @@ public sealed class ManagementTab : TabBar<ManagementTabType>, ITab<TabType>, ID
         EphemeralConfig config,
         UnusedModsTab unusedMods,
         DuplicateModsTab duplicateMods,
+        BrokenModsTab brokenMods,
         ReservedFilesTab reservedFiles,
         UnusedFilesTab unusedFiles,
         RedundantFilesTab redundantFiles,
         TextureOptimizationTab textureOptimization,
         CleanupTab cleanup,
         UiNavigator navigator)
-        : base("Management", log, unusedMods, duplicateMods, reservedFiles, unusedFiles, redundantFiles, textureOptimization, cleanup)
+        : base("Management", log, unusedMods, duplicateMods, brokenMods, reservedFiles, unusedFiles, redundantFiles, textureOptimization,
+            cleanup)
     {
         _navigator = navigator;
         NextTab    = config.SelectedManagementTab;
         TabSelected.Subscribe((in tab) => config.SelectedManagementTab = tab, 0);
         _navigator.ManagementTabBar += OnNavigation;
+        Flags                       |= TabBarFlags.FittingPolicyScroll;
     }
 
     private void OnNavigation(ManagementTabType tab)

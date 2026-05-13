@@ -22,15 +22,18 @@ public sealed class CombiningModGroup : IModGroup
     public GroupDrawBehaviour Behaviour
         => GroupDrawBehaviour.MultiSelection;
 
-    public          Mod                         Mod             { get; }
-    public          string                      Name            { get; set; } = "Group";
-    public          string                      Description     { get; set; } = string.Empty;
-    public          string                      Image           { get; set; } = string.Empty;
-    public          ModPriority                 Priority        { get; set; }
-    public          int                         Page            { get; set; }
-    public          Setting                     DefaultSettings { get; set; }
-    public readonly List<CombiningSubMod>       OptionData = [];
-    public          List<CombinedDataContainer> Data { get; private set; }
+    public          Mod                            Mod             { get; }
+    public          string                         Name            { get; set; } = "Group";
+    public          string                         Description     { get; set; } = string.Empty;
+    public          string                         Image           { get; set; } = string.Empty;
+    public          ModPriority                    Priority        { get; set; }
+    public          int                            Page            { get; set; }
+    public          Setting                        DefaultSettings { get; set; }
+    public          ModSettingsLayout              Layout          { get; set; }
+    public          ParentSetting                  ParentSetting   { get; set; } = ParentSetting.None;
+    public          ICondition<ModSettingContext>? Condition       { get; set; }
+    public readonly List<CombiningSubMod>          OptionData = [];
+    public          List<CombinedDataContainer>    Data { get; private set; }
 
     /// <summary> Groups that allow all available options to be selected at once. </summary>
     public CombiningModGroup(Mod mod)
@@ -132,8 +135,28 @@ public sealed class CombiningModGroup : IModGroup
     public IModGroupEditDrawer EditDrawer(ModGroupEditDrawer editDrawer)
         => new CombiningModGroupEditDrawer(editDrawer, this);
 
-    public void AddData(Setting setting, Dictionary<Utf8GamePath, FullPath> redirections, MetaDictionary manipulations)
-        => Data[setting.AsIndex].AddDataTo(redirections, manipulations);
+    public void AddData(ModSettings settings, Setting setting, Dictionary<Utf8GamePath, FullPath> redirections, MetaDictionary manipulations)
+    {
+        var context = new ModSettingContext(Mod, settings);
+        if (Condition is not null && !Condition.Evaluate(context))
+            return;
+
+        var mask = GetAvailableMask(context);
+        setting = new Setting(mask & setting.Value);
+        Data[setting.AsIndex].AddDataTo(redirections, manipulations);
+    }
+
+    private ulong GetAvailableMask(in ModSettingContext context)
+    {
+        var mask = 0ul;
+        foreach (var (idx, option) in OptionData.Index())
+        {
+            if (option.Condition is null || option.Condition.Evaluate(context))
+                mask |= 1ul << idx;
+        }
+
+        return mask;
+    }
 
     public void AddChangedItems(ObjectIdentification identifier, IDictionary<string, IIdentifiedObjectData> changedItems)
     {
