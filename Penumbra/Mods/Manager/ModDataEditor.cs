@@ -30,6 +30,7 @@ public enum ModDataChangeType : uint
     FileSystemFolder      = 0x010000,
     FileSystemSortOrder   = 0x020000,
     LastConfigEdit        = 0x040000,
+    Identifier            = 0x080000,
 }
 
 public class ModDataEditor(SaveService saveService, CommunicatorService communicatorService, ItemData itemData, LocalModDatabase database)

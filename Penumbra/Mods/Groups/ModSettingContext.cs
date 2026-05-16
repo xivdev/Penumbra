@@ -7,7 +7,7 @@ namespace Penumbra.Mods.Groups;
 
 public readonly record struct ModSettingContext(Mod Mod, ModSettings Settings);
 
-public sealed class MultiSettingAllCondition(string group, params IReadOnlyCollection<string> options) : MultiSettingCondition(group, options)
+public sealed class MultiSettingAllCondition(Guid group, params IReadOnlyCollection<Guid> options) : MultiSettingCondition(group, options)
 {
     protected override ReadOnlySpan<byte> Type
         => "MultiSettingAll"u8;
@@ -20,7 +20,7 @@ public sealed class MultiSettingAllCondition(string group, params IReadOnlyColle
         var matches = 0;
         foreach (var option in this)
         {
-            var optionIndex = group.Options.IndexOf(o => o.Name == option);
+            var optionIndex = group.Options.IndexOf(o => o.Id == option);
             if (optionIndex < 0)
                 break;
 
@@ -37,9 +37,16 @@ public sealed class MultiSettingAllCondition(string group, params IReadOnlyColle
 
         return matches == Count;
     }
+
+    public override bool Equals(ICondition<ModSettingContext>? other)
+        => other is MultiSettingAllCondition s && Group == s.Group && s.SequenceEqual(this);
+
+    [SuppressMessage("ReSharper", "NonReadonlyMemberInGetHashCode")]
+    public override int GetHashCode()
+        => this.Aggregate(HashCode.Combine(typeof(MultiSettingAllCondition).GetHashCode(), Group), HashCode.Combine);
 }
 
-public sealed class MultiSettingAnyCondition(string group, params IReadOnlyCollection<string> options) : MultiSettingCondition(group, options)
+public sealed class MultiSettingAnyCondition(Guid group, params IReadOnlyCollection<Guid> options) : MultiSettingCondition(group, options)
 {
     protected override ReadOnlySpan<byte> Type
         => "MultiSettingAny"u8;
@@ -51,7 +58,7 @@ public sealed class MultiSettingAnyCondition(string group, params IReadOnlyColle
     {
         foreach (var option in this)
         {
-            var optionIndex = group.Options.IndexOf(o => o.Name == option);
+            var optionIndex = group.Options.IndexOf(o => o.Id == option);
             if (optionIndex < 0)
                 break;
 
@@ -68,22 +75,29 @@ public sealed class MultiSettingAnyCondition(string group, params IReadOnlyColle
 
         return false;
     }
+
+    public override bool Equals(ICondition<ModSettingContext>? other)
+        => other is MultiSettingAnyCondition s && Group == s.Group && s.SequenceEqual(this);
+
+    [SuppressMessage("ReSharper", "NonReadonlyMemberInGetHashCode")]
+    public override int GetHashCode()
+        => this.Aggregate(HashCode.Combine(typeof(MultiSettingAnyCondition).GetHashCode(), Group), HashCode.Combine);
 }
 
-public sealed class SingleSettingCondition(string group, string option) : ICondition<ModSettingContext>
+public sealed class SingleSettingCondition(Guid group, Guid option) : ICondition<ModSettingContext>
 {
-    public string Group  = group;
-    public string Option = option;
+    public Guid Group  = group;
+    public Guid Option = option;
 
     public bool Evaluate(in ModSettingContext context)
     {
         foreach (var (index, group) in context.Mod.Groups.Index())
         {
-            if (group.Name != Group)
+            if (group.Id != Group)
                 continue;
 
             var settings = context.Settings.IsEmpty ? group.DefaultSettings : context.Settings.Settings[index];
-            var option   = group.Options.IndexOf(o => o.Name == Option);
+            var option   = group.Options.IndexOf(o => o.Id == Option);
             if (option < 0)
                 continue;
 
@@ -120,18 +134,25 @@ public sealed class SingleSettingCondition(string group, string option) : ICondi
 
     public int RemoveSubconditions(Func<ICondition<ModSettingContext>, bool> predicate)
         => 0;
+
+    public bool Equals(ICondition<ModSettingContext>? other)
+        => other is SingleSettingCondition s && Group == s.Group && Option == s.Option;
+
+    [SuppressMessage("ReSharper", "NonReadonlyMemberInGetHashCode")]
+    public override int GetHashCode()
+        => HashCode.Combine(typeof(SingleSettingCondition).GetHashCode(), Group, Option);
 }
 
-public abstract class MultiSettingCondition(string group) : List<string>, ICondition<ModSettingContext>
+public abstract class MultiSettingCondition(Guid group) : List<Guid>, ICondition<ModSettingContext>
 {
-    protected MultiSettingCondition(string group, IReadOnlyCollection<string> options)
+    protected MultiSettingCondition(Guid group, IReadOnlyCollection<Guid> options)
         : this(group)
     {
         EnsureCapacity(options.Count);
         AddRange(options);
     }
 
-    public string Group = group;
+    public Guid Group = group;
 
     public abstract    ICondition<ModSettingContext> DeepCopy();
     protected abstract ReadOnlySpan<byte>            Type { get; }
@@ -144,7 +165,7 @@ public abstract class MultiSettingCondition(string group) : List<string>, ICondi
 
         foreach (var (index, group) in context.Mod.Groups.Index())
         {
-            if (group.Name != Group)
+            if (group.Id != Group)
                 continue;
 
             if (group.Type is GroupType.Single && Count > 1)
@@ -181,4 +202,6 @@ public abstract class MultiSettingCondition(string group) : List<string>, ICondi
 
     public int RemoveSubconditions(Func<ICondition<ModSettingContext>, bool> predicate)
         => 0;
+
+    public abstract bool Equals(ICondition<ModSettingContext>? other);
 }

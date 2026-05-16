@@ -109,6 +109,9 @@ public partial class ModCreator(
                  || saveService.FileNames.OptionGroupFile(mod.ModPath.FullName, mod.Groups.Count, group.Name, true)
                  != Path.Combine(file.DirectoryName!, file.Name.ReplaceBadXivSymbols(true));
                 mod.Groups.Add(group);
+                mod.SubObjects.TryAdd(group.Id, group);
+                foreach (var option in group.Options)
+                    mod.SubObjects.TryAdd(option.Id, option);
             }
             else
             {

@@ -3,7 +3,6 @@ using Newtonsoft.Json.Linq;
 using Penumbra.Files;
 using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
-using Penumbra.Services;
 
 namespace Penumbra.Mods.Groups;
 

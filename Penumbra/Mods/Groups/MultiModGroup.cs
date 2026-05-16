@@ -23,6 +23,7 @@ public sealed class MultiModGroup(Mod mod) : IModGroup, ITexToolsGroup
         => GroupDrawBehaviour.MultiSelection;
 
     public          Mod                            Mod             { get; }      = mod;
+    public          Guid                           Id              { get; set; } = Guid.NewGuid();
     public          string                         Name            { get; set; } = "Group";
     public          string                         Description     { get; set; } = string.Empty;
     public          string                         Image           { get; set; } = string.Empty;
@@ -30,7 +31,7 @@ public sealed class MultiModGroup(Mod mod) : IModGroup, ITexToolsGroup
     public          int                            Page            { get; set; }
     public          Setting                        DefaultSettings { get; set; }
     public          ModSettingsLayout              Layout          { get; set; }
-    public          ParentSetting                  ParentSetting   { get; set; } = ParentSetting.None;
+    public          Guid                           ParentSetting   { get; set; } = Guid.Empty;
     public          ICondition<ModSettingContext>? Condition       { get; set; }
     public readonly List<MultiSubMod>              OptionData = [];
 

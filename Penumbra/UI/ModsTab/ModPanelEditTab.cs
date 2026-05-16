@@ -23,6 +23,7 @@ public class ModPanelEditTab(
     PredefinedTagManager predefinedTagManager,
     ModGroupEditDrawer groupEditDrawer,
     DescriptionEditPopup descriptionPopup,
+    LayoutEditPopup layoutPopup,
     AddGroupDrawer addGroupDrawer)
     : ITab<ModPanelTab>
 {
@@ -100,6 +101,7 @@ public class ModPanelEditTab(
         }
 
         descriptionPopup.Draw();
+        layoutPopup.Draw();
     }
 
     public void Reset()

@@ -11,6 +11,7 @@ public class CombiningSubMod(IModGroup group) : IModOption
     public Mod Mod
         => Group.Mod;
 
+    public Guid              Id          { get; set; } = Guid.NewGuid();
     public string            Name        { get; set; } = "Option";
     public string            Description { get; set; } = string.Empty;
     public ModSettingsLayout Layout      { get; set; }

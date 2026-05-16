@@ -31,11 +31,13 @@ public class ImcSubMod(ImcModGroup group) : IModOption
     public ushort AttributeMask;
     public bool   IsDisableSubMod { get; private init; }
 
-    Mod IModOption.Mod
+    Mod IModObject.Mod
         => Mod;
 
-    IModGroup IModOption.Group
+    IModGroup IModObject.Group
         => Group;
+
+    public Guid Id { get; set; } = Guid.NewGuid();
 
     public string Name { get; set; } = "Part";
 

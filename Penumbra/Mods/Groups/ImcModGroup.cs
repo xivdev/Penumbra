@@ -17,6 +17,7 @@ namespace Penumbra.Mods.Groups;
 public class ImcModGroup(Mod mod) : IModGroup
 {
     public Mod    Mod         { get; }      = mod;
+    public Guid   Id          { get; set; } = Guid.NewGuid();
     public string Name        { get; set; } = "Option";
     public string Description { get; set; } = string.Empty;
     public string Image       { get; set; } = string.Empty;
@@ -31,7 +32,7 @@ public class ImcModGroup(Mod mod) : IModGroup
     public int                            Page            { get; set; }
     public Setting                        DefaultSettings { get; set; } = Setting.Zero;
     public ModSettingsLayout              Layout          { get; set; }
-    public ParentSetting                  ParentSetting   { get; set; } = ParentSetting.None;
+    public Guid                           ParentSetting   { get; set; } = Guid.Empty;
     public ICondition<ModSettingContext>? Condition       { get; set; }
 
     public ImcIdentifier Identifier;
@@ -239,7 +240,7 @@ public class ImcModGroup(Mod mod) : IModGroup
         var idx = OptionData.IndexOf(m => m.IsDisableSubMod);
         if (idx >= 0)
         {
-            if (OptionData[idx].Condition is not {} condition || condition.Evaluate(context))
+            if (OptionData[idx].Condition is not { } condition || condition.Evaluate(context))
                 return setting.HasFlag(idx);
 
             return false;
@@ -258,7 +259,7 @@ public class ImcModGroup(Mod mod) : IModGroup
                 continue;
 
             var option = OptionData[i];
-            if(option.Condition is null || option.Condition.Evaluate(context))
+            if (option.Condition is null || option.Condition.Evaluate(context))
                 mask ^= option.AttributeMask;
         }
 

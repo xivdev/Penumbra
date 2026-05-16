@@ -19,6 +19,7 @@ public sealed class ModGroupEditDrawer(
     Configuration config,
     FilenameService filenames,
     DescriptionEditPopup descriptionPopup,
+    LayoutEditPopup layoutPopup,
     ImcChecker imcChecker,
     ModGroupConditionDrawer conditionDrawer) : IUiService
 {
@@ -149,7 +150,7 @@ public sealed class ModGroupEditDrawer(
     private void DrawGroupLayout(IModGroup group)
     {
         if (ImEx.Icon.Button(LunaStyle.LayoutIcon, "Edit group layout settings."u8))
-            descriptionPopup.Open(group);
+            layoutPopup.Open(group);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -157,7 +158,7 @@ public sealed class ModGroupEditDrawer(
     {
         if (ImEx.Icon.Button(LunaStyle.ConditionIcon, "Edit group conditions."u8,
                 textColor: group.Condition is not null ? LunaStyle.FavoriteColor : ColorParameter.Default))
-            descriptionPopup.Open(group);
+            layoutPopup.Open(group);
     }
 
     private void DrawGroupMoveButtons(IModGroup group, int idx)
@@ -252,7 +253,7 @@ public sealed class ModGroupEditDrawer(
     private void DrawOptionLayout(IModOption option)
     {
         if (ImEx.Icon.Button(LunaStyle.LayoutIcon, "Edit option layout settings."u8))
-            descriptionPopup.Open(option);
+            layoutPopup.Open(option);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -21,12 +21,13 @@ public readonly struct ModMeta(Mod mod) : ISavable
         j.WriteStartObject();
 
         j.WriteNumber("FileVersion"u8, CurrentFileVersion);
+        j.WriteString("Identifier"u8,  mod.StableIdentifier);
         j.WriteString("Name"u8,        mod.Name);
-        j.WriteString("Author"u8,      mod.Author);
-        j.WriteString("Description"u8, mod.Description);
-        j.WriteString("Image"u8,       mod.Image);
-        j.WriteString("Version"u8,     mod.Version);
-        j.WriteString("Website"u8,     mod.Website);
+        j.WriteNonEmptyString("Author"u8,      mod.Author);
+        j.WriteNonEmptyString("Description"u8, mod.Description);
+        j.WriteNonEmptyString("Image"u8,       mod.Image);
+        j.WriteNonEmptyString("Version"u8,     mod.Version);
+        j.WriteNonEmptyString("Website"u8,     mod.Website);
 
         if (mod.ModTags.Count > 0)
         {
@@ -90,6 +91,7 @@ public readonly struct ModMeta(Mod mod) : ISavable
     public struct Dto
     {
         public uint?         FileVersion;
+        public Guid?         StableIdentifier;
         public string?       Name;
         public string?       Author;
         public string?       Description;
@@ -107,6 +109,15 @@ public readonly struct ModMeta(Mod mod) : ISavable
             {
                 changes  |= ModDataChangeType.Name;
                 mod.Name =  Name ?? string.Empty;
+            }
+
+            if (mod.StableIdentifier != StableIdentifier)
+            {
+                if (StableIdentifier.HasValue)
+                    mod.StableIdentifier = StableIdentifier.Value;
+                else
+                    mod.StableIdentifier = Guid.NewGuid();
+                changes |= ModDataChangeType.Identifier;
             }
 
             if (mod.Author != Author)
@@ -194,6 +205,8 @@ public readonly struct ModMeta(Mod mod) : ISavable
 
                 if (reader.CheckPropertyValue("FileVersion"u8))
                     ret.FileVersion = reader.TryReadNumber(out uint fv) ? fv : throw new JsonException();
+                else if (reader.CheckPropertyValue("Identifier"u8))
+                    ret.StableIdentifier = reader.TryGetGuid(out var guid) ? guid : null;
                 else if (reader.CheckPropertyValue("Name"u8))
                     ret.Name = reader.GetString();
                 else if (reader.CheckPropertyValue("Author"u8))

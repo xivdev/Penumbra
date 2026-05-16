@@ -56,6 +56,7 @@ public sealed class Mod : IMod, IFileSystemValue<Mod>
         => Name;
 
     // Meta Data
+    public Guid                  StableIdentifier      { get; internal set; } = Guid.NewGuid();
     public string                Name                  { get; internal set; } = "New Mod";
     public string                Author                { get; internal set; } = string.Empty;
     public string                Description           { get; internal set; } = string.Empty;
@@ -78,8 +79,9 @@ public sealed class Mod : IMod, IFileSystemValue<Mod>
     public bool                  Favorite              { get; internal set; }
 
     // Options
-    public readonly DefaultSubMod   Default;
-    public readonly List<IModGroup> Groups = [];
+    public readonly Dictionary<Guid, IModObject> SubObjects = [];
+    public readonly DefaultSubMod                Default;
+    public readonly List<IModGroup>              Groups = [];
 
     /// <summary> Compute the required feature flags for this mod. </summary>
     public FeatureFlags ComputeRequiredFeatures()

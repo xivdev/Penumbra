@@ -22,7 +22,7 @@ public abstract class OptionSubMod(IModGroup group) : IModOption, IModDataContai
     public string FullName
         => $"{Group.Name}: {Name}";
 
-    Mod IModOption.Mod
+    Mod IModObject.Mod
         => Mod;
 
     IMod IModDataContainer.Mod
@@ -31,7 +31,9 @@ public abstract class OptionSubMod(IModGroup group) : IModOption, IModDataContai
     IModGroup IModDataContainer.Group
         => Group;
 
-    IModGroup IModOption.Group
+    public Guid Id { get; set; } = Guid.NewGuid();
+
+    IModGroup IModObject.Group
         => Group;
 
     public Dictionary<Utf8GamePath, FullPath> Files         { get; set; } = [];
