@@ -119,7 +119,7 @@ public sealed class ModelManager(
 
         // Get standardised paths
         var absolutePath = rawPath.StartsWith('/')
-            ? LuminaMaterial.ResolveRelativeMaterialPath(rawPath, variantId)
+            ? LuminaMaterial.ResolveRelativeMaterialPath(rawPath, variantId, false)
             : rawPath;
         var relativePath = rawPath.StartsWith('/')
             ? rawPath
