@@ -396,18 +396,18 @@ internal unsafe partial record ResolveContext(
 
     private ResourceNode? CreateParameterNodeFromPartialSkeleton(PartialSkeleton* sklb, uint partialSkeletonIndex)
     {
-        if (sklb is null || sklb->SkeletonParameterResourceHandle is null)
+        if (sklb is null || sklb->SkeletonParamResourceHandle is null)
             return null;
 
         var path = ResolveSkeletonParameterPath(partialSkeletonIndex);
 
-        if (Global.Nodes.TryGetValue((path, (nint)sklb->SkeletonParameterResourceHandle), out var cached))
+        if (Global.Nodes.TryGetValue((path, (nint)sklb->SkeletonParamResourceHandle), out var cached))
             return cached;
 
-        var node = CreateNode(ResourceType.Skp, (nint)sklb, (ResourceHandle*)sklb->SkeletonParameterResourceHandle, path, false);
+        var node = CreateNode(ResourceType.Skp, (nint)sklb, (ResourceHandle*)sklb->SkeletonParamResourceHandle, path, false);
         if (Global.WithUiData)
             node.FallbackName = "Skeleton Parameters";
-        Global.Nodes.Add((path, (nint)sklb->SkeletonParameterResourceHandle), node);
+        Global.Nodes.Add((path, (nint)sklb->SkeletonParamResourceHandle), node);
 
         return node;
     }
