@@ -233,9 +233,9 @@ public class Penumbra : IDalamudPlugin
             "Glamourer", "CustomizePlus", "SimpleHeels",
             "Ktisis", "Brio",
             "heliosphere-plugin", "VfxEditor", "IllusioVitae", "Aetherment",
-            "DynamicBridge", "GagSpeak", "ProjectGagSpeak", "RoleplayingVoiceDalamud", "AQuestReborn",
+            "DynamicBridge", "GagSpeak", "ProjectGagSpeak", "RoleplayingVoiceDalamud", "AQuestReborn", "Proteus", "DragAndDropTexturing", "CharacterSelectPlugin",
             "MareSynchronos", "LoporritSync", "KittenSync", "Snowcloak", "LightlessSync", "Sphene", "XivSync",
-            "MareSempiterne" /* PlayerSync */, "AnatoliIliou", "LaciSynchroni",
+            "MareSempiterne" /* PlayerSync */, "AnatoliIliou", "LaciSynchroni", 
         ];
         var plugins = _services.GetService<IDalamudPluginInterface>().InstalledPlugins
             .GroupBy(p => p.InternalName)
