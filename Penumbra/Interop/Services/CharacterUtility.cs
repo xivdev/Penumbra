@@ -157,5 +157,8 @@ public unsafe class CharacterUtility : IDisposable, Luna.IRequiredService
     }
 
     public void Dispose()
-        => ResetAll();
+    {
+        _framework.Update -= LoadDefaultResources;
+        ResetAll();
+    }
 }

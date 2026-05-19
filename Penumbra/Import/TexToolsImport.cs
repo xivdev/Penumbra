@@ -4,6 +4,8 @@ using Penumbra.Import.Structs;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
+using SharpCompress.Archives;
+using SharpCompress.Writers.Zip;
 using FileMode = System.IO.FileMode;
 using ZipArchive = SharpCompress.Archives.Zip.ZipArchive;
 using ZipArchiveEntry = SharpCompress.Archives.Zip.ZipArchiveEntry;
@@ -137,7 +139,7 @@ public partial class TexToolsImporter : IDisposable
             return HandleRegularArchive(modPackFile);
 
         using var zfs              = modPackFile.OpenRead();
-        using var extractedModPack = ZipArchive.Open(zfs);
+        using var extractedModPack = ZipArchive.OpenArchive(zfs);
 
         var mpl = FindZipEntry(extractedModPack, "TTMPL.mpl");
         if (mpl == null)
@@ -161,10 +163,10 @@ public partial class TexToolsImporter : IDisposable
     }
 
     // You can in no way rely on any file paths in TTMPs so we need to just do this, sorry
-    private static ZipArchiveEntry? FindZipEntry(ZipArchive file, string fileName)
+    private static IArchiveEntry? FindZipEntry(IWritableArchive<ZipWriterOptions> file, string fileName)
         => file.Entries.FirstOrDefault(e => e is { IsDirectory: false, Key: not null } && e.Key.Contains(fileName));
 
-    private static string GetStringFromZipEntry(ZipArchiveEntry entry, Encoding encoding)
+    private static string GetStringFromZipEntry(IArchiveEntry entry, Encoding encoding)
     {
         using var ms = new MemoryStream();
         using var s  = entry.OpenEntryStream();
@@ -184,7 +186,7 @@ public partial class TexToolsImporter : IDisposable
         _tmpFileStream = null;
     }
 
-    private StreamDisposer GetSqPackStreamStream(ZipArchive file, string entryName)
+    private StreamDisposer GetSqPackStreamStream(IWritableArchive<ZipWriterOptions> file, string entryName)
     {
         State = ImporterState.WritingPackToDisk;
 

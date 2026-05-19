@@ -10,20 +10,20 @@ public sealed class ModGroupConditionParser : ConditionParser<ModSettingContext>
     {
         if (type.Equals("SingleSetting"u8))
         {
-            var group  = string.Empty;
-            var option = string.Empty;
+            var group  = Guid.Empty;
+            var option = Guid.Empty;
             while (obj.Read(ref reader))
             {
                 if (reader.TokenType is not JsonTokenType.PropertyName)
                     continue;
 
                 if (reader.CheckPropertyValue("Group"u8, JsonTokenType.String))
-                    reader.TryReadString(out group!);
+                    reader.TryGetGuid(out group);
                 else if (reader.CheckPropertyValue("Option"u8, JsonTokenType.String))
-                    reader.TryReadString(out option!);
+                    reader.TryGetGuid(out option);
             }
 
-            if (group.Length is 0 || option.Length is 0)
+            if (group == Guid.Empty || option == Guid.Empty)
                 return null;
 
             return new SingleSettingCondition(group, option);
@@ -32,7 +32,7 @@ public sealed class ModGroupConditionParser : ConditionParser<ModSettingContext>
         if (type.Equals("MultiSettingAll"u8))
         {
             var (group, options) = GetMulti(obj, ref reader);
-            if (group.Length is 0 || options is null)
+            if (group == Guid.Empty || options is null)
                 return null;
 
             return new MultiSettingAllCondition(group, options);
@@ -41,7 +41,7 @@ public sealed class ModGroupConditionParser : ConditionParser<ModSettingContext>
         if (type.Equals("MultiSettingAny"u8))
         {
             var (group, options) = GetMulti(obj, ref reader);
-            if (group.Length is 0 || options is null)
+            if (group == Guid.Empty || options is null)
                 return null;
 
             return new MultiSettingAnyCondition(group, options);
@@ -49,22 +49,22 @@ public sealed class ModGroupConditionParser : ConditionParser<ModSettingContext>
 
         return null;
 
-        static (string, string[]?) GetMulti(Utf8JsonObjectReader obj, ref Utf8JsonReader reader)
+        static (Guid, Guid[]?) GetMulti(Utf8JsonObjectReader obj, ref Utf8JsonReader reader)
         {
-            var            group   = string.Empty;
-            List<string?>? options = null;
+            var         group   = Guid.Empty;
+            List<Guid>? options = null;
             while (obj.Read(ref reader))
             {
                 if (reader.TokenType is not JsonTokenType.PropertyName)
                     continue;
 
                 if (reader.CheckPropertyValue("Group"u8, JsonTokenType.String))
-                    reader.TryReadString(out group!);
+                    reader.TryGetGuid(out group);
                 else if (reader.CheckPropertyValue("Options"u8))
-                    options = reader.ReadStringArray();
+                    options = reader.ReadGuidUtf8Array();
             }
 
-            return (group, options?.OfType<string>().ToArray());
+            return (group, options?.ToArray());
         }
     }
 }
