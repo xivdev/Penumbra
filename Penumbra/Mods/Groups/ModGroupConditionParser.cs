@@ -17,10 +17,12 @@ public sealed class ModGroupConditionParser : ConditionParser<ModSettingContext>
                 if (reader.TokenType is not JsonTokenType.PropertyName)
                     continue;
 
-                if (reader.CheckPropertyValue("Group"u8, JsonTokenType.String))
-                    reader.TryGetGuid(out group);
-                else if (reader.CheckPropertyValue("Option"u8, JsonTokenType.String))
-                    reader.TryGetGuid(out option);
+                if (reader.GuidProperty("Group"u8, out group))
+                    continue;
+                if (reader.GuidProperty("Option"u8, out option))
+                    continue;
+
+                reader.Skip();
             }
 
             if (group == Guid.Empty || option == Guid.Empty)
@@ -58,10 +60,13 @@ public sealed class ModGroupConditionParser : ConditionParser<ModSettingContext>
                 if (reader.TokenType is not JsonTokenType.PropertyName)
                     continue;
 
-                if (reader.CheckPropertyValue("Group"u8, JsonTokenType.String))
-                    reader.TryGetGuid(out group);
-                else if (reader.CheckPropertyValue("Options"u8))
-                    options = reader.ReadGuidUtf8Array();
+                if (reader.GuidProperty("Group"u8, out group))
+                    continue;
+
+                if (reader.ArrayProperty("Options"u8, out _))
+                    options = reader.ReadGuidArray(true) ?? [];
+
+                reader.Skip();
             }
 
             return (group, options?.ToArray());

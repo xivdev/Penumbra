@@ -31,8 +31,7 @@ public readonly struct ModMeta(Mod mod) : ISavable
 
         if (mod.ModTags.Count > 0)
         {
-            j.WritePropertyName("ModTags"u8);
-            j.WriteStartArray();
+            j.WriteStartArray("ModTags"u8);
             foreach (var tag in mod.ModTags)
                 j.WriteStringValue(tag);
             j.WriteEndArray();
@@ -40,8 +39,7 @@ public readonly struct ModMeta(Mod mod) : ISavable
 
         if (mod.DefaultPreferredItems.Count > 0)
         {
-            j.WritePropertyName("DefaultPreferredItems"u8);
-            j.WriteStartArray();
+            j.WriteStartArray("DefaultPreferredItems"u8);
             foreach (var item in mod.DefaultPreferredItems)
                 j.WriteNumberValue(item);
             j.WriteEndArray();
@@ -50,8 +48,7 @@ public readonly struct ModMeta(Mod mod) : ISavable
         if (mod.RequiredFeatures is not FeatureFlags.None)
         {
             var features = mod.RequiredFeatures;
-            j.WritePropertyName("RequiredFeatures"u8);
-            j.WriteStartArray();
+            j.WriteStartArray("RequiredFeatures"u8);
             foreach (var flag in FeatureFlags.Values)
             {
                 if ((features & flag) is not FeatureFlags.None)
@@ -203,27 +200,27 @@ public readonly struct ModMeta(Mod mod) : ISavable
                 if (reader.TokenType is not JsonTokenType.PropertyName)
                     throw new JsonException("Expected property");
 
-                if (reader.CheckPropertyValue("FileVersion"u8))
+                if (reader.CheckProperty("FileVersion"u8))
                     ret.FileVersion = reader.TryReadNumber(out uint fv) ? fv : throw new JsonException();
-                else if (reader.CheckPropertyValue("Identifier"u8))
+                else if (reader.CheckProperty("Identifier"u8))
                     ret.StableIdentifier = reader.TryGetGuid(out var guid) ? guid : null;
-                else if (reader.CheckPropertyValue("Name"u8))
+                else if (reader.CheckProperty("Name"u8))
                     ret.Name = reader.GetString();
-                else if (reader.CheckPropertyValue("Author"u8))
+                else if (reader.CheckProperty("Author"u8))
                     ret.Author = reader.GetString();
-                else if (reader.CheckPropertyValue("Description"u8))
+                else if (reader.CheckProperty("Description"u8))
                     ret.Description = reader.GetString();
-                else if (reader.CheckPropertyValue("Image"u8))
+                else if (reader.CheckProperty("Image"u8))
                     ret.Image = reader.GetString();
-                else if (reader.CheckPropertyValue("Version"u8))
+                else if (reader.CheckProperty("Version"u8))
                     ret.Version = reader.GetString();
-                else if (reader.CheckPropertyValue("Website"u8))
+                else if (reader.CheckProperty("Website"u8))
                     ret.Website = reader.GetString();
-                else if (reader.CheckPropertyValue("ModTags"u8))
+                else if (reader.CheckProperty("ModTags"u8))
                     ret.ModTags = reader.ReadStringArray()!;
-                else if (reader.CheckPropertyValue("DefaultPreferredItems"u8))
+                else if (reader.CheckProperty("DefaultPreferredItems"u8))
                     ret.PreferredItems = reader.ReadNumberArray<ulong>();
-                else if (reader.CheckPropertyValue("RequiredFeatures"u8))
+                else if (reader.CheckProperty("RequiredFeatures"u8))
                     ret.RequiredFeatures = reader.ReadFlagEnumArray<FeatureFlags>() ?? FeatureFlags.None;
                 else
                     reader.Skip();
