@@ -64,12 +64,12 @@ public sealed class BrokenModsTab(ModManager mods, FailedModNotification notific
 
     private static void DrawMoveToTempButton(FailedModNotification notification, ModManager mods, Cache cache)
     {
+        var path = Path.Combine(mods.BasePath.FullName, "broken_mods");
         if (ImEx.Button("Move All Folders to Temp"u8, default,
-                $"Moves all folders in the list to the '{mods.BasePath.FullName}/broken_mods' directory to make it easier to move them out of the Root directory.",
+                $"Moves all folders in the list to the '{path}' directory to make it easier to move them out of the Root directory.",
                 !LunaStyle.Modifier.Destructive))
         {
             cache.Dirty |= IManagedCache.DirtyFlags.Custom;
-            var path = Path.Combine(mods.BasePath.FullName, "broken_mods");
             try
             {
                 var tmpDirectory = Directory.CreateDirectory(path);

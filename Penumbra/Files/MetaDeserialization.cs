@@ -77,10 +77,18 @@ public static class MetaDeserialization
             {
                 AddSingleManipulation(objectReader, ref reader, ret, type);
             }
-            catch
+            catch (Exception ex)
             {
-                // TODO
+                if (container is not null)
+                    Penumbra.Log.Warning(
+                        $"Invalid manipulation encountered in {container.Mod.Name} - {container.GetFullName()}, manipulation {objectCount}:\n{ex}");
+                else
+                    Penumbra.Log.Warning($"Invalid manipulation encountered in manipulation {objectCount}:\n{ex}");
             }
+
+            // Make sure the current manipulation object is finished.
+            while (objectReader.Read(ref reader))
+                ;
         }
 
         return ret;
@@ -579,7 +587,6 @@ public static class MetaDeserialization
                 throw new JsonException("Property name expected.");
 
             if (reader.ObjectProperty("Manipulation"u8, out var manipulationReader))
-            {
                 switch (type)
                 {
                     case MetaManipulationType.Imc
@@ -623,12 +630,9 @@ public static class MetaDeserialization
                         ret.TryAdd(identifier);
                         break;
                 }
-            }
             else
-            {
                 // Skip other properties.
                 reader.Skip();
-            }
         }
     }
 
