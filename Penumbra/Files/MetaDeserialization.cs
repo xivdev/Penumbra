@@ -12,13 +12,7 @@ namespace Penumbra.Files;
 
 public static class MetaDeserialization
 {
-    private static readonly ThreadLocal<WeakReference<IModDataContainer>> CurrentContainer =
-        new(() => new WeakReference<IModDataContainer>(null!));
-
-    public static void SetCurrentContainer(IModDataContainer? container)
-        => CurrentContainer.Value!.SetTarget(container!);
-
-    public static MetaDictionary ReadMetaDictionary(ref Utf8JsonReader reader)
+    public static MetaDictionary ReadMetaDictionary(ref Utf8JsonReader reader, IModDataContainer? container)
     {
         var ret = new MetaDictionary();
         // Null, empty.
@@ -29,7 +23,6 @@ public static class MetaDeserialization
             throw new JsonException($"Meta Dictionary must be an array but starts with {reader.TokenType}.");
 
         var arrayReader = reader.CreateObjectLimit();
-        var container   = CurrentContainer.IsValueCreated && CurrentContainer.Value!.TryGetTarget(out var c) ? c : null;
         var objectCount = 0;
 
         while (arrayReader.Read(ref reader))
@@ -75,7 +68,7 @@ public static class MetaDeserialization
 
             try
             {
-                AddSingleManipulation(objectReader, ref reader, ret, type);
+                AddSingleManipulation(container, objectReader, ref reader, ret, type);
             }
             catch (Exception ex)
             {
@@ -108,10 +101,9 @@ public static class MetaDeserialization
                 return null;
             }
 
-            if (j.EnumProperty("Slot"u8, out slot))
-                continue;
-
-            if (j.NumberProperty("SetId"u8, out ushort i))
+            if (j.EnumProperty("Slot"u8, out EquipSlot s))
+                slot = s;
+            else if (j.NumberProperty("SetId"u8, out ushort i))
                 setId = new PrimaryId(i);
             else if (j.NumberProperty("Entry"u8, out ulong e))
                 entry = (EqpEntry)e;
@@ -139,14 +131,13 @@ public static class MetaDeserialization
                 return null;
             }
 
-            if (j.EnumProperty("Gender"u8, out gender))
-                continue;
-            if (j.EnumProperty("Race"u8, out race))
-                continue;
-            if (j.EnumProperty("Slot"u8, out slot))
-                continue;
-
-            if (j.NumberProperty("SetId"u8, out ushort i))
+            if (j.EnumProperty("Gender"u8, out Gender g))
+                gender = g;
+            else if (j.EnumProperty("Race"u8, out ModelRace r))
+                race = r;
+            else if (j.EnumProperty("Slot"u8, out EquipSlot s))
+                slot = s;
+            else if (j.NumberProperty("SetId"u8, out ushort i))
                 setId = new PrimaryId(i);
             else if (j.NumberProperty("Entry"u8, out ushort e))
                 entry = (EqdpEntry)e;
@@ -174,14 +165,13 @@ public static class MetaDeserialization
                 return null;
             }
 
-            if (j.EnumProperty("Gender"u8, out gender))
-                continue;
-            if (j.EnumProperty("Race"u8, out race))
-                continue;
-            if (j.EnumProperty("Slot"u8, out slot))
-                continue;
-
-            if (j.NumberProperty("SetId"u8, out ushort i))
+            if (j.EnumProperty("Gender"u8, out Gender g))
+                gender = g;
+            else if (j.EnumProperty("Race"u8, out ModelRace r))
+                race = r;
+            else if (j.EnumProperty("Slot"u8, out EstType s))
+                slot = s;
+            else if (j.NumberProperty("SetId"u8, out ushort i))
                 setId = new PrimaryId(i);
             else if (j.NumberProperty("Entry"u8, out ushort e))
                 entry = new EstEntry(e);
@@ -211,22 +201,22 @@ public static class MetaDeserialization
                 return null;
             }
 
-            if (j.BoolProperty("Enabled"u8, out enabled))
-                continue;
-            if (j.BoolProperty("Animated"u8, out animated))
-                continue;
-            if (j.NumberProperty("RotationA"u8, out rotationA))
-                continue;
-            if (j.NumberProperty("RotationB"u8, out rotationB))
-                continue;
-            if (j.NumberProperty("RotationC"u8, out rotationC))
-                continue;
-            if (j.NumberProperty("UnknownA"u8, out unknownA))
-                continue;
-            if (j.NumberProperty("UnknownB"u8, out unknownB))
-                continue;
-
-            j.Skip();
+            if (j.BoolProperty("Enabled"u8, out var e))
+                enabled = e;
+            else if (j.BoolProperty("Animated"u8, out var a))
+                animated = a;
+            else if (j.NumberProperty("RotationA"u8, out ushort ra))
+                rotationA = ra;
+            else if (j.NumberProperty("RotationB"u8, out ushort rb))
+                rotationB = rb;
+            else if (j.NumberProperty("RotationC"u8, out ushort rc))
+                rotationC = rc;
+            else if (j.NumberProperty("UnknownA"u8, out byte ua))
+                unknownA = ua;
+            else if (j.NumberProperty("UnknownB"u8, out byte ub))
+                unknownB = ub;
+            else
+                j.Skip();
         }
 
         return new GmpEntry
@@ -280,12 +270,11 @@ public static class MetaDeserialization
                 return null;
             }
 
-            if (j.EnumProperty("SubRace"u8, out subRace))
-                continue;
-            if (j.EnumProperty("Attribute"u8, out attribute))
-                continue;
-
-            if (j.NumberProperty("Entry"u8, out float e))
+            if (j.EnumProperty("SubRace"u8, out SubRace s))
+                subRace = s;
+            else if (j.EnumProperty("Attribute"u8, out RspAttribute a))
+                attribute = a;
+            else if (j.NumberProperty("Entry"u8, out float e))
                 entry = new RspEntry(e);
             else
                 j.Skip();
@@ -316,23 +305,22 @@ public static class MetaDeserialization
                 return null;
             }
 
-            if (j.NumberProperty("Scale"u8, out ret.Scale))
-                continue;
-
-            if (j.NumberProperty("OffsetX"u8, out ret.OffsetX))
-                continue;
-            if (j.NumberProperty("OffsetY"u8, out ret.OffsetY))
-                continue;
-            if (j.NumberProperty("OffsetZ"u8, out ret.OffsetZ))
-                continue;
-            if (j.NumberProperty("RotationX"u8, out ret.RotationX))
-                continue;
-            if (j.NumberProperty("RotationY"u8, out ret.RotationY))
-                continue;
-            if (j.NumberProperty("RotationZ"u8, out ret.RotationZ))
-                continue;
-
-            j.Skip();
+            if (j.NumberProperty("Scale"u8, out float s))
+                ret.Scale = s;
+            else if (j.NumberProperty("OffsetX"u8, out float ox))
+                ret.OffsetX = ox;
+            else if (j.NumberProperty("OffsetY"u8, out float oy))
+                ret.OffsetY = oy;
+            else if (j.NumberProperty("OffsetZ"u8, out float oz))
+                ret.OffsetZ = oz;
+            else if (j.NumberProperty("RotationX"u8, out float rx))
+                ret.RotationX = rx;
+            else if (j.NumberProperty("RotationY"u8, out float ry))
+                ret.RotationY = ry;
+            else if (j.NumberProperty("RotationZ"u8, out float rz))
+                ret.RotationZ = rz;
+            else
+                j.Skip();
         }
 
         if (ret.Bone.Length is 0)
@@ -358,14 +346,13 @@ public static class MetaDeserialization
                 return null;
             }
 
-            if (j.EnumProperty("Gender"u8, out gender))
-                continue;
-            if (j.EnumProperty("Race"u8, out race))
-                continue;
-            if (j.NumberProperty("Index"u8, out index))
-                continue;
-
-            if (j.StringProperty("Type"u8, out StringU8 value))
+            if (j.EnumProperty("Gender"u8, out Gender g))
+                gender = g;
+            else if (j.EnumProperty("Race"u8, out ModelRace r))
+                race = r;
+            else if (j.NumberProperty("Index"u8, out ushort i))
+                index = i;
+            else if (j.StringProperty("Type"u8, out StringU8 value))
                 type = AtchType.FromString(value);
             else if (j.ObjectProperty("Entry"u8, out var entryReader))
                 entry = ReadAtchEntry(entryReader, ref j);
@@ -403,14 +390,13 @@ public static class MetaDeserialization
                 return null;
             }
 
-            if (j.EnumProperty("Slot"u8, out slot))
-                continue;
-            if (j.EnumProperty("ConnectorCondition"u8, out connectorCondition))
-                continue;
-            if (j.EnumProperty("GenderRaceCondition"u8, out genderRaceCondition))
-                continue;
-
-            if (j.NumberProperty("Id"u8, out ushort i))
+            if (j.EnumProperty("Slot"u8, out HumanSlot s))
+                slot = s;
+            else if (j.EnumProperty("ConnectorCondition"u8, out ShapeConnectorCondition cc))
+                connectorCondition = cc;
+            else if (j.EnumProperty("GenderRaceCondition"u8, out GenderRace gr))
+                genderRaceCondition = gr;
+            else if (j.NumberProperty("Id"u8, out ushort i))
                 id = i;
             else if (j.BoolProperty("Entry"u8, out var e))
                 entry = new ShpEntry(e);
@@ -450,12 +436,11 @@ public static class MetaDeserialization
                 return null;
             }
 
-            if (j.EnumProperty("Slot"u8, out slot))
-                continue;
-            if (j.EnumProperty("GenderRaceCondition"u8, out genderRaceCondition))
-                continue;
-
-            if (j.NumberProperty("Id"u8, out ushort i))
+            if (j.EnumProperty("Slot"u8, out HumanSlot s))
+                slot = s;
+            else if (j.EnumProperty("GenderRaceCondition"u8, out GenderRace gr))
+                genderRaceCondition = gr;
+            else if (j.NumberProperty("Id"u8, out ushort i))
                 id = i;
             else if (j.BoolProperty("Entry"u8, out var e))
                 entry = new AtrEntry(e);
@@ -487,20 +472,20 @@ public static class MetaDeserialization
                 return null;
             }
 
-            if (j.NumberProperty("MaterialId"u8, out materialId))
-                continue;
-            if (j.NumberProperty("DecalId"u8, out decalId))
-                continue;
-            if (j.NumberProperty("VfxId"u8, out vfxId))
-                continue;
-            if (j.NumberProperty("MaterialAnimationId"u8, out materialAnimationId))
-                continue;
-            if (j.NumberProperty("AttributeMask"u8, out attributeMask))
-                continue;
-            if (j.NumberProperty("SoundId"u8, out decalId))
-                continue;
-
-            j.Skip();
+            if (j.NumberProperty("MaterialId"u8, out byte mi))
+                materialId = mi;
+            else if (j.NumberProperty("DecalId"u8, out byte di))
+                decalId = di;
+            else if (j.NumberProperty("VfxId"u8, out byte vi))
+                vfxId = vi;
+            else if (j.NumberProperty("MaterialAnimationId"u8, out byte mai))
+                materialAnimationId = mai;
+            else if (j.NumberProperty("AttributeMask"u8, out ushort am))
+                attributeMask = am;
+            else if (j.NumberProperty("SoundId"u8, out byte si))
+                soundId = si;
+            else
+                j.Skip();
         }
 
         return new ImcEntry(materialId, decalId, attributeMask, soundId, vfxId, materialAnimationId);
@@ -523,12 +508,11 @@ public static class MetaDeserialization
                 return null;
             }
 
-            if (j.EnumProperty("ObjectType"u8, out objectType))
-                continue;
-            if (j.EnumProperty("EquipSlot"u8, out equipSlot))
-                continue;
-
-            if (j.NumberProperty("PrimaryId"u8, out ushort i1))
+            if (j.EnumProperty("ObjectType"u8, out ObjectType t))
+                objectType = t;
+            else if (j.EnumProperty("EquipSlot"u8, out EquipSlot s))
+                equipSlot = s;
+            else if (j.NumberProperty("PrimaryId"u8, out ushort i1))
                 primaryId = new PrimaryId(i1);
             else if (j.NumberProperty("Variant"u8, out variantParse))
                 variant = new Variant((byte)variantParse);
@@ -561,10 +545,9 @@ public static class MetaDeserialization
                 return null;
             }
 
-            if (j.EnumProperty("Type"u8, out type))
-                continue;
-
-            if (j.NumberProperty("Condition"u8, out ushort i))
+            if (j.EnumProperty("Type"u8, out GlobalEqpType t))
+                type = t;
+            else if (j.NumberProperty("Condition"u8, out ushort i))
                 condition = new PrimaryId(i);
             else
                 j.Skip();
@@ -578,7 +561,8 @@ public static class MetaDeserialization
         return ret.Validate() ? ret : null;
     }
 
-    private static void AddSingleManipulation(Utf8JsonObjectLimit objectReader, ref Utf8JsonReader reader, MetaDictionary ret,
+    private static void AddSingleManipulation(IModDataContainer? container, Utf8JsonObjectLimit objectReader, ref Utf8JsonReader reader,
+        MetaDictionary ret,
         MetaManipulationType type)
     {
         while (objectReader.Read(ref reader))
@@ -590,43 +574,53 @@ public static class MetaDeserialization
                 switch (type)
                 {
                     case MetaManipulationType.Imc
-                        when CheckIdentifier("IMC", ReadImc(manipulationReader, ref reader, out var e), e, out var identifier, out var entry):
+                        when CheckIdentifier(container, "IMC", ReadImc(manipulationReader, ref reader, out var e), e, out var identifier,
+                            out var entry):
                         ret.TryAdd(identifier, entry);
                         break;
                     case MetaManipulationType.Eqdp
-                        when CheckIdentifier("EQDP", ReadEqdp(manipulationReader, ref reader, out var e), e, out var identifier, out var entry):
+                        when CheckIdentifier(container, "EQDP", ReadEqdp(manipulationReader, ref reader, out var e), e, out var identifier,
+                            out var entry):
                         ret.TryAdd(identifier, entry);
                         break;
                     case MetaManipulationType.Eqp
-                        when CheckIdentifier("EQP", ReadEqp(manipulationReader, ref reader, out var e), e, out var identifier, out var entry):
+                        when CheckIdentifier(container, "EQP", ReadEqp(manipulationReader, ref reader, out var e), e, out var identifier,
+                            out var entry):
                         ret.TryAdd(identifier, entry);
                         break;
                     case MetaManipulationType.Est
-                        when CheckIdentifier("EST", ReadEst(manipulationReader, ref reader, out var e), e, out var identifier, out var entry):
+                        when CheckIdentifier(container, "EST", ReadEst(manipulationReader, ref reader, out var e), e, out var identifier,
+                            out var entry):
                         ret.TryAdd(identifier, entry);
                         break;
                     case MetaManipulationType.Gmp
-                        when CheckIdentifier("GMP", ReadGmp(manipulationReader, ref reader, out var e), e, out var identifier, out var entry):
+                        when CheckIdentifier(container, "GMP", ReadGmp(manipulationReader, ref reader, out var e), e, out var identifier,
+                            out var entry):
                         ret.TryAdd(identifier, entry);
                         break;
                     case MetaManipulationType.Rsp
-                        when CheckIdentifier("RSP", ReadRsp(manipulationReader, ref reader, out var e), e, out var identifier, out var entry):
+                        when CheckIdentifier(container, "RSP", ReadRsp(manipulationReader, ref reader, out var e), e, out var identifier,
+                            out var entry):
                         ret.TryAdd(identifier, entry);
                         break;
                     case MetaManipulationType.Atch
-                        when CheckIdentifier("ATCH", ReadAtch(manipulationReader, ref reader, out var e), e, out var identifier, out var entry):
+                        when CheckIdentifier(container, "ATCH", ReadAtch(manipulationReader, ref reader, out var e), e, out var identifier,
+                            out var entry):
                         ret.TryAdd(identifier, entry);
                         break;
                     case MetaManipulationType.Shp
-                        when CheckIdentifier("SHP", ReadShp(manipulationReader, ref reader, out var e), e, out var identifier, out var entry):
+                        when CheckIdentifier(container, "SHP", ReadShp(manipulationReader, ref reader, out var e), e, out var identifier,
+                            out var entry):
                         ret.TryAdd(identifier, entry);
                         break;
                     case MetaManipulationType.Atr
-                        when CheckIdentifier("ATR", ReadAtr(manipulationReader, ref reader, out var e), e, out var identifier, out var entry):
+                        when CheckIdentifier(container, "ATR", ReadAtr(manipulationReader, ref reader, out var e), e, out var identifier,
+                            out var entry):
                         ret.TryAdd(identifier, entry);
                         break;
                     case MetaManipulationType.GlobalEqp
-                        when CheckIdentifier("Global EQP", ReadGeqp(manipulationReader, ref reader), (int?)0, out var identifier, out _):
+                        when CheckIdentifier(container, "Global EQP", ReadGeqp(manipulationReader, ref reader), (int?)0, out var identifier,
+                            out _):
                         ret.TryAdd(identifier);
                         break;
                 }
@@ -636,8 +630,9 @@ public static class MetaDeserialization
         }
     }
 
-    private static bool CheckIdentifier<TIdentifier, TEntry>(string type, TIdentifier? i, TEntry? e, out TIdentifier identifier,
-        out TEntry entry) where TIdentifier : struct where TEntry : struct
+    private static bool CheckIdentifier<TIdentifier, TEntry>(IModDataContainer? container, string? type, TIdentifier? i, TEntry? e,
+        out TIdentifier identifier, out TEntry entry)
+        where TIdentifier : struct where TEntry : struct
     {
         if (i.HasValue)
             if (e.HasValue)
@@ -647,7 +642,7 @@ public static class MetaDeserialization
                 return true;
             }
 
-        if (CurrentContainer.IsValueCreated && CurrentContainer.Value!.TryGetTarget(out var container))
+        if (container is not null)
             Penumbra.Log.Warning($"Invalid {type} Manipulation encountered in {container.Mod.Name} - {container.GetFullName()}.");
         else
             Penumbra.Log.Warning($"Invalid {type} Manipulation encountered.");

@@ -1,5 +1,6 @@
 using Luna;
 using Luna.Generators;
+using Penumbra.Files;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Structs;
 using Penumbra.Meta.Manipulations;
@@ -56,6 +57,7 @@ public sealed class Mod : IMod, IFileSystemValue<Mod>
         => Name;
 
     // Meta Data
+    public uint                  LoadedVersion         { get; internal set; } = ModMeta.CurrentFileVersion;
     public Guid                  StableIdentifier      { get; internal set; } = Guid.NewGuid();
     public string                Name                  { get; internal set; } = "New Mod";
     public string                Author                { get; internal set; } = string.Empty;
@@ -82,6 +84,22 @@ public sealed class Mod : IMod, IFileSystemValue<Mod>
     public readonly Dictionary<Guid, IModObject> SubObjects = [];
     public readonly DefaultSubMod                Default;
     public readonly List<IModGroup>              Groups = [];
+
+    /// <summary> Add a group and all its options to this mod and its <see cref="SubObjects"/> dictionary. </summary>
+    /// <remarks> Throws if the GUID for any of the objects already exists in the mod. </remarks>
+    public void AddGroup(IModGroup? group, string filePath)
+    {
+        if (group is null)
+            return;
+
+        Groups.Add(group);
+        foreach (var obj in group.Options.Prepend<IModObject>(group))
+        {
+            if (!SubObjects.TryAdd(obj.Id, obj))
+                throw new InvalidMetaException(this, filePath,
+                    $"Multiple groups or options with the GUID {obj.Id} exist inside this mod.");
+        }
+    }
 
     /// <summary> Compute the required feature flags for this mod. </summary>
     public FeatureFlags ComputeRequiredFeatures()

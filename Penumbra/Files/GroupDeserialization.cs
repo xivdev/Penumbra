@@ -15,18 +15,13 @@ namespace Penumbra.Files;
 
 public static class GroupDeserialization
 {
-    private static readonly ThreadLocal<WeakReference<Mod>> CurrentMod = new(() => new WeakReference<Mod>(null!));
-
-    public static void SetMod(Mod? mod)
-        => CurrentMod.Value!.SetTarget(mod!);
-
-    public static IModGroup? ReadGroup(ref Utf8JsonReader reader, Mod mod)
+    public static IModGroup? ReadGroup(ref Utf8JsonReader reader, string filePath, Mod mod)
     {
         if (reader.TokenType is JsonTokenType.Null)
             return null;
 
         if (reader.TokenType is not JsonTokenType.StartObject)
-            throw new JsonException($"Object start for group expected for mod {mod.Name}, but got {reader.TokenType}.");
+            throw new InvalidMetaException(mod, filePath, $"Object start for group expected, but got {reader.TokenType}.");
 
         var groupReader = reader.CreateObjectLimit();
         if (reader.TryPeekEnumProperty("Type"u8, out GroupType type) is not JsonFunctions.PeekError.Success)
@@ -42,30 +37,54 @@ public static class GroupDeserialization
         };
     }
 
-    public static IModGroup? ReadGroupFile(SaveService saveService, Mod mod, FileInfo file)
+    public static void ReadDefaultContainer(ref Utf8JsonReader reader, string filePath, Mod mod)
     {
-        SetMod(mod);
-        try
+        if (reader.TokenType is JsonTokenType.Null)
         {
-            return IJsonParsable.ReadJson<GroupIntermediate>(saveService, file.FullName).Group;
+            mod.Default.Files.Clear();
+            mod.Default.FileSwaps.Clear();
+            mod.Default.Manipulations.Clear();
+            return;
         }
-        finally
+
+        if (reader.TokenType is not JsonTokenType.StartObject)
+            throw new InvalidMetaException(mod, filePath,
+                $"Object start for default container expected, but got {reader.TokenType}.");
+
+        var containerReader = reader.CreateObjectLimit();
+        var visited         = 0;
+        while (containerReader.Read(ref reader))
         {
-            SetMod(null!);
+            if (reader.TokenType is not JsonTokenType.PropertyName)
+                throw new InvalidMetaException(mod, filePath, "Property name expected.");
+
+            if (!LoadDataContainer(ref reader, mod.Default, mod.ModPath, ref visited))
+                reader.Skip();
         }
+
+        if ((visited & 1) is not 1)
+            mod.Default.Files.Clear();
+        if ((visited & 2) is not 2)
+            mod.Default.FileSwaps.Clear();
+        if ((visited & 4) is not 4)
+            mod.Default.Manipulations.Clear();
     }
 
-    public static void ReadDefaultContainerFile(SaveService saveService, Mod mod, string file)
+    public static IModGroup? ReadGroupFile(SaveService saveService, Mod mod, FileInfo file)
+        => IJsonParsable.ReadJson<GroupIntermediate>(saveService, file.FullName, true, mod).Group;
+
+    public static void ReadDefaultContainerFile(SaveService saveService, Mod mod)
     {
-        SetMod(mod);
-        try
+        var file = saveService.FileNames.OptionGroupFile(mod, -1, false);
+        if (!File.Exists(file))
         {
-            IJsonParsable.ReadJson<DefaultOptionIntermediate>(saveService, file);
+            mod.Default.Files.Clear();
+            mod.Default.FileSwaps.Clear();
+            mod.Default.Manipulations.Clear();
+            return;
         }
-        finally
-        {
-            SetMod(null!);
-        }
+
+        IJsonParsable.ReadJson<DefaultOptionIntermediate>(saveService, file, true, mod);
     }
 
     public static MultiModGroup ReadMulti(Utf8JsonObjectLimit groupReader, ref Utf8JsonReader j, Mod mod)
@@ -186,6 +205,7 @@ public static class GroupDeserialization
 
             var option       = new SingleSubMod(ret);
             var optionReader = j.CreateObjectLimit();
+            var visited      = 0;
             while (optionReader.Read(ref j))
             {
                 if (j.TokenType is not JsonTokenType.PropertyName)
@@ -193,7 +213,8 @@ public static class GroupDeserialization
 
                 if (LoadOptionData(ref j, option))
                     continue;
-                if (LoadDataContainer(ref j, option, ret.Mod.ModPath))
+
+                if (LoadDataContainer(ref j, option, ret.Mod.ModPath, ref visited))
                     continue;
 
                 j.Skip();
@@ -205,7 +226,8 @@ public static class GroupDeserialization
 
     private static void LoadMultiOptions(Utf8JsonObjectLimit optionArray, ref Utf8JsonReader j, MultiModGroup ret)
     {
-        var warned = false;
+        var warned  = false;
+        var visited = 0;
         while (optionArray.Read(ref j))
         {
             if (j.TokenType is not JsonTokenType.StartObject)
@@ -238,7 +260,8 @@ public static class GroupDeserialization
 
                     if (LoadOptionData(ref j, option))
                         continue;
-                    if (LoadDataContainer(ref j, option, ret.Mod.ModPath))
+
+                    if (LoadDataContainer(ref j, option, ret.Mod.ModPath, ref visited))
                         continue;
 
                     j.Skip();
@@ -344,6 +367,7 @@ public static class GroupDeserialization
 
     private static void LoadCombiningContainers(Utf8JsonObjectLimit containerArray, ref Utf8JsonReader j, CombiningModGroup ret)
     {
+        var visited = 0;
         while (containerArray.Read(ref j))
         {
             if (j.TokenType is not JsonTokenType.StartObject)
@@ -362,7 +386,7 @@ public static class GroupDeserialization
                     continue;
                 }
 
-                if (LoadDataContainer(ref j, container, ret.Mod.ModPath))
+                if (LoadDataContainer(ref j, container, ret.Mod.ModPath, ref visited))
                     continue;
 
                 j.Skip();
@@ -416,7 +440,7 @@ public static class GroupDeserialization
 
     /// <summary> Load all file redirections, file swaps and meta manipulations from a JToken of that option into a data container. </summary>
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-    private static bool LoadDataContainer(ref Utf8JsonReader j, IModDataContainer data, DirectoryInfo basePath)
+    private static bool LoadDataContainer(ref Utf8JsonReader j, IModDataContainer data, DirectoryInfo basePath, ref int visited)
     {
         if (j.ObjectProperty("Files"u8, out var files, true))
         {
@@ -437,6 +461,7 @@ public static class GroupDeserialization
                 data.Files.TryAdd(gamePath.Clone(), new FullPath(basePath, relPath));
             }
 
+            visited |= 1;
             return true;
         }
 
@@ -458,15 +483,14 @@ public static class GroupDeserialization
                 data.FileSwaps.TryAdd(gamePath.Clone(), new FullPath(other!));
             }
 
+            visited |= 2;
             return true;
         }
 
-        if (j.ObjectProperty("Manipulations"u8, out _, true))
+        if (j.ArrayProperty("Manipulations"u8, out _, true))
         {
-            MetaDeserialization.SetCurrentContainer(data);
-            data.Manipulations = MetaDeserialization.ReadMetaDictionary(ref j);
-            MetaDeserialization.SetCurrentContainer(null!);
-
+            data.Manipulations =  MetaDeserialization.ReadMetaDictionary(ref j, data);
+            visited            |= 4;
             return true;
         }
 
@@ -518,39 +542,29 @@ public static class GroupDeserialization
     {
         public IModGroup? Group;
 
-        public static GroupIntermediate Read(ref Utf8JsonReader j)
+        public static GroupIntermediate Read(ref Utf8JsonReader j, string filePath, object? parent)
         {
-            if (!CurrentMod.IsValueCreated || !CurrentMod.Value!.TryGetTarget(out var mod))
-                return default;
-
+            if (parent is not Mod mod)
+                throw new ArgumentException("The user input for reading a mod group has to be the mod object.");
 
             if (!j.Read())
                 return default;
 
-            return new GroupIntermediate { Group = ReadGroup(ref j, mod) };
+            return new GroupIntermediate { Group = ReadGroup(ref j, filePath, mod) };
         }
     }
 
     private struct DefaultOptionIntermediate : IJsonParsable<DefaultOptionIntermediate>
     {
-        public static DefaultOptionIntermediate Read(ref Utf8JsonReader j)
+        public static DefaultOptionIntermediate Read(ref Utf8JsonReader j, string filePath, object? parent)
         {
-            if (!CurrentMod.IsValueCreated || !CurrentMod.Value!.TryGetTarget(out var mod))
-                return default;
+            if (parent is not Mod mod)
+                throw new ArgumentException("The user input for reading a default option has to be the mod object.");
 
-            if (!j.Read() || j.TokenType is not JsonTokenType.StartObject)
-                return default;
+            if (!j.Read())
+                throw new InvalidMetaException(mod, filePath, "Empty or malformed JSON encountered.");
 
-            var containerReader = j.CreateObjectLimit();
-            while (containerReader.Read(ref j))
-            {
-                if (j.TokenType is not JsonTokenType.PropertyName)
-                    throw new JsonException("Property name expected.");
-
-                if (!LoadDataContainer(ref j, mod.Default, mod.ModPath))
-                    j.Skip();
-            }
-
+            ReadDefaultContainer(ref j, filePath, mod);
             return default;
         }
     }
