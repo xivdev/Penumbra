@@ -1,6 +1,7 @@
 using Luna;
 using Newtonsoft.Json.Linq;
 using Penumbra.Mods.Groups;
+using Penumbra.UI.Classes;
 
 namespace Penumbra.Mods.SubMods;
 
@@ -15,6 +16,8 @@ public class CombiningSubMod(IModGroup group) : IModOption
     public string            Name        { get; set; } = "Option";
     public string            Description { get; set; } = string.Empty;
     public ModSettingsLayout Layout      { get; set; }
+    public ColorId           Color       { get; set; }
+    public bool              Separator   { get; set; }
 
     public ICondition<ModSettingContext>? Condition { get; set; }
 

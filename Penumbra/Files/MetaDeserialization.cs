@@ -28,7 +28,7 @@ public static class MetaDeserialization
         if (reader.TokenType is not JsonTokenType.StartArray)
             throw new JsonException($"Meta Dictionary must be an array but starts with {reader.TokenType}.");
 
-        var arrayReader = reader.CreateObjectReader();
+        var arrayReader = reader.CreateObjectLimit();
         var container   = CurrentContainer.IsValueCreated && CurrentContainer.Value!.TryGetTarget(out var c) ? c : null;
         var objectCount = 0;
 
@@ -38,7 +38,7 @@ public static class MetaDeserialization
             if (reader.TokenType is not JsonTokenType.StartObject)
                 throw new JsonException($"Every meta entry must be an object, but encountered {reader.TokenType}.");
 
-            var objectReader = reader.CreateObjectReader();
+            var objectReader = reader.CreateObjectLimit();
             ++objectCount;
 
             // Try to get the type. Skip the respective object if it has an invalid or no type, but keep reading the dictionary.
@@ -94,7 +94,7 @@ public static class MetaDeserialization
         return ret;
     }
 
-    public static EqpIdentifier? ReadEqp(Utf8JsonObjectReader objectReader, ref Utf8JsonReader j, out EqpEntry? entry)
+    public static EqpIdentifier? ReadEqp(Utf8JsonObjectLimit objectReader, ref Utf8JsonReader j, out EqpEntry? entry)
     {
         entry = null;
         var setId = PrimaryId.Zero;
@@ -123,7 +123,7 @@ public static class MetaDeserialization
         return ret.Validate() ? ret : null;
     }
 
-    public static EqdpIdentifier? ReadEqdp(Utf8JsonObjectReader objectReader, ref Utf8JsonReader j, out EqdpEntry? entry)
+    public static EqdpIdentifier? ReadEqdp(Utf8JsonObjectLimit objectReader, ref Utf8JsonReader j, out EqdpEntry? entry)
     {
         entry = null;
         var gender = Gender.Unknown;
@@ -158,7 +158,7 @@ public static class MetaDeserialization
         return ret.Validate() ? ret : null;
     }
 
-    public static EstIdentifier? ReadEst(Utf8JsonObjectReader objectReader, ref Utf8JsonReader j, out EstEntry? entry)
+    public static EstIdentifier? ReadEst(Utf8JsonObjectLimit objectReader, ref Utf8JsonReader j, out EstEntry? entry)
     {
         entry = null;
         var gender = Gender.Unknown;
@@ -193,7 +193,7 @@ public static class MetaDeserialization
         return ret.Validate() ? ret : null;
     }
 
-    public static GmpEntry? ReadGmpEntry(Utf8JsonObjectReader entryReader, ref Utf8JsonReader j)
+    public static GmpEntry? ReadGmpEntry(Utf8JsonObjectLimit entryReader, ref Utf8JsonReader j)
     {
         var    enabled   = false;
         var    animated  = false;
@@ -241,7 +241,7 @@ public static class MetaDeserialization
         };
     }
 
-    public static GmpIdentifier? ReadGmp(Utf8JsonObjectReader objectReader, ref Utf8JsonReader j, out GmpEntry? entry)
+    public static GmpIdentifier? ReadGmp(Utf8JsonObjectLimit objectReader, ref Utf8JsonReader j, out GmpEntry? entry)
     {
         entry = null;
         var setId = PrimaryId.Zero;
@@ -266,7 +266,7 @@ public static class MetaDeserialization
         return ret.Validate() ? ret : null;
     }
 
-    public static RspIdentifier? ReadRsp(Utf8JsonObjectReader objectReader, ref Utf8JsonReader j, out RspEntry? entry)
+    public static RspIdentifier? ReadRsp(Utf8JsonObjectLimit objectReader, ref Utf8JsonReader j, out RspEntry? entry)
     {
         entry = null;
         var subRace   = SubRace.Unknown;
@@ -295,7 +295,7 @@ public static class MetaDeserialization
         return ret.Validate() ? ret : null;
     }
 
-    public static AtchEntry? ReadAtchEntry(Utf8JsonObjectReader entryReader, ref Utf8JsonReader j)
+    public static AtchEntry? ReadAtchEntry(Utf8JsonObjectLimit entryReader, ref Utf8JsonReader j)
     {
         var ret = new AtchEntry();
 
@@ -342,7 +342,7 @@ public static class MetaDeserialization
     }
 
 
-    public static AtchIdentifier? ReadAtch(Utf8JsonObjectReader objectReader, ref Utf8JsonReader j, out AtchEntry? entry)
+    public static AtchIdentifier? ReadAtch(Utf8JsonObjectLimit objectReader, ref Utf8JsonReader j, out AtchEntry? entry)
     {
         entry = null;
         var    gender = Gender.Unknown;
@@ -377,7 +377,7 @@ public static class MetaDeserialization
         return ret.Validate() ? ret : null;
     }
 
-    public static ShpIdentifier? ReadShp(Utf8JsonObjectReader objectReader, ref Utf8JsonReader j, out ShpEntry? entry)
+    public static ShpIdentifier? ReadShp(Utf8JsonObjectLimit objectReader, ref Utf8JsonReader j, out ShpEntry? entry)
     {
         entry = null;
         ShapeAttributeString shape               = default;
@@ -425,7 +425,7 @@ public static class MetaDeserialization
         return ret.Validate() ? ret : null;
     }
 
-    public static AtrIdentifier? ReadAtr(Utf8JsonObjectReader objectReader, ref Utf8JsonReader j, out AtrEntry? entry)
+    public static AtrIdentifier? ReadAtr(Utf8JsonObjectLimit objectReader, ref Utf8JsonReader j, out AtrEntry? entry)
     {
         entry = null;
         ShapeAttributeString attribute           = default;
@@ -470,7 +470,7 @@ public static class MetaDeserialization
         return ret.Validate() ? ret : null;
     }
 
-    public static ImcEntry? ReadImcEntry(Utf8JsonObjectReader entryReader, ref Utf8JsonReader j)
+    public static ImcEntry? ReadImcEntry(Utf8JsonObjectLimit entryReader, ref Utf8JsonReader j)
     {
         byte   materialId          = 0;
         byte   decalId             = 0;
@@ -506,7 +506,7 @@ public static class MetaDeserialization
         return new ImcEntry(materialId, decalId, attributeMask, soundId, vfxId, materialAnimationId);
     }
 
-    public static ImcIdentifier? ReadImc(Utf8JsonObjectReader objectReader, ref Utf8JsonReader j, out ImcEntry? entry)
+    public static ImcIdentifier? ReadImc(Utf8JsonObjectLimit objectReader, ref Utf8JsonReader j, out ImcEntry? entry)
     {
         entry = null;
         var    objectType   = ObjectType.Unknown;
@@ -548,7 +548,7 @@ public static class MetaDeserialization
         return ret.Validate() ? ret : null;
     }
 
-    public static GlobalEqpManipulation? ReadGeqp(Utf8JsonObjectReader objectReader, ref Utf8JsonReader j)
+    public static GlobalEqpManipulation? ReadGeqp(Utf8JsonObjectLimit objectReader, ref Utf8JsonReader j)
     {
         var type      = (GlobalEqpType)100;
         var condition = PrimaryId.Zero;
@@ -578,7 +578,7 @@ public static class MetaDeserialization
         return ret.Validate() ? ret : null;
     }
 
-    private static void AddSingleManipulation(Utf8JsonObjectReader objectReader, ref Utf8JsonReader reader, MetaDictionary ret,
+    private static void AddSingleManipulation(Utf8JsonObjectLimit objectReader, ref Utf8JsonReader reader, MetaDictionary ret,
         MetaManipulationType type)
     {
         while (objectReader.Read(ref reader))

@@ -2,6 +2,7 @@ using Luna;
 using Newtonsoft.Json.Linq;
 using Penumbra.GameData.Structs;
 using Penumbra.Mods.Groups;
+using Penumbra.UI.Classes;
 
 namespace Penumbra.Mods.SubMods;
 
@@ -29,7 +30,7 @@ public class ImcSubMod(ImcModGroup group) : IModOption
         => Group.Mod;
 
     public ushort AttributeMask;
-    public bool   IsDisableSubMod { get; private init; }
+    public bool   IsDisableSubMod { get; internal set; }
 
     Mod IModObject.Mod
         => Mod;
@@ -40,6 +41,9 @@ public class ImcSubMod(ImcModGroup group) : IModOption
     public Guid Id { get; set; } = Guid.NewGuid();
 
     public string Name { get; set; } = "Part";
+
+    public ColorId Color     { get; set; }
+    public bool    Separator { get; set; }
 
     public string FullName
         => $"{Group.Name}: {Name}";

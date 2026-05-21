@@ -194,7 +194,7 @@ public readonly struct ModMeta(Mod mod) : ISavable
                 throw new JsonException("Empty Data");
 
             var ret = new Dto();
-            var obj = reader.CreateObjectReader();
+            var obj = reader.CreateObjectLimit();
             while (obj.Read(ref reader))
             {
                 if (reader.TokenType is not JsonTokenType.PropertyName)

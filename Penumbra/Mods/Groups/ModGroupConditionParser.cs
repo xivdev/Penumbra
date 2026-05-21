@@ -6,7 +6,7 @@ namespace Penumbra.Mods.Groups;
 
 public sealed class ModGroupConditionParser : ConditionParser<ModSettingContext>, IService
 {
-    protected override ICondition<ModSettingContext>? ParseCustomType(ref Utf8JsonReader reader, Utf8JsonObjectReader obj, StringU8 type)
+    protected override ICondition<ModSettingContext>? ParseCustomType(ref Utf8JsonReader reader, Utf8JsonObjectLimit obj, StringU8 type)
     {
         if (type.Equals("SingleSetting"u8))
         {
@@ -51,7 +51,7 @@ public sealed class ModGroupConditionParser : ConditionParser<ModSettingContext>
 
         return null;
 
-        static (Guid, Guid[]?) GetMulti(Utf8JsonObjectReader obj, ref Utf8JsonReader reader)
+        static (Guid, Guid[]?) GetMulti(Utf8JsonObjectLimit obj, ref Utf8JsonReader reader)
         {
             var         group   = Guid.Empty;
             List<Guid>? options = null;

@@ -3,6 +3,7 @@ using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Groups;
 using Penumbra.String.Classes;
+using Penumbra.UI.Classes;
 
 namespace Penumbra.Mods.SubMods;
 
@@ -16,6 +17,9 @@ public abstract class OptionSubMod(IModGroup group) : IModOption, IModDataContai
     public string            Name        { get; set; } = "Option";
     public string            Description { get; set; } = string.Empty;
     public ModSettingsLayout Layout      { get; set; }
+
+    public ColorId Color     { get; set; }
+    public bool    Separator { get; set; }
 
     public ICondition<ModSettingContext>? Condition { get; set; }
 

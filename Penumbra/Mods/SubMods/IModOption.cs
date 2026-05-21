@@ -1,4 +1,5 @@
 using Penumbra.Mods.Groups;
+using Penumbra.UI.Classes;
 
 namespace Penumbra.Mods.SubMods;
 
@@ -13,5 +14,7 @@ public enum ModSettingsLayout : ulong
 
 public interface IModOption : IModObject
 {
-    public string    FullName { get; }
+    public string  FullName  { get; }
+    public ColorId Color     { get; set; }
+    public bool    Separator { get; set; }
 }
