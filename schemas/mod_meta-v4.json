@@ -1,0 +1,94 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Penumbra Mod Metadata",
+    "description": "Metadata of a Penumbra mod.",
+    "type": "object",
+    "properties": {
+        "FileVersion": {
+            "description": "Major version of the metadata schema used.",
+            "type": "integer",
+            "minimum": 4,
+            "maximum": 4
+        },
+        "Identifier": {
+            "description": "A stable GUID for this mod. Currently not used.",
+            "type": "string",
+            "format": "uuid"
+        },
+        "LastWrite": {
+            "description": "The UTC time when this file was written by Penumbra.",
+            "type": "string",
+            "format": "date-time"
+        },
+        "Name": {
+            "description": "Name of the mod.",
+            "type": "string",
+            "minLength": 1
+        },
+        "Author": {
+            "description": "Author of the mod.",
+            "type": [ "string", "null" ]
+        },
+        "Description": {
+            "description": "Description of the mod. Can span multiple paragraphs.",
+            "type": [ "string", "null" ]
+        },
+        "Image": {
+            "description": "Relative path to a preview image for the mod. Unused by Penumbra, present for round-trip import/export of TexTools-generated mods.",
+            "type": [ "string", "null" ]
+        },
+        "Version": {
+            "description": "Version of the mod. Can be an arbitrary string.",
+            "type": [ "string", "null" ]
+        },
+        "Website": {
+            "description": "URL of the web page of the mod.",
+            "type": [ "string", "null" ]
+        },
+        "ModTags": {
+            "description": "Author-defined tags for the mod.",
+            "type": "array",
+            "items": {
+                "type": "string",
+                "minLength": 1
+            },
+            "uniqueItems": true
+        },
+        "DefaultPreferredItems": {
+            "description": "Default preferred items to list as the main item of a group managed by the mod creator.",
+            "type": "array",
+            "items": {
+                "minimum": 0,
+                "type": "integer"
+            },
+            "uniqueItems": true
+        },
+        "RequiredFeatures": {
+            "description": "A list of required features by name.",
+            "type": "array",
+            "items": {
+                "type": "string",
+                "enum": [ "Atch", "Shp", "Atr" ]
+            },
+            "uniqueItems": true
+        },
+        "DefaultData": {
+            "description": "The default redirections, file swaps and meta edits applied by this mod when enabled.",
+            "type": [ "null", "object" ],
+            "$ref": "structs/container.json"
+        },
+        "Groups": {
+            "description": "All option groups this mod contains.",
+            "type": [ "null", "array" ],
+            "items": {
+                "type": "object",
+                "$ref": "group.json"
+            }
+        }
+
+    },
+    "required": [
+        "FileVersion",
+        "Name"
+    ]
+}

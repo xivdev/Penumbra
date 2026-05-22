@@ -8,26 +8,6 @@ namespace Penumbra.Files;
 
 public static class ModDeserialization
 {
-    public static void Test(ModManager mods, SaveService files)
-    {
-        foreach (var mod in mods)
-        {
-            var testMod = new Mod(mod.ModPath);
-            try
-            {
-                ReloadMod(files, testMod);
-                if (!DebugUtilities.CompareMod(mod, testMod, false))
-                    Penumbra.Log.Information($"[Failure] {mod.Name}");
-                else
-                    Penumbra.Log.Debug($"[Success] {mod.Name}");
-            }
-            catch (Exception ex)
-            {
-                Penumbra.Log.Information($"[Failure] {mod.Name} {ex.GetType().Name}");
-            }
-        }
-    }
-
     public static ModDataChangeType ReloadMod(SaveService files, Mod mod)
     {
         mod.ModPath.Refresh();

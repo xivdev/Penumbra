@@ -139,9 +139,11 @@ public static class MetaSerialization
 
     public static Utf8JsonWriter Serialize(Utf8JsonWriter j, GlobalEqpManipulation identifier)
     {
+        j.WriteStartObject();
         j.WriteString("Type"u8, "GlobalEqp"u8);
         j.WriteStartObject("Manipulation"u8);
         identifier.AddToJson(j);
+        j.WriteEndObject();
         j.WriteEndObject();
         return j;
     }

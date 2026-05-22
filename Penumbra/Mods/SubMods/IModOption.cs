@@ -1,7 +1,9 @@
+using Luna;
 using Penumbra.Mods.Groups;
 using Penumbra.UI.Classes;
 
 namespace Penumbra.Mods.SubMods;
+
 
 [Flags]
 public enum ModSettingsLayout : ulong
@@ -12,9 +14,38 @@ public enum ModSettingsLayout : ulong
     ParentHeader = 0x04, // Show the groups name or just its options if it is placed under another option or group.
 }
 
+public interface IModObject
+{
+    public Mod                            Mod         { get; }
+    public IModGroup                      Group       { get; }
+    public Guid                           Id          { get; set; }
+    public string                         Name        { get; set; }
+    public string                         Description { get; set; }
+    public ModSettingsLayout              Layout      { get; set; }
+    public ICondition<ModSettingContext>? Condition   { get; set; }
+
+    public int GetIndex();
+}
+
 public interface IModOption : IModObject
 {
     public string  FullName  { get; }
     public ColorId Color     { get; set; }
     public bool    Separator { get; set; }
+}
+
+public static class ModSettingsLayoutExtensions
+{
+    extension(ModSettingsLayout layout)
+    {
+        public IEnumerable<ModSettingsLayout> Iterate()
+        {
+            if (layout.HasFlag(ModSettingsLayout.Disable))
+                yield return ModSettingsLayout.Disable;
+            if (layout.HasFlag(ModSettingsLayout.Indent))
+                yield return ModSettingsLayout.Indent;
+            if (layout.HasFlag(ModSettingsLayout.ParentHeader))
+                yield return ModSettingsLayout.ParentHeader;
+        }
+    }
 }

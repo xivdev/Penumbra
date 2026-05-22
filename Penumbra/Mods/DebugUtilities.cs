@@ -1,12 +1,72 @@
+using System.Text.Json;
 using Luna;
+using Penumbra.Files;
 using Penumbra.Mods.Groups;
+using Penumbra.Mods.Manager;
 using Penumbra.Mods.SubMods;
 using Penumbra.Util;
+using static Penumbra.Files.ModDeserialization;
 
 namespace Penumbra.Mods;
 
 public static class DebugUtilities
 {
+    public static void CompareModSerDeser(ModManager mods)
+    {
+        foreach (var mod in mods)
+        {
+            var testMod = new Mod(mod.ModPath);
+
+            try
+            {
+                ReloadMod(mods.DataEditor.SaveService, testMod);
+                var equal = CompareMod(mod, testMod, false);
+                if (!equal)
+                {
+                    Penumbra.Log.Information($"[ModTest] Failure Failure {mod.Name}");
+                    // Only for debugging purposes check again to step through on failures only.
+                    equal = CompareMod(mod, testMod, false);
+                }
+                else
+                {
+                    try
+                    {
+                        using var ms = new MemoryStream();
+                        using (var j = new Utf8JsonWriter(ms, JsonFunctions.WriterOptions))
+                        {
+                            ModSerialization.WriteMod(j, mod);
+                        }
+
+                        var text       = ms.ToArray();
+                        var reader     = new Utf8JsonReader(text);
+                        var writtenMod = new Mod(mod.ModPath);
+                        ModMetaData.Read(ref reader, "memory", writtenMod);
+                        var writtenEqual = CompareMod(mod, writtenMod, false);
+                        if (writtenEqual)
+                        {
+                            Penumbra.Log.Debug($"[ModTest] Success Success {mod.Name}");
+                        }
+                        else
+                        {
+                            Penumbra.Log.Information($"[ModTest] Success Failure {mod.Name}");
+                            File.WriteAllBytes(Path.Combine(mod.ModPath.Parent!.FullName, mod.ModPath.Name + ".json"), text);
+                            // Only for debugging purposes check again to step through on failures only.
+                            writtenEqual = CompareMod(mod, writtenMod, false);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Penumbra.Log.Information($"[ModTest] Success Failure {mod.Name} {ex.GetType().Name}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Penumbra.Log.Information($"[ModTest] Failure Failure {mod.Name} {ex.GetType().Name}");
+            }
+        }
+    }
+
     /// <summary> Compare two mods for exact equality in all their parsed properties. </summary>
     public static bool CompareMod(Mod lhs, Mod rhs, bool checkLocal)
     {
@@ -161,7 +221,15 @@ public static class DebugUtilities
     private static bool CheckContainer(IModDataContainer lhs, IModDataContainer rhs)
     {
         if (!lhs.Files.SetEquals(rhs.Files))
+        {
+            foreach (var key in rhs.Files.Keys)
+            {
+                if (!lhs.Files.TryGetValue(key, out var path))
+                    return false;
+            }
             return false;
+        }
+
         if (!lhs.FileSwaps.SetEquals(rhs.FileSwaps))
             return false;
         if (!lhs.Manipulations.Equals(rhs.Manipulations))

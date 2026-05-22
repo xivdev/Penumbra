@@ -1,9 +1,12 @@
 using ImSharp;
+using Luna;
+using Penumbra.Mods;
+using Penumbra.Mods.Manager;
 using Penumbra.Services;
 
 namespace Penumbra.UI.Tabs.Debug;
 
-public class ModMigratorDebug(ModMigrator migrator) : Luna.IUiService
+public class ModMigratorDebug(ModManager modManager, ModMigrator migrator) : IUiService
 {
     private string _inputPath  = string.Empty;
     private string _outputPath = string.Empty;
@@ -14,6 +17,9 @@ public class ModMigratorDebug(ModMigrator migrator) : Luna.IUiService
     {
         if (!Im.Tree.HeaderId("Mod Migrator"u8))
             return;
+
+        if (Im.Button("Test Mod Serializing/Deserializing"u8))
+            DebugUtilities.CompareModSerDeser(modManager);
 
         Im.Input.Text("##input"u8,  ref _inputPath,  "Input Path..."u8);
         Im.Input.Text("##output"u8, ref _outputPath, "Output Path..."u8);

@@ -21,19 +21,6 @@ public enum GroupDrawBehaviour
     MultiSelection,
 }
 
-public interface IModObject
-{
-    public Mod                            Mod         { get; }
-    public IModGroup                      Group       { get; }
-    public Guid                           Id          { get; set; }
-    public string                         Name        { get; set; }
-    public string                         Description { get; set; }
-    public ModSettingsLayout              Layout      { get; set; }
-    public ICondition<ModSettingContext>? Condition   { get; set; }
-
-    public int GetIndex();
-}
-
 public interface IModGroup : IModObject
 {
     public const int MaxMultiOptions     = 32;

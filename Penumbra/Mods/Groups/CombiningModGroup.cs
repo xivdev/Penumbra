@@ -211,7 +211,6 @@ public sealed class CombiningModGroup : IModGroup
         };
 
     /// <summary> For loading when no empty container should be created. </summary>
-    ///     /// <summary> For loading when no empty container should be created. </summary>
     internal static CombiningModGroup EmptyData(Mod mod)
         => new(mod, false);
 

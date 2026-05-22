@@ -188,11 +188,14 @@ public readonly record struct ImcIdentifier(
         jObj["Variant"]    = Variant.Id;
         switch (ObjectType)
         {
-            case ObjectType.Equipment or ObjectType.Accessory: jObj["SecondaryId"] = SecondaryId.Id; break;
-            case ObjectType.Monster or ObjectType.Weapon:      jObj["BodySlot"]    = BodySlot.String; break;
+            case ObjectType.Equipment or ObjectType.Accessory: jObj["EquipSlot"] = EquipSlot.String; break;
+            case ObjectType.Monster or ObjectType.Weapon:
+                jObj["SecondaryId"] = SecondaryId.Id;
+                jObj["BodySlot"]    = BodySlot.String;
+                break;
             case ObjectType.DemiHuman:
                 jObj["SecondaryId"] = SecondaryId.Id;
-                jObj["SecondaryId"] = SecondaryId.Id;
+                jObj["EquipSlot"]   = EquipSlot.String;
                 break;
         }
 
@@ -207,7 +210,10 @@ public readonly record struct ImcIdentifier(
         switch (ObjectType)
         {
             case ObjectType.Equipment or ObjectType.Accessory: j.WriteString("EquipSlot"u8, EquipSlot.StringU8); break;
-            case ObjectType.Monster or ObjectType.Weapon:      j.WriteString("BodySlot"u8,  BodySlot.StringU8); break;
+            case ObjectType.Monster or ObjectType.Weapon:
+                j.WriteNumber("SecondaryId"u8, SecondaryId.Id);
+                j.WriteString("BodySlot"u8, BodySlot.StringU8);
+                break;
             case ObjectType.DemiHuman:
                 j.WriteNumber("SecondaryId"u8, SecondaryId.Id);
                 j.WriteString("EquipSlot"u8, EquipSlot.StringU8);

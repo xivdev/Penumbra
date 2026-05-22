@@ -2,11 +2,11 @@
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
     "properties": {
-		"Name": {
+        "Name": {
             "description": "Name of the option.",
             "type": "string",
             "minLength": 1
-		},
+        },
         "Description": {
             "description": "Description of the option.",
             "type": [ "string", "null" ]
@@ -18,6 +18,34 @@
         "Image": {
             "description": "Unused by Penumbra.",
             "type": [ "string", "null" ]
+        },
+        "Id": {
+            "description": "A unique identifier to reference this option within this mod.",
+            "type": "string",
+            "format": "uuid"
+        },
+        "Layout": {
+            "description": "Additional flags to control this options layout behaviour when drawn.",
+            "type": [ "null", "array" ],
+            "items": {
+                "type": "string",
+                "enum": [ "Disable"]
+            }
+        },
+        "Condition": {
+            "description": "Conditions on the full settings of this mod to control whether this option is visible and applied.",
+            "type": [ "null", "object" ],
+            "$ref": "condition.json"
+        },
+        "Color": {
+            "description": "A color to use for the label of this option, mapped to 8 user-customizable colors. 0 means normal text color.",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 8
+        },
+        "Separator": {
+            "description": "Whether to draw a separator line below this option.",
+            "type": "boolean"
         }
     },
 	"required": [ "Name" ]

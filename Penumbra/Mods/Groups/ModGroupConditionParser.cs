@@ -8,68 +8,35 @@ public sealed class ModGroupConditionParser : ConditionParser<ModSettingContext>
 {
     protected override ICondition<ModSettingContext>? ParseCustomType(ref Utf8JsonReader reader, Utf8JsonObjectLimit obj, StringU8 type)
     {
-        if (type.Equals("SingleSetting"u8))
+        if (type.Equals("AllSettings"u8))
         {
-            var group  = Guid.Empty;
-            var option = Guid.Empty;
-            while (obj.Read(ref reader))
-            {
-                if (reader.TokenType is not JsonTokenType.PropertyName)
-                    continue;
-
-                if (reader.GuidProperty("Group"u8, out group))
-                    continue;
-                if (reader.GuidProperty("Option"u8, out option))
-                    continue;
-
-                reader.Skip();
-            }
-
-            if (group == Guid.Empty || option == Guid.Empty)
-                return null;
-
-            return new SingleSettingCondition(group, option);
+            var options = GetMulti(obj, ref reader);
+            return new AllSettingsCondition(options ?? []);
         }
 
-        if (type.Equals("MultiSettingAll"u8))
+        if (type.Equals("AnySetting"u8))
         {
-            var (group, options) = GetMulti(obj, ref reader);
-            if (group == Guid.Empty || options is null)
-                return null;
-
-            return new MultiSettingAllCondition(group, options);
-        }
-
-        if (type.Equals("MultiSettingAny"u8))
-        {
-            var (group, options) = GetMulti(obj, ref reader);
-            if (group == Guid.Empty || options is null)
-                return null;
-
-            return new MultiSettingAnyCondition(group, options);
+            var options = GetMulti(obj, ref reader);
+            return new AnySettingCondition(options ?? []);
         }
 
         return null;
 
-        static (Guid, Guid[]?) GetMulti(Utf8JsonObjectLimit obj, ref Utf8JsonReader reader)
+        static List<Guid>? GetMulti(Utf8JsonObjectLimit obj, ref Utf8JsonReader reader)
         {
-            var         group   = Guid.Empty;
             List<Guid>? options = null;
             while (obj.Read(ref reader))
             {
                 if (reader.TokenType is not JsonTokenType.PropertyName)
                     continue;
 
-                if (reader.GuidProperty("Group"u8, out group))
-                    continue;
-
                 if (reader.ArrayProperty("Options"u8, out _))
                     options = reader.ReadGuidArray(true) ?? [];
-
-                reader.Skip();
+                else
+                    reader.Skip();
             }
 
-            return (group, options?.ToArray());
+            return options;
         }
     }
 }

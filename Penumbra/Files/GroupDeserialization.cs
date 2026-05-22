@@ -305,8 +305,6 @@ public static class GroupDeserialization
                 j.Skip();
             }
 
-            if (option.IsDisableSubMod)
-                ret.CanBeDisabled = true;
             if (option.IsDisableSubMod && ret.OptionData.FirstOrDefault(m => m.IsDisableSubMod) is { } disable)
             {
                 Penumbra.Messager.NotificationMessage(
@@ -323,6 +321,8 @@ public static class GroupDeserialization
             {
                 rollingMask |= option.AttributeMask;
                 ret.OptionData.Add(option);
+                if (option.IsDisableSubMod)
+                    ret.CanBeDisabled = true;
             }
         }
     }
@@ -440,25 +440,26 @@ public static class GroupDeserialization
 
     /// <summary> Load all file redirections, file swaps and meta manipulations from a JToken of that option into a data container. </summary>
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-    private static bool LoadDataContainer(ref Utf8JsonReader j, IModDataContainer data, DirectoryInfo basePath, ref int visited)
+    private static unsafe bool LoadDataContainer(ref Utf8JsonReader j, IModDataContainer data, DirectoryInfo basePath, ref int visited)
     {
+        Span<byte> buffer = stackalloc byte[Utf8GamePath.MaxGamePathLength + 1];
         if (j.ObjectProperty("Files"u8, out var files, true))
         {
             data.Files.Clear();
             while (files.Read(ref j))
             {
-                if (j.TokenType is not JsonTokenType.PropertyName
-                 || !j.TryReadUtf8String(out var gameU8)
-                 || gameU8.IsEmpty
-                 || !Utf8GamePath.FromSpan(gameU8, MetaDataComputation.All, out var gamePath))
+                if (j.TokenType is not JsonTokenType.PropertyName)
+                    throw new JsonException($"Expected property in file dictionary, got {j.TokenType}.");
+
+                var length = j.CopyString(buffer);
+                buffer[length] = 0;
+                if (length is 0 || !Utf8GamePath.FromSpan(buffer[..length], MetaDataComputation.All, out var gamePathTmp))
                     continue;
 
-                if (!j.Read()
-                 || !j.TryReadString(out var rel)
-                 || !Utf8RelPath.FromString(rel, out var relPath))
-                    continue;
+                if (!j.Read() || !j.TryReadString(out var rel) || !Utf8RelPath.FromString(rel, out var relPath))
+                    throw new JsonException($"Expected relative path in file dictionary for key {gamePathTmp}.");
 
-                data.Files.TryAdd(gamePath.Clone(), new FullPath(basePath, relPath));
+                data.Files.TryAdd(gamePathTmp.Clone(), new FullPath(basePath, relPath));
             }
 
             visited |= 1;
@@ -470,17 +471,18 @@ public static class GroupDeserialization
             data.FileSwaps.Clear();
             while (swaps.Read(ref j))
             {
-                if (j.TokenType is not JsonTokenType.PropertyName
-                 || !j.TryReadUtf8String(out var gameU8)
-                 || gameU8.IsEmpty
-                 || !Utf8GamePath.FromSpan(gameU8, MetaDataComputation.All, out var gamePath))
+                if (j.TokenType is not JsonTokenType.PropertyName)
+                    throw new JsonException($"Expected property in file dictionary, got {j.TokenType}.");
+
+                var length = j.CopyString(buffer);
+                buffer[length] = 0;
+                if (length is 0 || !Utf8GamePath.FromSpan(buffer[..length], MetaDataComputation.All, out var gamePathTmp))
                     continue;
 
-                if (!j.Read()
-                 || !j.TryReadString(out var other))
-                    continue;
+                if (!j.Read() || !j.TryReadString(out var swap))
+                    throw new JsonException($"Expected game path in file swap dictionary for key {gamePathTmp}.");
 
-                data.FileSwaps.TryAdd(gamePath.Clone(), new FullPath(other!));
+                data.FileSwaps.TryAdd(gamePathTmp.Clone(), new FullPath(swap!));
             }
 
             visited |= 2;
