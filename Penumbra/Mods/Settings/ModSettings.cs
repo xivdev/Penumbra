@@ -61,7 +61,7 @@ public class ModSettings
             case ModOptionChangeType.GroupRenamed: return true;
             case ModOptionChangeType.GroupAdded:
                 // Add new empty setting for new mod.
-                Settings.Insert(group!.GetIndex(), group.DefaultSettings);
+                Settings.Insert(group!.Index, group.DefaultSettings);
                 return true;
             case ModOptionChangeType.GroupDeleted:
                 // Remove setting for deleted mod.
@@ -72,7 +72,7 @@ public class ModSettings
                 // Fix settings for a changed group type.
                 // Single -> Multi: set single as enabled, rest as disabled
                 // Multi -> Single: set the first enabled option or 0.
-                var idx    = group!.GetIndex();
+                var idx    = group!.Index;
                 var config = Settings[idx];
                 Settings[idx] = group.Type switch
                 {
@@ -86,7 +86,7 @@ public class ModSettings
             {
                 // Single -> select the previous option if any.
                 // Multi -> excise the corresponding bit.
-                var groupIdx = group!.GetIndex();
+                var groupIdx = group!.Index;
                 var config   = Settings[groupIdx];
                 Settings[groupIdx] = group!.Type switch
                 {
@@ -99,13 +99,13 @@ public class ModSettings
             }
             case ModOptionChangeType.GroupMoved:
                 // Move the group the same way.
-                return Settings.Move(fromIdx, group!.GetIndex());
+                return Settings.Move(fromIdx, group!.Index);
             case ModOptionChangeType.OptionMoved:
             {
                 // Single -> select the moved option if it was currently selected
                 // Multi -> move the corresponding bit
-                var groupIdx = group!.GetIndex();
-                var toIdx    = option!.GetIndex();
+                var groupIdx = group!.Index;
+                var toIdx    = option!.Index;
                 var config   = Settings[groupIdx];
                 Settings[groupIdx] = group!.Type switch
                 {

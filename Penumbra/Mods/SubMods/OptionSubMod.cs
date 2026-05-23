@@ -14,6 +14,11 @@ public abstract class OptionSubMod(IModGroup group) : IModOption, IModDataContai
     public Mod Mod
         => Group.Mod;
 
+    public int Index { get; private set; } = -1;
+
+    public void SetIndex(int index)
+        => Index = index;
+
     public string            Name        { get; set; } = "Option";
     public string            Description { get; set; } = string.Empty;
     public ModSettingsLayout Layout      { get; set; }
@@ -57,7 +62,7 @@ public abstract class OptionSubMod(IModGroup group) : IModOption, IModDataContai
         => FullName;
 
     public (int GroupIndex, int DataIndex) GetDataIndices()
-        => (Group.GetIndex(), GetDataIndex());
+        => (Group.Index, GetDataIndex());
 
     public int GetIndex()
         => SubMod.GetIndex(this);

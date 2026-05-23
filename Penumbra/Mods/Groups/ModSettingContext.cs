@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Luna;
 using Penumbra.Mods.Settings;
+using Penumbra.Mods.SubMods;
 
 namespace Penumbra.Mods.Groups;
 
@@ -18,15 +19,15 @@ public sealed class AllSettingsCondition(params IReadOnlyCollection<Guid> option
     {
         foreach (var optionId in this)
         {
-            if (!context.Mod.SubObjects.TryGetValue(optionId, out var option) || option.OptionIndex is -1)
+            if (!context.Mod.SubObjects.TryGetValue(optionId, out var o) || o is not IModOption option)
                 return false;
 
             var group   = context.Mod.Groups[option.GroupIndex];
             var setting = context.Settings.IsEmpty ? group.DefaultSettings : context.Settings.Settings[option.GroupIndex];
             switch (group.Behaviour)
             {
-                case GroupDrawBehaviour.MultiSelection when !setting.HasFlag(option.OptionIndex):
-                case GroupDrawBehaviour.SingleSelection when setting.AsIndex != option.OptionIndex:
+                case GroupDrawBehaviour.MultiSelection when !setting.HasFlag(option.Index):
+                case GroupDrawBehaviour.SingleSelection when setting.AsIndex != option.Index:
                     return false;
             }
         }
@@ -50,15 +51,15 @@ public sealed class AnySettingCondition(params IReadOnlyCollection<Guid> options
     {
         foreach (var optionId in this)
         {
-            if (!context.Mod.SubObjects.TryGetValue(optionId, out var option) || option.OptionIndex is -1)
+            if (!context.Mod.SubObjects.TryGetValue(optionId, out var o) || o is not IModOption option)
                 continue;
 
             var group   = context.Mod.Groups[option.GroupIndex];
             var setting = context.Settings.IsEmpty ? group.DefaultSettings : context.Settings.Settings[option.GroupIndex];
             switch (group.Behaviour)
             {
-                case GroupDrawBehaviour.MultiSelection when setting.HasFlag(option.OptionIndex):
-                case GroupDrawBehaviour.SingleSelection when setting.AsIndex == option.OptionIndex:
+                case GroupDrawBehaviour.MultiSelection when setting.HasFlag(option.Index):
+                case GroupDrawBehaviour.SingleSelection when setting.AsIndex == option.Index:
                     return true;
             }
         }

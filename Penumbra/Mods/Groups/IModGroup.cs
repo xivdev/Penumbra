@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Data;
 using Penumbra.Meta.Manipulations;
+using Penumbra.Mods.Manager.OptionEditor;
 using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
 using Penumbra.String.Classes;
@@ -21,7 +22,7 @@ public enum GroupDrawBehaviour
     MultiSelection,
 }
 
-public interface IModGroup : IModObject
+public interface IModGroup : IModObject, IIndexed
 {
     public const int MaxMultiOptions     = 32;
     public const int MaxCombiningOptions = 8;

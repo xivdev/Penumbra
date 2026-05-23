@@ -81,10 +81,9 @@ public sealed class Mod : IMod, IFileSystemValue<Mod>
     public bool                  Favorite              { get; internal set; }
 
     // Options
-    public readonly record struct IndexObject(IModObject Object, int GroupIndex, int OptionIndex);
-    public readonly Dictionary<Guid, IndexObject> SubObjects = [];
-    public readonly DefaultSubMod                 Default;
-    public readonly List<IModGroup>               Groups = [];
+    public readonly Dictionary<Guid, IModObject> SubObjects = [];
+    public readonly DefaultSubMod                Default;
+    public readonly IndexList<IModGroup>         Groups = [];
 
     /// <summary> Add a group and all its options to this mod and its <see cref="SubObjects"/> dictionary. </summary>
     /// <remarks> Throws if the GUID for any of the objects already exists in the mod. </remarks>
@@ -93,12 +92,10 @@ public sealed class Mod : IMod, IFileSystemValue<Mod>
         if (group is null)
             return;
 
-        var groupIndex = Groups.Count;
         Groups.Add(group);
-        var optionIndex = -1;
         foreach (var obj in group.Options.Prepend<IModObject>(group))
         {
-            if (!SubObjects.TryAdd(obj.Id, new IndexObject(obj, groupIndex, optionIndex++)))
+            if (!SubObjects.TryAdd(obj.Id, obj))
                 throw new InvalidMetaException(this, filePath,
                     $"Multiple groups or options with the GUID {obj.Id} exist inside this mod.");
         }

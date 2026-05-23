@@ -115,7 +115,7 @@ public sealed partial class ModEditWindow : IndexedWindow, IDisposable
     {
         AppendTask(() =>
         {
-            var (groupIdx, dataIdx) = subMod?.GetDataIndices() ?? (-1, 0);
+            var (groupIdx, dataIdx) = (subMod?.GroupIndex ?? -1, subMod?.Index ?? 0);
             _editor.LoadOption(groupIdx, dataIdx).Wait();
         });
     }

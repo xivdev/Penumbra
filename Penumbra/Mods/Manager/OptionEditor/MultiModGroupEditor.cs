@@ -13,7 +13,7 @@ public sealed class MultiModGroupEditor(CommunicatorService communicator, SaveSe
 {
     public void ChangeToSingle(MultiModGroup group)
     {
-        var idx = group.GetIndex();
+        var idx = group.Index;
         var singleGroup = group.ConvertToSingle();
         group.Mod.Groups[idx] = singleGroup;
         SaveService.QueueSave(new ModSaveGroup(singleGroup, Config.ReplaceNonAsciiOnImport));

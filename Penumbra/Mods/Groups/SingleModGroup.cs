@@ -21,6 +21,11 @@ public sealed class SingleModGroup(Mod mod) : IModGroup, ITexToolsGroup
     public GroupDrawBehaviour Behaviour
         => GroupDrawBehaviour.SingleSelection;
 
+    public int Index { get; private set; } = -1;
+
+    public void SetIndex(int index)
+        => Index = index;
+
     public Mod                            Mod             { get; }      = mod;
     public Guid                           Id              { get; set; } = Guid.NewGuid();
     public string                         Name            { get; set; } = "Option";
@@ -33,7 +38,7 @@ public sealed class SingleModGroup(Mod mod) : IModGroup, ITexToolsGroup
     public Guid                           ParentSetting   { get; set; } = Guid.Empty;
     public ICondition<ModSettingContext>? Condition       { get; set; }
 
-    public readonly List<SingleSubMod> OptionData = [];
+    public readonly IndexList<SingleSubMod> OptionData = [];
 
     public FullPath? FindBestMatch(Utf8GamePath gamePath)
     {
@@ -96,9 +101,6 @@ public sealed class SingleModGroup(Mod mod) : IModGroup, ITexToolsGroup
         multi.OptionData.AddRange(OptionData.Select((o, i) => o.ConvertToMulti(multi, new ModPriority(i))));
         return multi;
     }
-
-    public int GetIndex()
-        => ModGroup.GetIndex(this);
 
     public IModGroupEditDrawer EditDrawer(ModGroupEditDrawer editDrawer)
         => new SingleModGroupEditDrawer(editDrawer, this);

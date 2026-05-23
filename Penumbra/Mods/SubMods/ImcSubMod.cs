@@ -10,6 +10,11 @@ public class ImcSubMod(ImcModGroup group) : IModOption
 {
     public readonly ImcModGroup Group = group;
 
+    public int Index { get; private set; } = -1;
+
+    public void SetIndex(int index)
+        => Index = index;
+
     public ImcSubMod(ImcModGroup group, JToken json)
         : this(group)
     {

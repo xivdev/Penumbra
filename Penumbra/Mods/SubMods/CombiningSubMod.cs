@@ -9,6 +9,11 @@ public class CombiningSubMod(IModGroup group) : IModOption
 {
     public IModGroup Group { get; } = group;
 
+    public int Index { get; private set; } = -1;
+
+    public void SetIndex(int index)
+        => Index = index;
+
     public Mod Mod
         => Group.Mod;
 
@@ -23,9 +28,6 @@ public class CombiningSubMod(IModGroup group) : IModOption
 
     public string FullName
         => $"{Group.Name}: {Name}";
-
-    public int GetIndex()
-        => SubMod.GetIndex(this);
 
     public CombiningSubMod(CombiningModGroup group, JToken json)
         : this(group)

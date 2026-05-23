@@ -1,9 +1,9 @@
 using Luna;
 using Penumbra.Mods.Groups;
+using Penumbra.Mods.Manager.OptionEditor;
 using Penumbra.UI.Classes;
 
 namespace Penumbra.Mods.SubMods;
-
 
 [Flags]
 public enum ModSettingsLayout : ulong
@@ -23,13 +23,14 @@ public interface IModObject
     public string                         Description { get; set; }
     public ModSettingsLayout              Layout      { get; set; }
     public ICondition<ModSettingContext>? Condition   { get; set; }
-
-    public int GetIndex();
 }
 
-public interface IModOption : IModObject
+public interface IModOption : IModObject, IIndexed
 {
-    public string  FullName  { get; }
+    public string FullName { get; }
+    public int GroupIndex
+        => Group.Index;
+
     public ColorId Color     { get; set; }
     public bool    Separator { get; set; }
 }
