@@ -380,10 +380,13 @@ public sealed class DebugTab : Window, ITab<TabType>
                     table.DrawDataPair("Import Popup Was Drawn"u8,     _importPopup.PopupWasDrawn);
                     table.DrawColumn("Import Batches"u8);
                     table.NextColumn();
-                    foreach (var (index, batch) in _modImporter.ModBatches.Index())
+                    lock (_modImporter.ModsToUnpack)
                     {
-                        foreach (var mod in batch)
-                            table.DrawDataPair($"{index}", mod);
+                        foreach (var (index, batch) in _modImporter.ModsToUnpack.Index())
+                        {
+                            foreach (var mod in batch.Paths)
+                                table.DrawDataPair($"{index}", mod);
+                        }
                     }
 
                     table.DrawColumn("Addable Mods"u8);

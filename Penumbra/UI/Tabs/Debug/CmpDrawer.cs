@@ -42,7 +42,7 @@ public sealed unsafe class CmpDrawer(CharacterUtility utility) : IUiService
         foreach (var (name, race) in SubRace.NamesAndValuesU8.Skip(1))
         {
             table.DrawColumn(name);
-            ref var values = ref _ptr->GetScale(race);
+            ref var values = ref _ptr->GetScaleWrite(race);
             foreach (var attribute in RspAttribute.Values.SkipLast(1))
                 table.DrawColumn($"{values.Get(attribute):F4}");
         }
@@ -96,19 +96,23 @@ public sealed unsafe class CmpDrawer(CharacterUtility utility) : IUiService
             ImEx.TextCentered($"{name.ToShortNameU8()}");
         }
 
-        ref var eyesUi       = ref _ptr->Interface.Eyes;
-        ref var highlightsUi = ref _ptr->Interface.HairHighlights;
-        ref var featuresUi   = ref _ptr->Interface.Features;
-        var     lipsUi       = new CmpData.ColorsPair(ref _ptr->Interface.LipsDark,      ref _ptr->Interface.LipsLight);
-        var     facePaintUi  = new CmpData.ColorsPair(ref _ptr->Interface.FacePaintDark, ref _ptr->Interface.FacePaintLight);
+        ref var eyesUi           = ref _ptr->Interface.Eyes;
+        ref var highlightsUi     = ref _ptr->Interface.HairHighlights;
+        ref var featuresUi       = ref _ptr->Interface.Features;
+        ref var lipsUiDark       = ref _ptr->Interface.LipsDark;
+        ref var lipsUiLight      = ref _ptr->Interface.LipsLight;
+        ref var facePaintUiDark  = ref _ptr->Interface.FacePaintDark;
+        ref var facePaintUiLight = ref _ptr->Interface.FacePaintLight;
 
-        ref var eyes       = ref _ptr->Parameters.Eyes;
-        ref var highlights = ref _ptr->Parameters.HairHighlights;
-        ref var features   = ref _ptr->Parameters.Features;
-        var     lips       = new CmpData.ColorsPair(ref _ptr->Parameters.LipsDark,      ref _ptr->Parameters.LipsLight);
-        var     facePaint  = new CmpData.ColorsPair(ref _ptr->Parameters.FacePaintDark, ref _ptr->Parameters.FacePaintLight);
+        ref var eyes           = ref _ptr->Parameters.Eyes;
+        ref var highlights     = ref _ptr->Parameters.HairHighlights;
+        ref var features       = ref _ptr->Parameters.Features;
+        ref var lipsDark       = ref _ptr->Parameters.LipsDark;
+        ref var lipsLight      = ref _ptr->Parameters.LipsLight;
+        ref var facePaintDark  = ref _ptr->Parameters.FacePaintDark;
+        ref var facePaintLight = ref _ptr->Parameters.FacePaintLight;
 
-        using var clip     = new Im.ListClipper(256, Im.Style.FrameHeightWithSpacing);
+        using var clip = new Im.ListClipper(256, Im.Style.FrameHeightWithSpacing);
         foreach (var index in clip)
         {
             using var id = Im.Id.Push(index);
@@ -130,14 +134,14 @@ public sealed unsafe class CmpDrawer(CharacterUtility utility) : IUiService
             Im.Color.Button("Features Color"u8, features[index]);
 
             table.NextColumn();
-            Im.Color.Button("Lips UI Color"u8, lipsUi[index]);
+            Im.Color.Button("Lips UI Color"u8, index < 128 ? lipsUiDark[index] : lipsUiLight[index - 128]);
             Im.Line.SameInner();
-            Im.Color.Button("Lips Color"u8, lips[index]);
+            Im.Color.Button("Lips Color"u8, index < 128 ? lipsDark[index] : lipsLight[index - 128]);
 
             table.NextColumn();
-            Im.Color.Button("Face Paint UI Color"u8, facePaintUi[index]);
+            Im.Color.Button("Face Paint UI Color"u8, index < 128 ? facePaintUiDark[index] : facePaintUiLight[index - 128]);
             Im.Line.SameInner();
-            Im.Color.Button("Face Paint Color"u8, facePaint[index]);
+            Im.Color.Button("Face Paint Color"u8, index < 128 ? facePaintDark[index] : facePaintLight[index - 128]);
 
             foreach (var race in SubRace.Values.Skip(1))
             {
@@ -147,7 +151,7 @@ public sealed unsafe class CmpDrawer(CharacterUtility utility) : IUiService
                 Im.Line.SameInner();
                 Im.Color.Button($"Skin UI Color ({name} Male)", _ptr->GetSkin(race, Gender.Male, true)[index]);
                 Im.Line.SameInner();
-                Im.Color.Button($"Skin Color ({name} Male)",    _ptr->GetSkin(race, Gender.Male, false)[index]);
+                Im.Color.Button($"Skin Color ({name} Male)", _ptr->GetSkin(race, Gender.Male, false)[index]);
                 Im.Line.Same();
                 ImEx.TextFramed("♀"u8, default, Rgba32.Transparent);
                 Im.Line.SameInner();

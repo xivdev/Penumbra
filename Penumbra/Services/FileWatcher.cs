@@ -306,12 +306,16 @@ public sealed class FileWatcher : IDisposable, IService
         return false;
     }
 
-    private void TriggerImport(string path)
+    private Task<ModImportResult[]> TriggerImport(string path)
     {
         if (_config.EnableAutomaticModImport)
-            _modImportManager.AddUnpack(path);
+            return _modImportManager.AddUnpack(path);
         else
-            _messageService.AddMessage(new InstallNotification(_modImportManager, path), false);
+        {
+            var tcs = new TaskCompletionSource<ModImportResult[]>();
+            _messageService.AddMessage(new InstallNotification(_modImportManager, path, tcs), false);
+            return tcs.Task;
+        }
     }
 
     /// <summary>

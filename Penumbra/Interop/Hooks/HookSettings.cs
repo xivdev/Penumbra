@@ -40,6 +40,7 @@ public class HookOverrides
         public bool LoadTimelineResources;
         public bool PlayFootstep;
         public bool ScheduleClipUpdate;
+        public bool GetClipResources;
         public bool SomeActionLoad;
         public bool SomeMountAnimation;
         public bool SomePapLoad;

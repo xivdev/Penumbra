@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text.Json.Nodes;
 
@@ -9,6 +9,7 @@ public enum AnimationInvocationType : int
 {
     PapLoad,
     ActionLoad,
+    GetClipResources,
     ScheduleClipUpdate,
     LoadTimelineResources,
     LoadCharacterVfx,
@@ -111,6 +112,7 @@ internal sealed class AnimationInvocationBuffer : MemoryMappedBuffer, IAnimation
         {
             AnimationInvocationType.PapLoad                    => "PAP Load",
             AnimationInvocationType.ActionLoad                 => "Action Load",
+            AnimationInvocationType.GetClipResources           => "Get Clip Resources",
             AnimationInvocationType.ScheduleClipUpdate         => "Schedule Clip Update",
             AnimationInvocationType.LoadTimelineResources      => "Load Timeline Resources",
             AnimationInvocationType.LoadCharacterVfx           => "Load Character VFX",
