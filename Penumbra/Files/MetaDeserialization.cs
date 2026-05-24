@@ -394,8 +394,8 @@ public static class MetaDeserialization
                 slot = s;
             else if (j.EnumProperty("ConnectorCondition"u8, out ShapeConnectorCondition cc))
                 connectorCondition = cc;
-            else if (j.EnumProperty("GenderRaceCondition"u8, out GenderRace gr))
-                genderRaceCondition = gr;
+            else if (j.NumberProperty("GenderRaceCondition"u8, out ushort gr))
+                genderRaceCondition = (GenderRace)gr;
             else if (j.NumberProperty("Id"u8, out ushort i))
                 id = i;
             else if (j.BoolProperty("Entry"u8, out var e))
@@ -438,8 +438,8 @@ public static class MetaDeserialization
 
             if (j.EnumProperty("Slot"u8, out HumanSlot s))
                 slot = s;
-            else if (j.EnumProperty("GenderRaceCondition"u8, out GenderRace gr))
-                genderRaceCondition = gr;
+            else if (j.NumberProperty("GenderRaceCondition"u8, out ushort gr))
+                genderRaceCondition = (GenderRace) gr;
             else if (j.NumberProperty("Id"u8, out ushort i))
                 id = i;
             else if (j.BoolProperty("Entry"u8, out var e))

@@ -380,7 +380,7 @@ public static class GroupDeserialization
                 if (j.TokenType is not JsonTokenType.PropertyName)
                     throw new JsonException("Property name expected.");
 
-                if (j.StringProperty("Name"u8, out string? name))
+                if (j.StringProperty("Name"u8, out string? name, true))
                 {
                     container.Name = name ?? string.Empty;
                     continue;
