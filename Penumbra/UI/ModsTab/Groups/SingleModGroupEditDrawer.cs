@@ -20,7 +20,7 @@ public readonly struct SingleModGroupEditDrawer(ModGroupEditDrawer editor, Singl
             editor.DrawOptionName(option);
 
             Im.Line.SameInner();
-            editor.DrawOptionDescription(option);
+            editor.DrawOptionButtons(option);
 
             Im.Line.SameInner();
             editor.DrawOptionDelete(option);
@@ -31,6 +31,17 @@ public readonly struct SingleModGroupEditDrawer(ModGroupEditDrawer editor, Singl
 
         DrawNewOption();
         DrawConvertButton();
+        DrawConditions();
+    }
+
+    private void DrawConditions()
+    {
+        using var id = Im.Id.Push(677);
+        ImEx.TextFrameAligned("Conditions:"u8);
+        Im.Line.Same();
+        using var g = Im.Group();
+        if (editor.ConditionDrawer.Draw(group.Condition, default, out var replace))
+            group.Condition = replace;
     }
 
     private void DrawConvertButton()

@@ -1,18 +1,16 @@
 using System.Text.Json;
-using Dalamud.Interface.ImGuiNotification;
 using ImSharp;
 using Luna;
 using Newtonsoft.Json.Linq;
 using Penumbra.Files;
 using Penumbra.GameData.Structs;
 using Penumbra.Mods.Manager;
-using Penumbra.Services;
 
 namespace Penumbra.Mods;
 
 public readonly struct ModMeta(Mod mod) : ISavable
 {
-    public const uint FileVersion = 3;
+    public const uint CurrentFileVersion = 3;
 
     public string ToFilePath(FilenameService fileNames)
         => fileNames.ModMetaPath(mod);
@@ -22,7 +20,7 @@ public readonly struct ModMeta(Mod mod) : ISavable
         using var j = new Utf8JsonWriter(stream, JsonFunctions.WriterOptions);
         j.WriteStartObject();
 
-        j.WriteNumber("FileVersion"u8, FileVersion);
+        j.WriteNumber("FileVersion"u8, CurrentFileVersion);
         j.WriteString("Name"u8,        mod.Name);
         j.WriteString("Author"u8,      mod.Author);
         j.WriteString("Description"u8, mod.Description);
@@ -69,20 +67,6 @@ public readonly struct ModMeta(Mod mod) : ISavable
     public static ModDataChangeType Load(ModDataEditor editor, ModCreator creator, Mod mod)
     {
         var metaFile = editor.SaveService.FileNames.ModMetaPath(mod);
-
-        var newFileVersion = 0u;
-
-        // Empty name gets checked after loading and is not allowed.
-        var newName          = string.Empty;
-        var newAuthor        = string.Empty;
-        var newDescription   = string.Empty;
-        var newImage         = string.Empty;
-        var newVersion       = string.Empty;
-        var newWebsite       = string.Empty;
-        var modTags          = Enumerable.Empty<string>();
-        var defaultItems     = new HashSet<CustomItemId>();
-        var requiredFeatures = FeatureFlags.None;
-
         if (!File.Exists(metaFile))
         {
             creator.FailedMod.AddMissingMeta(mod);
@@ -93,146 +77,164 @@ public readonly struct ModMeta(Mod mod) : ISavable
         {
             var data   = JsonFunctions.ReadUtf8Bytes(metaFile, out _);
             var reader = new Utf8JsonReader(data.Span, JsonFunctions.ReaderOptions);
-
-            while (reader.Read())
-            {
-                if (reader.TokenType is not JsonTokenType.PropertyName)
-                    continue;
-
-                if (reader.ValueTextEquals("FileVersion"u8))
-                {
-                    reader.Read();
-                    newFileVersion = reader.GetUInt32();
-                }
-                else if (reader.ValueTextEquals("Name"u8))
-                {
-                    reader.Read();
-                    newName = reader.GetString() ?? string.Empty;
-                }
-                else if (reader.ValueTextEquals("Author"u8))
-                {
-                    reader.Read();
-                    newAuthor = reader.GetString() ?? string.Empty;
-                }
-                else if (reader.ValueTextEquals("Description"u8))
-                {
-                    reader.Read();
-                    newDescription = reader.GetString() ?? string.Empty;
-                }
-                else if (reader.ValueTextEquals("Image"u8))
-                {
-                    reader.Read();
-                    newImage = reader.GetString() ?? string.Empty;
-                }
-                else if (reader.ValueTextEquals("Version"u8))
-                {
-                    reader.Read();
-                    newVersion = reader.GetString() ?? string.Empty;
-                }
-                else if (reader.ValueTextEquals("Website"u8))
-                {
-                    reader.Read();
-                    newWebsite = reader.GetString() ?? string.Empty;
-                }
-                else if (reader.ValueTextEquals("ModTags"u8))
-                {
-                    reader.Read();
-                    if (reader.TokenType is not JsonTokenType.StartArray)
-                        continue;
-
-                    var tags = new HashSet<string>();
-                    while (reader.Read() && reader.TokenType is not JsonTokenType.EndArray && reader.GetString() is { Length: > 0 } tag)
-                        tags.Add(tag);
-                    modTags = tags;
-                }
-                else if (reader.ValueTextEquals("DefaultPreferredItems"u8))
-                {
-                    reader.Read();
-                    if (reader.TokenType is not JsonTokenType.StartArray)
-                        continue;
-
-                    while (reader.Read() && reader.TokenType is not JsonTokenType.EndArray)
-                        defaultItems.Add(reader.GetUInt64());
-                }
-                else if (reader.ValueTextEquals("RequiredFeatures"u8))
-                {
-                    reader.Read();
-                    if (reader.TokenType is not JsonTokenType.StartArray)
-                        continue;
-
-                    while (reader.Read()
-                        && reader.TokenType is not JsonTokenType.EndArray
-                        && Enum.TryParse(reader.GetString() ?? string.Empty, true, out FeatureFlags flag))
-                        requiredFeatures |= flag;
-                }
-            }
+            var dto    = Dto.Read(ref reader);
+            return dto.Apply(editor, creator, mod, metaFile);
         }
         catch (Exception e)
         {
             creator.FailedMod.AddInvalidMeta(mod, e);
             return ModDataChangeType.Deletion;
         }
+    }
 
-        ModDataChangeType changes = 0;
-        if (mod.Name != newName)
+    public struct Dto
+    {
+        public uint?         FileVersion;
+        public string?       Name;
+        public string?       Author;
+        public string?       Description;
+        public string?       Image;
+        public string?       Version;
+        public string?       Website;
+        public List<string>? ModTags;
+        public List<ulong>?  PreferredItems;
+        public FeatureFlags  RequiredFeatures;
+
+        public ModDataChangeType Apply(ModDataEditor editor, ModCreator creator, Mod mod, string metaFile)
         {
-            changes  |= ModDataChangeType.Name;
-            mod.Name =  newName;
+            ModDataChangeType changes = 0;
+            if (mod.Name != Name)
+            {
+                changes  |= ModDataChangeType.Name;
+                mod.Name =  Name ?? string.Empty;
+            }
+
+            if (mod.Author != Author)
+            {
+                changes    |= ModDataChangeType.Author;
+                mod.Author =  Author ?? string.Empty;
+            }
+
+            if (mod.Description != Description)
+            {
+                changes         |= ModDataChangeType.Description;
+                mod.Description =  Description ?? string.Empty;
+            }
+
+            if (mod.Image != Image)
+            {
+                changes   |= ModDataChangeType.Image;
+                mod.Image =  Image ?? string.Empty;
+            }
+
+            if (mod.Version != Version)
+            {
+                changes     |= ModDataChangeType.Version;
+                mod.Version =  Version ?? string.Empty;
+            }
+
+            if (mod.Website != Website)
+            {
+                changes     |= ModDataChangeType.Website;
+                mod.Website =  Website ?? string.Empty;
+            }
+
+            if (PreferredItems is null)
+            {
+                if (mod.DefaultPreferredItems.Count > 0)
+                {
+                    changes |= ModDataChangeType.DefaultChangedItems;
+                    mod.DefaultPreferredItems.Clear();
+                }
+            }
+            else if (!mod.DefaultPreferredItems.SetEquals(PreferredItems!.Select(i => new CustomItemId(i))))
+            {
+                changes |= ModDataChangeType.DefaultChangedItems;
+                mod.DefaultPreferredItems.Clear();
+                mod.DefaultPreferredItems.UnionWith(PreferredItems!.Select(i => new CustomItemId(i)));
+            }
+
+            // TODO: No JObject optimization.
+            if (FileVersion != CurrentFileVersion)
+            {
+                if (FileVersion is null)
+                    throw new Exception("No mod meta version provided to migrate from.");
+
+                var version = FileVersion.Value;
+                if (ModMigration.Migrate(creator, editor.SaveService, mod, JObject.Parse(File.ReadAllText(metaFile)),
+                        ref version))
+                {
+                    changes |= ModDataChangeType.Migration;
+                    editor.SaveService.ImmediateSave(new ModMeta(mod));
+                }
+            }
+
+            // Required features get checked during parsing, in which case the new required features signal invalid.
+            if (RequiredFeatures != mod.RequiredFeatures)
+            {
+                changes              |= ModDataChangeType.RequiredFeatures;
+                mod.RequiredFeatures =  RequiredFeatures;
+            }
+
+            changes |= ModDataEditor.UpdateTags(mod, ModTags, null);
+            return changes;
         }
 
-        if (mod.Author != newAuthor)
+        public static Dto Read(ref Utf8JsonReader reader)
         {
-            changes    |= ModDataChangeType.Author;
-            mod.Author =  newAuthor;
+            if (!reader.Read())
+                throw new JsonException("Empty Data");
+
+            var ret = new Dto();
+            var obj = reader.CreateObjectReader();
+            while (obj.Read(ref reader))
+            {
+                if (reader.TokenType is not JsonTokenType.PropertyName)
+                    throw new JsonException("Expected property");
+
+                if (reader.CheckPropertyValue("FileVersion"u8))
+                    ret.FileVersion = reader.TryReadNumber(out uint fv) ? fv : throw new JsonException();
+                else if (reader.CheckPropertyValue("Name"u8))
+                    ret.Name = reader.GetString();
+                else if (reader.CheckPropertyValue("Author"u8))
+                    ret.Author = reader.GetString();
+                else if (reader.CheckPropertyValue("Description"u8))
+                    ret.Description = reader.GetString();
+                else if (reader.CheckPropertyValue("Image"u8))
+                    ret.Image = reader.GetString();
+                else if (reader.CheckPropertyValue("Version"u8))
+                    ret.Version = reader.GetString();
+                else if (reader.CheckPropertyValue("Website"u8))
+                    ret.Website = reader.GetString();
+                else if (reader.CheckPropertyValue("ModTags"u8))
+                    ret.ModTags = reader.ReadStringArray()!;
+                else if (reader.CheckPropertyValue("DefaultPreferredItems"u8))
+                    ret.PreferredItems = reader.ReadNumberArray<ulong>();
+                else if (reader.CheckPropertyValue("RequiredFeatures"u8))
+                    ret.RequiredFeatures = reader.ReadFlagEnumArray<FeatureFlags>() ?? FeatureFlags.None;
+                else
+                    reader.Skip();
+            }
+
+            return ret;
         }
 
-        if (mod.Description != newDescription)
+        public bool Validate(out string? error)
         {
-            changes         |= ModDataChangeType.Description;
-            mod.Description =  newDescription;
+            if (FileVersion is null)
+            {
+                error = "Mod without provided file version is not allowed.";
+                return false;
+            }
+
+            if (string.IsNullOrEmpty(Name))
+            {
+                error = "Mod with empty name is not allowed.";
+                return false;
+            }
+
+            error = null;
+            return true;
         }
-
-        if (mod.Image != newImage)
-        {
-            changes   |= ModDataChangeType.Image;
-            mod.Image =  newImage;
-        }
-
-        if (mod.Version != newVersion)
-        {
-            changes     |= ModDataChangeType.Version;
-            mod.Version =  newVersion;
-        }
-
-        if (mod.Website != newWebsite)
-        {
-            changes     |= ModDataChangeType.Website;
-            mod.Website =  newWebsite;
-        }
-
-        if (!mod.DefaultPreferredItems.SetEquals(defaultItems))
-        {
-            changes                   |= ModDataChangeType.DefaultChangedItems;
-            mod.DefaultPreferredItems =  defaultItems;
-        }
-
-        // TODO: No JObject optimization.
-        if (newFileVersion != FileVersion
-         && ModMigration.Migrate(creator, editor.SaveService, mod, JObject.Parse(File.ReadAllText(metaFile)), ref newFileVersion))
-        {
-            changes |= ModDataChangeType.Migration;
-            editor.SaveService.ImmediateSave(new ModMeta(mod));
-        }
-
-        // Required features get checked during parsing, in which case the new required features signal invalid.
-        if (requiredFeatures != mod.RequiredFeatures)
-        {
-            changes              |= ModDataChangeType.RequiredFeatures;
-            mod.RequiredFeatures =  requiredFeatures;
-        }
-
-        changes |= ModDataEditor.UpdateTags(mod, modTags, null);
-
-        return changes;
     }
 }

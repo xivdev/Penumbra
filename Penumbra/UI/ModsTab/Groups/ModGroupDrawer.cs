@@ -6,67 +6,47 @@ using Penumbra.Mods;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
+using Penumbra.Services;
 
 namespace Penumbra.UI.ModsTab.Groups;
 
-public sealed class ModGroupDrawer(Configuration config, CollectionManager collectionManager, SingleGroupCombo combo)
+public sealed class ModGroupDrawer(
+    Configuration config,
+    CollectionManager collectionManager,
+    SingleGroupCombo combo,
+    ModSelection selection,
+    CommunicatorService communicator)
     : IUiService
 {
-    private readonly List<(IModGroup, int)> _blockGroupCache = [];
-    private          bool                   _temporary;
-    private          bool                   _locked;
-    private          TemporaryModSettings?  _tempSettings;
-    private          ModSettings?           _settings;
+    private bool                  _temporary;
+    private bool                  _locked;
+    private TemporaryModSettings? _tempSettings;
+    private ModSettings?          _settings;
 
     public void Draw(Mod mod, ModSettings settings, TemporaryModSettings? tempSettings)
     {
-        if (mod.Groups.Count <= 0)
+        var cache = CacheManager.Instance.GetOrCreateCache(Im.Id.Current, () => new ModSettingsCache(selection, config, communicator));
+        if (cache.Count is 0)
             return;
 
-        _blockGroupCache.Clear();
         _settings     = settings;
         _tempSettings = tempSettings;
         _temporary    = tempSettings is not null;
         _locked       = (tempSettings?.Lock ?? 0) > 0;
-        var useDummy = true;
-        foreach (var (idx, group) in mod.Groups.Index())
+
+        Im.Dummy(UiHelpers.DefaultSpace);
+        foreach (var single in cache.SingleGroups)
+            DrawSingleGroupCombo(single.Group, single.Index, settings.IsEmpty ? single.Group.DefaultSettings : settings.Settings[single.Index]);
+
+        if (cache.MultiGroups.Count > 0)
+            Im.Dummy(UiHelpers.DefaultSpace);
+        foreach (var multi in cache.MultiGroups)
         {
-            if (!group.IsOption)
-                continue;
-
-            switch (group.Behaviour)
-            {
-                case GroupDrawBehaviour.SingleSelection when group.Options.Count <= config.SingleGroupRadioMax:
-                case GroupDrawBehaviour.MultiSelection:
-                    _blockGroupCache.Add((group, idx));
-                    break;
-
-                case GroupDrawBehaviour.SingleSelection:
-                    if (useDummy)
-                    {
-                        Im.Dummy(UiHelpers.DefaultSpace);
-                        useDummy = false;
-                    }
-
-                    DrawSingleGroupCombo(group, idx, settings.IsEmpty ? group.DefaultSettings : settings.Settings[idx]);
-                    break;
-            }
-        }
-
-        useDummy = true;
-        foreach (var (group, idx) in _blockGroupCache)
-        {
-            if (useDummy)
-            {
-                Im.Dummy(UiHelpers.DefaultSpace);
-                useDummy = false;
-            }
-
-            var option = settings.IsEmpty ? group.DefaultSettings : settings.Settings[idx];
-            if (group.Behaviour is GroupDrawBehaviour.MultiSelection)
-                DrawMultiGroup(group, idx, option);
+            var option = settings.IsEmpty ? multi.Group.DefaultSettings : settings.Settings[multi.Index];
+            if (multi.Behaviour is GroupDrawBehaviour.MultiSelection)
+                DrawMultiGroup(multi.Group, multi.Index, option);
             else
-                DrawSingleGroupRadio(group, idx, option);
+                DrawSingleGroupRadio(multi.Group, multi.Index, option);
         }
     }
 
@@ -76,8 +56,8 @@ public sealed class ModGroupDrawer(Configuration config, CollectionManager colle
     /// </summary>
     private void DrawSingleGroupCombo(IModGroup group, int groupIdx, Setting setting)
     {
-        using var id             = Im.Id.Push(groupIdx);
-        using var disabled       = Im.Disabled(_locked);
+        using var id       = Im.Id.Push(groupIdx);
+        using var disabled = Im.Disabled(_locked);
         combo.Draw(this, (SingleModGroup)group, groupIdx, setting);
         if (group.Description.Length > 0)
         {

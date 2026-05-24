@@ -24,7 +24,7 @@ public class CommandHandler : IDisposable, IApiService
     private readonly RedrawService     _redrawService;
     private readonly IChatGui          _chat;
     private readonly Configuration     _config;
-    private readonly MainWindow      _mainWindow;
+    private readonly MainWindow        _mainWindow;
     private readonly ActorManager      _actors;
     private readonly ModManager        _modManager;
     private readonly CollectionManager _collectionManager;
@@ -40,7 +40,7 @@ public class CommandHandler : IDisposable, IApiService
         _commandManager    = commandManager;
         _redrawService     = redrawService;
         _config            = config;
-        _mainWindow      = mainWindow;
+        _mainWindow        = mainWindow;
         _modManager        = modManager;
         _collectionManager = collectionManager;
         _actors            = actors;

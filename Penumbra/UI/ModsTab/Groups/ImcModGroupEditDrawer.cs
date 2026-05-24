@@ -117,7 +117,7 @@ public readonly struct ImcModGroupEditDrawer(ModGroupEditDrawer editor, ImcModGr
             editor.DrawOptionName(option);
 
             Im.Line.SameInner();
-            editor.DrawOptionDescription(option);
+            editor.DrawOptionButtons(option);
 
             if (!option.IsDisableSubMod)
             {

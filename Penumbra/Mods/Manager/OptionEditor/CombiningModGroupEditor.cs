@@ -9,7 +9,7 @@ using Penumbra.Services;
 namespace Penumbra.Mods.Manager.OptionEditor;
 
 public sealed class CombiningModGroupEditor(CommunicatorService communicator, SaveService saveService, Configuration config)
-    : ModOptionEditor<CombiningModGroup, CombiningSubMod>(communicator, saveService, config), Luna.IService
+    : ModOptionEditor<CombiningModGroup, CombiningSubMod>(communicator, saveService, config), IService
 {
     protected override CombiningModGroup CreateGroup(Mod mod, string newName, ModPriority priority, SaveType saveType = SaveType.ImmediateSync)
         => new(mod)
@@ -43,6 +43,6 @@ public sealed class CombiningModGroupEditor(CommunicatorService communicator, Sa
 
         container.Name = name;
         SaveService.Save(saveType, new ModSaveGroup(container.Group, Config.ReplaceNonAsciiOnImport));
-        Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.DisplayChange, container.Group.Mod, container.Group, null, null, -1));
+        Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.DisplayChange, container.Group.Mod, container.Group, null, null, null, -1));
     }
 }

@@ -19,7 +19,8 @@ public sealed class ModGroupEditDrawer(
     Configuration config,
     FilenameService filenames,
     DescriptionEditPopup descriptionPopup,
-    ImcChecker imcChecker) : IUiService
+    ImcChecker imcChecker,
+    ModGroupConditionDrawer conditionDrawer) : IUiService
 {
     private static ReadOnlySpan<byte> AcrossGroupsLabel
         => "##DragOptionAcross"u8;
@@ -27,9 +28,10 @@ public sealed class ModGroupEditDrawer(
     private static ReadOnlySpan<byte> InsideGroupLabel
         => "##DragOptionInside"u8;
 
-    internal readonly ImcChecker    ImcChecker  = imcChecker;
-    internal readonly ModManager    ModManager  = modManager;
-    internal readonly Queue<Action> ActionQueue = new();
+    internal readonly ModGroupConditionDrawer ConditionDrawer = conditionDrawer;
+    internal readonly ImcChecker              ImcChecker      = imcChecker;
+    internal readonly ModManager              ModManager      = modManager;
+    internal readonly Queue<Action>           ActionQueue     = new();
 
     internal Vector2 OptionIdxSelectable;
     internal Vector2 AvailableWidth;
@@ -81,6 +83,10 @@ public sealed class ModGroupEditDrawer(
         DrawGroupOpenFile(group, idx);
         Im.Line.SameInner();
         DrawGroupDescription(group);
+        Im.Line.SameInner();
+        DrawGroupLayout(group);
+        Im.Line.SameInner();
+        DrawGroupConditions(group);
         Im.Line.SameInner();
         DrawGroupDelete(group);
         Im.Line.SameInner();
@@ -136,6 +142,21 @@ public sealed class ModGroupEditDrawer(
     private void DrawGroupDescription(IModGroup group)
     {
         if (ImEx.Icon.Button(LunaStyle.EditIcon, "Edit group description."u8))
+            descriptionPopup.Open(group);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void DrawGroupLayout(IModGroup group)
+    {
+        if (ImEx.Icon.Button(LunaStyle.LayoutIcon, "Edit group layout settings."u8))
+            descriptionPopup.Open(group);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void DrawGroupConditions(IModGroup group)
+    {
+        if (ImEx.Icon.Button(LunaStyle.ConditionIcon, "Edit group conditions."u8,
+                textColor: group.Condition is not null ? LunaStyle.FavoriteColor : ColorParameter.Default))
             descriptionPopup.Open(group);
     }
 
@@ -211,9 +232,34 @@ public sealed class ModGroupEditDrawer(
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal void DrawOptionDescription(IModOption option)
+    internal void DrawOptionButtons(IModOption option)
+    {
+        DrawOptionDescription(option);
+        Im.Line.SameInner();
+        DrawOptionLayout(option);
+        Im.Line.SameInner();
+        DrawOptionConditions(option);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void DrawOptionDescription(IModOption option)
     {
         if (ImEx.Icon.Button(LunaStyle.EditIcon, "Edit option description."u8))
+            descriptionPopup.Open(option);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void DrawOptionLayout(IModOption option)
+    {
+        if (ImEx.Icon.Button(LunaStyle.LayoutIcon, "Edit option layout settings."u8))
+            descriptionPopup.Open(option);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void DrawOptionConditions(IModOption option)
+    {
+        if (ImEx.Icon.Button(LunaStyle.ConditionIcon, "Edit option conditions."u8,
+                textColor: option.Condition is not null ? LunaStyle.FavoriteColor : ColorParameter.Default))
             descriptionPopup.Open(option);
     }
 
@@ -332,11 +378,11 @@ public sealed class ModGroupEditDrawer(
         var totalWidth = 400f * Im.Style.GlobalScale;
         _buttonSize         = new Vector2(Im.Style.FrameHeight);
         PriorityWidth       = 50 * Im.Style.GlobalScale;
-        AvailableWidth      = new Vector2(totalWidth + 3 * _spacing + 2 * _buttonSize.X + PriorityWidth, 0);
-        _groupNameWidth     = totalWidth - 3 * (_buttonSize.X + _spacing);
+        AvailableWidth      = new Vector2(totalWidth + 5 * _spacing + 4 * _buttonSize.X + PriorityWidth, 0);
+        _groupNameWidth     = totalWidth - 5 * (_buttonSize.X + _spacing);
         _spacing            = Im.Style.ItemInnerSpacing.X;
         OptionIdxSelectable = Im.Font.CalculateSize("Option #88."u8);
-        _optionNameWidth    = totalWidth - OptionIdxSelectable.X - _buttonSize.X - 2 * _spacing;
+        _optionNameWidth    = totalWidth - OptionIdxSelectable.X - 3 * _buttonSize.X - 4 * _spacing;
         _deleteEnabled      = config.DeleteModModifier.IsActive();
     }
 }

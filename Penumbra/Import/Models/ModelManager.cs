@@ -14,8 +14,6 @@ using Penumbra.Meta;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
 using SharpGLTF.Scenes;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
 
 namespace Penumbra.Import.Models;
 
@@ -119,7 +117,7 @@ public sealed class ModelManager(
 
         // Get standardised paths
         var absolutePath = rawPath.StartsWith('/')
-            ? LuminaMaterial.ResolveRelativeMaterialPath(rawPath, variantId)
+            ? LuminaMaterial.ResolveRelativeMaterialPath(rawPath, variantId, false)
             : rawPath;
         var relativePath = rawPath.StartsWith('/')
             ? rawPath
@@ -274,13 +272,13 @@ public sealed class ModelManager(
         }
 
         /// <summary> Read a texture referenced by a .mtrl and convert it into an ImageSharp image. </summary>
-        private Image<Rgba32> ConvertImage(MtrlFile.Texture texture, CancellationToken cancel)
+        private CustomBitmap ConvertImage(MtrlFile.Texture texture, CancellationToken cancel)
         {
             // Work out the texture's path - the DX11 material flag controls a file name prefix.
             GamePaths.Tex.HandleDx11Path(texture, out var texturePath);
             var bytes = read(texturePath);
-            if (bytes == null)
-                return CreateDummyImage();
+            if (bytes is null)
+                return CustomBitmap.CreateDummy();
 
             using var textureData = new MemoryStream(bytes);
             var       image       = TexFileParser.Parse(textureData);
@@ -288,12 +286,6 @@ public sealed class ModelManager(
             return pngImage ?? throw new Exception("Failed to convert texture to png.");
         }
 
-        private static Image<Rgba32> CreateDummyImage()
-        {
-            var image = new Image<Rgba32>(1, 1);
-            image[0, 0] = Color.White;
-            return image;
-        }
 
         public bool Equals(IAction? other)
         {

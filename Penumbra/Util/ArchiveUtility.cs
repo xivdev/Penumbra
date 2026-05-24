@@ -31,8 +31,8 @@ public static class ArchiveUtility
         using var archive = new ZipArchive(fs, ZipArchiveMode.Create);
         foreach (var file in Directory.EnumerateFiles(directoryPath, "*", SearchOption.AllDirectories).Where(addFile))
         {
-            var relativePath = Path.GetRelativePath(directoryPath, file);
-            archive.CreateEntryFromFile(file, relativePath);
+            var relativePath = Path.GetRelativePath(directoryPath, file).Replace('\\', '/');
+            archive.CreateEntryFromFile(file, relativePath, CompressionLevel.SmallestSize);
         }
     }
 

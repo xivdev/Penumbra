@@ -5,14 +5,8 @@ using Dalamud.Plugin.Services;
 using Lumina.Data.Files;
 using Luna;
 using OtterTex;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats;
-using SixLabors.ImageSharp.Formats.Png;
-using SixLabors.ImageSharp.Formats.Tga;
-using SixLabors.ImageSharp.PixelFormats;
 using TerraFX.Interop.DirectX;
 using TerraFX.Interop.Windows;
-using Image = SixLabors.ImageSharp.Image;
 
 namespace Penumbra.Import.Textures;
 
@@ -151,7 +145,7 @@ public sealed class TextureManager(IDataManager gameData, LunaLogger logger, ITe
             _textures._logger.Information($"[{nameof(TextureManager)}] Saving {_input} as {_type} to {_outputPath ?? "a stream"}...");
             var (image, rgba, width, height) = _input.GetData(_textures);
             cancel.ThrowIfCancellationRequested();
-            Image<Rgba32>? data = null;
+            CustomBitmap? data = null;
             if (image.Type is TextureType.Unknown)
             {
                 if (rgba != null && width > 0 && height > 0)
@@ -163,23 +157,11 @@ public sealed class TextureManager(IDataManager gameData, LunaLogger logger, ITe
             }
 
             cancel.ThrowIfCancellationRequested();
-            IImageEncoder encoder = _type switch
-            {
-                TextureType.Png => new PngEncoder
-                {
-                    CompressionLevel = PngCompressionLevel.NoCompression,
-                },
-                TextureType.Targa => new TgaEncoder
-                {
-                    Compression  = TgaCompression.None,
-                    BitsPerPixel = TgaBitsPerPixel.Pixel32,
-                },
-                _ => throw new NotImplementedException($"No encoder defined for {_type}"),
-            };
+
             if (_outputPath is not null)
-                data?.SaveAsync(_outputPath, encoder, cancel).Wait(cancel);
+                data?.SaveFile(_outputPath, _type, cancel).Wait(cancel);
             else
-                data?.SaveAsync(_outputStream!, encoder, cancel).Wait(cancel);
+                data?.SaveStream(_outputStream!, _type, cancel).Wait(cancel);
         }
 
         public override string ToString()
@@ -381,7 +363,7 @@ public sealed class TextureManager(IDataManager gameData, LunaLogger logger, ITe
     public BaseImage LoadImageSharp(string path)
     {
         using var stream = File.OpenRead(path);
-        return Image.Load<Rgba32>(stream);
+        return CustomBitmap.FromStream(stream);
     }
 
     /// <summary> Convert an existing image to ImageSharp. Does not create a deep copy of an existing ImageSharp file and just returns the existing one. </summary>
@@ -454,7 +436,7 @@ public sealed class TextureManager(IDataManager gameData, LunaLogger logger, ITe
     }
 
     public static BaseImage ConvertToPng(byte[] rgba, int width, int height)
-        => Image.LoadPixelData<Rgba32>(rgba, width, height);
+        => CustomBitmap.FromPixelData(new RgbaPixelData(width, height, rgba));
 
     public static BaseImage ConvertToDds(byte[] rgba, int width, int height)
     {
