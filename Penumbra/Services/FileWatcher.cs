@@ -1,4 +1,4 @@
-﻿using ImSharp;
+using ImSharp;
 using Luna;
 using Penumbra.Mods.Manager;
 
@@ -150,9 +150,10 @@ public sealed class FileWatcher : IDisposable, IService
                 continue;
             }
 
+            var removePath = true;
             try
             {
-                await ProcessOneAsync(path, token).ConfigureAwait(false);
+                removePath = await ProcessOneAsync(path, token).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
@@ -164,7 +165,8 @@ public sealed class FileWatcher : IDisposable, IService
             }
             finally
             {
-                _pending.TryRemove(path);
+                if (removePath)
+                    _pending.TryRemove(path);
             }
         }
     }
@@ -178,7 +180,7 @@ public sealed class FileWatcher : IDisposable, IService
         }
     }
 
-    private async Task ProcessOneAsync(string path, CancellationToken token)
+    private async Task<bool> ProcessOneAsync(string path, CancellationToken token)
     {
         // Downloads often finish via rename; file may be locked briefly.
         // Wait until it exists and is readable; also require two stable size checks.
@@ -200,25 +202,32 @@ public sealed class FileWatcher : IDisposable, IService
                 if (len > 0 && len == lastLen)
                 {
                     if (_config.EnableAutomaticModImport)
+                    {
                         _modImportManager.AddUnpack(path);
-                    else
-                        _messageService.AddMessage(new InstallNotification(_modImportManager, path), false);
-                    return;
+                        return true;
+                    }
+
+                    if (_messageService.Active.Count(n => n.Key is InstallNotification) >= 3)
+                        return false;
+
+                    _messageService.AddMessage(new InstallNotification(_modImportManager, path), false);
                 }
 
                 lastLen = len;
             }
             catch (IOException)
             {
-                Penumbra.Log.Debug($"[FileWatcher] File is still being written to.");
+                Penumbra.Log.Debug("[FileWatcher] File is still being written to.");
             }
             catch (UnauthorizedAccessException)
             {
-                Penumbra.Log.Debug($"[FileWatcher] File is locked.");
+                Penumbra.Log.Debug("[FileWatcher] File is locked.");
             }
 
             await Task.Delay(150, token);
         }
+
+        return true; // Ignore this path.
     }
 
 
