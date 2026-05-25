@@ -16,6 +16,7 @@ public sealed class FileWatcher : IDisposable, IService
     private readonly ModImportManager                   _modImportManager;
     private readonly MessageService                     _messageService;
     private readonly Configuration                      _config;
+    private readonly ArchiveExtractionNotification      _archiveExtractionNotification;
 
     private bool                     _pausedConsumer;
     private FileSystemWatcher?       _fsw;
@@ -31,18 +32,22 @@ public sealed class FileWatcher : IDisposable, IService
     private static readonly HashSet<string> ContainerExtensions =
         new(StringComparer.OrdinalIgnoreCase) { ".zip", ".rar", ".7z" };
 
+    private static string GetTempPath(string basePath)
+        => Path.Combine(basePath, "Penumbra-FileWatcher");
+
     /// <summary>
     /// Subdirectory under the system temp directory used for extracted archive entries.
     /// </summary>
-    private static readonly string TempRoot = Path.Combine(Path.GetTempPath(), "Penumbra-FileWatcher");
 
-    public FileWatcher(ModImportManager modImportManager, MessageService messageService, Configuration config)
+    public FileWatcher(ModImportManager modImportManager, MessageService messageService, Configuration config,
+        ArchiveExtractionNotification archiveExtractionNotification)
     {
-        _modImportManager = modImportManager;
-        _messageService   = messageService;
-        _config           = config;
+        _modImportManager             = modImportManager;
+        _messageService               = messageService;
+        _config                       = config;
+        _archiveExtractionNotification = archiveExtractionNotification;
 
-        WipeTempRoot();
+        WipeTempRoot(_config.WatchDirectory);
 
         if (_config.EnableDirectoryWatch)
         {
@@ -138,7 +143,6 @@ public sealed class FileWatcher : IDisposable, IService
         _fsw.Renamed += OnPath;
         UpdateDirectory(directory);
     }
-
 
     private void EndConsumerTask()
     {
@@ -320,7 +324,7 @@ public sealed class FileWatcher : IDisposable, IService
 
     /// <summary>
     /// Opens an archive, scans entries for mod files (by entry-name extension only), extracts matches
-    /// into a per-archive subdirectory of <see cref="TempRoot"/>, then queues each extracted file via
+    /// into a per-archive subdirectory of <see cref="_tempRoot"/>, then queues each extracted file via
     /// <see cref="TriggerImport"/>. Per-archive subdirectory keeps the original filename intact for the UI.
     /// </summary>
     private async Task ProcessContainerAsync(string path, CancellationToken token)
@@ -355,8 +359,11 @@ public sealed class FileWatcher : IDisposable, IService
             if (candidates.Count == 0)
                 return;
 
-            Directory.CreateDirectory(TempRoot);
-            archiveDir = Path.Combine(TempRoot, Guid.NewGuid().ToString("N"));
+            var archiveName = Path.GetFileName(path);
+            _archiveExtractionNotification.AddArchive(archiveName, candidates.Count);
+
+            Directory.CreateDirectory(GetTempPath(_config.WatchDirectory));
+            archiveDir = Path.Combine(GetTempPath(_config.WatchDirectory), Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(archiveDir);
 
             foreach (var entry in candidates)
@@ -379,6 +386,8 @@ public sealed class FileWatcher : IDisposable, IService
                         $"[FileWatcher] Duplicate entry name '{safeName}' in container '{path}'; skipping later occurrence.");
                     continue;
                 }
+
+                _archiveExtractionNotification.SetProgress(extractedNow.Count, candidates.Count, safeName);
 
                 try
                 {
@@ -413,6 +422,8 @@ public sealed class FileWatcher : IDisposable, IService
                 await Task.Yield();
             }
 
+            _archiveExtractionNotification.ClearProgress();
+
             if (extractedNow.Count > 0)
                 _extractedArchives[archiveDir] = Environment.TickCount64;
             else
@@ -420,12 +431,14 @@ public sealed class FileWatcher : IDisposable, IService
         }
         catch (OperationCanceledException)
         {
+            _archiveExtractionNotification.ClearProgress();
             if (archiveDir is not null)
                 TryDeleteDirectory(archiveDir);
             throw;
         }
         catch (Exception ex)
         {
+            _archiveExtractionNotification.ClearProgress();
             Penumbra.Log.Warning($"[FileWatcher] Failed to read container '{path}': {ex.Message}");
             if (archiveDir is not null)
                 TryDeleteDirectory(archiveDir);
@@ -434,17 +447,54 @@ public sealed class FileWatcher : IDisposable, IService
 
         // Hand each extracted file off as if it were a fresh drop. The freshly-closed stream means
         // we can skip WaitForStableAsync here and call TriggerImport directly.
+        var allSucceeded = true;
         foreach (var tempPath in extractedNow)
         {
+            var succeeded = false;
             try
             {
                 Penumbra.Log.Verbose($"[FileWatcher] Triggering import for extracted '{tempPath}'.");
-                TriggerImport(tempPath);
+                var results = await TriggerImport(tempPath).ConfigureAwait(false);
+                succeeded = results.Length > 0 && results.All(r => r.Error is null);
+
+                foreach (var result in results)
+                {
+                    if (result.Error is not null)
+                        Penumbra.Log.Warning(
+                            $"[FileWatcher] Import of '{result.File.Name}' encountered an error: {result.Error.Message}");
+                }
             }
             catch (Exception ex)
             {
                 Penumbra.Log.Warning(
-                    $"[FileWatcher] Failed to trigger import for extracted file '{tempPath}': {ex.Message}");
+                    $"[FileWatcher] Failed to import extracted file '{tempPath}': {ex.Message}");
+            }
+
+            if (succeeded)
+            {
+                if (TryDelete(tempPath))
+                    Penumbra.Log.Verbose($"[FileWatcher] Deleted extracted temp file '{tempPath}'.");
+                else
+                    Penumbra.Log.Warning($"[FileWatcher] Could not delete extracted temp file '{tempPath}'.");
+            }
+            else
+            {
+                allSucceeded = false;
+            }
+        }
+
+        if (archiveDir is not null && allSucceeded)
+        {
+            if (TryDeleteDirectory(archiveDir))
+            {
+                _extractedArchives.TryRemove(archiveDir, out _);
+                Penumbra.Log.Verbose($"[FileWatcher] Cleaned up archive temp directory '{archiveDir}'.");
+            }
+            else
+            {
+                Penumbra.Log.Warning(
+                    $"[FileWatcher] Could not fully clean archive temp directory '{archiveDir}'; "
+                  + "it will remain tracked for manual cleanup.");
             }
         }
     }
@@ -458,13 +508,13 @@ public sealed class FileWatcher : IDisposable, IService
             _ => null,
         };
 
-    private static void WipeTempRoot()
+    private static void WipeTempRoot(string watchDir)
     {
         try
         {
-            if (Directory.Exists(TempRoot))
+            if (Directory.Exists(GetTempPath(watchDir)))
             {
-                foreach (var entry in Directory.EnumerateFileSystemEntries(TempRoot))
+                foreach (var entry in Directory.EnumerateFileSystemEntries(GetTempPath(watchDir)))
                 {
                     if (Directory.Exists(entry))
                         TryDeleteDirectory(entry);
@@ -474,12 +524,12 @@ public sealed class FileWatcher : IDisposable, IService
             }
             else
             {
-                Directory.CreateDirectory(TempRoot);
+                Directory.CreateDirectory(GetTempPath(watchDir));
             }
         }
         catch (Exception ex)
         {
-            Penumbra.Log.Warning($"[FileWatcher] Could not prepare temp root '{TempRoot}': {ex.Message}");
+            Penumbra.Log.Warning($"[FileWatcher] Could not prepare temp root '{GetTempPath(watchDir)}': {ex.Message}");
         }
     }
 
@@ -545,7 +595,7 @@ public sealed class FileWatcher : IDisposable, IService
             table.DrawColumn(config.WatchDirectory);
 
             table.DrawColumn("Temp Root"u8);
-            table.DrawColumn(TempRoot);
+            table.DrawColumn(GetTempPath(config.WatchDirectory));
 
             table.DrawColumn("File Watcher Path"u8);
             table.DrawColumn(fileWatcher._fsw?.Path ?? "<NULL>");
