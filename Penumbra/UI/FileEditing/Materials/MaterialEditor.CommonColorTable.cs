@@ -403,7 +403,7 @@ public partial class MaterialEditor
         float max, float speed, Action<Half> setter)
     {
         var tmp    = (float)value;
-        var result = Im.Drag(label, ref tmp, format, min, max, speed);
+        var result = Im.Drag(label, ref tmp, format, min, max, speed, SliderFlags.AlwaysClamp);
         Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, description);
         if (!result)
             return false;
@@ -420,7 +420,7 @@ public partial class MaterialEditor
         float min, float max, float speed)
     {
         var tmp    = (float)value;
-        var result = Im.Drag(label, ref tmp, format, min, max, speed);
+        var result = Im.Drag(label, ref tmp, format, min, max, speed, SliderFlags.AlwaysClamp);
         Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, description);
         if (!result)
             return false;
@@ -445,10 +445,11 @@ public partial class MaterialEditor
         T max, float speed, Action<T> setter) where T : unmanaged, INumber<T>
     {
         var tmp    = value;
-        var result = Im.Drag(label, ref tmp, format, min, max, speed);
+        var result = Im.Drag(label, ref tmp, format, min, max, speed, SliderFlags.AlwaysClamp);
         Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, description);
         if (!result || tmp == value)
             return false;
+
 
         setter(tmp);
         return true;
@@ -458,7 +459,7 @@ public partial class MaterialEditor
         T max, float speed) where T : unmanaged, INumber<T>
     {
         var tmp    = value;
-        var result = Im.Drag(label, ref tmp, format, min, max, speed);
+        var result = Im.Drag(label, ref tmp, format, min, max, speed, SliderFlags.AlwaysClamp);
         Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, description);
         if (!result || tmp == value)
             return false;
