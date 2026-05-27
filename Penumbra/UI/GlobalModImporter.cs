@@ -46,7 +46,7 @@ public sealed class GlobalModImporter : IRequiredService, IDisposable
     }
 
     private void ImportFiles(IReadOnlyList<string> files, IReadOnlyList<string> _)
-        => _importManager.AddUnpack(files.Where(f => ValidModExtensions.Contains(Path.GetExtension(f))));
+        => _importManager.AddUnpack(files.Where(f => ValidModExtensions.Contains(Path.GetExtension(f))).ToList());
 
     private static bool ValidExtension(IDragDropManager manager)
         => manager.Extensions.Any(ValidModExtensions.Contains);

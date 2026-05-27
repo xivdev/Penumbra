@@ -384,7 +384,7 @@ public sealed class DebugTab : Window, ITab<TabType>
                     {
                         foreach (var (index, batch) in _modImporter.ModsToUnpack.Index())
                         {
-                            foreach (var mod in batch)
+                            foreach (var mod in batch.Paths)
                                 table.DrawDataPair($"{index}", mod);
                         }
                     }

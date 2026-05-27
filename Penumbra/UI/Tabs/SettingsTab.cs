@@ -623,6 +623,9 @@ public sealed class SettingsTab : ITab<TabType>
         Checkbox("Enable Directory Watcher"u8,
             "Enables a File Watcher that automatically listens for Mod files that enter a specified directory, causing Penumbra to open a popup to import these mods."u8,
             _config.EnableDirectoryWatch, _fileWatcher.Toggle);
+        Checkbox("Enable Archive Peeking"u8,
+            "Enables the File Watcher to Peek inside .rar .zip and .7z archives, extracting mods inside and causing Penumbra to open a popup to import these mods."u8,
+            _config.EnableContainerPeeking, _fileWatcher.ToggleContainerPeeking);
         Checkbox("Enable Fully Automatic Import"u8,
             "Uses the File Watcher in order to skip the query popup and automatically import any new mods."u8,
             _config.EnableAutomaticModImport, v => _config.EnableAutomaticModImport = v);
