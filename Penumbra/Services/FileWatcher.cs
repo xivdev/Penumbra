@@ -261,7 +261,7 @@ public sealed class FileWatcher : IDisposable, IService
             return;
 
         Penumbra.Log.Verbose($"[FileWatcher] Triggering import for '{path}'.");
-        TriggerImport(path);
+        _ = TriggerImport(path);
     }
 
     /// <summary>
