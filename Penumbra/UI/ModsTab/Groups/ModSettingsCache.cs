@@ -40,13 +40,21 @@ public sealed class ModSettingsCache : BasicCache
         public          bool                Disabled;
     }
 
-    public readonly  List<ModGroupCache>                   Groups    = [];
+    public sealed class Page(string name)
+    {
+        public readonly StringU8            Name   = new(name);
+        public readonly List<ModGroupCache> Groups = [];
+    }
+
+    public readonly Dictionary<int, Page> Pages = [];
+
     private readonly Dictionary<Guid, List<ModGroupCache>> _children = [];
     private readonly ModSelection                          _selection;
     private readonly Configuration                         _config;
     private readonly CommunicatorService                   _communicator;
     public           int                                   Count;
     public           bool                                  AnyConditions;
+    public           int                                   ActivePages;
 
     public ModSettingsCache(ModSelection selection, Configuration config, CommunicatorService communicator)
     {
@@ -93,16 +101,23 @@ public sealed class ModSettingsCache : BasicCache
         AnyConditions = false;
         Dirty         = IManagedCache.DirtyFlags.Clean;
         _children.Clear();
-        Groups.Clear();
-        if (_selection.Mod is not null)
+        Pages.Clear();
+        Count = 0;
+        if (_selection.Mod is {} mod)
         {
             var context = new ModSettingContext(_selection.Mod, _selection.Settings);
-            Groups.EnsureCapacity(_selection.Mod.Groups.Count);
-            foreach (var (index, group) in _selection.Mod.Groups.Index())
+            foreach (var (index, group) in mod.Groups.Index())
             {
                 if (Create(context, group, index) is { } cache)
                 {
-                    Groups.Add(cache);
+                    if (!Pages.TryGetValue(group.Page, out var page))
+                    {
+                        page = new Page(mod.PageNames.TryGetValue(group.Page, out var name) ? name : $"Page {group.Page + 1}");
+                        Pages.Add(group.Page, page);
+                    }
+
+                    ++Count;
+                    page.Groups.Add(cache);
                     _children.TryAdd(cache.Group.Id, cache.Children);
                     if (cache.IsCombo)
                         foreach (var option in cache.Options)
@@ -114,18 +129,24 @@ public sealed class ModSettingsCache : BasicCache
             }
         }
 
-        Count = Groups.Count;
-        for (var i = 0; i < Groups.Count; ++i)
+        ActivePages = Pages.Count;
+        foreach (var page in Pages.Values)
         {
-            var group = Groups[i];
-            if (group.Group.ParentSetting == Guid.Empty)
-                continue;
-
-            if (_children.TryGetValue(group.Group.ParentSetting, out var obj))
+            for (var i = 0; i < page.Groups.Count; ++i)
             {
-                obj.Add(group);
-                Groups.RemoveAt(i--);
+                var group = page.Groups[i];
+                if (group.Group.ParentSetting is null)
+                    continue;
+
+                if (_children.TryGetValue(group.Group.ParentSetting.Id, out var obj))
+                {
+                    obj.Add(group);
+                    page.Groups.RemoveAt(i--);
+                }
             }
+
+            if (page.Groups.Count is 0)
+                --ActivePages;
         }
     }
 

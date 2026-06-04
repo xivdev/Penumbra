@@ -780,7 +780,8 @@ public class ItemSwapTab : IDisposable, ITab
 
     private void OnModOptionChange(in ModOptionChanged.Arguments arguments)
     {
-        if (arguments.Type is ModOptionChangeType.PrepareChange or ModOptionChangeType.PrepareGroupDeletion or ModOptionChangeType.GroupAdded or ModOptionChangeType.OptionAdded
+        if (arguments.Type is ModOptionChangeType.PrepareChange or ModOptionChangeType.PrepareGroupDeletion or ModOptionChangeType.GroupAdded
+                or ModOptionChangeType.OptionAdded or ModOptionChangeType.ConditionChanged
          || arguments.Mod != _mod)
             return;
 

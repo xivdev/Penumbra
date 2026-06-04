@@ -37,9 +37,9 @@ public sealed class
     public          int                            Page            { get; set; }
     public          Setting                        DefaultSettings { get; set; }
     public          ModSettingsLayout              Layout          { get; set; }
-    public          Guid                           ParentSetting   { get; set; } = Guid.Empty;
+    public          IModObject?                    ParentSetting   { get; set; }
     public          ICondition<ModSettingContext>? Condition       { get; set; }
-    public readonly IndexList<MultiSubMod>              OptionData = [];
+    public readonly IndexList<MultiSubMod>         OptionData = [];
 
     public IReadOnlyList<IModOption> Options
         => OptionData;

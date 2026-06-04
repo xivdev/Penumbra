@@ -20,6 +20,7 @@ public sealed class ModGroupEditDrawer(
     FilenameService filenames,
     DescriptionEditPopup descriptionPopup,
     LayoutEditPopup layoutPopup,
+    ConditionEditPopup conditionPopup,
     ImcChecker imcChecker,
     ModGroupConditionDrawer conditionDrawer) : IUiService
 {
@@ -158,7 +159,7 @@ public sealed class ModGroupEditDrawer(
     {
         if (ImEx.Icon.Button(LunaStyle.ConditionIcon, "Edit group conditions."u8,
                 textColor: group.Condition is not null ? LunaStyle.FavoriteColor : ColorParameter.Default))
-            layoutPopup.Open(group);
+            conditionPopup.Open(group);
     }
 
     private void DrawGroupMoveButtons(IModGroup group, int idx)
@@ -261,7 +262,7 @@ public sealed class ModGroupEditDrawer(
     {
         if (ImEx.Icon.Button(LunaStyle.ConditionIcon, "Edit option conditions."u8,
                 textColor: option.Condition is not null ? LunaStyle.FavoriteColor : ColorParameter.Default))
-            descriptionPopup.Open(option);
+            conditionPopup.Open(option);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -385,5 +386,15 @@ public sealed class ModGroupEditDrawer(
         OptionIdxSelectable = Im.Font.CalculateSize("Option #88."u8);
         _optionNameWidth    = totalWidth - OptionIdxSelectable.X - 3 * _buttonSize.X - 4 * _spacing;
         _deleteEnabled      = config.DeleteModModifier.IsActive();
+    }
+
+    internal void DrawConditions(IModGroup group)
+    {
+        using var id = Im.Id.Push(677);
+        ImEx.TextFrameAligned("Conditions:"u8);
+        Im.Line.Same();
+        using var g = Im.Group();
+        if (ConditionDrawer.Draw(group.Condition, new ModSettingContext(group.Mod, ModSettings.Empty), out var replace))
+            group.Condition = replace;
     }
 }

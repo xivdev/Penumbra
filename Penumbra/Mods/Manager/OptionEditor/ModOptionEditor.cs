@@ -153,6 +153,7 @@ public static class ModOptionChangeTypeExtension
             ModOptionChangeType.OptionMetaChanged    => (false, true, false),
             ModOptionChangeType.DisplayChange        => (false, false, false),
             ModOptionChangeType.DefaultOptionChanged => (true, false, false),
+            ModOptionChangeType.ConditionChanged     => (false, true, false),
             _                                        => (false, false, false),
         };
     }

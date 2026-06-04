@@ -57,17 +57,18 @@ public sealed class Mod : IMod, IFileSystemValue<Mod>
         => Name;
 
     // Meta Data
-    public uint                  LoadedVersion         { get; internal set; } = ModMeta.CurrentFileVersion;
-    public Guid                  StableIdentifier      { get; internal set; } = Guid.NewGuid();
-    public string                Name                  { get; internal set; } = "New Mod";
-    public string                Author                { get; internal set; } = string.Empty;
-    public string                Description           { get; internal set; } = string.Empty;
-    public string                Version               { get; internal set; } = string.Empty;
-    public string                Website               { get; internal set; } = string.Empty;
-    public string                Image                 { get; internal set; } = string.Empty;
-    public IReadOnlyList<string> ModTags               { get; internal set; } = [];
-    public HashSet<CustomItemId> DefaultPreferredItems { get; internal set; } = [];
-    public FeatureFlags          RequiredFeatures      { get; internal set; } = 0;
+    public uint                    LoadedVersion         { get; internal set; } = ModMeta.CurrentFileVersion;
+    public Guid                    StableIdentifier      { get; internal set; } = Guid.NewGuid();
+    public string                  Name                  { get; internal set; } = "New Mod";
+    public string                  Author                { get; internal set; } = string.Empty;
+    public string                  Description           { get; internal set; } = string.Empty;
+    public string                  Version               { get; internal set; } = string.Empty;
+    public string                  Website               { get; internal set; } = string.Empty;
+    public string                  Image                 { get; internal set; } = string.Empty;
+    public IReadOnlyList<string>   ModTags               { get; internal set; } = [];
+    public HashSet<CustomItemId>   DefaultPreferredItems { get; internal set; } = [];
+    public FeatureFlags            RequiredFeatures      { get; internal set; } = 0;
+    public Dictionary<int, string> PageNames             { get; internal set; } = [];
 
 
     // Local Data

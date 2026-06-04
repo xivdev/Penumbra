@@ -48,7 +48,6 @@ public class ImcSubMod(ImcModGroup group) : IModOption
     public string Name { get; set; } = "Part";
 
     public ColorId Color     { get; set; }
-    public bool    Separator { get; set; }
 
     public string FullName
         => $"{Group.Name}: {Name}";

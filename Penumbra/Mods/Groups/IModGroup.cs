@@ -3,7 +3,6 @@ using Newtonsoft.Json;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Data;
 using Penumbra.Meta.Manipulations;
-using Penumbra.Mods.Manager.OptionEditor;
 using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
 using Penumbra.String.Classes;
@@ -42,7 +41,13 @@ public interface IModGroup : IModObject, IIndexed
 
     public Setting DefaultSettings { get; set; }
 
-    public Guid ParentSetting { get; set; }
+    public IModObject? ParentSetting { get; set; }
+
+    IModObject? CycleChecker.IHasParent<IModObject>.Parent
+        => ParentSetting;
+
+    bool CycleChecker.IHasParent<IModObject>.CausesCycle(IModObject parent)
+        => ReferenceEquals(this, parent.Group);
 
     public FullPath?   FindBestMatch(Utf8GamePath gamePath);
     public IModOption? AddOption(string name, string description = "");

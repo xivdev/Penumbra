@@ -31,17 +31,7 @@ public readonly struct SingleModGroupEditDrawer(ModGroupEditDrawer editor, Singl
 
         DrawNewOption();
         DrawConvertButton();
-        DrawConditions();
-    }
-
-    private void DrawConditions()
-    {
-        using var id = Im.Id.Push(677);
-        ImEx.TextFrameAligned("Conditions:"u8);
-        Im.Line.Same();
-        using var g = Im.Group();
-        if (editor.ConditionDrawer.Draw(group.Condition, default, out var replace))
-            group.Condition = replace;
+        editor.DrawConditions(group);
     }
 
     private void DrawConvertButton()

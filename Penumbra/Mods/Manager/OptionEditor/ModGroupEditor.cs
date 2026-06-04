@@ -19,6 +19,7 @@ public enum ModOptionChangeType
     GroupAdded,
     GroupDeleted,
     GroupMoved,
+    GroupIdentifierChanged,
     GroupTypeChanged,
     PriorityChanged,
     OptionRenamed,
@@ -29,10 +30,12 @@ public enum ModOptionChangeType
     OptionFilesAdded,
     OptionSwapsChanged,
     OptionMetaChanged,
+    OptionIdentifierChanged,
     DisplayChange,
     PrepareChange,
     PrepareGroupDeletion,
     DefaultOptionChanged,
+    ConditionChanged,
 }
 
 public class ModGroupEditor(
@@ -106,6 +109,70 @@ public class ModGroupEditor(
         saveService.SaveAllOptionGroups(mod, false, config.ReplaceNonAsciiOnImport);
         communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.GroupMoved, mod, group, null, null, group.Id,
             idxFrom));
+    }
+
+    /// <summary> Force the GUID of an object to a specific value. Empty GUIDs are not allowed. </summary>
+    /// <param name="object"> The object to edit. </param>
+    /// <param name="newGuid"> The desired new GUID. </param>
+    /// <returns> False if the new GUID is already used in this mod or if it is empty, true otherwise. </returns>
+    public bool ForceIdentifier(IModObject @object, Guid newGuid)
+    {
+        if (newGuid == Guid.Empty || @object.Mod.StableIdentifier == newGuid || @object.Mod.SubObjects.ContainsKey(newGuid))
+            return false;
+
+        var oldGuid = @object.Id;
+        @object.Id = newGuid;
+        saveService.SaveAllOptionGroups(@object.Mod, false, config.ReplaceNonAsciiOnImport);
+        var changeType = @object is IModGroup ? ModOptionChangeType.GroupIdentifierChanged : ModOptionChangeType.OptionIdentifierChanged;
+        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(changeType, @object.Mod, @object.Group, @object as IModOption, null,
+            oldGuid, -1));
+        return true;
+    }
+
+    public void SetCondition(IModObject @object, ICondition<ModSettingContext>? condition)
+    {
+        if (condition?.Equals(@object.Condition) ?? @object.Condition is null)
+            return;
+
+        @object.Condition = condition;
+        saveService.QueueSave(new ModSaveGroup(@object.Group, config.ReplaceNonAsciiOnImport));
+        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.ConditionChanged, @object.Mod, @object.Group,
+            @object as IModOption, null, @object.Id, -1));
+    }
+
+    public void SetParent(IModGroup group, IModObject? parent)
+    {
+        if (ReferenceEquals(group.ParentSetting, parent))
+            return;
+
+        group.ParentSetting = parent;
+        saveService.QueueSave(new ModSaveGroup(group.Group, config.ReplaceNonAsciiOnImport));
+        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.DisplayChange, group.Mod, group.Group, null,
+            null, group.Id, -1));
+    }
+
+    public void SetLayout(IModObject @object, ModSettingsLayout layout)
+    {
+        layout = layout.Reduce(@object);
+        if (@object.Layout == layout)
+            return;
+
+        @object.Layout = layout;
+        saveService.QueueSave(new ModSaveGroup(@object.Group, config.ReplaceNonAsciiOnImport));
+        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.DisplayChange, @object.Mod, @object.Group,
+            @object as IModOption, null, @object.Id, -1));
+    }
+
+    public void SetColor(IModOption option, int colorType)
+    {
+        var color = IModOption.ConvertColor(colorType);
+        if (color == option.Color)
+            return;
+
+        option.Color = color;
+        saveService.QueueSave(new ModSaveGroup(option.Group, config.ReplaceNonAsciiOnImport));
+        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.DisplayChange, option.Mod, option.Group,
+            option, null, option.Id, -1));
     }
 
     /// <summary> Change the internal priority of the given option group. </summary>

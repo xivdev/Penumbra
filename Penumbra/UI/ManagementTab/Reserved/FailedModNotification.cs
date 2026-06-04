@@ -35,7 +35,7 @@ public sealed class FailedModNotification(Services.MessageService service, UiNav
         if (Im.Button("Open Messages"u8, width))
             navigator.OpenTo(TabType.Messages);
         Im.Line.SameInner();
-        if (ImEx.Button("Open Management"u8, width, true))
+        if (ImEx.Button("Open Management"u8, width))
             navigator.OpenTo(ManagementTabType.BrokenMods);
     }
 

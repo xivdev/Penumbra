@@ -24,7 +24,6 @@ public abstract class OptionSubMod(IModGroup group) : IModOption, IModDataContai
     public ModSettingsLayout Layout      { get; set; }
 
     public ColorId Color     { get; set; }
-    public bool    Separator { get; set; }
 
     public ICondition<ModSettingContext>? Condition { get; set; }
 

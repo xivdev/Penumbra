@@ -3,25 +3,23 @@ using Dalamud.Interface.ImGuiNotification;
 using Luna;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Structs;
-using Penumbra.Mods;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
 using Penumbra.String;
 using Penumbra.String.Classes;
-using Penumbra.UI.Classes;
 
 namespace Penumbra.Files;
 
 public static class GroupDeserialization
 {
-    public static IModGroup? ReadGroup(ref Utf8JsonReader reader, string filePath, Mod mod)
+    public static IModGroup? ReadGroup(ModDeserialization.Context context, ref Utf8JsonReader reader, string filePath)
     {
         if (reader.TokenType is JsonTokenType.Null)
             return null;
 
         if (reader.TokenType is not JsonTokenType.StartObject)
-            throw new InvalidMetaException(mod, filePath, $"Object start for group expected, but got {reader.TokenType}.");
+            throw new InvalidMetaException(context.Mod, filePath, $"Object start for group expected, but got {reader.TokenType}.");
 
         var groupReader = reader.CreateObjectLimit();
         if (reader.TryPeekEnumProperty("Type"u8, out GroupType type) is not JsonFunctions.PeekError.Success)
@@ -29,26 +27,26 @@ public static class GroupDeserialization
 
         return type switch
         {
-            GroupType.Single    => ReadSingle(groupReader, ref reader, mod),
-            GroupType.Multi     => ReadMulti(groupReader, ref reader, mod),
-            GroupType.Imc       => ReadImc(groupReader, ref reader, mod),
-            GroupType.Combining => ReadCombining(groupReader, ref reader, mod),
-            _                   => throw new JsonException($"{type} is not a valid group type for mod {mod.Name}."),
+            GroupType.Single    => ReadSingle(context, groupReader, ref reader),
+            GroupType.Multi     => ReadMulti(context, groupReader, ref reader),
+            GroupType.Imc       => ReadImc(context, groupReader, ref reader),
+            GroupType.Combining => ReadCombining(context, groupReader, ref reader),
+            _                   => throw new JsonException($"{type} is not a valid group type for mod {context.Mod.Name}."),
         };
     }
 
-    public static void ReadDefaultContainer(ref Utf8JsonReader reader, string filePath, Mod mod)
+    public static void ReadDefaultContainer(ModDeserialization.Context context, ref Utf8JsonReader reader, string filePath)
     {
         if (reader.TokenType is JsonTokenType.Null)
         {
-            mod.Default.Files.Clear();
-            mod.Default.FileSwaps.Clear();
-            mod.Default.Manipulations.Clear();
+            context.Mod.Default.Files.Clear();
+            context.Mod.Default.FileSwaps.Clear();
+            context.Mod.Default.Manipulations.Clear();
             return;
         }
 
         if (reader.TokenType is not JsonTokenType.StartObject)
-            throw new InvalidMetaException(mod, filePath,
+            throw new InvalidMetaException(context.Mod, filePath,
                 $"Object start for default container expected, but got {reader.TokenType}.");
 
         var containerReader = reader.CreateObjectLimit();
@@ -56,48 +54,48 @@ public static class GroupDeserialization
         while (containerReader.Read(ref reader))
         {
             if (reader.TokenType is not JsonTokenType.PropertyName)
-                throw new InvalidMetaException(mod, filePath, "Property name expected.");
+                throw new InvalidMetaException(context.Mod, filePath, "Property name expected.");
 
-            if (!LoadDataContainer(ref reader, mod.Default, mod.ModPath, ref visited))
+            if (!LoadDataContainer(ref reader, context.Mod.Default, context.Mod.ModPath, ref visited))
                 reader.Skip();
         }
 
         if ((visited & 1) is not 1)
-            mod.Default.Files.Clear();
+            context.Mod.Default.Files.Clear();
         if ((visited & 2) is not 2)
-            mod.Default.FileSwaps.Clear();
+            context.Mod.Default.FileSwaps.Clear();
         if ((visited & 4) is not 4)
-            mod.Default.Manipulations.Clear();
+            context.Mod.Default.Manipulations.Clear();
     }
 
-    public static IModGroup? ReadGroupFile(SaveService saveService, Mod mod, FileInfo file)
-        => IJsonParsable.ReadJson<GroupIntermediate>(saveService, file.FullName, true, mod).Group;
+    public static IModGroup? ReadGroupFile(SaveService saveService, ModDeserialization.Context context, FileInfo file)
+        => IJsonParsable.ReadJson<GroupIntermediate>(saveService, file.FullName, true, context).Group;
 
-    public static void ReadDefaultContainerFile(SaveService saveService, Mod mod)
+    public static void ReadDefaultContainerFile(SaveService saveService, ModDeserialization.Context context)
     {
-        var file = saveService.FileNames.OptionGroupFile(mod, -1, false);
+        var file = saveService.FileNames.OptionGroupFile(context.Mod, -1, false);
         if (!File.Exists(file))
         {
-            mod.Default.Files.Clear();
-            mod.Default.FileSwaps.Clear();
-            mod.Default.Manipulations.Clear();
+            context.Mod.Default.Files.Clear();
+            context.Mod.Default.FileSwaps.Clear();
+            context.Mod.Default.Manipulations.Clear();
             return;
         }
 
-        IJsonParsable.ReadJson<DefaultOptionIntermediate>(saveService, file, true, mod);
+        IJsonParsable.ReadJson<DefaultOptionIntermediate>(saveService, file, true, context);
     }
 
-    public static MultiModGroup ReadMulti(Utf8JsonObjectLimit groupReader, ref Utf8JsonReader j, Mod mod)
+    public static MultiModGroup ReadMulti(ModDeserialization.Context context, Utf8JsonObjectLimit groupReader, ref Utf8JsonReader j)
     {
-        var ret = new MultiModGroup(mod);
+        var ret = new MultiModGroup(context.Mod);
         while (groupReader.Read(ref j))
         {
             if (j.TokenType is not JsonTokenType.PropertyName)
                 throw new JsonException("Property name expected.");
 
             if (j.ArrayProperty("Options"u8, out var array, true))
-                LoadMultiOptions(array, ref j, ret);
-            else if (!ReadJsonBase(ref j, ret))
+                LoadMultiOptions(context, array, ref j, ret);
+            else if (!ReadJsonBase(context, ref j, ret))
                 j.Skip();
         }
 
@@ -106,17 +104,17 @@ public static class GroupDeserialization
         return ret;
     }
 
-    public static SingleModGroup ReadSingle(Utf8JsonObjectLimit groupReader, ref Utf8JsonReader j, Mod mod)
+    public static SingleModGroup ReadSingle(ModDeserialization.Context context, Utf8JsonObjectLimit groupReader, ref Utf8JsonReader j)
     {
-        var ret = new SingleModGroup(mod);
+        var ret = new SingleModGroup(context.Mod);
         while (groupReader.Read(ref j))
         {
             if (j.TokenType is not JsonTokenType.PropertyName)
                 throw new JsonException("Property name expected.");
 
             if (j.ArrayProperty("Options"u8, out var array, true))
-                LoadSingleOptions(array, ref j, ret);
-            else if (!ReadJsonBase(ref j, ret))
+                LoadSingleOptions(context, array, ref j, ret);
+            else if (!ReadJsonBase(context, ref j, ret))
                 j.Skip();
         }
 
@@ -125,16 +123,16 @@ public static class GroupDeserialization
         return ret;
     }
 
-    public static ImcModGroup? ReadImc(Utf8JsonObjectLimit groupReader, ref Utf8JsonReader j, Mod mod)
+    public static ImcModGroup? ReadImc(ModDeserialization.Context context, Utf8JsonObjectLimit groupReader, ref Utf8JsonReader j)
     {
-        var ret = new ImcModGroup(mod);
+        var ret = new ImcModGroup(context.Mod);
         while (groupReader.Read(ref j))
         {
             if (j.TokenType is not JsonTokenType.PropertyName)
                 throw new JsonException("Property name expected.");
 
             if (j.ArrayProperty("Options"u8, out var array, true))
-                LoadImcOptions(array, ref j, ret);
+                LoadImcOptions(context, array, ref j, ret);
             else if (j.ObjectProperty("Identifier"u8, out var identifier))
                 ret.Identifier = MetaDeserialization.ReadImc(identifier, ref j, out _) ?? default;
             else if (j.ObjectProperty("DefaultEntry"u8, out var entry))
@@ -143,7 +141,7 @@ public static class GroupDeserialization
                 ret.AllVariants = allVariants;
             else if (j.BoolProperty("OnlyAttributes"u8, out var onlyAttributes))
                 ret.OnlyAttributes = onlyAttributes;
-            else if (!ReadJsonBase(ref j, ret))
+            else if (!ReadJsonBase(context, ref j, ret))
                 j.Skip();
         }
 
@@ -158,19 +156,19 @@ public static class GroupDeserialization
         return ret;
     }
 
-    public static CombiningModGroup ReadCombining(Utf8JsonObjectLimit groupReader, ref Utf8JsonReader j, Mod mod)
+    public static CombiningModGroup ReadCombining(ModDeserialization.Context context, Utf8JsonObjectLimit groupReader, ref Utf8JsonReader j)
     {
-        var ret = CombiningModGroup.EmptyData(mod);
+        var ret = CombiningModGroup.EmptyData(context.Mod);
         while (groupReader.Read(ref j))
         {
             if (j.TokenType is not JsonTokenType.PropertyName)
                 throw new JsonException("Property name expected.");
 
             if (j.ArrayProperty("Options"u8, out var array, true))
-                LoadCombiningOptions(array, ref j, ret);
+                LoadCombiningOptions(context, array, ref j, ret);
             else if (j.ArrayProperty("Containers"u8, out var containers, true))
                 LoadCombiningContainers(containers, ref j, ret);
-            else if (!ReadJsonBase(ref j, ret))
+            else if (!ReadJsonBase(context, ref j, ret))
                 j.Skip();
         }
 
@@ -178,7 +176,7 @@ public static class GroupDeserialization
         if (requiredContainers > ret.Data.Count)
         {
             Penumbra.Messager.NotificationMessage(
-                $"Combining Group {ret.Name} in {mod.Name} has not enough data containers for its {ret.OptionData.Count} options, filling with empty containers.",
+                $"Combining Group {ret.Name} in {context.Mod.Name} has not enough data containers for its {ret.OptionData.Count} options, filling with empty containers.",
                 NotificationType.Warning);
             ret.Data.EnsureCapacity(requiredContainers);
             ret.Data.AddRange(Enumerable.Repeat(0, requiredContainers - ret.Data.Count).Select(_ => new CombinedDataContainer(ret)));
@@ -186,7 +184,7 @@ public static class GroupDeserialization
         else if (requiredContainers < ret.Data.Count)
         {
             Penumbra.Messager.NotificationMessage(
-                $"Combining Group {ret.Name} in {mod.Name} has more than {IModGroup.MaxCombiningOptions} options, ignoring excessive options.",
+                $"Combining Group {ret.Name} in {context.Mod.Name} has more than {IModGroup.MaxCombiningOptions} options, ignoring excessive options.",
                 NotificationType.Warning);
             ret.Data.RemoveRange(requiredContainers, ret.Data.Count - requiredContainers);
         }
@@ -196,7 +194,8 @@ public static class GroupDeserialization
     }
 
 
-    private static void LoadSingleOptions(Utf8JsonObjectLimit optionArray, ref Utf8JsonReader j, SingleModGroup ret)
+    private static void LoadSingleOptions(ModDeserialization.Context context, Utf8JsonObjectLimit optionArray, ref Utf8JsonReader j,
+        SingleModGroup ret)
     {
         while (optionArray.Read(ref j))
         {
@@ -211,7 +210,7 @@ public static class GroupDeserialization
                 if (j.TokenType is not JsonTokenType.PropertyName)
                     throw new JsonException("Property name expected.");
 
-                if (LoadOptionData(ref j, option))
+                if (LoadOptionData(context, ref j, option))
                     continue;
 
                 if (LoadDataContainer(ref j, option, ret.Mod.ModPath, ref visited))
@@ -224,7 +223,8 @@ public static class GroupDeserialization
         }
     }
 
-    private static void LoadMultiOptions(Utf8JsonObjectLimit optionArray, ref Utf8JsonReader j, MultiModGroup ret)
+    private static void LoadMultiOptions(ModDeserialization.Context context, Utf8JsonObjectLimit optionArray, ref Utf8JsonReader j,
+        MultiModGroup ret)
     {
         var warned  = false;
         var visited = 0;
@@ -258,7 +258,7 @@ public static class GroupDeserialization
                         continue;
                     }
 
-                    if (LoadOptionData(ref j, option))
+                    if (LoadOptionData(context, ref j, option))
                         continue;
 
                     if (LoadDataContainer(ref j, option, ret.Mod.ModPath, ref visited))
@@ -272,7 +272,8 @@ public static class GroupDeserialization
         }
     }
 
-    private static void LoadImcOptions(Utf8JsonObjectLimit optionArray, ref Utf8JsonReader j, ImcModGroup ret)
+    private static void LoadImcOptions(ModDeserialization.Context context, Utf8JsonObjectLimit optionArray, ref Utf8JsonReader j,
+        ImcModGroup ret)
     {
         var rollingMask = 0ul;
         while (optionArray.Read(ref j))
@@ -299,7 +300,7 @@ public static class GroupDeserialization
                     continue;
                 }
 
-                if (LoadOptionData(ref j, option))
+                if (LoadOptionData(context, ref j, option))
                     continue;
 
                 j.Skip();
@@ -327,7 +328,8 @@ public static class GroupDeserialization
         }
     }
 
-    private static void LoadCombiningOptions(Utf8JsonObjectLimit optionArray, ref Utf8JsonReader j, CombiningModGroup ret)
+    private static void LoadCombiningOptions(ModDeserialization.Context context, Utf8JsonObjectLimit optionArray, ref Utf8JsonReader j,
+        CombiningModGroup ret)
     {
         var warned = false;
         while (optionArray.Read(ref j))
@@ -354,7 +356,7 @@ public static class GroupDeserialization
                     if (j.TokenType is not JsonTokenType.PropertyName)
                         throw new JsonException("Property name expected.");
 
-                    if (LoadOptionData(ref j, option))
+                    if (LoadOptionData(context, ref j, option))
                         continue;
 
                     j.Skip();
@@ -398,40 +400,14 @@ public static class GroupDeserialization
 
     /// <summary> Load the relevant data for a selectable option from a JToken of that option. </summary>
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-    private static bool LoadOptionData(ref Utf8JsonReader j, IModOption option)
+    private static bool LoadOptionData(ModDeserialization.Context context, ref Utf8JsonReader j, IModOption option)
     {
-        if (j.StringProperty("Name"u8, out string? name, true))
-        {
-            option.Name = name ?? string.Empty;
+        if (ReadJsonObject(context, ref j, option))
             return true;
-        }
-
-        if (j.StringProperty("Description"u8, out string? description, true))
-        {
-            option.Description = description ?? string.Empty;
-            return true;
-        }
-
-        if (j.BoolProperty("Separator"u8, out var separator))
-        {
-            option.Separator = separator;
-            return true;
-        }
 
         if (j.NumberProperty("Color"u8, out int number))
         {
-            option.Color = number switch
-            {
-                1 => ColorId.OptionColor1,
-                2 => ColorId.OptionColor2,
-                3 => ColorId.OptionColor3,
-                4 => ColorId.OptionColor4,
-                5 => ColorId.OptionColor5,
-                6 => ColorId.OptionColor6,
-                7 => ColorId.OptionColor7,
-                8 => ColorId.OptionColor8,
-                _ => default,
-            };
+            option.Color = IModOption.ConvertColor(number);
             return true;
         }
 
@@ -499,19 +475,58 @@ public static class GroupDeserialization
         return false;
     }
 
-    private static bool ReadJsonBase(ref Utf8JsonReader j, IModGroup group)
+    private static bool ReadJsonObject(ModDeserialization.Context context, ref Utf8JsonReader j, IModObject @object)
     {
         if (j.StringProperty("Name"u8, out string? name, true))
         {
-            group.Name = name ?? string.Empty;
+            @object.Name = name ?? string.Empty;
             return true;
         }
 
         if (j.StringProperty("Description"u8, out string? description, true))
         {
-            group.Description = description ?? string.Empty;
+            @object.Description = description ?? string.Empty;
             return true;
         }
+
+        if (j.GuidProperty("Id"u8, out var id))
+        {
+            @object.Id = id;
+            return true;
+        }
+
+        if (j.ArrayProperty("Layout"u8, out _, true))
+        {
+            @object.Layout = j.ReadFlagEnumArray<ModSettingsLayout>()?.Reduce(@object) ?? ModSettingsLayout.None;
+            return true;
+        }
+
+        if (j.ObjectProperty("Condition"u8, out _, true))
+        {
+            if (j.TokenType is JsonTokenType.Null)
+            {
+                @object.Condition = null;
+                return true;
+            }
+
+            if (!ConditionParser.TryParse<ModSettingContext>(ref j, out var condition))
+                throw new JsonException("Could not parse condition.");
+
+            if (condition?.Reduce() is { } c and not TrueCondition<ModSettingContext>)
+                context.Conditions[@object] = c;
+            else
+                @object.Condition = null;
+
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool ReadJsonBase(ModDeserialization.Context context, ref Utf8JsonReader j, IModGroup group)
+    {
+        if (ReadJsonObject(context, ref j, group))
+            return true;
 
         if (j.StringProperty("Image"u8, out string? image, true))
         {
@@ -537,6 +552,12 @@ public static class GroupDeserialization
             return true;
         }
 
+        if (j.GuidProperty("ParentSettings"u8, out var parent))
+        {
+            context.Parents[group] = parent;
+            return true;
+        }
+
         return false;
     }
 
@@ -546,13 +567,13 @@ public static class GroupDeserialization
 
         public static GroupIntermediate Read(ref Utf8JsonReader j, string filePath, object? parent)
         {
-            if (parent is not Mod mod)
-                throw new ArgumentException("The user input for reading a mod group has to be the mod object.");
+            if (parent is not ModDeserialization.Context context)
+                throw new ArgumentException("The user input for reading a mod group has to be the deserialization context.");
 
             if (!j.Read())
-                return default;
+                throw new InvalidMetaException(context.Mod, filePath, "Empty or malformed JSON encountered.");
 
-            return new GroupIntermediate { Group = ReadGroup(ref j, filePath, mod) };
+            return new GroupIntermediate { Group = ReadGroup(context, ref j, filePath) };
         }
     }
 
@@ -560,13 +581,13 @@ public static class GroupDeserialization
     {
         public static DefaultOptionIntermediate Read(ref Utf8JsonReader j, string filePath, object? parent)
         {
-            if (parent is not Mod mod)
-                throw new ArgumentException("The user input for reading a default option has to be the mod object.");
+            if (parent is not ModDeserialization.Context context)
+                throw new ArgumentException("The user input for reading a default option has to be the deserialization context.");
 
             if (!j.Read())
-                throw new InvalidMetaException(mod, filePath, "Empty or malformed JSON encountered.");
+                throw new InvalidMetaException(context.Mod, filePath, "Empty or malformed JSON encountered.");
 
-            ReadDefaultContainer(ref j, filePath, mod);
+            ReadDefaultContainer(context, ref j, filePath);
             return default;
         }
     }

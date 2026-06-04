@@ -1,13 +1,49 @@
 using System.Text.Json;
+using ImSharp;
 using Luna;
 using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
 
 namespace Penumbra.Mods.Groups;
 
-public readonly record struct ModSettingContext(Mod Mod, ModSettings Settings);
+public readonly record struct ModSettingContext(Mod Mod, ModSettings Settings) : IConditionContext<ModSettingContext>
+{
+    public static ICondition<ModSettingContext>? ParseCustomType(ref Utf8JsonReader reader, Utf8JsonObjectLimit obj, StringU8 type)
+    {
+        if (type.Equals("AllSettings"u8))
+        {
+            var options = GetMultiIds(obj, ref reader);
+            return new IdListCondition(false, options ?? []);
+        }
 
-public sealed class AllSettingsCondition(params IReadOnlyCollection<Guid> options) : MultiSettingCondition(options)
+        if (type.Equals("AnySetting"u8))
+        {
+            var options = GetMultiIds(obj, ref reader);
+            return new IdListCondition(true, options ?? []);
+        }
+
+        return null;
+    }
+
+    private static List<Guid>? GetMultiIds(Utf8JsonObjectLimit obj, ref Utf8JsonReader reader)
+    {
+        List<Guid>? options = null;
+        while (obj.Read(ref reader))
+        {
+            if (reader.TokenType is not JsonTokenType.PropertyName)
+                continue;
+
+            if (reader.ArrayProperty("Options"u8, out _))
+                options = reader.ReadGuidArray() ?? [];
+            else
+                reader.Skip();
+        }
+
+        return options;
+    }
+}
+
+public sealed class AllSettingsCondition(params IReadOnlyCollection<IModOption> options) : MultiSettingCondition(options)
 {
     protected override ReadOnlySpan<byte> Type
         => "AllSettings"u8;
@@ -17,11 +53,8 @@ public sealed class AllSettingsCondition(params IReadOnlyCollection<Guid> option
 
     public override bool Evaluate(in ModSettingContext context)
     {
-        foreach (var optionId in this)
+        foreach (var option in this)
         {
-            if (!context.Mod.SubObjects.TryGetValue(optionId, out var o) || o is not IModOption option)
-                return false;
-
             var group   = context.Mod.Groups[option.GroupIndex];
             var setting = context.Settings.IsEmpty ? group.DefaultSettings : context.Settings.Settings[option.GroupIndex];
             switch (group.Behaviour)
@@ -42,18 +75,15 @@ public sealed class AllSettingsCondition(params IReadOnlyCollection<Guid> option
         => this.Aggregate(HashCode.Combine(typeof(AllSettingsCondition).GetHashCode()), HashCode.Combine);
 }
 
-public sealed class AnySettingCondition(params IReadOnlyCollection<Guid> options) : MultiSettingCondition(options)
+public sealed class AnySettingCondition(params IReadOnlyCollection<IModOption> options) : MultiSettingCondition(options)
 {
     protected override ReadOnlySpan<byte> Type
         => "AnySetting"u8;
 
     public override bool Evaluate(in ModSettingContext context)
     {
-        foreach (var optionId in this)
+        foreach (var option in this)
         {
-            if (!context.Mod.SubObjects.TryGetValue(optionId, out var o) || o is not IModOption option)
-                continue;
-
             var group   = context.Mod.Groups[option.GroupIndex];
             var setting = context.Settings.IsEmpty ? group.DefaultSettings : context.Settings.Settings[option.GroupIndex];
             switch (group.Behaviour)
@@ -77,9 +107,9 @@ public sealed class AnySettingCondition(params IReadOnlyCollection<Guid> options
         => this.Aggregate(HashCode.Combine(typeof(AnySettingCondition).GetHashCode()), HashCode.Combine);
 }
 
-public abstract class MultiSettingCondition : List<Guid>, ICondition<ModSettingContext>
+public abstract class MultiSettingCondition : List<IModOption>, ICondition<ModSettingContext>
 {
-    protected MultiSettingCondition(IReadOnlyCollection<Guid> options)
+    protected MultiSettingCondition(IReadOnlyCollection<IModOption> options)
     {
         EnsureCapacity(options.Count);
         AddRange(options);
@@ -92,7 +122,7 @@ public abstract class MultiSettingCondition : List<Guid>, ICondition<ModSettingC
 
     public virtual ICondition<ModSettingContext> Reduce()
     {
-        this.RemoveDuplicates();
+        this.RemoveDuplicates<IModOption, IModObject>();
         return this;
     }
 
@@ -102,7 +132,7 @@ public abstract class MultiSettingCondition : List<Guid>, ICondition<ModSettingC
         j.WriteString("Type"u8, Type);
         j.WriteStartArray("Options"u8);
         foreach (var option in this)
-            j.WriteStringValue(option);
+            j.WriteStringValue(option.Id);
         j.WriteEndArray();
         j.WriteEndObject();
     }
@@ -113,5 +143,49 @@ public abstract class MultiSettingCondition : List<Guid>, ICondition<ModSettingC
     public int RemoveSubconditions(Func<ICondition<ModSettingContext>, bool> predicate)
         => 0;
 
+    public ICondition<ModSettingContext>? EditConditions(Func<ICondition<ModSettingContext>, ICondition<ModSettingContext>?> method)
+        => method(this);
+
     public abstract bool Equals(ICondition<ModSettingContext>? other);
+}
+
+/// <summary> Used for delayed loading after parsing all objects. </summary>
+public sealed class IdListCondition : List<Guid>, ICondition<ModSettingContext>
+{
+    /// <summary> Whether this is a list for All or Any. </summary>
+    public readonly bool Any;
+
+    public IdListCondition(bool any, IReadOnlyCollection<Guid> options)
+    {
+        Any = any;
+        EnsureCapacity(options.Count);
+        AddRange(options);
+    }
+
+    public bool Equals(ICondition<ModSettingContext>? other)
+        => other is IdListCondition id && id.SequenceEqual(this);
+
+    public bool Evaluate(in ModSettingContext context)
+        => throw new NotImplementedException();
+
+    public ICondition<ModSettingContext> Reduce()
+    {
+        this.RemoveDuplicates();
+        return this;
+    }
+
+    public void WriteJson(Utf8JsonWriter j)
+        => throw new NotImplementedException();
+
+    public ICondition<ModSettingContext> DeepCopy()
+        => throw new NotImplementedException();
+
+    public IEnumerable<ICondition<ModSettingContext>> Subconditions
+        => [];
+
+    public int RemoveSubconditions(Func<ICondition<ModSettingContext>, bool> predicate)
+        => 0;
+
+    public ICondition<ModSettingContext>? EditConditions(Func<ICondition<ModSettingContext>, ICondition<ModSettingContext>?> method)
+        => method(this);
 }

@@ -24,6 +24,7 @@ public class ModPanelEditTab(
     ModGroupEditDrawer groupEditDrawer,
     DescriptionEditPopup descriptionPopup,
     LayoutEditPopup layoutPopup,
+    ConditionEditPopup conditionPopup,
     AddGroupDrawer addGroupDrawer)
     : ITab<ModPanelTab>
 {
@@ -102,6 +103,7 @@ public class ModPanelEditTab(
 
         descriptionPopup.Draw();
         layoutPopup.Draw();
+        conditionPopup.Draw();
     }
 
     public void Reset()

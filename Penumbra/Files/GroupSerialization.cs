@@ -35,8 +35,8 @@ public static class GroupSerialization
         j.WriteNonEmptyString("Image"u8, group.Image);
         j.WriteSignedIfNot("Page"u8, group.Page, 0);
         j.WriteUnsignedIfNot("DefaultSettings"u8, group.DefaultSettings.Value, 0ul);
-        if (group.ParentSetting != Guid.Empty)
-            j.WriteString("ParentSetting"u8, group.ParentSetting);
+        if (group.ParentSetting is {} parent)
+            j.WriteString("ParentSetting"u8, parent.Id);
 
         basePath ??= group.Mod.ModPath;
         switch (group)
@@ -131,8 +131,7 @@ public static class GroupSerialization
     public static void FillOption(Utf8JsonWriter j, IModOption option, DirectoryInfo? basePath = null)
     {
         FillSubObject(j, option);
-        WriteOptionColor(j, option.Color);
-        j.WriteBoolIf("Separator"u8, option.Separator, false);
+        WriteOptionColor(j, option);
     }
 
     public static void FillSubObject(Utf8JsonWriter j, IModObject @object)
@@ -188,20 +187,9 @@ public static class GroupSerialization
     public static bool ContainerEmpty(IModDataContainer? container)
         => container is null || container.Files.Count is 0 && container.FileSwaps.Count is 0 && container.Manipulations.Count is 0;
 
-    private static void WriteOptionColor(Utf8JsonWriter j, ColorId color)
+    private static void WriteOptionColor(Utf8JsonWriter j, IModOption option)
     {
-        var c = color switch
-        {
-            ColorId.OptionColor1 => 1,
-            ColorId.OptionColor2 => 2,
-            ColorId.OptionColor3 => 3,
-            ColorId.OptionColor4 => 4,
-            ColorId.OptionColor5 => 5,
-            ColorId.OptionColor6 => 6,
-            ColorId.OptionColor7 => 7,
-            ColorId.OptionColor8 => 8,
-            _                    => 0,
-        };
+        var c = option.ColorAsInteger;
         if (c is not 0)
             j.WriteNumber("Color"u8, c);
     }

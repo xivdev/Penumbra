@@ -41,16 +41,34 @@ public class ModPanelSettingsTab(
     public void DrawContent()
     {
         using var id    = Im.Id.Push(selection.ModName);
-        using var table = Im.Table.Begin("##settings"u8, 1, TableFlags.ScrollY, Im.ContentRegion.Available);
-        if (!table)
-            return;
+        var       cache = CacheManager.Instance.GetOrCreateCache(Im.Id.Current, () => new ModSettingsCache(selection, config, communicator));
 
         _inherited = selection.Collection != collectionManager.Active.Current;
-        _temporary = selection.TemporarySettings != null;
+        _temporary = selection.TemporarySettings is not null;
         _locked    = (selection.TemporarySettings?.Lock ?? 0) > 0;
 
-        table.SetupScrollFreeze(0, 1);
-        table.NextColumn();
+        if (cache.ActivePages > 1)
+        {
+            DrawPreamble();
+            communicator.PostEnabledDraw.Invoke(new PostEnabledDraw.Arguments(selection.Mod!));
+            modGroupDrawer.Draw(cache, selection.Mod!, selection.Settings, selection.TemporarySettings);
+        }
+        else
+        {
+            using var table = Im.Table.Begin("##settings"u8, 1, TableFlags.ScrollY, Im.ContentRegion.Available);
+            if (!table)
+                return;
+            table.SetupScrollFreeze(0, 1);
+            table.NextColumn();
+            DrawPreamble();
+            table.NextColumn();
+            communicator.PostEnabledDraw.Invoke(new PostEnabledDraw.Arguments(selection.Mod!));
+            modGroupDrawer.Draw(cache, selection.Mod!, selection.Settings, selection.TemporarySettings);
+        }
+    }
+
+    private void DrawPreamble()
+    {
         DrawTemporaryWarning();
         DrawInheritedWarning();
         Im.Dummy(Vector2.Zero);
@@ -61,13 +79,6 @@ public class ModPanelSettingsTab(
         DrawPriorityInput();
         tutorial.OpenTutorial(BasicTutorialSteps.Priority);
         DrawRemoveSettings();
-
-        table.NextColumn();
-        communicator.PostEnabledDraw.Invoke(new PostEnabledDraw.Arguments(selection.Mod!));
-
-        modGroupDrawer.Draw(selection.Mod!, selection.Settings, selection.TemporarySettings);
-        UiHelpers.DefaultLineSpace();
-        communicator.PostSettingsPanelDraw.Invoke(new PostSettingsPanelDraw.Arguments(selection.Mod!));
     }
 
     /// <summary> Draw a big tinted bar if the current setting is temporary. </summary>

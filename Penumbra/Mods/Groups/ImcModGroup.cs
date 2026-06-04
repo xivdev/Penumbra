@@ -37,7 +37,7 @@ public class ImcModGroup(Mod mod) : IModGroup
     public int                            Page            { get; set; }
     public Setting                        DefaultSettings { get; set; } = Setting.Zero;
     public ModSettingsLayout              Layout          { get; set; }
-    public Guid                           ParentSetting   { get; set; } = Guid.Empty;
+    public IModObject?                    ParentSetting   { get; set; }
     public ICondition<ModSettingContext>? Condition       { get; set; }
 
     public ImcIdentifier Identifier;

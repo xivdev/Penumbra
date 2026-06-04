@@ -21,8 +21,8 @@ public readonly struct ModMeta(Mod mod) : ISavable
         j.WriteStartObject();
 
         j.WriteNumber("FileVersion"u8, CurrentFileVersion);
-        j.WriteString("Identifier"u8,  mod.StableIdentifier);
-        j.WriteString("Name"u8,        mod.Name);
+        j.WriteString("Identifier"u8, mod.StableIdentifier);
+        j.WriteString("Name"u8,       mod.Name);
         j.WriteNonEmptyString("Author"u8,      mod.Author);
         j.WriteNonEmptyString("Description"u8, mod.Description);
         j.WriteNonEmptyString("Image"u8,       mod.Image);
@@ -56,6 +56,14 @@ public readonly struct ModMeta(Mod mod) : ISavable
             }
 
             j.WriteEndArray();
+        }
+
+        if (mod.PageNames.Count > 0)
+        {
+            j.WriteStartObject("PageNames"u8);
+            foreach (var (page, name) in mod.PageNames)
+                j.WriteString($"{page}", name);
+            j.WriteEndObject();
         }
 
         j.WriteEndObject();

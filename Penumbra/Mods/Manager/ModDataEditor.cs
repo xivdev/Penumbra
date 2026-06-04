@@ -31,6 +31,7 @@ public enum ModDataChangeType : uint
     FileSystemSortOrder   = 0x020000,
     LastConfigEdit        = 0x040000,
     Identifier            = 0x080000,
+    PageNames             = 0x100000,
 }
 
 public class ModDataEditor(SaveService saveService, CommunicatorService communicatorService, ItemData itemData, LocalModDatabase database)
@@ -112,6 +113,17 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
         mod.RequiredFeatures = flags;
         saveService.QueueSave(new ModMeta(mod));
         communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.RequiredFeatures, mod, null));
+    }
+
+    public bool ForceIdentifier(Mod mod, Guid newGuid)
+    {
+        if (newGuid == Guid.Empty || mod.StableIdentifier == newGuid || mod.SubObjects.ContainsKey(newGuid))
+            return false;
+
+        mod.StableIdentifier = newGuid;
+        saveService.QueueSave(new ModMeta(mod));
+        communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.Identifier, mod, null));
+        return true;
     }
 
     public void ChangeModTag(Mod mod, int tagIdx, string newTag)

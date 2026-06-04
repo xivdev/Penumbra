@@ -84,8 +84,17 @@
                 "type": "object",
                 "$ref": "group.json"
             }
+        },
+        "PageNames": {
+            "description": "Optional names for pages referenced in the option groups, represented as a dictionary from int to string.",
+            "type": [ "null", "object" ],
+            "patternProperties": {
+                "^-?[0-9]+$": {
+                    "type": [ "null", "string" ]
+                }
+            },
+            "additionalProperties": false
         }
-
     },
     "required": [
         "FileVersion",

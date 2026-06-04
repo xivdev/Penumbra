@@ -2,6 +2,7 @@ using ImSharp;
 using Luna;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
+using Penumbra.Communication;
 using Penumbra.Mods;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.Settings;
@@ -13,7 +14,6 @@ public sealed class ModGroupDrawer(
     Configuration config,
     CollectionManager collectionManager,
     SingleGroupCombo combo,
-    ModSelection selection,
     CommunicatorService communicator)
     : IUiService
 {
@@ -22,10 +22,9 @@ public sealed class ModGroupDrawer(
     private TemporaryModSettings? _tempSettings;
     private ModSettingContext     _context;
 
-    public void Draw(Mod mod, ModSettings settings, TemporaryModSettings? tempSettings)
+    public void Draw(ModSettingsCache cache, Mod mod, ModSettings settings, TemporaryModSettings? tempSettings)
     {
-        var cache = CacheManager.Instance.GetOrCreateCache(Im.Id.Current, () => new ModSettingsCache(selection, config, communicator));
-        if (cache.Count is 0)
+        if (cache.Count is 0 || cache.ActivePages is 0)
             return;
 
         _context      = new ModSettingContext(mod, tempSettings ?? settings);
@@ -33,9 +32,43 @@ public sealed class ModGroupDrawer(
         _temporary    = tempSettings is not null;
         _locked       = (tempSettings?.Lock ?? 0) > 0;
 
-        Im.Dummy(UiHelpers.DefaultSpace);
-        foreach (var group in cache.Groups)
-            DrawGroup(group);
+        if (cache.ActivePages > 1)
+        {
+            Im.Dummy(UiHelpers.DefaultSpace);
+            using var tabBar = Im.TabBar.Begin("##pages"u8, TabBarFlags.FittingPolicyScroll);
+            if (!tabBar)
+                return;
+
+            foreach (var (id, page) in cache.Pages)
+            {
+                using var _       = Im.Id.Push(id);
+                using var tabItem = tabBar.Item(page.Name, TabItemFlags.NoPushId);
+                if (!tabItem)
+                    continue;
+
+                using var child = Im.Child.Begin("##child"u8, false, WindowFlags.NoSavedSettings);
+                if (!child)
+                    continue;
+
+                Im.Dummy(UiHelpers.DefaultSpace);
+                foreach (var group in page.Groups)
+                    DrawGroup(group);
+
+                UiHelpers.DefaultLineSpace();
+                communicator.PostSettingsPanelDraw.Invoke(new PostSettingsPanelDraw.Arguments(mod));
+            }
+        }
+        else
+        {
+            var (id, page) = cache.Pages.First();
+            using var _ = Im.Id.Push(id);
+            Im.Dummy(UiHelpers.DefaultSpace);
+            foreach (var group in page.Groups)
+                DrawGroup(group);
+
+            UiHelpers.DefaultLineSpace();
+            communicator.PostSettingsPanelDraw.Invoke(new PostSettingsPanelDraw.Arguments(mod));
+        }
     }
 
     private void DrawGroup(ModSettingsCache.ModGroupCache group)
