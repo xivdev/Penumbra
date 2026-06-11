@@ -91,6 +91,7 @@ public sealed class DebugTab : Window, ITab<TabType>
     private readonly IpcTester                     _ipcTester;
     private readonly CrashHandlerPanel             _crashHandlerPanel;
     private readonly TexHeaderDrawer               _texHeaderDrawer;
+    private readonly LunaDxTester                  _lunaDxTester;
     private readonly HookOverrideDrawer            _hookOverrides;
     private readonly RsfService                    _rsfService;
     private readonly ActionTmbListDrawer           _actionTmbs;
@@ -108,7 +109,7 @@ public sealed class DebugTab : Window, ITab<TabType>
         CutsceneService cutsceneService, ModImportManager modImporter, ImportPopup importPopup, FrameworkManager framework,
         TextureManager textureManager, ShaderReplacementFixer shaderReplacementFixer, RedrawService redraws, EmoteListDrawer emotes,
         Diagnostics diagnostics, IpcTester ipcTester, CrashHandlerPanel crashHandlerPanel, TexHeaderDrawer texHeaderDrawer,
-        HookOverrideDrawer hookOverrides, RsfService rsfService, GlobalVariablesDrawer globalVariablesDrawer,
+        LunaDxTester lunaDxTester, HookOverrideDrawer hookOverrides, RsfService rsfService, GlobalVariablesDrawer globalVariablesDrawer,
         ActionTmbListDrawer actionTmbs, ObjectIdentification objectIdentification, RenderTargetDrawer renderTargetDrawer,
         ModMigratorDebug modMigratorDebug, ShapeInspector shapeInspector, FileWatcher.FileWatcherDrawer fileWatcherDrawer,
         DragDropManager dragDropManager)
@@ -146,6 +147,7 @@ public sealed class DebugTab : Window, ITab<TabType>
         _ipcTester                 = ipcTester;
         _crashHandlerPanel         = crashHandlerPanel;
         _texHeaderDrawer           = texHeaderDrawer;
+        _lunaDxTester              = lunaDxTester;
         _hookOverrides             = hookOverrides;
         _rsfService                = rsfService;
         _globalVariablesDrawer     = globalVariablesDrawer;
@@ -190,6 +192,7 @@ public sealed class DebugTab : Window, ITab<TabType>
         DrawActorsDebug();
         DrawCollectionCaches();
         _texHeaderDrawer.Draw();
+        _lunaDxTester.Draw();
         _modMigratorDebug.Draw();
         DrawShaderReplacementFixer();
         DrawData();

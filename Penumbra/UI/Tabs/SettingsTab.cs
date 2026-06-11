@@ -6,6 +6,7 @@ using Luna;
 using Penumbra.Api;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
+using Penumbra.Import.Textures;
 using Penumbra.Interop;
 using Penumbra.Interop.Hooks.PostProcessing;
 using Penumbra.Interop.Services;
@@ -857,6 +858,7 @@ public sealed class SettingsTab : ITab<TabType>
         DrawCrashHandler();
         DrawMinimumDimensionConfig();
         DrawHdrRenderTargets();
+        DrawAuxiliaryDeviceMode();
         Checkbox("Auto Deduplicate on Import"u8,
             "Automatically deduplicate mod files on import. This will make mod file sizes smaller, but deletes (binary identical) files."u8,
             _config.AutoDeduplicateOnImport, v => _config.AutoDeduplicateOnImport = v);
@@ -1011,6 +1013,25 @@ public sealed class SettingsTab : ITab<TabType>
             "Set the dynamic range that can be used for diffuse colors in materials without causing visual artifacts.\n"u8
           + "Changing this setting requires a game restart. It also only works if Wait for Plugins on Startup is enabled."u8);
 #pragma warning restore CS0162 // Unreachable code detected
+    }
+
+    private void DrawAuxiliaryDeviceMode()
+    {
+        Im.Item.SetNextWidth(UiHelpers.InputTextWidth.X);
+        using (var combo = Im.Combo.Begin("##auxiliaryDeviceMode"u8, _config.AuxiliaryDeviceMode.ToNameU8()))
+        {
+            if (combo)
+                foreach (var value in AuxiliaryDeviceMode.Values)
+                {
+                    if (Im.Selectable(value.ToNameU8(), _config.AuxiliaryDeviceMode == value))
+                        _config.AuxiliaryDeviceMode = value;
+
+                    Im.Tooltip.OnHover(value.Tooltip());
+                }
+        }
+
+        LunaStyle.DrawAlignedHelpMarkerLabel("Hardware Acceleration Mode for Texture Compression"u8,
+            "How to manage hardware acceleration for texture compression.\nChange this if you run into ReShade issues after compressing textures."u8);
     }
 
     /// <summary> Draw a checkbox for the HTTP API that creates and destroys the web server when toggled. </summary>

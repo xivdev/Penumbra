@@ -7,6 +7,7 @@ using Newtonsoft.Json;
 using Penumbra.Api.Enums;
 using Penumbra.Files;
 using Penumbra.Import.Structs;
+using Penumbra.Import.Textures;
 using Penumbra.Interop.Services;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
@@ -107,6 +108,9 @@ public partial class Configuration : IPluginConfiguration, ISavable, IService
 
     [ConfigProperty(EventName = "ShowRenameChanged")]
     private RenameField _showRename = RenameField.BothDataPrio;
+
+    [ConfigProperty(EventName = "AuxiliaryDeviceModeChanged")]
+    private AuxiliaryDeviceMode _auxiliaryDeviceMode = AuxiliaryDeviceMode.Singleton;
 
     public ChangedItemMode ChangedItemDisplay        { get; set; } = ChangedItemMode.GroupedCollapsed;
     public int             OptionGroupCollapsibleMin { get; set; } = 5;
