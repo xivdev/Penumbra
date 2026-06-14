@@ -7,7 +7,7 @@ using Penumbra.Util;
 
 namespace Penumbra.Import.Textures;
 
-/// <summary> An image processing effect that saves its input to a byte array. </summary>
+/// <summary> An image processing effect that saves its input to a <see cref="ScratchImage"/>. </summary>
 /// <param name="readbackProvider"> Dalamud's texture readback provider. </param>
 /// <seealso cref="ITextureReadbackProvider.GetAllRawImagesAsync"/>
 public abstract class SaveToScratchImageEffect(ITextureReadbackProvider readbackProvider) : WrapEffectBase, IDisposable
