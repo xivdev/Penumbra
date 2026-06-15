@@ -1,6 +1,6 @@
 using Luna;
 using Penumbra.Mods.Groups;
-using Penumbra.Mods.Manager.OptionEditor;
+using Penumbra.Mods.Settings;
 using Penumbra.UI.Classes;
 
 namespace Penumbra.Mods.SubMods;
@@ -8,11 +8,12 @@ namespace Penumbra.Mods.SubMods;
 [Flags]
 public enum ModSettingsLayout : ulong
 {
-    None         = 0,
-    Disable      = 0x01, // Disable the option or group instead of hiding it when the conditions are not fulfilled.
-    Indent       = 0x02, // Indent the group if it is placed under another option or group.
-    ParentHeader = 0x04, // Show the groups name or just its options if it is placed under another option or group.
-    Separator    = 0x08, // Add a separator after this option.
+    None          = 0,
+    Disable       = 0x01, // Disable the option or group instead of hiding it when the conditions are not fulfilled.
+    Indent        = 0x02, // Indent the group if it is placed under another option or group.
+    ParentHeader  = 0x04, // Show the groups name or just its options if it is placed under another option or group.
+    Separator     = 0x08, // Add a separator after this option.
+    DefaultClosed = 0x10, // A group should be closed by default.
 }
 
 public interface IModObject : CycleChecker.IHasParent<IModObject>, IEquatable<IModObject>
@@ -68,11 +69,22 @@ public interface IModOption : IModObject, IIndexed
             ColorId.OptionColor8 => 8,
             _                    => 0,
         };
+
+    public bool IsEnabled(ModSettings settings)
+    {
+        var setting = settings.IsEmpty || settings.Settings.Count <= GroupIndex
+            ? Group.DefaultSettings
+            : settings.Settings[GroupIndex];
+        if (Group.Behaviour is GroupDrawBehaviour.MultiSelection)
+            return setting.HasFlag(Index);
+
+        return setting.AsIndex == Index;
+    }
 }
 
 public static class ModSettingsLayoutExtensions
 {
-    public const ModSettingsLayout GroupValid  = ModSettingsLayout.Disable | ModSettingsLayout.Indent | ModSettingsLayout.ParentHeader;
+    public const ModSettingsLayout GroupValid  = ModSettingsLayout.Disable | ModSettingsLayout.Indent | ModSettingsLayout.ParentHeader | ModSettingsLayout.DefaultClosed;
     public const ModSettingsLayout OptionValid = ModSettingsLayout.Disable | ModSettingsLayout.Separator;
 
     extension(ModSettingsLayout layout)
@@ -85,6 +97,10 @@ public static class ModSettingsLayoutExtensions
                 yield return ModSettingsLayout.Indent;
             if (layout.HasFlag(ModSettingsLayout.ParentHeader))
                 yield return ModSettingsLayout.ParentHeader;
+            if (layout.HasFlag(ModSettingsLayout.Separator))
+                yield return ModSettingsLayout.Separator;
+            if (layout.HasFlag(ModSettingsLayout.DefaultClosed))
+                yield return ModSettingsLayout.DefaultClosed;
         }
 
         public ModSettingsLayout Reduce(IModObject @object)

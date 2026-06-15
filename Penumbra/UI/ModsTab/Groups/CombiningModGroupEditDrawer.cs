@@ -29,7 +29,6 @@ public readonly struct CombiningModGroupEditDrawer(ModGroupEditDrawer editor, Co
 
         DrawNewOption();
         DrawContainerNames();
-        editor.DrawConditions(group);
     }
 
     private void DrawNewOption()

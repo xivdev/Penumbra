@@ -56,27 +56,27 @@ public sealed class ModGroupEditDrawer(
     private IModOption? _dragDropOption;
     private bool        _draggingAcross;
 
-    public void Draw(Mod mod)
+    public void Draw(GroupNameCache cache, Mod mod)
     {
         PrepareStyle();
 
         using var id = Im.Id.Push("ge"u8);
         foreach (var (groupIdx, group) in mod.Groups.Index())
-            DrawGroup(group, groupIdx);
+            DrawGroup(cache, group, groupIdx);
 
         while (ActionQueue.TryDequeue(out var action))
             action.Invoke();
     }
 
-    private void DrawGroup(IModGroup group, int idx)
+    private void DrawGroup(GroupNameCache cache, IModGroup group, int idx)
     {
         using var id    = Im.Id.Push(idx);
         using var frame = ImEx.FramedGroup($"Group #{idx + 1}");
-        DrawGroupNameRow(group, idx);
+        DrawGroupNameRow(cache, group, idx);
         group.EditDrawer(this).Draw();
     }
 
-    private void DrawGroupNameRow(IModGroup group, int idx)
+    private void DrawGroupNameRow(GroupNameCache cache, IModGroup group, int idx)
     {
         DrawGroupName(group);
         Im.Line.SameInner();
@@ -93,6 +93,8 @@ public sealed class ModGroupEditDrawer(
         DrawGroupDelete(group);
         Im.Line.SameInner();
         DrawGroupPriority(group);
+        Im.Line.SameInner();
+        DrawGroupPage(cache, group);
     }
 
     private void DrawGroupName(IModGroup group)
@@ -139,6 +141,18 @@ public sealed class ModGroupEditDrawer(
             ModManager.OptionEditor.ChangeGroupPriority(group, new ModPriority(newPriority));
         Im.Tooltip.OnHover("Group Priority"u8);
     }
+
+    private void DrawGroupPage(GroupNameCache cache, IModGroup group)
+    {
+        Im.Item.SetNextWidth(PriorityWidth);
+        if (ImEx.InputOnDeactivation.Scalar("##GroupPage"u8, group.Page + 1, out var newPage))
+            ModManager.OptionEditor.SetPage(group, newPage - 1);
+        Im.Tooltip.OnHover(
+            "The page this group is to be placed in. If this group has a parent, this setting is ignored.\n\nNote that the number seen here is offset by 1 compared to the number stored in the JSON file.");
+        Im.Line.SameInner();
+        ImEx.TextFrameAligned(cache.ShowPages ? cache.Pages[group.Page].Name.Utf8 : "(Unused)"u8);
+    }
+
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void DrawGroupDescription(IModGroup group)
@@ -386,15 +400,5 @@ public sealed class ModGroupEditDrawer(
         OptionIdxSelectable = Im.Font.CalculateSize("Option #88."u8);
         _optionNameWidth    = totalWidth - OptionIdxSelectable.X - 3 * _buttonSize.X - 4 * _spacing;
         _deleteEnabled      = config.DeleteModModifier.IsActive();
-    }
-
-    internal void DrawConditions(IModGroup group)
-    {
-        using var id = Im.Id.Push(677);
-        ImEx.TextFrameAligned("Conditions:"u8);
-        Im.Line.Same();
-        using var g = Im.Group();
-        if (ConditionDrawer.Draw(group.Condition, new ModSettingContext(group.Mod, ModSettings.Empty), out var replace))
-            group.Condition = replace;
     }
 }

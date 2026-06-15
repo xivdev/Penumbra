@@ -172,6 +172,27 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
         communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.Favorite, mod, null));
     }
 
+    public void ChangePageName(Mod mod, int page, string newName)
+    {
+        var oldName = string.Empty;
+        if (newName.Length is 0)
+        {
+            if (!mod.PageNames.Remove(page))
+                return;
+        }
+        else if (mod.PageNames.TryGetValue(page, out oldName) && oldName == newName)
+        {
+            return;
+        }
+        else
+        {
+            mod.PageNames[page] = newName;
+        }
+
+        saveService.QueueSave(new ModMeta(mod));
+        communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.PageNames, mod, oldName ?? string.Empty));
+    }
+
     private void ChangeTag(Mod mod, int tagIdx, string newTag, bool local)
     {
         var which = local ? mod.LocalTags : mod.ModTags;

@@ -96,16 +96,8 @@ public sealed class LayoutManager : IRequiredService, IDisposable
     {
         if (@object is IModGroup group && ReferenceEquals(group.ParentSetting, toRemove))
             group.ParentSetting = null;
-        @object.Condition?.EditConditions(c =>
-        {
-            if (c is not MultiSettingCondition m)
-                return null;
-
-            m.RemoveAll(i => i == toRemove);
-            return m.Reduce();
-        });
+        @object.Condition?.RemoveSubconditions(c => c is SettingCondition s && s.Option == toRemove);
         @object.Condition = @object.Condition?.Reduce();
-
         if (@object.Condition is TrueCondition<ModSettingContext>)
             @object.Condition = null;
     }

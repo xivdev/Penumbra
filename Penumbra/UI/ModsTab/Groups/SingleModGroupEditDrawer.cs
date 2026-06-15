@@ -31,7 +31,6 @@ public readonly struct SingleModGroupEditDrawer(ModGroupEditDrawer editor, Singl
 
         DrawNewOption();
         DrawConvertButton();
-        editor.DrawConditions(group);
     }
 
     private void DrawConvertButton()

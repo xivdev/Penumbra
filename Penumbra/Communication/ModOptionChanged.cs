@@ -26,6 +26,9 @@ public sealed class ModOptionChanged(LunaLogger log)
         /// <seealso cref="UI.AdvancedWindow.ItemSwapTab.OnModOptionChange"/>
         ItemSwapTab = 0,
 
+        /// <seealso cref="UI.ModsTab.Groups.GroupNameCache.OnModOptionChange"/>
+        GroupNameCache = 0,
+
         /// <seealso cref="Collections.Manager.CollectionStorage.OnModOptionChange"/>
         CollectionStorage = 100,
 

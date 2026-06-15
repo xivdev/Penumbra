@@ -56,26 +56,17 @@ public static class ModDeserialization
             return null;
         }
 
-        private static ICondition<ModSettingContext> Convert(IModObject parent, IdListCondition condition)
+        private static ICondition<ModSettingContext> Convert(IModObject parent, SettingIdCondition condition)
         {
-            var objects = new List<IModOption>(condition.Count);
-            for (var i = 0; i < condition.Count; ++i)
-            {
-                if (ValidateCondition(parent, condition[i], out var option) is { } error)
-                    throw new InvalidMetaException(parent.Mod, string.Empty, error);
-
-                objects[i] = option!;
-            }
-
-            objects.RemoveDuplicates<IModOption, IModObject>();
-
-            return condition.Any ? new AnySettingCondition(objects) : new AllSettingsCondition(objects);
+            if (ValidateCondition(parent, condition.Option, out var option) is { } error)
+                throw new InvalidMetaException(parent.Mod, string.Empty, error);
+            return new SettingCondition(option!);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void ResolveConditions(IModObject @object, ICondition<ModSettingContext> condition)
         {
-            var reduced = condition.EditConditions(m => m is IdListCondition id ? Convert(@object, id) : null)?.Reduce();
+            var reduced = condition.EditConditions(m => m is SettingIdCondition id ? Convert(@object, id) : null)?.Reduce();
             if (reduced is not null and not TrueCondition<ModSettingContext>)
                 @object.Condition = reduced;
         }

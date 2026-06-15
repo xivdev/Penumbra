@@ -140,6 +140,17 @@ public class ModGroupEditor(
             @object as IModOption, null, @object.Id, -1));
     }
 
+    public void SetPage(IModGroup group, int page)
+    {
+        if (group.Page == page)
+            return;
+
+        group.Page = page;
+        saveService.QueueSave(new ModSaveGroup(group, config.ReplaceNonAsciiOnImport));
+        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.DisplayChange, group.Mod, group,
+            null, null, group.Id, -1));
+    }
+
     public void SetParent(IModGroup group, IModObject? parent)
     {
         if (ReferenceEquals(group.ParentSetting, parent))

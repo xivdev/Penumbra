@@ -121,6 +121,9 @@ public class ModSelection : EventBase<ModSelection.Arguments, ModSelection.Prior
 
         /// <seealso cref="Penumbra.UI.AdvancedWindow.ModEditWindowFactory"/>
         ModEditWindow = 0,
+
+        /// <seealso cref="UI.ModsTab.Groups.GroupNameCache.OnSelectionChange"/>
+        GroupNameCache = 0,
     }
 
     public readonly record struct Arguments(Mod? OldSelection, Mod? NewSelection);

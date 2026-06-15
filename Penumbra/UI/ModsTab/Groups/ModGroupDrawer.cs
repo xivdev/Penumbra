@@ -6,7 +6,9 @@ using Penumbra.Communication;
 using Penumbra.Mods;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.Settings;
+using Penumbra.Mods.SubMods;
 using Penumbra.Services;
+using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.ModsTab.Groups;
 
@@ -76,14 +78,70 @@ public sealed class ModGroupDrawer(
         using var indent  = IndentGroup(group.Indented);
         var       setting = _context.Settings.IsEmpty ? group.Group.DefaultSettings : _context.Settings.Settings[group.Index];
         if (group.IsCombo)
-            DrawSingleGroupCombo(group, setting);
+            DrawSingleGroupComboNew(group, setting);
         else if (group.Behaviour is GroupDrawBehaviour.MultiSelection)
-            DrawMultiGroup(group, setting);
+            DrawMultiGroupNew(group, setting);
         else
             DrawSingleGroupRadio(group, setting);
 
         foreach (var child in group.Children)
             DrawGroup(child);
+    }
+
+    private void DrawSingleGroupComboNew(ModSettingsCache.ModGroupCache group, Setting setting)
+    {
+        using var id = Im.Id.Push(group.Index);
+        var line = new HeaderLine
+        {
+            Collapsible       = false,
+            LeftDistance      = 30 * Im.Style.GlobalScale,
+            RightDistance     = 30 * Im.Style.GlobalScale,
+            ComboDistance =  Im.Style.ItemSpacing.X * 2,
+        };
+        var (_, popupId, popupBox) = line.Combo(group.Name, group.Description, group.Group.Options[setting.AsIndex].Name);
+        using var popup = Im.Combo.DrawPopup(popupId, popupBox);
+        if (!popup)
+            return;
+
+        foreach (var option in group.Options)
+            Im.Selectable(option.Name);
+    }
+
+    private void DrawMultiGroupNew(ModSettingsCache.ModGroupCache group, Setting setting)
+    {
+        using var id = Im.Id.Push(group.Index);
+        var line = new HeaderLine
+        {
+            Collapsible       = true,
+            DefaultClosed     = group.Group.Layout.HasFlag(ModSettingsLayout.DefaultClosed),
+            LeftDistance      = 30 * Im.Style.GlobalScale,
+        };
+        var options = group.Options;
+        if (group.HideHeader || line.Basic(group.Name, group.Description))
+            DrawOptions();
+
+        void DrawOptions()
+        {
+            using var disabled = Im.Disabled(_locked);
+            for (var idx = 0; idx < options.Count; ++idx)
+            {
+                using var i       = Im.Id.Push(idx);
+                var       option  = options[idx];
+                var       enabled = setting.HasFlag(idx);
+
+                if (Im.Checkbox(option.Name, ref enabled))
+                    SetModSetting(group.Group, group.Index, setting.SetBit(idx, enabled));
+
+                if (option.Description.Length > 0)
+                {
+                    Im.Line.SameInner();
+                    LunaStyle.DrawAlignedHelpMarker(option.Description, treatAsHovered: Im.Item.Hovered());
+                }
+
+                foreach (var childGroup in option.Children)
+                    DrawGroup(childGroup);
+            }
+        }
     }
 
     /// <summary>

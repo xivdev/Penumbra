@@ -22,7 +22,7 @@ public sealed class ConditionEditPopup(ModGroupConditionDrawer drawer) : ObjectE
         var cursor = Im.Cursor.Position;
         Im.ScaledDummy(640);
         Im.Cursor.Position = cursor;
-        if (drawer.Draw(obj.Condition, new ModSettingContext(obj.Mod, ModSettings.Empty), out var newCondition))
+        if (drawer.Draw(obj.Condition, new ModSettingContext(obj.Mod, ModSettings.Empty, obj), out var newCondition))
             obj.Condition = newCondition;
     }
 }
