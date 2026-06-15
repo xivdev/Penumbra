@@ -1,3 +1,4 @@
+using Luna;
 using SharpCompress.Archives;
 using SharpCompress.Common;
 using SharpCompress.Readers;
@@ -6,12 +7,15 @@ namespace Penumbra.Util;
 
 public static class ArchiveUtility
 {
+    public sealed class SymbolicLinkException(string source, string target) : UnauthorizedAccessException($"Archive contains forbidden symbolic link entry '{source}' -> '{target}'.");
+
     //private static readonly ZipWriterOptions DefaultArchiveOptions = new(CompressionType.LZMA, CompressionLevel.Level0);
 
     private static readonly ExtractionOptions ExtractionOptions = new()
     {
-        ExtractFullPath = true,
-        Overwrite       = true,
+        ExtractFullPath     = true,
+        Overwrite           = true,
+        SymbolicLinkHandler = static (source, target) => throw new SymbolicLinkException(source, target),
     };
 
     public static void CreateFromDirectory(string directoryPath, string filePath)
@@ -49,12 +53,14 @@ public static class ArchiveUtility
             var reader = archive.ExtractAllEntries();
 
             while (reader.MoveToNextEntry())
-                action(new(reader.Entry, reader.OpenEntryStream));
+            {
+                action(new ReaderShim(reader.Entry, reader.OpenEntryStream));
+            }
         }
         else
         {
             foreach (var entry in archive.Entries)
-                action(new(entry, entry.OpenEntryStream));
+                action(new ReaderShim(entry, entry.OpenEntryStream));
         }
     }
 
@@ -63,7 +69,7 @@ public static class ArchiveUtility
     {
         public void WriteEntryToDirectory(string directory)
         {
-            var path = Path.Combine(directory, Entry.Key!);
+            var path = Path.CombineSafely(directory, Entry.Key!);
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
             using var e = OpenEntryStream();
             using var f = File.Open(path, FileMode.Create, FileAccess.Write);

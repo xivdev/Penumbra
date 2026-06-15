@@ -252,7 +252,7 @@ public partial class TexToolsImporter
         var data = stream.ReadFile<PenumbraSqPackStream.PenumbraFileResource>(mod.ModOffset);
 
         _currentFileName = mod.FullPath;
-        var extractedFile = new FileInfo(Path.Combine(outDirectory.FullName, mod.FullPath));
+        var extractedFile = new FileInfo(Path.CombineSafely(outDirectory.FullName, mod.FullPath));
 
         extractedFile.Directory?.Create();
 

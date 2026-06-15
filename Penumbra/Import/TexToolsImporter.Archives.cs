@@ -44,22 +44,24 @@ public partial class TexToolsImporter
 
         _currentModDirectory = ModCreator.CreateModFolder(_baseDirectory, Path.GetRandomFileName(), _config.ReplaceNonAsciiOnImport, true);
 
-
         State           = ImporterState.ExtractingModFiles;
         _currentFileIdx = 0;
         ArchiveUtility.ForEachEntry(archive, reader =>
         {
             _token.ThrowIfCancellationRequested();
 
-            if (reader.Entry.IsDirectory)
+            if (reader.Entry.IsDirectory || string.IsNullOrEmpty(reader.Entry.Key))
             {
                 --_currentNumFiles;
                 return;
             }
 
+            if (!string.IsNullOrEmpty(reader.Entry.LinkTarget))
+                throw new ArchiveUtility.SymbolicLinkException(reader.Entry.Key, reader.Entry.LinkTarget);
+
             Penumbra.Log.Information($"        -> Extracting {reader.Entry.Key}");
             // Check that the mod has a valid name in the meta.json file.
-            if (Path.GetFileName(reader.Entry.Key) == "meta.json")
+            if (Path.GetFileName(reader.Entry.Key.AsSpan()).Equals("meta.json", StringComparison.OrdinalIgnoreCase))
             {
                 using var s = new MemoryStream();
                 using var e = reader.OpenEntryStream();
@@ -72,7 +74,7 @@ public partial class TexToolsImporter
                 if (name.Length is 0)
                     throw new Exception("Invalid mod archive: mod meta has no name.");
 
-                using var f = File.OpenWrite(Path.Combine(_currentModDirectory.FullName, reader.Entry.Key!));
+                using var f = File.OpenWrite(Path.CombineSafely(_currentModDirectory.FullName, reader.Entry.Key!));
                 s.Seek(0, SeekOrigin.Begin);
                 s.WriteTo(f);
             }
@@ -97,7 +99,7 @@ public partial class TexToolsImporter
                 if (leadDir)
                 {
                     _currentModDirectory = ModCreator.CreateModFolder(_baseDirectory, baseName, _config.ReplaceNonAsciiOnImport, false);
-                    Directory.Move(Path.Combine(oldName, baseName), _currentModDirectory.FullName);
+                    Directory.Move(Path.CombineSafely(oldName, baseName), _currentModDirectory.FullName);
                     Directory.Delete(oldName);
                 }
                 else
