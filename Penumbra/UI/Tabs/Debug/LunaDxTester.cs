@@ -544,7 +544,7 @@ public class LunaDxTester(
         => LunaEffects.Resample(new TextureStandIn(input, 0), _optScale, _optResample);
 
     private IEffect BuildResampleFixed(IEffect input)
-        => LunaEffects.Resample(new TextureStandIn(input, 0), _optWidth, _optHeight, _optResample);
+        => LunaEffects.Resample(new TextureStandIn(input, 0), (_optWidth, _optHeight), _optResample);
 
     private IEffect BuildBlend4(IEffect input, IEffect input2)
         => LunaEffects.Blend4(new TextureStandIn(input, 0), new TextureStandIn(input2, 0), out _, new LunaShaders.Blend4Uniforms
@@ -676,8 +676,7 @@ public class LunaDxTester(
                 Rounding = _optRounding,
             }), "Dye Gloss Overlay")
         {
-            Width  = _optWidth,
-            Height = _optHeight,
+            Dimensions = (_optWidth, _optHeight),
         };
 
     private IEffect BuildCustom(IEffect input)
@@ -696,7 +695,7 @@ public class LunaDxTester(
             $"Bring Your Own Compute Shader ({Path.GetFileName(_shaderPath)})");
         effect.ThreadGroupCount = (_optTgcX, _optTgcY, _optTgcZ);
         effect.Textures.Add(new TextureStandIn(input, 0));
-        effect.Outputs.Add(new RwImage((uint)_optWidth, (uint)_optHeight, FullScreenQuad.DefaultOutputFormat));
+        effect.Outputs.Add(new RwImage((_optWidth, _optHeight), FullScreenQuad.DefaultOutputFormat));
         effect.Samplers.Add(_optNn ? Sampler.ClampNearestNeighbor : Sampler.ClampBilinear);
         return effect;
     }
