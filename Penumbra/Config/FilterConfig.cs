@@ -337,7 +337,7 @@ public sealed partial class FilterConfig : ConfigurationFile<FilenameService>
         _resourceLoggerCategoryFilter = resourceWatcher["CategoryFilter"]?.Value<uint>() is { } categoryFilter
             ? (ResourceCategoryFlag)categoryFilter
             : ResourceExtensions.AllResourceCategories;
-        _resourceLoggerTypeFilter = resourceWatcher["TypeFilter"]?.Value<uint>() is { } typeFilter
+        _resourceLoggerTypeFilter = resourceWatcher["TypeFilter"]?.Value<ulong>() is { } typeFilter
             ? (ResourceTypeFlag)typeFilter
             : ResourceExtensions.AllResourceTypes;
         _resourceLoggerLoadStateFilter = resourceWatcher["LoadStateFilter"]?.Value<uint>() is { } loadStateFilter
