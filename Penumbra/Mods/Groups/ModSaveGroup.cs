@@ -72,7 +72,7 @@ public readonly struct ModSaveGroup : ISavable
     public void Save(Stream stream)
     {
         // TODO: System.Text.Json
-        using var w = new StreamWriter(stream);
+        using var w = new StreamWriter(stream, leaveOpen: true);
         using var j = new JsonTextWriter(w);
         j.Formatting = Formatting.Indented;
         var serializer = new JsonSerializer { Formatting = Formatting.Indented };
