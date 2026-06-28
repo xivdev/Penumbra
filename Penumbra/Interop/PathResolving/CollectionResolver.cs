@@ -193,7 +193,7 @@ public sealed unsafe class CollectionResolver(
         var collection = CollectionByIdentifier(identifier, hostile)
          ?? CheckYourself(identifier, gameObject)
          ?? CollectionByAttributes(gameObject, ref notYetReady)
-         ?? CheckOwnedCollection(identifier, gameObject, owner, ref notYetReady, hostile)
+         ?? CheckOwnedCollection(identifier, owner, ref notYetReady, hostile)
          ?? collectionManager.Active.Default;
 
         return notYetReady ? collection.ToResolveData(gameObject) : cache.Set(collection, identifier, gameObject);
@@ -272,7 +272,7 @@ public sealed unsafe class CollectionResolver(
     }
 
     /// <summary> Get the collection applying to the owner if it is available. </summary>
-    private ModCollection? CheckOwnedCollection(ActorIdentifier identifier, Actor @object, Actor owner, ref bool notYetReady, bool hostile)
+    private ModCollection? CheckOwnedCollection(ActorIdentifier identifier, Actor owner, ref bool notYetReady, bool hostile)
     {
         if (identifier.Type is not IdentifierType.Owned
          || !config.UseOwnerNameForCharacterCollection
