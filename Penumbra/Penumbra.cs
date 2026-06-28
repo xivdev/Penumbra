@@ -285,7 +285,7 @@ public class Penumbra : IDalamudPlugin
             $"> **`Synchronous Load (Dalamud):  `** {(_services.GetService<DalamudConfigService>().GetDalamudConfig(DalamudConfigService.WaitingForPluginsOption, out bool v) ? v.ToString() : "Unknown")} (first Start: {hdrEnabler.FirstLaunchWaitForPluginsState?.ToString() ?? "Unknown"})\n");
         sb.Append(
             $"> **`Logging:                     `** Log: {_config.Filters.ResourceLoggerWriteToLog}, Watcher: {_config.Filters.ResourceLoggerEnabled} ({_config.Filters.ResourceLoggerMaxEntries})\n");
-        sb.Append($"> **`Use Ownership:               `** {_config.UseOwnerNameForCharacterCollection}\n");
+        sb.Append($"> **`Use Ownership:               `** {_config.UseOwnerNameForCharacterCollection} (Hostiles: {_config.UseOwnerForHostiles})\n");
         GatherRelevantPlugins(sb);
         sb.AppendLine("**Mods**");
         sb.Append($"> **`Installed Mods:              `** {_modManager.Count}\n");

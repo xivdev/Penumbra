@@ -80,7 +80,7 @@ public class ActiveCollections : ISavable, IDisposable, IService
 
     /// <summary> Get the collection assigned to an individual or Default if unassigned. </summary>
     public ModCollection Individual(ActorIdentifier identifier)
-        => Individuals.TryGetCollection(identifier, out var c) ? c : Default;
+        => Individuals.TryGetCollection(identifier, out var c, false) ? c : Default;
 
     /// <summary> The list of group assignments. </summary>
     private ModCollection?[] SpecialCollections
@@ -547,16 +547,16 @@ public class ActiveCollections : ISavable, IDisposable, IService
                     return
                         $"Assignment is redundant due to overwriting Male Players and Female Players{racialString} with an identical collection.\nYou can remove it.";
 
-                if (male == null)
+                if (male is null)
                 {
-                    if (female == null && @base == yourself)
+                    if (female is null && @base == yourself)
                         return
                             $"Assignment is redundant due to overwriting Base{racialString} with an identical collection.\nYou can remove it.";
                     if (female == yourself && @base == yourself)
                         return
                             $"Assignment is redundant due to overwriting Base and Female Players{racialString} with an identical collection.\nYou can remove it.";
                 }
-                else if (male == yourself && female == null && @base == yourself)
+                else if (male == yourself && female is null && @base == yourself)
                 {
                     return
                         $"Assignment is redundant due to overwriting Base and Male Players{racialString} with an identical collection.\nYou can remove it.";
@@ -570,7 +570,7 @@ public class ActiveCollections : ISavable, IDisposable, IService
                     case IdentifierType.Player when id.HomeWorld != ushort.MaxValue:
                     {
                         var global = ByType(CollectionType.Individual, _actors.CreatePlayer(id.PlayerName, ushort.MaxValue));
-                        return (global != null ? global.Identity.Index : null) == checkAssignment.Identity.Index
+                        return global?.Identity.Index == checkAssignment.Identity.Index
                             ? "Assignment is redundant due to an identical Any-World assignment existing.\nYou can remove it."
                             : string.Empty;
                     }
@@ -579,12 +579,12 @@ public class ActiveCollections : ISavable, IDisposable, IService
                         {
                             var global = ByType(CollectionType.Individual,
                                 _actors.CreateOwned(id.PlayerName, ushort.MaxValue, id.Kind, id.DataId));
-                            if ((global != null ? global.Identity.Index : null) == checkAssignment.Identity.Index)
+                            if (global?.Identity.Index == checkAssignment.Identity.Index)
                                 return "Assignment is redundant due to an identical Any-World assignment existing.\nYou can remove it.";
                         }
 
                         var unowned = ByType(CollectionType.Individual, _actors.CreateNpc(id.Kind, id.DataId));
-                        return (unowned != null ? unowned.Identity.Index : null) == checkAssignment.Identity.Index
+                        return unowned?.Identity.Index == checkAssignment.Identity.Index
                             ? "Assignment is redundant due to an identical unowned NPC assignment existing.\nYou can remove it."
                             : string.Empty;
                 }
@@ -606,7 +606,7 @@ public class ActiveCollections : ISavable, IDisposable, IService
                     collection1 = CollectionType.Default;
                 }
 
-                if (femaleNpc == null)
+                if (femaleNpc is null)
                 {
                     femaleNpc = Default;
                     if (femaleNpc.Identity.Index != checkAssignment.Identity.Index)
@@ -626,7 +626,7 @@ public class ActiveCollections : ISavable, IDisposable, IService
                 foreach (var parentType in group)
                 {
                     var assignment = ByType(parentType);
-                    if (assignment == null)
+                    if (assignment is null)
                         continue;
 
                     if (assignment.Identity.Index == checkAssignment.Identity.Index)

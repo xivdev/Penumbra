@@ -68,6 +68,7 @@ public partial class Configuration : IPluginConfiguration, ISavable, IService
     public bool UseCharacterCollectionInInspect      { get; set; } = true;
     public bool UseCharacterCollectionInTryOn        { get; set; } = true;
     public bool UseOwnerNameForCharacterCollection   { get; set; } = true;
+    public bool UseOwnerForHostiles                  { get; set; } = false;
     public bool UseNoModsInInspect                   { get; set; } = false;
     public bool HideChangedItemFilters               { get; set; } = false;
     public bool ReplaceNonAsciiOnImport              { get; set; } = false;
