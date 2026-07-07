@@ -8,7 +8,6 @@ using Penumbra.Mods.Groups;
 using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
 using Penumbra.Services;
-using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.ModsTab.Groups;
 
@@ -93,10 +92,10 @@ public sealed class ModGroupDrawer(
         using var id = Im.Id.Push(group.Index);
         var line = new HeaderLine
         {
-            Collapsible       = false,
-            LeftDistance      = 30 * Im.Style.GlobalScale,
-            RightDistance     = 30 * Im.Style.GlobalScale,
-            ComboDistance =  Im.Style.ItemSpacing.X * 2,
+            Collapsible   = false,
+            LeftDistance  = 30 * Im.Style.GlobalScale,
+            RightDistance = 30 * Im.Style.GlobalScale,
+            ComboDistance = Im.Style.ItemSpacing.X * 2,
         };
         var (_, popupId, popupBox) = line.Combo(group.Name, group.Description, group.Group.Options[setting.AsIndex].Name);
         using var popup = Im.Combo.DrawPopup(popupId, popupBox);
@@ -104,7 +103,12 @@ public sealed class ModGroupDrawer(
             return;
 
         foreach (var option in group.Options)
-            Im.Selectable(option.Name);
+        {
+            id.Push(option.Data.Index);
+            if (Im.Selectable(option.Name, option.Data.Index == setting.AsIndex))
+                SetModSetting(group.Group, group.Group.Index, Setting.Single(option.Data.Index));
+            id.Pop();
+        }
     }
 
     private void DrawMultiGroupNew(ModSettingsCache.ModGroupCache group, Setting setting)
@@ -112,9 +116,9 @@ public sealed class ModGroupDrawer(
         using var id = Im.Id.Push(group.Index);
         var line = new HeaderLine
         {
-            Collapsible       = true,
-            DefaultClosed     = group.Group.Layout.HasFlag(ModSettingsLayout.DefaultClosed),
-            LeftDistance      = 30 * Im.Style.GlobalScale,
+            Collapsible   = true,
+            DefaultClosed = group.Group.Layout.HasFlag(ModSettingsLayout.DefaultClosed),
+            LeftDistance  = 30 * Im.Style.GlobalScale,
         };
         var options = group.Options;
         if (group.HideHeader || line.Basic(group.Name, group.Description))

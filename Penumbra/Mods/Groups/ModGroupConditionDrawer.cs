@@ -1,61 +1,94 @@
 using ImSharp;
+using ImSharp.ImNodes;
 using Luna;
+using Penumbra.Communication;
+using Penumbra.Services;
 using Penumbra.UI.ModsTab;
 
 namespace Penumbra.Mods.Groups;
 
-public sealed class ModGroupConditionDrawer : ConditionDrawer<ModSettingContext>, IUiService
+public sealed class ModGroupConditionCache : ConditionDrawerCache<ModSettingContext>
 {
-    private readonly ConditionCombo _conditionCombo = new();
+    private readonly CommunicatorService _communicator;
+    private readonly ConditionCombo      _conditionCombo = new() { Flags = ComboFlags.NoArrowButton };
 
-    private float _deleteSize;
-
-    protected override bool UpdateSizes()
+    public ModGroupConditionCache(CommunicatorService communicator, ModSettingContext context)
+        : base(context)
     {
-        if (!base.UpdateSizes())
-            return false;
-
-        _deleteSize = Im.Style.ItemInnerSpacing.X + Im.Style.FrameHeight;
-        return true;
+        _communicator = communicator;
+        _communicator.ModOptionChanged.Subscribe(OnModOptionChange, ModOptionChanged.Priority.LayoutManager);
     }
 
-    private bool DrawSetting(SettingCondition s, ModSettingContext context, ref ICondition<ModSettingContext>? replaced, bool not)
+    protected override void Dispose(bool disposing)
     {
-        var size = Im.ContentRegion.Available.X - _deleteSize;
-        var ret  = false;
-        if (_conditionCombo.Draw("##combo"u8, context.Object!, size, s, out var newCondition))
-        {
-            replaced = newCondition;
-            ret      = true;
-        }
-        Im.Line.SameInner();
-        ret |= DrawDeleteConditionButton(ref replaced);
-        return ret;
+        _communicator.ModOptionChanged.Unsubscribe(OnModOptionChange);
     }
 
-    protected override bool DrawCustom(ICondition<ModSettingContext>? condition, ModSettingContext context,
-        out ICondition<ModSettingContext>? replaced)
+    private void OnModOptionChange(in ModOptionChanged.Arguments arguments)
     {
-        var ret = false;
-        replaced = condition;
+        if (arguments.Mod != Context.Mod)
+            return;
 
-        if (context.Object is null)
-            return ret;
+        Dirty |= IManagedCache.DirtyFlags.Custom;
+    }
 
-        switch (condition)
+    protected override ICondition<ModSettingContext>? CreateNewCondition()
+    {
+        var option = Context.Mod.Groups.Where(g => g != Context.Object?.Group).SelectMany(g => g.Options).FirstOrDefault();
+        return option is null ? null : new SettingCondition(option);
+    }
+
+    protected override CustomNode? HandleCustomCondition(Action<ICondition<ModSettingContext>?> setter,
+        ICondition<ModSettingContext> condition, ParentConditionType parent, byte depth)
+    {
+        if (condition is not SettingCondition setting)
+            return null;
+
+        var node    = new SettingNode(IdCounter++, setting, setter, IdCounter++, parent, depth);
+        var ownSize = node.GetOwnSize(this);
+        AddNode(node, ownSize.X, false);
+        node.SubtreeHeight = ownSize.Y;
+        return node;
+    }
+
+    private sealed class SettingNode(
+        NodeId id,
+        SettingCondition condition,
+        Action<ICondition<ModSettingContext>?> setter,
+        AttributeId output,
+        ParentConditionType parent,
+        byte depth) : CustomNode(id, condition, setter, output, parent, depth)
+    {
+        public override Vector2 GetOwnSize(ConditionDrawerCache<ModSettingContext> drawerCache)
+            => drawerCache.ConstantNodeSize with { X = drawerCache.ButtonSize.X * 10 };
+
+        /// <inheritdoc/>
+        public override Rgba32 TitleColor(ConditionDrawerCache<ModSettingContext> drawerCache)
+            => Rgba32.Transparent;
+
+        /// <inheritdoc/>
+        public override Rgba32 BorderColor(ConditionDrawerCache<ModSettingContext> drawerCache)
+            => drawerCache.NodeColors.CustomBorder;
+
+        public override bool DrawContent(ConditionDrawerCache<ModSettingContext> drawerCache, ImSharp.ImNodes.Node node)
         {
-            case null:
+            var actualSize = GetActualSize(drawerCache);
+            DrawOutputConnector(node, actualSize, Output);
+            var ret = false;
+
+            var combo = ((ModGroupConditionCache)drawerCache)._conditionCombo;
+            using (node.TitleBar())
             {
-                var size = Im.ContentRegion.Available.X - _deleteSize;
-                if (_conditionCombo.Draw("##comboNew"u8, context.Object, size, NewCondition as SettingCondition, out var n))
-                    NewCondition = n;
-                Im.Line.SameInner();
-                ret = DrawAddConditionButton(ref replaced);
-                break;
+                if (combo.Draw("##combo"u8, drawerCache.Context.Object!, actualSize.X, condition, out var newCondition))
+                {
+                    Setter(newCondition);
+                    ret = true;
+                }
             }
-            case SettingCondition s: return DrawSetting(s, context, ref replaced, false);
-        }
 
-        return ret;
+            var buttonSize = new Vector2(MathF.Round(actualSize.X / (Parent is ParentConditionType.Not ? 3 : 4)), drawerCache.ButtonSize.Y - ImNodes.Style.NodeBorderThickness);
+            Im.Cursor.X += ImNodes.Style.NodeBorderThickness;
+            return ret | DefaultButtons(drawerCache, node, buttonSize);
+        }
     }
 }

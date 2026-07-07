@@ -129,9 +129,9 @@ public class ModGroupEditor(
         return true;
     }
 
-    public void SetCondition(IModObject @object, ICondition<ModSettingContext>? condition)
+    public void SetCondition(IModObject @object, ICondition<ModSettingContext>? condition, bool force)
     {
-        if (condition?.Equals(@object.Condition) ?? @object.Condition is null)
+        if (!force && (condition?.Equals(@object.Condition) ?? @object.Condition is null))
             return;
 
         @object.Condition = condition;

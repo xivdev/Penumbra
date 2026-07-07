@@ -21,8 +21,7 @@ public sealed class ModGroupEditDrawer(
     DescriptionEditPopup descriptionPopup,
     LayoutEditPopup layoutPopup,
     ConditionEditPopup conditionPopup,
-    ImcChecker imcChecker,
-    ModGroupConditionDrawer conditionDrawer) : IUiService
+    ImcChecker imcChecker) : IUiService
 {
     private static ReadOnlySpan<byte> AcrossGroupsLabel
         => "##DragOptionAcross"u8;
@@ -30,7 +29,6 @@ public sealed class ModGroupEditDrawer(
     private static ReadOnlySpan<byte> InsideGroupLabel
         => "##DragOptionInside"u8;
 
-    internal readonly ModGroupConditionDrawer ConditionDrawer = conditionDrawer;
     internal readonly ImcChecker              ImcChecker      = imcChecker;
     internal readonly ModManager              ModManager      = modManager;
     internal readonly Queue<Action>           ActionQueue     = new();

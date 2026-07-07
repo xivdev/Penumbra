@@ -6,8 +6,15 @@ namespace Penumbra.UI.ModsTab;
 
 internal sealed class ConditionCombo : ModObjectCombo
 {
-    private IModOption?       _optionSelected;
-    private SettingCondition? _currentCondition;
+    private          IModOption?             _optionSelected;
+    private          SettingCondition?       _currentCondition;
+    private readonly Im.ColorStyleDisposable _style = new();
+
+    public ConditionCombo()
+        => PreviewAlignment = new Vector2(0.5f);
+
+    protected override void PostDrawCombo(float width)
+        => _style.PopColor();
 
     public bool Draw(ReadOnlySpan<byte> label, IModObject @object, float width, SettingCondition? existingCondition,
         out SettingCondition? newCondition)
@@ -16,6 +23,13 @@ internal sealed class ConditionCombo : ModObjectCombo
         Group             = @object.Group;
         _optionSelected   = @object as IModOption;
         _currentCondition = existingCondition;
+
+        var color = Rgba32.Blue.WithAlpha(51);
+        _style.PushDefault(ImStyleDouble.FramePadding)
+            .PushDefault(ImGuiColor.ChildBackground)
+            .PushDefault(ImGuiColor.Border)
+            .Push(ImGuiColor.FrameBackground, color);
+
         if (!base.Draw(label, _currentCondition?.Option.FullName ?? "Select New Condition...",
                 "Selecting an option here makes the display and application of this option or entire group dependent on the option being enabled."u8,
                 width, out var parent)
@@ -36,6 +50,7 @@ internal sealed class ConditionCombo : ModObjectCombo
             newCondition!.Option = option;
         }
 
+        _style.Dispose();
         return true;
     }
 
@@ -82,7 +97,7 @@ internal sealed class ConditionCombo : ModObjectCombo
         Im.Line.NoSpacing();
         using (ImGuiColor.Text.Push(Im.Style[ImGuiColor.TextDisabled]))
         {
-            ImEx.TextRightAligned(item.GroupName.Utf8);
+            ImEx.TextRightAligned(item.GroupName.Utf8, Im.Style.FramePadding.X);
         }
 
         return ret;

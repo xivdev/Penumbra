@@ -73,7 +73,7 @@ internal sealed class ParentCombo(ModManager mods) : ModObjectCombo
                     Im.Line.NoSpacing();
                     using (ImGuiColor.Text.Push(Im.Style[ImGuiColor.TextDisabled]))
                     {
-                        ImEx.TextRightAligned(item.GroupName.Utf8);
+                        ImEx.TextRightAligned(item.GroupName.Utf8, Im.Style.FramePadding.X);
                     }
                 }
             }

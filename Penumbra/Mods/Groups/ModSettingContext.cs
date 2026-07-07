@@ -28,6 +28,12 @@ public readonly record struct ModSettingContext(Mod Mod, ModSettings Settings, I
 
         return new SettingIdCondition(guid);
     }
+
+    public ICondition<ModSettingContext>? GetRoot()
+        => Object?.Condition;
+
+    public void SetRoot(ICondition<ModSettingContext>? condition)
+        => Object?.Condition = condition?.Reduce();
 }
 
 public sealed class SettingCondition(IModOption option) : ICondition<ModSettingContext>
