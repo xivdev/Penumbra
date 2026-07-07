@@ -1177,6 +1177,13 @@ public sealed class DebugTab : Window, ITab<TabType>
         if (!Im.Tree.Header("IPC"u8))
             return;
 
+        using (var tree = Im.Tree.Node($"Callers ({IpcProviders.Callers.Count})###Callers"))
+        {
+            if (tree)
+                foreach (var caller in IpcProviders.Callers)
+                    Im.BulletText($"{caller.Name} ({caller.InternalName}) v{caller.Version}");
+        }
+
         using (var tree = Im.Tree.Node("Dynamis"u8))
         {
             if (tree)
