@@ -2,15 +2,23 @@ using Dalamud.Interface;
 using Dalamud.Interface.Textures;
 using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Plugin.Services;
+using ImSharp;
 using Lumina.Data.Files;
 using Luna;
+using Luna.DirectX;
 using OtterTex;
 using TerraFX.Interop.DirectX;
 using TerraFX.Interop.Windows;
 
 namespace Penumbra.Import.Textures;
 
-public sealed class TextureManager(IDataManager gameData, LunaLogger logger, ITextureProvider textureProvider, IUiBuilder uiBuilder)
+public sealed class TextureManager(
+    IDataManager gameData,
+    LunaLogger logger,
+    ITextureProvider textureProvider,
+    IUiBuilder uiBuilder,
+    IFramework framework,
+    Configuration configuration)
     : SingleTaskQueue, IDisposable, IService
 {
     private readonly LunaLogger       _logger  = logger;
@@ -18,6 +26,8 @@ public sealed class TextureManager(IDataManager gameData, LunaLogger logger, ITe
 
     private readonly ConcurrentDictionary<IAction, (Task, CancellationTokenSource)> _tasks = new();
     private          bool                                                           _disposed;
+
+    private ComPtr<ID3D11Device> _auxDevice;
 
     public IReadOnlyDictionary<IAction, (Task, CancellationTokenSource)> Tasks
         => _tasks;
@@ -28,6 +38,11 @@ public sealed class TextureManager(IDataManager gameData, LunaLogger logger, ITe
         foreach (var (_, cancel) in _tasks.Values.ToArray())
             cancel.Cancel();
         _tasks.Clear();
+        if (_auxDevice.Valid)
+        {
+            _auxDevice.Dispose();
+            configuration.AuxiliaryDeviceModeChanged -= OnAuxiliaryDeviceModeChanged;
+        }
     }
 
     public Task SavePng(string input, string output)
@@ -68,6 +83,9 @@ public sealed class TextureManager(IDataManager gameData, LunaLogger logger, ITe
     public Task SaveAs(CombinedTexture.TextureSaveType type, bool mipMaps, bool asTex, BaseImage image, Stream output, byte[]? rgba = null,
         int width = 0, int height = 0)
         => Enqueue(new SaveAsAction(this, type, mipMaps, asTex, image, output, rgba, width, height));
+
+    public Task RunEffectGraph(EffectGraph graph)
+        => Enqueue(new RunEffectGraphAction(graph, framework));
 
     private Task Enqueue(IAction action)
     {
@@ -305,6 +323,17 @@ public sealed class TextureManager(IDataManager gameData, LunaLogger logger, ITe
             => HashCode.Combine(_outputPath?.ToLowerInvariant(), _outputStream, _type, _mipMaps, _asTex, _input);
     }
 
+    private sealed class RunEffectGraphAction(EffectGraph graph, IFramework framework) : IAction
+    {
+        private readonly EffectGraph _graph = graph;
+
+        public bool Equals(IAction? other)
+            => other is RunEffectGraphAction rhs && _graph == rhs._graph;
+
+        public void Execute(CancellationToken token)
+            => _graph.Run(framework, token).Wait(token);
+    }
+
     /// <summary> Load a texture wrap for a given image. </summary>
     public IDalamudTextureWrap LoadTextureWrap(BaseImage image, byte[]? rgba = null, int width = 0, int height = 0)
     {
@@ -476,8 +505,56 @@ public sealed class TextureManager(IDataManager gameData, LunaLogger logger, ITe
         return AddMipMaps(input, mipMaps);
     }
 
+    private void OnAuxiliaryDeviceModeChanged(AuxiliaryDeviceMode newMode, AuxiliaryDeviceMode oldMode)
+    {
+        if (_auxDevice.Valid && newMode is not AuxiliaryDeviceMode.Singleton)
+        {
+            _auxDevice.Dispose();
+            configuration.AuxiliaryDeviceModeChanged -= OnAuxiliaryDeviceModeChanged;
+        }
+    }
+
+    private unsafe ComPtr<ID3D11Device> GetAuxiliaryDevice()
+    {
+        switch (configuration.AuxiliaryDeviceMode)
+        {
+            case AuxiliaryDeviceMode.Transient:
+                var clone = new ComPtr<ID3D11Device>();
+                CloneDevice((ID3D11Device*)uiBuilder.DeviceHandle, clone.GetAddressOf());
+                return clone;
+            case AuxiliaryDeviceMode.Singleton:
+                if (!_auxDevice.Valid)
+                {
+                    configuration.AuxiliaryDeviceModeChanged += OnAuxiliaryDeviceModeChanged;
+                    CloneDevice((ID3D11Device*)uiBuilder.DeviceHandle, _auxDevice.GetAddressOf());
+                }
+
+                return new ComPtr<ID3D11Device>(_auxDevice);
+            case AuxiliaryDeviceMode.Borrowed: return new ComPtr<ID3D11Device>((ID3D11Device*)uiBuilder.DeviceHandle);
+            default:                           return default;
+        }
+    }
+
+    private unsafe bool CanUseAuxiliaryDeviceImmediately()
+        => configuration.AuxiliaryDeviceMode is not AuxiliaryDeviceMode.Borrowed
+         || framework.IsInFrameworkUpdateThread && Im.Context.Pointer->WithinFrameScope;
+
+    private static unsafe void CloneDevice(ID3D11Device* device, ID3D11Device** clone)
+    {
+        using var adapter = new ComPtr<IDXGIAdapter>();
+        using (var dxgiDevice = new ComPtr<IDXGIDevice>())
+        {
+            Marshal.ThrowExceptionForHR(DxUtility.NonOwningComPtr(device).As(&dxgiDevice));
+            Marshal.ThrowExceptionForHR(dxgiDevice.Get()->GetAdapter(adapter.GetAddressOf()));
+        }
+
+        var featureLevel = device->GetFeatureLevel();
+        Marshal.ThrowExceptionForHR(DirectX.D3D11CreateDevice(adapter, D3D_DRIVER_TYPE.D3D_DRIVER_TYPE_UNKNOWN, HMODULE.NULL,
+            device->GetCreationFlags(), &featureLevel, 1, D3D11.D3D11_SDK_VERSION, clone, null, null));
+    }
+
     /// <summary> Create a BC3 or BC7 block-compressed .dds from the input (optionally with mipmaps). Returns input (+ mipmaps) if it is already the correct format. </summary>
-    public unsafe ScratchImage CreateCompressed(ScratchImage input, bool mipMaps, DXGIFormat format, CancellationToken cancel)
+    public ScratchImage CreateCompressed(ScratchImage input, bool mipMaps, DXGIFormat format, CancellationToken cancel)
     {
         if (input.Meta.Format == format)
             return input;
@@ -493,61 +570,79 @@ public sealed class TextureManager(IDataManager gameData, LunaLogger logger, ITe
         // See https://github.com/microsoft/DirectXTex/wiki/Compress#parameters for the format condition.
         if (format is DXGIFormat.BC6HUF16 or DXGIFormat.BC6HSF16 or DXGIFormat.BC7UNorm or DXGIFormat.BC7UNormSRGB)
         {
-            ref var      device = ref *(ID3D11Device*)uiBuilder.DeviceHandle;
-            IDXGIDevice* dxgiDevice;
-            Marshal.ThrowExceptionForHR(device.QueryInterface(TerraFX.Interop.Windows.Windows.__uuidof<IDXGIDevice>(), (void**)&dxgiDevice));
-
-            try
+            var immediate = CanUseAuxiliaryDeviceImmediately();
+            if (!immediate && framework.IsInFrameworkUpdateThread)
+                throw new InvalidOperationException("TextureManager's auxiliary Direct3D device is not ready");
+            using var auxDevice = GetAuxiliaryDevice();
+            if (auxDevice.Valid)
             {
-                IDXGIAdapter* adapter = null;
-                Marshal.ThrowExceptionForHR(dxgiDevice->GetAdapter(&adapter));
-                try
-                {
-                    dxgiDevice->Release();
-                    dxgiDevice = null;
-
-                    ID3D11Device*        deviceClone  = null;
-                    ID3D11DeviceContext* contextClone = null;
-                    var                  featureLevel = device.GetFeatureLevel();
-                    Marshal.ThrowExceptionForHR(DirectX.D3D11CreateDevice(
-                        adapter,
-                        D3D_DRIVER_TYPE.D3D_DRIVER_TYPE_UNKNOWN,
-                        HMODULE.NULL,
-                        device.GetCreationFlags(),
-                        &featureLevel,
-                        1,
-                        D3D11.D3D11_SDK_VERSION,
-                        &deviceClone,
-                        null,
-                        &contextClone));
-                    try
-                    {
-                        adapter->Release();
-                        adapter = null;
-                        return input.Compress((nint)deviceClone, format, CompressFlags.Parallel);
-                    }
-                    finally
-                    {
-                        if (contextClone is not null)
-                            contextClone->Release();
-                        if (deviceClone is not null)
-                            deviceClone->Release();
-                    }
-                }
-                finally
-                {
-                    if (adapter is not null)
-                        adapter->Release();
-                }
-            }
-            finally
-            {
-                if (dxgiDevice is not null)
-                    dxgiDevice->Release();
+                return immediate
+                    ? Compress(input, auxDevice, format, CompressFlags.Parallel)
+                    : CompressAsync(input, auxDevice, format, CompressFlags.Parallel).Result;
             }
         }
 
         return input.Compress(format, CompressFlags.BC7Quick | CompressFlags.Parallel);
+    }
+
+    public Task<ScratchImage> CreateCompressedAsync(ScratchImage input, bool mipMaps, DXGIFormat format, CancellationToken cancel)
+    {
+        if (input.Meta.Format == format)
+            return Task.FromResult(input);
+
+        if (input.Meta.Format.IsCompressed())
+        {
+            input = input.Decompress(DXGIFormat.B8G8R8A8UNorm);
+            cancel.ThrowIfCancellationRequested();
+        }
+
+        input = AddMipMaps(input, mipMaps);
+        cancel.ThrowIfCancellationRequested();
+        // See https://github.com/microsoft/DirectXTex/wiki/Compress#parameters for the format condition.
+        if (format is DXGIFormat.BC6HUF16 or DXGIFormat.BC6HSF16 or DXGIFormat.BC7UNorm or DXGIFormat.BC7UNormSRGB)
+        {
+            using var auxDevice = GetAuxiliaryDevice();
+            if (auxDevice.Valid)
+            {
+                return CanUseAuxiliaryDeviceImmediately()
+                    ? Task.FromResult(Compress(input, auxDevice, format, CompressFlags.Parallel))
+                    : CompressAsync(input, auxDevice, format, CompressFlags.Parallel);
+            }
+        }
+
+        return Task.FromResult(input.Compress(format, CompressFlags.BC7Quick | CompressFlags.Parallel));
+    }
+
+    private static unsafe ScratchImage Compress(ScratchImage input, ComPtr<ID3D11Device> device, DXGIFormat format,
+        CompressFlags compressFlags = CompressFlags.Default, float alphaWeight = 1.0f)
+        => input.Compress((nint)device.Get(), format, compressFlags, alphaWeight);
+
+    private Task<ScratchImage> CompressAsync(ScratchImage input, ComPtr<ID3D11Device> device, DXGIFormat format,
+        CompressFlags compressFlags = CompressFlags.Default, float alphaWeight = 1.0f)
+    {
+        var    deviceAsync = new ComPtr<ID3D11Device>(device);
+        var    tcs         = new TaskCompletionSource<ScratchImage>();
+        Action action      = null!;
+
+        action = () =>
+        {
+            uiBuilder.Draw -= action;
+            try
+            {
+                tcs.SetResult(Compress(input, deviceAsync, format, compressFlags, alphaWeight));
+            }
+            catch (Exception e)
+            {
+                tcs.SetException(e);
+            }
+            finally
+            {
+                deviceAsync.Dispose();
+            }
+        };
+
+        uiBuilder.Draw += action;
+        return tcs.Task;
     }
 
 

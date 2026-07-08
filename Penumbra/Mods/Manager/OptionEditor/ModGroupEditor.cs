@@ -19,6 +19,7 @@ public enum ModOptionChangeType
     GroupAdded,
     GroupDeleted,
     GroupMoved,
+    GroupIdentifierChanged,
     GroupTypeChanged,
     PriorityChanged,
     OptionRenamed,
@@ -29,10 +30,12 @@ public enum ModOptionChangeType
     OptionFilesAdded,
     OptionSwapsChanged,
     OptionMetaChanged,
+    OptionIdentifierChanged,
     DisplayChange,
     PrepareChange,
     PrepareGroupDeletion,
     DefaultOptionChanged,
+    ConditionChanged,
 }
 
 public class ModGroupEditor(
@@ -64,7 +67,8 @@ public class ModGroupEditor(
 
         group.DefaultSettings = defaultOption;
         saveService.QueueSave(new ModSaveGroup(group, config.ReplaceNonAsciiOnImport));
-        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.DefaultOptionChanged, group.Mod, group, null, null, null, -1));
+        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.DefaultOptionChanged, group.Mod, group, null,
+            null, group.Id, -1));
     }
 
     /// <summary> Rename an option group if possible. </summary>
@@ -76,32 +80,110 @@ public class ModGroupEditor(
 
         saveService.ImmediateDelete(new ModSaveGroup(group, config.ReplaceNonAsciiOnImport));
         group.Name = newName;
-        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.GroupRenamed, group.Mod, group, null, null, oldName, -1));
+        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.GroupRenamed, group.Mod, group, null, null,
+            group.Id, -1));
         saveService.ImmediateSave(new ModSaveGroup(group, config.ReplaceNonAsciiOnImport));
     }
 
     /// <summary> Delete a given option group. Fires an event to prepare before actually deleting. </summary>
     public void DeleteModGroup(IModGroup group)
     {
-        var mod     = group.Mod;
-        var idx     = group.GetIndex();
-        var oldName = group.Name;
-        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.PrepareGroupDeletion, mod, group, null, null, null, -1));
+        var mod = group.Mod;
+        var idx = group.Index;
+        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.PrepareGroupDeletion, mod, group, null, null,
+            group.Id, -1));
         mod.Groups.RemoveAt(idx);
         saveService.SaveAllOptionGroups(mod, false, config.ReplaceNonAsciiOnImport);
-        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.GroupDeleted, mod, null, null, null, oldName, idx));
+        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.GroupDeleted, mod, null, null, null, group.Id,
+            idx));
     }
 
     /// <summary> Move the index of a given option group. </summary>
     public void MoveModGroup(IModGroup group, int groupIdxTo)
     {
         var mod     = group.Mod;
-        var idxFrom = group.GetIndex();
+        var idxFrom = group.Index;
         if (!mod.Groups.Move(ref idxFrom, ref groupIdxTo))
             return;
 
         saveService.SaveAllOptionGroups(mod, false, config.ReplaceNonAsciiOnImport);
-        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.GroupMoved, mod, group, null, null, null, idxFrom));
+        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.GroupMoved, mod, group, null, null, group.Id,
+            idxFrom));
+    }
+
+    /// <summary> Force the GUID of an object to a specific value. Empty GUIDs are not allowed. </summary>
+    /// <param name="object"> The object to edit. </param>
+    /// <param name="newGuid"> The desired new GUID. </param>
+    /// <returns> False if the new GUID is already used in this mod or if it is empty, true otherwise. </returns>
+    public bool ForceIdentifier(IModObject @object, Guid newGuid)
+    {
+        if (newGuid == Guid.Empty || @object.Mod.StableIdentifier == newGuid || @object.Mod.SubObjects.ContainsKey(newGuid))
+            return false;
+
+        var oldGuid = @object.Id;
+        @object.Id = newGuid;
+        saveService.SaveAllOptionGroups(@object.Mod, false, config.ReplaceNonAsciiOnImport);
+        var changeType = @object is IModGroup ? ModOptionChangeType.GroupIdentifierChanged : ModOptionChangeType.OptionIdentifierChanged;
+        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(changeType, @object.Mod, @object.Group, @object as IModOption, null,
+            oldGuid, -1));
+        return true;
+    }
+
+    public void SetCondition(IModObject @object, ICondition<ModSettingContext>? condition, bool force)
+    {
+        if (!force && (condition?.Equals(@object.Condition) ?? @object.Condition is null))
+            return;
+
+        @object.Condition = condition;
+        saveService.QueueSave(new ModSaveGroup(@object.Group, config.ReplaceNonAsciiOnImport));
+        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.ConditionChanged, @object.Mod, @object.Group,
+            @object as IModOption, null, @object.Id, -1));
+    }
+
+    public void SetPage(IModGroup group, int page)
+    {
+        if (group.Page == page)
+            return;
+
+        group.Page = page;
+        saveService.QueueSave(new ModSaveGroup(group, config.ReplaceNonAsciiOnImport));
+        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.DisplayChange, group.Mod, group,
+            null, null, group.Id, -1));
+    }
+
+    public void SetParent(IModGroup group, IModObject? parent)
+    {
+        if (ReferenceEquals(group.ParentSetting, parent))
+            return;
+
+        group.ParentSetting = parent;
+        saveService.QueueSave(new ModSaveGroup(group.Group, config.ReplaceNonAsciiOnImport));
+        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.DisplayChange, group.Mod, group.Group, null,
+            null, group.Id, -1));
+    }
+
+    public void SetLayout(IModObject @object, ModSettingsLayout layout)
+    {
+        layout = layout.Reduce(@object);
+        if (@object.Layout == layout)
+            return;
+
+        @object.Layout = layout;
+        saveService.QueueSave(new ModSaveGroup(@object.Group, config.ReplaceNonAsciiOnImport));
+        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.DisplayChange, @object.Mod, @object.Group,
+            @object as IModOption, null, @object.Id, -1));
+    }
+
+    public void SetColor(IModOption option, int colorType)
+    {
+        var color = IModOption.ConvertColor(colorType);
+        if (color == option.Color)
+            return;
+
+        option.Color = color;
+        saveService.QueueSave(new ModSaveGroup(option.Group, config.ReplaceNonAsciiOnImport));
+        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.DisplayChange, option.Mod, option.Group,
+            option, null, option.Id, -1));
     }
 
     /// <summary> Change the internal priority of the given option group. </summary>
@@ -112,7 +194,8 @@ public class ModGroupEditor(
 
         group.Priority = newPriority;
         saveService.QueueSave(new ModSaveGroup(group, config.ReplaceNonAsciiOnImport));
-        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.PriorityChanged, group.Mod, group, null, null, null, -1));
+        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.PriorityChanged, group.Mod, group, null, null,
+            group.Id, -1));
     }
 
     /// <summary> Change the description of the given option group. </summary>
@@ -123,7 +206,8 @@ public class ModGroupEditor(
 
         group.Description = newDescription;
         saveService.QueueSave(new ModSaveGroup(group, config.ReplaceNonAsciiOnImport));
-        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.DisplayChange, group.Mod, group, null, null, null, -1));
+        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.DisplayChange, group.Mod, group, null, null,
+            group.Id, -1));
     }
 
     /// <summary> Rename the given option. </summary>
@@ -135,7 +219,8 @@ public class ModGroupEditor(
 
         option.Name = newName;
         saveService.QueueSave(new ModSaveGroup(option.Group, config.ReplaceNonAsciiOnImport));
-        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionRenamed, option.Mod, option.Group, option, null, oldName, -1));
+        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionRenamed, option.Mod, option.Group, option,
+            null, option.Id, -1));
     }
 
     /// <summary> Change the description of the given option. </summary>
@@ -146,7 +231,8 @@ public class ModGroupEditor(
 
         option.Description = newDescription;
         saveService.QueueSave(new ModSaveGroup(option.Group, config.ReplaceNonAsciiOnImport));
-        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.DisplayChange, option.Mod, option.Group, option, null, null, -1));
+        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.DisplayChange, option.Mod, option.Group, option,
+            null, option.Id, -1));
     }
 
     /// <summary> Set the meta manipulations for a given option. Replaces existing manipulations. </summary>
@@ -155,10 +241,12 @@ public class ModGroupEditor(
         if (subMod.Manipulations.Equals(manipulations))
             return;
 
-        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.PrepareChange, (Mod)subMod.Mod, subMod.Group, null, subMod, null, -1));
+        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.PrepareChange, (Mod)subMod.Mod, subMod.Group,
+            null, subMod, Guid.Empty, -1));
         subMod.Manipulations.SetTo(manipulations);
         saveService.Save(saveType, new ModSaveGroup(subMod, config.ReplaceNonAsciiOnImport));
-        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionMetaChanged, (Mod)subMod.Mod, subMod.Group, null, subMod, null, -1));
+        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionMetaChanged, (Mod)subMod.Mod,
+            subMod.Group, null, subMod, Guid.Empty, -1));
     }
 
     /// <summary> Set the file redirections for a given option. Replaces existing redirections. </summary>
@@ -167,10 +255,12 @@ public class ModGroupEditor(
         if (subMod.Files.SetEquals(replacements))
             return;
 
-        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.PrepareChange, (Mod)subMod.Mod, subMod.Group, null, subMod, null, -1));
+        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.PrepareChange, (Mod)subMod.Mod, subMod.Group,
+            null, subMod, Guid.Empty, -1));
         subMod.Files.SetTo(replacements);
         saveService.Save(saveType, new ModSaveGroup(subMod, config.ReplaceNonAsciiOnImport));
-        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionFilesChanged, (Mod)subMod.Mod, subMod.Group, null, subMod, null, -1));
+        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionFilesChanged, (Mod)subMod.Mod,
+            subMod.Group, null, subMod, Guid.Empty, -1));
     }
 
     /// <summary> Forces a file save of the given container's group. </summary>
@@ -185,7 +275,8 @@ public class ModGroupEditor(
         if (oldCount != subMod.Files.Count)
         {
             saveService.QueueSave(new ModSaveGroup(subMod, config.ReplaceNonAsciiOnImport));
-            communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionFilesAdded, (Mod)subMod.Mod, subMod.Group, null, subMod, null, -1));
+            communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionFilesAdded, (Mod)subMod.Mod,
+                subMod.Group, null, subMod, Guid.Empty, -1));
         }
     }
 
@@ -195,10 +286,12 @@ public class ModGroupEditor(
         if (subMod.FileSwaps.SetEquals(swaps))
             return;
 
-        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.PrepareChange, (Mod)subMod.Mod, subMod.Group, null, subMod, null, -1));
+        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.PrepareChange, (Mod)subMod.Mod, subMod.Group,
+            null, subMod, Guid.Empty, -1));
         subMod.FileSwaps.SetTo(swaps);
         saveService.Save(saveType, new ModSaveGroup(subMod, config.ReplaceNonAsciiOnImport));
-        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionSwapsChanged, (Mod)subMod.Mod, subMod.Group, null, subMod, null, -1));
+        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionSwapsChanged, (Mod)subMod.Mod,
+            subMod.Group, null, subMod, Guid.Empty, -1));
     }
 
     /// <summary> Verify that a new option group name is unique in this mod. </summary>
@@ -267,24 +360,24 @@ public class ModGroupEditor(
             _                   => null,
         };
 
-    public (IModGroup?, int, bool) FindOrAddModGroup(Mod mod, GroupType type, string name, SaveType saveType = SaveType.ImmediateSync)
+    public (IModGroup?, bool) FindOrAddModGroup(Mod mod, GroupType type, string name, SaveType saveType = SaveType.ImmediateSync)
         => type switch
         {
             GroupType.Single    => SingleEditor.FindOrAddModGroup(mod, name, saveType),
             GroupType.Multi     => MultiEditor.FindOrAddModGroup(mod, name, saveType),
             GroupType.Imc       => ImcEditor.FindOrAddModGroup(mod, name, saveType),
             GroupType.Combining => CombiningEditor.FindOrAddModGroup(mod, name, saveType),
-            _                   => (null, -1, false),
+            _                   => (null, false),
         };
 
-    public (IModOption?, int, bool) FindOrAddOption(IModGroup group, string name, SaveType saveType = SaveType.ImmediateSync)
+    public (IModOption?, bool) FindOrAddOption(IModGroup group, string name, SaveType saveType = SaveType.ImmediateSync)
         => group switch
         {
             SingleModGroup s    => SingleEditor.FindOrAddOption(s, name, saveType),
             MultiModGroup m     => MultiEditor.FindOrAddOption(m, name, saveType),
             ImcModGroup i       => ImcEditor.FindOrAddOption(i, name, saveType),
             CombiningModGroup c => CombiningEditor.FindOrAddOption(c, name, saveType),
-            _                   => (null, -1, false),
+            _                   => (null, false),
         };
 
     public void MoveOption(IModOption option, int toIdx)

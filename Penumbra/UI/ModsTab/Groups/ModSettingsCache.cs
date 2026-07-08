@@ -14,27 +14,47 @@ public sealed class ModSettingsCache : BasicCache
 {
     public sealed class ModGroupCache
     {
+        public record Option(
+            IModOption Data,
+            StringU8 Name,
+            StringU8 Description,
+            Setting Value,
+            float Width,
+            bool Disabled,
+            List<ModGroupCache> Children);
+
         public GroupDrawBehaviour Behaviour
             => Group.Behaviour;
 
-        public          IModGroup                                                                                Group = null!;
-        public          int                                                                                      Index;
-        public          bool                                                                                     IsCombo;
-        public          StringU8                                                                                 Name;
-        public          StringU8                                                                                 Description;
-        public          float                                                                                    NameWidth;
-        public          float                                                                                    ComboWidth;
-        public readonly List<(StringU8 Option, StringU8 Description, Setting Value, float Width, bool Disabled)> Options = [];
-        public          bool                                                                                     Disabled;
+        public          IModGroup           Group = null!;
+        public          StringU8            Name;
+        public          StringU8            Description;
+        public readonly List<Option>        Options  = [];
+        public readonly List<ModGroupCache> Children = [];
+        public          bool                Indented;
+        public          int                 Index;
+        public          float               NameWidth;
+        public          float               ComboWidth;
+        public          bool                IsCombo;
+        public          bool                HideHeader;
+        public          bool                Disabled;
     }
 
-    public           int                 Count         = 0;
-    public           bool                AnyConditions = false;
-    public readonly  List<ModGroupCache> SingleGroups  = [];
-    public readonly  List<ModGroupCache> MultiGroups   = [];
-    private readonly ModSelection        _selection;
-    private readonly Configuration       _config;
-    private readonly CommunicatorService _communicator;
+    public sealed class Page(string name)
+    {
+        public readonly StringU8            Name   = new(name);
+        public readonly List<ModGroupCache> Groups = [];
+    }
+
+    public readonly Dictionary<int, Page> Pages = [];
+
+    private readonly Dictionary<Guid, List<ModGroupCache>> _children = [];
+    private readonly ModSelection                          _selection;
+    private readonly Configuration                         _config;
+    private readonly CommunicatorService                   _communicator;
+    public           int                                   Count;
+    public           bool                                  AnyConditions;
+    public           int                                   ActivePages;
 
     public ModSettingsCache(ModSelection selection, Configuration config, CommunicatorService communicator)
     {
@@ -80,26 +100,54 @@ public sealed class ModSettingsCache : BasicCache
 
         AnyConditions = false;
         Dirty         = IManagedCache.DirtyFlags.Clean;
-        SingleGroups.Clear();
-        MultiGroups.Clear();
-        if (_selection.Mod is not null)
+        _children.Clear();
+        Pages.Clear();
+        Count = 0;
+        if (_selection.Mod is {} mod)
         {
             var context = new ModSettingContext(_selection.Mod, _selection.Settings);
-            SingleGroups.EnsureCapacity(_selection.Mod.Groups.Count);
-            MultiGroups.EnsureCapacity(_selection.Mod.Groups.Count);
-            foreach (var (index, group) in _selection.Mod.Groups.Index())
+            foreach (var (index, group) in mod.Groups.Index())
             {
-                if (Create(context, group, index) is not { } cache)
-                    continue;
+                if (Create(context, group, index) is { } cache)
+                {
+                    if (!Pages.TryGetValue(group.Page, out var page))
+                    {
+                        page = new Page(mod.PageNames.TryGetValue(group.Page, out var name) ? name : $"Page {group.Page + 1}");
+                        Pages.Add(group.Page, page);
+                    }
 
-                if (cache.Behaviour is GroupDrawBehaviour.SingleSelection)
-                    SingleGroups.Add(cache);
-                else
-                    MultiGroups.Add(cache);
+                    ++Count;
+                    page.Groups.Add(cache);
+                    _children.TryAdd(cache.Group.Id, cache.Children);
+                    if (cache.IsCombo)
+                        foreach (var option in cache.Options)
+                            _children.TryAdd(option.Data.Id, cache.Children);
+                    else
+                        foreach (var option in cache.Options)
+                            _children.TryAdd(option.Data.Id, option.Children);
+                }
             }
         }
 
-        Count = SingleGroups.Count + MultiGroups.Count;
+        ActivePages = Pages.Count;
+        foreach (var page in Pages.Values)
+        {
+            for (var i = 0; i < page.Groups.Count; ++i)
+            {
+                var group = page.Groups[i];
+                if (group.Group.ParentSetting is null)
+                    continue;
+
+                if (_children.TryGetValue(group.Group.ParentSetting.Id, out var obj))
+                {
+                    obj.Add(group);
+                    page.Groups.RemoveAt(i--);
+                }
+            }
+
+            if (page.Groups.Count is 0)
+                --ActivePages;
+        }
     }
 
     public ModGroupCache? Create(in ModSettingContext context, IModGroup group, int groupIndex)
@@ -120,6 +168,8 @@ public sealed class ModSettingsCache : BasicCache
             Description = new StringU8(group.Description),
             IsCombo     = group.Behaviour is GroupDrawBehaviour.SingleSelection && group.Options.Count > _config.SingleGroupRadioMax,
             Disabled    = !condition,
+            HideHeader  = group.Group.Layout.HasFlag(ModSettingsLayout.ParentHeader),
+            Indented    = group.Group.Layout.HasFlag(ModSettingsLayout.Indent),
         };
         ret.NameWidth = ret.Name.CalculateSize().X;
         if (!ret.Description.IsEmpty && ret.IsCombo)
@@ -138,8 +188,9 @@ public sealed class ModSettingsCache : BasicCache
             var width       = name.CalculateSize().X;
             if (!description.IsEmpty)
                 width += Im.Style.ItemInnerSpacing.X + LunaStyle.HelpMarker.CalculateSize().X;
-            ret.Options.Add((name, description, group.Type is GroupType.Single ? Setting.Single(index) : Setting.Multi(index), width,
-                !condition));
+            ret.Options.Add(new ModGroupCache.Option(option, name, description,
+                group.Type is GroupType.Single ? Setting.Single(index) : Setting.Multi(index), width,
+                !condition, []));
             if (width > ret.ComboWidth)
                 ret.ComboWidth = width;
         }

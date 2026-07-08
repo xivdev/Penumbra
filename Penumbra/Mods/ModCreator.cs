@@ -108,7 +108,7 @@ public partial class ModCreator(
                 changes = changes
                  || saveService.FileNames.OptionGroupFile(mod.ModPath.FullName, mod.Groups.Count, group.Name, true)
                  != Path.Combine(file.DirectoryName!, file.Name.ReplaceBadXivSymbols(true));
-                mod.Groups.Add(group);
+                mod.AddGroup(group, file.FullName);
             }
             else
             {
@@ -245,7 +245,7 @@ public partial class ModCreator(
     public static DirectoryInfo? NewSubFolderName(DirectoryInfo parentFolder, string subFolderName, bool onlyAscii)
     {
         var newModFolderBase = NewOptionDirectory(parentFolder, subFolderName, onlyAscii);
-        var newModFolder     = FileSystemUtility.ObtainUniqueFile(newModFolderBase.FullName);
+        var newModFolder     = newModFolderBase.FullName.ObtainUniqueFile();
         return newModFolder.Length == 0 ? null : new DirectoryInfo(newModFolder);
     }
 

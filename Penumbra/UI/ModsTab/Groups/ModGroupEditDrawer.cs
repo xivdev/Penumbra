@@ -19,8 +19,9 @@ public sealed class ModGroupEditDrawer(
     Configuration config,
     FilenameService filenames,
     DescriptionEditPopup descriptionPopup,
-    ImcChecker imcChecker,
-    ModGroupConditionDrawer conditionDrawer) : IUiService
+    LayoutEditPopup layoutPopup,
+    ConditionEditPopup conditionPopup,
+    ImcChecker imcChecker) : IUiService
 {
     private static ReadOnlySpan<byte> AcrossGroupsLabel
         => "##DragOptionAcross"u8;
@@ -28,7 +29,6 @@ public sealed class ModGroupEditDrawer(
     private static ReadOnlySpan<byte> InsideGroupLabel
         => "##DragOptionInside"u8;
 
-    internal readonly ModGroupConditionDrawer ConditionDrawer = conditionDrawer;
     internal readonly ImcChecker              ImcChecker      = imcChecker;
     internal readonly ModManager              ModManager      = modManager;
     internal readonly Queue<Action>           ActionQueue     = new();
@@ -54,27 +54,27 @@ public sealed class ModGroupEditDrawer(
     private IModOption? _dragDropOption;
     private bool        _draggingAcross;
 
-    public void Draw(Mod mod)
+    public void Draw(GroupNameCache cache, Mod mod)
     {
         PrepareStyle();
 
         using var id = Im.Id.Push("ge"u8);
         foreach (var (groupIdx, group) in mod.Groups.Index())
-            DrawGroup(group, groupIdx);
+            DrawGroup(cache, group, groupIdx);
 
         while (ActionQueue.TryDequeue(out var action))
             action.Invoke();
     }
 
-    private void DrawGroup(IModGroup group, int idx)
+    private void DrawGroup(GroupNameCache cache, IModGroup group, int idx)
     {
         using var id    = Im.Id.Push(idx);
         using var frame = ImEx.FramedGroup($"Group #{idx + 1}");
-        DrawGroupNameRow(group, idx);
+        DrawGroupNameRow(cache, group, idx);
         group.EditDrawer(this).Draw();
     }
 
-    private void DrawGroupNameRow(IModGroup group, int idx)
+    private void DrawGroupNameRow(GroupNameCache cache, IModGroup group, int idx)
     {
         DrawGroupName(group);
         Im.Line.SameInner();
@@ -91,6 +91,8 @@ public sealed class ModGroupEditDrawer(
         DrawGroupDelete(group);
         Im.Line.SameInner();
         DrawGroupPriority(group);
+        Im.Line.SameInner();
+        DrawGroupPage(cache, group);
     }
 
     private void DrawGroupName(IModGroup group)
@@ -138,6 +140,18 @@ public sealed class ModGroupEditDrawer(
         Im.Tooltip.OnHover("Group Priority"u8);
     }
 
+    private void DrawGroupPage(GroupNameCache cache, IModGroup group)
+    {
+        Im.Item.SetNextWidth(PriorityWidth);
+        if (ImEx.InputOnDeactivation.Scalar("##GroupPage"u8, group.Page + 1, out var newPage))
+            ModManager.OptionEditor.SetPage(group, newPage - 1);
+        Im.Tooltip.OnHover(
+            "The page this group is to be placed in. If this group has a parent, this setting is ignored.\n\nNote that the number seen here is offset by 1 compared to the number stored in the JSON file.");
+        Im.Line.SameInner();
+        ImEx.TextFrameAligned(cache.ShowPages ? cache.Pages[group.Page].Name.Utf8 : "(Unused)"u8);
+    }
+
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void DrawGroupDescription(IModGroup group)
     {
@@ -149,7 +163,7 @@ public sealed class ModGroupEditDrawer(
     private void DrawGroupLayout(IModGroup group)
     {
         if (ImEx.Icon.Button(LunaStyle.LayoutIcon, "Edit group layout settings."u8))
-            descriptionPopup.Open(group);
+            layoutPopup.Open(group);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -157,7 +171,7 @@ public sealed class ModGroupEditDrawer(
     {
         if (ImEx.Icon.Button(LunaStyle.ConditionIcon, "Edit group conditions."u8,
                 textColor: group.Condition is not null ? LunaStyle.FavoriteColor : ColorParameter.Default))
-            descriptionPopup.Open(group);
+            conditionPopup.Open(group);
     }
 
     private void DrawGroupMoveButtons(IModGroup group, int idx)
@@ -252,7 +266,7 @@ public sealed class ModGroupEditDrawer(
     private void DrawOptionLayout(IModOption option)
     {
         if (ImEx.Icon.Button(LunaStyle.LayoutIcon, "Edit option layout settings."u8))
-            descriptionPopup.Open(option);
+            layoutPopup.Open(option);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -260,7 +274,7 @@ public sealed class ModGroupEditDrawer(
     {
         if (ImEx.Icon.Button(LunaStyle.ConditionIcon, "Edit option conditions."u8,
                 textColor: option.Condition is not null ? LunaStyle.FavoriteColor : ColorParameter.Default))
-            descriptionPopup.Open(option);
+            conditionPopup.Open(option);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

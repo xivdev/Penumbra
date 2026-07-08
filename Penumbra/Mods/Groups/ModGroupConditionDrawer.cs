@@ -1,55 +1,94 @@
 using ImSharp;
+using ImSharp.ImNodes;
 using Luna;
+using Penumbra.Communication;
+using Penumbra.Services;
+using Penumbra.UI.ModsTab;
 
 namespace Penumbra.Mods.Groups;
 
-public sealed class ModGroupConditionDrawer : ConditionDrawer<ModSettingContext>, IUiService
+public sealed class ModGroupConditionCache : ConditionDrawerCache<ModSettingContext>
 {
-    private string _group  = string.Empty;
-    private string _option = string.Empty;
+    private readonly CommunicatorService _communicator;
+    private readonly ConditionCombo      _conditionCombo = new() { Flags = ComboFlags.NoArrowButton };
 
-    protected override bool DrawCustom(ICondition<ModSettingContext>? condition, ModSettingContext context,
-        out ICondition<ModSettingContext>? replaced)
+    public ModGroupConditionCache(CommunicatorService communicator, ModSettingContext context)
+        : base(context)
     {
-        var ret = false;
-        replaced = null;
-        switch (condition)
+        _communicator = communicator;
+        _communicator.ModOptionChanged.Subscribe(OnModOptionChange, ModOptionChanged.Priority.LayoutManager);
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        _communicator.ModOptionChanged.Unsubscribe(OnModOptionChange);
+    }
+
+    private void OnModOptionChange(in ModOptionChanged.Arguments arguments)
+    {
+        if (arguments.Mod != Context.Mod)
+            return;
+
+        Dirty |= IManagedCache.DirtyFlags.Custom;
+    }
+
+    protected override ICondition<ModSettingContext>? CreateNewCondition()
+    {
+        var option = Context.Mod.Groups.Where(g => g != Context.Object?.Group).SelectMany(g => g.Options).FirstOrDefault();
+        return option is null ? null : new SettingCondition(option);
+    }
+
+    protected override CustomNode? HandleCustomCondition(Action<ICondition<ModSettingContext>?> setter,
+        ICondition<ModSettingContext> condition, ParentConditionType parent, byte depth)
+    {
+        if (condition is not SettingCondition setting)
+            return null;
+
+        var node    = new SettingNode(IdCounter++, setting, setter, IdCounter++, parent, depth);
+        var ownSize = node.GetOwnSize(this);
+        AddNode(node, ownSize.X, false);
+        node.SubtreeHeight = ownSize.Y;
+        return node;
+    }
+
+    private sealed class SettingNode(
+        NodeId id,
+        SettingCondition condition,
+        Action<ICondition<ModSettingContext>?> setter,
+        AttributeId output,
+        ParentConditionType parent,
+        byte depth) : CustomNode(id, condition, setter, output, parent, depth)
+    {
+        public override Vector2 GetOwnSize(ConditionDrawerCache<ModSettingContext> drawerCache)
+            => drawerCache.ConstantNodeSize with { X = drawerCache.ButtonSize.X * 10 };
+
+        /// <inheritdoc/>
+        public override Rgba32 TitleColor(ConditionDrawerCache<ModSettingContext> drawerCache)
+            => Rgba32.Transparent;
+
+        /// <inheritdoc/>
+        public override Rgba32 BorderColor(ConditionDrawerCache<ModSettingContext> drawerCache)
+            => drawerCache.NodeColors.CustomBorder;
+
+        public override bool DrawContent(ConditionDrawerCache<ModSettingContext> drawerCache, ImSharp.ImNodes.Node node)
         {
-            case null:
+            var actualSize = GetActualSize(drawerCache);
+            DrawOutputConnector(node, actualSize, Output);
+            var ret = false;
+
+            var combo = ((ModGroupConditionCache)drawerCache)._conditionCombo;
+            using (node.TitleBar())
             {
-                if (ImEx.Icon.Button(LunaStyle.AddObjectIcon, "Add a new condition."u8, _group.Length is 0 && _option.Length is 0))
+                if (combo.Draw("##combo"u8, drawerCache.Context.Object!, actualSize.X, condition, out var newCondition))
                 {
-                    replaced = new SingleSettingCondition(_group, _option);
-                    _group   = string.Empty;
-                    _option  = string.Empty;
-                    ret      = true;
+                    Setter(newCondition);
+                    ret = true;
                 }
+            }
 
-                Im.Line.SameInner();
-                Im.Item.SetNextWidth(Im.ContentRegion.Available.X * 0.4f);
-                Im.Input.Text("##Group"u8, ref _group, "Group..."u8);
-                Im.Line.SameInner();
-                Im.Item.SetNextWidth(Im.ContentRegion.Available.X);
-                Im.Input.Text("##Options"u8, ref _option, "Options..."u8);
-            }
-                break;
-            case SingleSettingCondition single:
-            {
-                Im.FrameDummy();
-                Im.Line.SameInner();
-                ImEx.TextFramed(single.Group, new Vector2(Im.ContentRegion.Available.X * 0.4f, 0));
-                Im.Line.SameInner();
-                ImEx.TextFramed(single.Option, Im.ContentRegion.Available with { Y = 0 });
-            }
-                break;
-            case MultiSettingAllCondition all:
-            { }
-                break;
-            case MultiSettingAnyCondition any:
-            { }
-                break;
+            var buttonSize = new Vector2(MathF.Round(actualSize.X / (Parent is ParentConditionType.Not ? 3 : 4)), drawerCache.ButtonSize.Y - ImNodes.Style.NodeBorderThickness);
+            Im.Cursor.X += ImNodes.Style.NodeBorderThickness;
+            return ret | DefaultButtons(drawerCache, node, buttonSize);
         }
-
-        return ret;
     }
 }

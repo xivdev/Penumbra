@@ -16,7 +16,13 @@ namespace Penumbra.Mods.Groups;
 
 public class ImcModGroup(Mod mod) : IModGroup
 {
+    public int Index { get; private set; } = -1;
+
+    public void SetIndex(int index)
+        => Index = index;
+
     public Mod    Mod         { get; }      = mod;
+    public Guid   Id          { get; set; } = Guid.NewGuid();
     public string Name        { get; set; } = "Option";
     public string Description { get; set; } = string.Empty;
     public string Image       { get; set; } = string.Empty;
@@ -31,7 +37,7 @@ public class ImcModGroup(Mod mod) : IModGroup
     public int                            Page            { get; set; }
     public Setting                        DefaultSettings { get; set; } = Setting.Zero;
     public ModSettingsLayout              Layout          { get; set; }
-    public ParentSetting                  ParentSetting   { get; set; } = ParentSetting.None;
+    public IModObject?                    ParentSetting   { get; set; }
     public ICondition<ModSettingContext>? Condition       { get; set; }
 
     public ImcIdentifier Identifier;
@@ -64,12 +70,8 @@ public class ImcModGroup(Mod mod) : IModGroup
         }
     }
 
-    public IModOption? AddOption(string name, string description = "")
+    public IModOption AddOption(string name, string description = "")
     {
-        var groupIdx = Mod.Groups.IndexOf(this);
-        if (groupIdx < 0)
-            return null;
-
         var subMod = new ImcSubMod(this)
         {
             Name          = name,
@@ -80,7 +82,7 @@ public class ImcModGroup(Mod mod) : IModGroup
         return subMod;
     }
 
-    public readonly List<ImcSubMod> OptionData = [];
+    public readonly IndexList<ImcSubMod> OptionData = [];
 
     public IReadOnlyList<IModOption> Options
         => OptionData;
@@ -122,7 +124,7 @@ public class ImcModGroup(Mod mod) : IModGroup
         if (AllVariants)
         {
             var count = ImcChecker.GetVariantCount(Identifier);
-            if (count == 0)
+            if (count is 0)
                 manipulations.TryAdd(Identifier, GetEntry(Identifier.Variant, mask));
             else
                 for (var i = 0; i <= count; ++i)
@@ -191,7 +193,7 @@ public class ImcModGroup(Mod mod) : IModGroup
         if (!ModSaveGroup.ReadJsonBase(json, ret))
             return null;
 
-        if (!identifier.HasValue || ret.DefaultEntry.MaterialId == 0)
+        if (!identifier.HasValue || ret.DefaultEntry.MaterialId is 0)
         {
             Penumbra.Messager.NotificationMessage($"Could not add IMC group {ret.Name} because the associated IMC Entry is invalid.",
                 NotificationType.Warning);
@@ -199,11 +201,10 @@ public class ImcModGroup(Mod mod) : IModGroup
         }
 
         var rollingMask = 0ul;
-        if (options != null)
+        if (options is not null)
             foreach (var child in options.Children())
             {
                 var subMod = new ImcSubMod(ret, child);
-
                 if (subMod.IsDisableSubMod)
                     ret._canBeDisabled = true;
 
@@ -239,7 +240,7 @@ public class ImcModGroup(Mod mod) : IModGroup
         var idx = OptionData.IndexOf(m => m.IsDisableSubMod);
         if (idx >= 0)
         {
-            if (OptionData[idx].Condition is not {} condition || condition.Evaluate(context))
+            if (OptionData[idx].Condition is not { } condition || condition.Evaluate(context))
                 return setting.HasFlag(idx);
 
             return false;
@@ -258,7 +259,7 @@ public class ImcModGroup(Mod mod) : IModGroup
                 continue;
 
             var option = OptionData[i];
-            if(option.Condition is null || option.Condition.Evaluate(context))
+            if (option.Condition is null || option.Condition.Evaluate(context))
                 mask ^= option.AttributeMask;
         }
 

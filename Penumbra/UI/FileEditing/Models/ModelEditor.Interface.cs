@@ -12,6 +12,7 @@ namespace Penumbra.UI.FileEditing.Models;
 
 public partial class ModelEditor
 {
+    public const int OffByOneOffset = 0;
     private const int MdlMaterialMaximum = ModelImporter.MaterialLimit;
 
     private const string MdlImportDocumentation =
@@ -413,7 +414,7 @@ public partial class ModelEditor
 
     private bool DrawModelLodDetails(int lodIndex, bool disabled)
     {
-        using var lodNode = Im.Tree.Node($"Level of Detail #{lodIndex + 1}", TreeNodeFlags.DefaultOpen);
+        using var lodNode = Im.Tree.Node($"Level of Detail #{lodIndex + OffByOneOffset}", TreeNodeFlags.DefaultOpen);
         if (!lodNode)
             return false;
 
@@ -428,7 +429,7 @@ public partial class ModelEditor
 
     private bool DrawModelMeshDetails(int meshIndex, bool disabled)
     {
-        using var meshNode = Im.Tree.Node($"Mesh #{meshIndex + 1}", TreeNodeFlags.DefaultOpen);
+        using var meshNode = Im.Tree.Node($"Mesh #{meshIndex + OffByOneOffset}", TreeNodeFlags.DefaultOpen);
         if (!meshNode)
             return false;
 
@@ -437,7 +438,7 @@ public partial class ModelEditor
         if (!table)
             return false;
 
-        table.SetupColumn("name"u8,  TableColumnFlags.WidthFixed,   100 * Im.Style.GlobalScale);
+        table.SetupColumn("name"u8,  TableColumnFlags.WidthFixed,   150 * Im.Style.GlobalScale);
         table.SetupColumn("field"u8, TableColumnFlags.WidthStretch, 1);
 
         var file = Mdl;
@@ -521,7 +522,7 @@ public partial class ModelEditor
         var mesh         = Mdl.Meshes[meshIndex];
         var subMeshIndex = mesh.SubMeshIndex + subMeshOffset;
 
-        table.DrawFrameColumn($"Attributes #{subMeshOffset + 1}");
+        table.DrawFrameColumn($"Submesh #{subMeshOffset + OffByOneOffset} Attributes ");
 
         table.NextColumn();
         var attributes = GetSubMeshAttributes(subMeshIndex);

@@ -12,10 +12,12 @@
   <Folder Name="/Solution Items/Schemas/">
     <File Path="schemas/default_mod.json" />
     <File Path="schemas/group.json" />
-    <File Path="schemas/local_mod_data-v3.json" />
+    <File Path="schemas/shpk_devkit.json" />
     <File Path="schemas/mod_meta-v3.json" />
+    <File Path="schemas/mod_meta-v4.json" />
   </Folder>
-  <Folder Name="/Solution Items/Schemas/structs/">
+  <Folder Name="/Solution Items/Schemas/Structs/">
+    <File Path="schemas/structs/option_condition.json" />
     <File Path="schemas/structs/container.json" />
     <File Path="schemas/structs/group_combining.json" />
     <File Path="schemas/structs/group_imc.json" />
@@ -34,6 +36,16 @@
     <File Path="schemas/structs/meta_rsp.json" />
     <File Path="schemas/structs/meta_shp.json" />
     <File Path="schemas/structs/option.json" />
+  </Folder>
+  <Folder Name="/Solution Items/Schemas/Structs/Conditions/">
+    <File Path="schemas/structs/all_settings_condition.json" />
+    <File Path="schemas/structs/any_setting_condition.json" />
+    <File Path="schemas/structs/condition.json" />
+    <File Path="Luna/schemas/and_condition.json" />
+    <File Path="Luna/schemas/or_condition.json" />
+    <File Path="Luna/schemas/not_condition.json" />
+    <File Path="Luna/schemas/true_condition.json" />
+    <File Path="Luna/schemas/false_condition.json" />
   </Folder>
   <Project Path="Luna/Luna.Generators/Luna.Generators.csproj">
     <Platform Project="x64" />

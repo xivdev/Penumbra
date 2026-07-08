@@ -7,7 +7,8 @@ using Penumbra.Mods.Groups;
 using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
 using Penumbra.Util;
-using ZipArchive = SharpCompress.Archives.Zip.ZipArchive;
+using SharpCompress.Archives;
+using SharpCompress.Writers.Zip;
 
 namespace Penumbra.Import;
 
@@ -16,7 +17,7 @@ public partial class TexToolsImporter
     private DirectoryInfo? _currentModDirectory;
 
     // Version 1 mod packs are a simple collection of files without much information.
-    private DirectoryInfo ImportV1ModPack(FileInfo modPackFile, ZipArchive extractedModPack, string modRaw)
+    private DirectoryInfo ImportV1ModPack(FileInfo modPackFile, IWritableArchive<ZipWriterOptions> extractedModPack, string modRaw)
     {
         _currentOptionIdx  = 0;
         _currentNumOptions = 1;
@@ -53,7 +54,7 @@ public partial class TexToolsImporter
     }
 
     // Version 2 mod packs can either be simple or extended, import accordingly.
-    private DirectoryInfo ImportV2ModPack(FileInfo _, ZipArchive extractedModPack, string modRaw)
+    private DirectoryInfo ImportV2ModPack(FileInfo _, IWritableArchive<ZipWriterOptions> extractedModPack, string modRaw)
     {
         var modList = JsonConvert.DeserializeObject<SimpleModPack>(modRaw, JsonSettings)!;
 
@@ -83,7 +84,7 @@ public partial class TexToolsImporter
     }
 
     // Simple V2 mod packs are basically the same as V1 mod packs.
-    private DirectoryInfo ImportSimpleV2ModPack(ZipArchive extractedModPack, SimpleModPack modList)
+    private DirectoryInfo ImportSimpleV2ModPack(IWritableArchive<ZipWriterOptions> extractedModPack, SimpleModPack modList)
     {
         _currentOptionIdx  = 0;
         _currentNumOptions = 1;
@@ -126,7 +127,7 @@ public partial class TexToolsImporter
     }
 
     // Extended V2 mod packs contain multiple options that need to be handled separately.
-    private DirectoryInfo ImportExtendedV2ModPack(ZipArchive extractedModPack, string modRaw)
+    private DirectoryInfo ImportExtendedV2ModPack(IWritableArchive<ZipWriterOptions> extractedModPack, string modRaw)
     {
         _currentOptionIdx = 0;
         Penumbra.Log.Information("    -> Importing Extended V2 ModPack");
@@ -251,7 +252,7 @@ public partial class TexToolsImporter
         var data = stream.ReadFile<PenumbraSqPackStream.PenumbraFileResource>(mod.ModOffset);
 
         _currentFileName = mod.FullPath;
-        var extractedFile = new FileInfo(Path.Combine(outDirectory.FullName, mod.FullPath));
+        var extractedFile = new FileInfo(Path.CombineSafely(outDirectory.FullName, mod.FullPath));
 
         extractedFile.Directory?.Create();
 

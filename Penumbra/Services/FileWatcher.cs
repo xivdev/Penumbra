@@ -22,6 +22,10 @@ public sealed class FileWatcher : IDisposable, IService
     private FileSystemWatcher?       _fsw;
     private CancellationTokenSource? _cts = new();
     private Task?                    _consumer;
+    private int                      _pendingNotifications;
+
+    /// <summary> The maximum number of concurrently open "new mod found" install notifications before further ones are deferred. </summary>
+    private const int MaxPendingNotifications = 3;
 
     /// <summary> The time-to-live of ignore entries, in the same unit as <see cref="Environment.TickCount64"/>, namely milliseconds. </summary>
     private const long IgnoreTimeToLive = 60000L;
@@ -215,6 +219,7 @@ public sealed class FileWatcher : IDisposable, IService
             var totalSw = Stopwatch.StartNew();
             Penumbra.Log.Verbose($"[FileWatcher] Picked up '{path}' from queue.");
 
+            var removePath = true;
             try
             {
                 var ext = Path.GetExtension(path);
@@ -226,7 +231,7 @@ public sealed class FileWatcher : IDisposable, IService
                 }
                 else if (ModExtensions.Contains(ext))
                 {
-                    await ProcessOneAsync(path, token).ConfigureAwait(false);
+                    removePath = await ProcessOneAsync(path, token).ConfigureAwait(false);
                 }
                 // else: extension we don't recognise (shouldn't happen given filters); drop silently.
             }
@@ -240,8 +245,11 @@ public sealed class FileWatcher : IDisposable, IService
             }
             finally
             {
-                _pending.TryRemove(path);
-                Penumbra.Log.Verbose($"[FileWatcher] Finished '{path}' in {totalSw.ElapsedMilliseconds}ms.");
+                if (removePath)
+                {
+                    _pending.TryRemove(path);
+                    Penumbra.Log.Verbose($"[FileWatcher] Finished '{path}' in {totalSw.ElapsedMilliseconds}ms.");
+                }
             }
         }
     }
@@ -255,13 +263,17 @@ public sealed class FileWatcher : IDisposable, IService
         }
     }
 
-    private async Task ProcessOneAsync(string path, CancellationToken token)
+    private async Task<bool> ProcessOneAsync(string path, CancellationToken token)
     {
         if (!await WaitForStableAsync(path, token).ConfigureAwait(false))
-            return;
+            return true;
+
+        if (!_config.EnableAutomaticModImport && _pendingNotifications >= MaxPendingNotifications)
+            return false;
 
         Penumbra.Log.Verbose($"[FileWatcher] Triggering import for '{path}'.");
         _ = TriggerImport(path);
+        return true;
     }
 
     /// <summary>
@@ -317,6 +329,8 @@ public sealed class FileWatcher : IDisposable, IService
         else
         {
             var tcs = new TaskCompletionSource<ModImportResult[]>();
+            Interlocked.Increment(ref _pendingNotifications);
+            tcs.Task.ContinueWith(_ => Interlocked.Decrement(ref _pendingNotifications), TaskScheduler.Default);
             _messageService.AddMessage(new InstallNotification(_modImportManager, path, tcs), false);
             return tcs.Task;
         }
@@ -559,6 +573,8 @@ public sealed class FileWatcher : IDisposable, IService
         {
             return false;
         }
+
+        return true; // Ignore this path.
     }
 
 

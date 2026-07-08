@@ -1,5 +1,6 @@
 using Dalamud.Interface;
 using Dalamud.Plugin.Services;
+using Penumbra.Collections.Cache;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
 using Penumbra.Services;
@@ -12,6 +13,7 @@ public class DalamudSubstitutionProvider : IDisposable, Luna.IApiService
     private readonly ITextureSubstitutionProvider _substitution;
     private readonly IUiBuilder                   _uiBuilder;
     private readonly ActiveCollectionData         _activeCollectionData;
+    private readonly CollectionCacheManager       _caches; // May be required to not be disposed on disposal.
     private readonly Configuration                _config;
     private readonly CommunicatorService          _communicator;
 
@@ -19,10 +21,11 @@ public class DalamudSubstitutionProvider : IDisposable, Luna.IApiService
         => _config.UseDalamudUiTextureRedirection;
 
     public DalamudSubstitutionProvider(ITextureSubstitutionProvider substitution, ActiveCollectionData activeCollectionData,
-        Configuration config, CommunicatorService communicator, IUiBuilder ui)
+        Configuration config, CommunicatorService communicator, IUiBuilder ui, CollectionCacheManager caches)
     {
         _substitution         = substitution;
         _uiBuilder            = ui;
+        _caches               = caches;
         _activeCollectionData = activeCollectionData;
         _config               = config;
         _communicator         = communicator;
@@ -43,10 +46,17 @@ public class DalamudSubstitutionProvider : IDisposable, Luna.IApiService
         if (!_uiBuilder.UiPrepared)
             return;
 
-        var transformed = paths
-            .Where(p => (p.Path.StartsWith("ui/"u8) || p.Path.StartsWith("common/font/"u8)) && p.Path.EndsWith(".tex"u8))
-            .Select(p => p.ToString());
-        _substitution.InvalidatePaths(transformed);
+        try
+        {
+            var transformed = paths
+                .Where(p => (p.Path.StartsWith("ui/"u8) || p.Path.StartsWith("common/font/"u8)) && p.Path.EndsWith(".tex"u8))
+                .Select(p => p.ToString());
+            _substitution.InvalidatePaths(transformed);
+        }
+        catch (Exception ex)
+        {
+            Penumbra.Log.Error($"Failed to reset texture substitutions:\n{ex}");
+        }
     }
 
     public void Enable()

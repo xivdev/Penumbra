@@ -35,6 +35,14 @@ public enum ColorId : short
     TemporaryModSettingsTint,
     ChangedItemPreferenceStar,
     NoTint,
+    OptionColor1,
+    OptionColor2,
+    OptionColor3,
+    OptionColor4,
+    OptionColor5,
+    OptionColor6,
+    OptionColor7,
+    OptionColor8,
 }
 
 public static class Colors
@@ -47,6 +55,7 @@ public static class Colors
     public const           uint    FilterActive        = 0x807070FF;
     public const           uint    TutorialMarker      = 0xFF20FFFF;
     public const           uint    TutorialBorder      = 0xD00000FF;
+    private const string OptionColorTooltip = "A color used for the selectable text or label for a mod option. The mod creator can associate one of these 8 colors (or none for default text), but you can choose the actual color.";
 
     public static (uint DefaultColor, string Name, string Description) Data(this ColorId color)
         => color switch
@@ -83,6 +92,14 @@ public static class Colors
             ColorId.NewModTint                    => ( 0x8000FF00, "New Mod Tint",                          "A mod that was newly imported or created during this session and has not been enabled yet. This color is used as a tint for the regular state colors."),
             ColorId.NoTint                        => ( 0x00000000, "No Tint",                               "The default tint for all mods."),
             ColorId.ChangedItemPreferenceStar     => ( 0x30FFFFFF, "Preferred Changed Item Star",           "The color of the star button in the mod panel's changed items tab to prioritize specific items."),
+            ColorId.OptionColor1                  => ( 0xFFF8CD8E, "Selectable Color for Mod Option #1",    OptionColorTooltip),
+            ColorId.OptionColor2                  => ( 0xFFAAD898, "Selectable Color for Mod Option #2",    OptionColorTooltip),
+            ColorId.OptionColor3                  => ( 0xFF8AD1E6, "Selectable Color for Mod Option #3",    OptionColorTooltip),
+            ColorId.OptionColor4                  => ( 0xFF6B8CD9, "Selectable Color for Mod Option #4",    OptionColorTooltip),
+            ColorId.OptionColor5                  => ( 0xFFA38FD9, "Selectable Color for Mod Option #5",    OptionColorTooltip),
+            ColorId.OptionColor6                  => ( 0xFFDB9DB3, "Selectable Color for Mod Option #6",    OptionColorTooltip),
+            ColorId.OptionColor7                  => ( 0xFF6A5CC7, "Selectable Color for Mod Option #7",    OptionColorTooltip),
+            ColorId.OptionColor8                  => ( 0xFF6BB5A6, "Selectable Color for Mod Option #8",    OptionColorTooltip),
             _                                     => throw new ArgumentOutOfRangeException( nameof( color ), color, null ),
             // @formatter:on
         };

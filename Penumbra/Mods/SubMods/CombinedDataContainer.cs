@@ -14,6 +14,11 @@ public class CombinedDataContainer(IModGroup group) : IModDataContainer
 
     public IModGroup Group { get; } = group;
 
+    public int Index { get; private set; } = -1;
+
+    public void SetIndex(int index)
+        => Index = index;
+
     public string                             Name          { get; set; } = string.Empty;
     public Dictionary<Utf8GamePath, FullPath> Files         { get; set; } = [];
     public Dictionary<Utf8GamePath, FullPath> FileSwaps     { get; set; } = [];
@@ -28,7 +33,7 @@ public class CombinedDataContainer(IModGroup group) : IModDataContainer
             return Name;
 
         var index = GetDataIndex();
-        if (index == 0)
+        if (index is 0)
             return "None";
 
         var sb = new StringBuilder(128);
@@ -61,7 +66,7 @@ public class CombinedDataContainer(IModGroup group) : IModDataContainer
         for (var i = 0; i < Group.Options.Count; ++i)
         {
             text[Group.Options.Count - 1 - i] =   (index & 1) is 0 ? '0' : '1';
-            index   >>= 1;
+            index                             >>= 1;
         }
 
         return new string(text);
@@ -71,7 +76,7 @@ public class CombinedDataContainer(IModGroup group) : IModDataContainer
         => $"{Group.Name}: {GetName()}";
 
     public (int GroupIndex, int DataIndex) GetDataIndices()
-        => (Group.GetIndex(), GetDataIndex());
+        => (Group.Index, GetDataIndex());
 
     private int GetDataIndex()
     {

@@ -36,14 +36,14 @@ public sealed unsafe class CollectionResolver(
     /// </summary>
     public ModCollection PlayerCollection()
     {
-        var       gameObject   = objects[0];
+        var gameObject = objects[0];
         if (!gameObject.Valid)
             return collectionManager.Active.ByType(CollectionType.Yourself)
              ?? collectionManager.Active.Default;
 
         var player = actors.GetCurrentPlayer();
         var _      = false;
-        return CollectionByIdentifier(player)
+        return CollectionByIdentifier(player, false)
          ?? CheckYourself(player, gameObject)
          ?? CollectionByAttributes(gameObject, ref _)
          ?? collectionManager.Active.Default;
@@ -52,7 +52,7 @@ public sealed unsafe class CollectionResolver(
     /// <summary> Identify the correct collection for a game object. </summary>
     public ResolveData IdentifyCollection(GameObject* gameObject, bool useCache)
     {
-        if (gameObject == null)
+        if (gameObject is null)
             return collectionManager.Active.Default.ToResolveData();
 
         try
@@ -107,7 +107,7 @@ public sealed unsafe class CollectionResolver(
     {
         // Also check for empty names because sometimes named other characters
         // might be loaded before being officially logged in.
-        if (clientState.IsLoggedIn || gameObject->Name[0] != '\0')
+        if (clientState.IsLoggedIn || gameObject->Name[0] is not (byte)'\0')
         {
             ret = ResolveData.Invalid;
             return false;
@@ -122,7 +122,7 @@ public sealed unsafe class CollectionResolver(
         var notYetReady   = false;
         var lobby         = AgentLobby.Instance();
         var characterList = CharaSelectCharacterList.Instance();
-        if (lobby != null && characterList != null)
+        if (lobby is not null && characterList is not null)
         {
             // The lobby uses the first 8 cutscene actors.
             var idx = gameObject->ObjectIndex - ObjectIndex.CutsceneStart.Index;
@@ -133,7 +133,7 @@ public sealed unsafe class CollectionResolver(
                 var identifier = actors.CreatePlayer(new ByteString(item->Name), item->HomeWorldId);
                 Penumbra.Log.Excessive(
                     $"Identified {identifier.Incognito(null)} in cutscene for actor {idx + 200} at 0x{(ulong)gameObject:X} of race {(gameObject->IsCharacter() ? ((Character*)gameObject)->DrawData.CustomizeData.Race.ToString() : "Unknown")}.");
-                if (identifier.IsValid && CollectionByIdentifier(identifier) is { } coll)
+                if (identifier.IsValid && CollectionByIdentifier(identifier, false) is { } coll)
                 {
                     // Do not add this to caches because game objects are reused for different draw objects.
                     ret = coll.ToResolveData(gameObject);
@@ -166,7 +166,7 @@ public sealed unsafe class CollectionResolver(
 
         var player      = actors.GetCurrentPlayer();
         var notYetReady = false;
-        var collection = (player.IsValid ? CollectionByIdentifier(player) : null)
+        var collection = (player.IsValid ? CollectionByIdentifier(player, false) : null)
          ?? collectionManager.Active.ByType(CollectionType.Yourself)
          ?? CollectionByAttributes(gameObject, ref notYetReady)
          ?? collectionManager.Active.Default;
@@ -189,31 +189,32 @@ public sealed unsafe class CollectionResolver(
         }
 
         var notYetReady = false;
-        var collection = CollectionByIdentifier(identifier)
+        var hostile     = ((Actor)gameObject).IsHostile;
+        var collection = CollectionByIdentifier(identifier, hostile)
          ?? CheckYourself(identifier, gameObject)
          ?? CollectionByAttributes(gameObject, ref notYetReady)
-         ?? CheckOwnedCollection(identifier, owner, ref notYetReady)
+         ?? CheckOwnedCollection(identifier, owner, ref notYetReady, hostile)
          ?? collectionManager.Active.Default;
 
         return notYetReady ? collection.ToResolveData(gameObject) : cache.Set(collection, identifier, gameObject);
     }
 
     /// <summary> Check both temporary and permanent character collections. Temporary first. </summary>
-    private ModCollection? CollectionByIdentifier(ActorIdentifier identifier)
+    private ModCollection? CollectionByIdentifier(ActorIdentifier identifier, bool hostile)
     {
-        if (tempCollections.Collections.TryGetCollection(identifier, out var collection))
+        if (tempCollections.Collections.TryGetCollection(identifier, out var collection, hostile))
             return collection;
 
-        // Always inherit ownership for temporary collections.
-        if (identifier.Type is IdentifierType.Owned)
+        // Always inherit non-hostile ownership for temporary collections
+        if (identifier.Type is IdentifierType.Owned && !hostile)
         {
             var playerIdentifier = actors.CreateIndividualUnchecked(IdentifierType.Player, identifier.PlayerName,
                 identifier.HomeWorld.Id, ObjectKind.None, uint.MaxValue);
-            if (tempCollections.Collections.TryGetCollection(playerIdentifier, out collection))
+            if (tempCollections.Collections.TryGetCollection(playerIdentifier, out collection, hostile))
                 return collection;
         }
 
-        if (collectionManager.Active.Individuals.TryGetCollection(identifier, out collection))
+        if (collectionManager.Active.Individuals.TryGetCollection(identifier, out collection, hostile))
             return collection;
 
         return null;
@@ -223,7 +224,7 @@ public sealed unsafe class CollectionResolver(
     private ModCollection? CheckYourself(ActorIdentifier identifier, Actor actor)
     {
         if (actor.Index == 0
-         || cutscenes.GetParentIndex(actor.Index.Index) == 0
+         || cutscenes.GetParentIndex(actor.Index.Index) is 0
          || identifier.Equals(actors.GetCurrentPlayer()))
             return collectionManager.Active.ByType(CollectionType.Yourself);
 
@@ -244,7 +245,7 @@ public sealed unsafe class CollectionResolver(
         if (!IsModelHuman((uint)actor.AsCharacter->ModelContainer.ModelCharaId))
             return null;
 
-        if (actor.Customize->Data[0] == 0)
+        if (actor.Customize->Data[0] is 0)
         {
             notYetReady = true;
             return null;
@@ -271,9 +272,12 @@ public sealed unsafe class CollectionResolver(
     }
 
     /// <summary> Get the collection applying to the owner if it is available. </summary>
-    private ModCollection? CheckOwnedCollection(ActorIdentifier identifier, Actor owner, ref bool notYetReady)
+    private ModCollection? CheckOwnedCollection(ActorIdentifier identifier, Actor owner, ref bool notYetReady, bool hostile)
     {
-        if (identifier.Type != IdentifierType.Owned || !config.UseOwnerNameForCharacterCollection || !owner.Valid)
+        if (identifier.Type is not IdentifierType.Owned
+         || !config.UseOwnerNameForCharacterCollection
+         || hostile && !config.UseOwnerForHostiles
+         || !owner.Valid)
             return null;
 
         var id = actors.CreateIndividualUnchecked(IdentifierType.Player, identifier.PlayerName, identifier.HomeWorld.Id,

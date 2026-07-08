@@ -26,11 +26,14 @@ public sealed class ModOptionChanged(LunaLogger log)
         /// <seealso cref="UI.AdvancedWindow.ItemSwapTab.OnModOptionChange"/>
         ItemSwapTab = 0,
 
+        /// <seealso cref="UI.ModsTab.Groups.GroupNameCache.OnModOptionChange"/>
+        GroupNameCache = 0,
+
         /// <seealso cref="Collections.Manager.CollectionStorage.OnModOptionChange"/>
         CollectionStorage = 100,
 
-        /// <seealso cref="Mods.Groups.ModGroupEditUpdater.OnModOptionChange"/>
-        ModGroupEditUpdater = 1000,
+        /// <seealso cref="LayoutManager.OnModOptionChange"/>
+        LayoutManager = int.MaxValue,
     }
 
     /// <summary> The arguments for a ModOptionChanged event. </summary>
@@ -39,7 +42,7 @@ public sealed class ModOptionChanged(LunaLogger log)
     /// <param name="Group"> The changed group inside the mod, if any. </param>
     /// <param name="Option"> The changed option inside the group or null if it does not concern a specific option. </param>
     /// <param name="Container"> The changed data container inside the group or null if it does not concern a specific data container. </param>
-    /// <param name="OldName"> The old name of the group or option for <see cref="ModOptionChangeType.GroupRenamed"/> and <see cref="ModOptionChangeType.OptionRenamed"/>. </param>
+    /// <param name="Id"> The GUID of the changed object if available, empty otherwise. For <see cref="ModOptionChangeType.GroupIdentifierChanged"/> and <see cref="ModOptionChangeType.OptionIdentifierChanged"/>, the replaced GUID. </param>
     /// <param name="DeletedIndex"> The index of the group or option moved or deleted from. </param>
     public readonly record struct Arguments(
         ModOptionChangeType Type,
@@ -47,6 +50,6 @@ public sealed class ModOptionChanged(LunaLogger log)
         IModGroup? Group,
         IModOption? Option,
         IModDataContainer? Container,
-        string? OldName,
+        Guid Id,
         int DeletedIndex);
 }

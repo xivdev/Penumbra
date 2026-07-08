@@ -18,8 +18,8 @@ public sealed class OptionSelectCombo : FilterComboBase<OptionSelectCombo.Option
     {
         public readonly IModDataContainer? Container  = container;
         public readonly StringU8           FullName   = new(container.GetFullName());
-        public readonly int                GroupIndex = container.Group?.GetIndex() ?? -1;
-        public readonly int                DataIndex  = container.GetDataIndices().DataIndex;
+        public readonly int                GroupIndex = container.GroupIndex;
+        public readonly int                DataIndex  = container.Index;
     }
 
     private readonly Im.ColorStyleDisposable _border = new();

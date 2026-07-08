@@ -25,30 +25,30 @@ public abstract class ModOptionEditor<TGroup, TOption>(
         if (!ModGroupEditor.VerifyFileName(mod, null, newName, true))
             return null;
 
-        var maxPriority = mod.Groups.Count == 0 ? ModPriority.Default : mod.Groups.Max(o => o.Priority) + 1;
+        var maxPriority = mod.Groups.Count is 0 ? ModPriority.Default : mod.Groups.Max(o => o.Priority) + 1;
         var group       = CreateGroup(mod, newName, maxPriority);
         mod.Groups.Add(group);
         SaveService.Save(saveType, new ModSaveGroup(group, Config.ReplaceNonAsciiOnImport));
-        Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.GroupAdded, mod, group, null, null, null, -1));
+        Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.GroupAdded, mod, group, null, null, group.Id,
+            -1));
         return group;
     }
 
     /// <summary> Add a new mod, empty option group of the given type and name if it does not exist already. </summary>
-    public (TGroup, int, bool) FindOrAddModGroup(Mod mod, string newName, SaveType saveType = SaveType.ImmediateSync)
+    public (TGroup, bool) FindOrAddModGroup(Mod mod, string newName, SaveType saveType = SaveType.ImmediateSync)
     {
         var idx = mod.Groups.IndexOf(g => g.Name == newName);
         if (idx >= 0)
         {
             var existingGroup = mod.Groups[idx] as TGroup
              ?? throw new Exception($"Mod group with name {newName} exists, but is of the wrong type.");
-            return (existingGroup, idx, false);
+            return (existingGroup, false);
         }
 
-        idx = mod.Groups.Count;
         if (AddModGroup(mod, newName, saveType) is not { } group)
             throw new Exception($"Could not create new mod group with name {newName}.");
 
-        return (group, idx, true);
+        return (group, true);
     }
 
     /// <summary> Add a new empty option of the given name for the given group. </summary>
@@ -58,25 +58,26 @@ public abstract class ModOptionEditor<TGroup, TOption>(
             return null;
 
         SaveService.Save(saveType, new ModSaveGroup(group, Config.ReplaceNonAsciiOnImport));
-        Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionAdded, group.Mod, group, option, null, null, -1));
+        Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionAdded, group.Mod, group, option, null,
+            option.Id, -1));
         return option;
     }
 
     /// <summary> Add a new empty option of the given name for the given group if it does not exist already. </summary>
-    public (TOption, int, bool) FindOrAddOption(TGroup group, string newName, SaveType saveType = SaveType.Queue)
+    public (TOption, bool) FindOrAddOption(TGroup group, string newName, SaveType saveType = SaveType.Queue)
     {
         var idx = group.Options.IndexOf(o => o.Name == newName);
         if (idx >= 0)
         {
             var existingOption = group.Options[idx] as TOption
              ?? throw new Exception($"Mod option with name {newName} exists, but is of the wrong type."); // Should never happen.
-            return (existingOption, idx, false);
+            return (existingOption, false);
         }
 
         if (AddOption(group, newName, saveType) is not { } option)
             throw new Exception($"Could not create new option with name {newName} in {group.Name}.");
 
-        return (option, idx, true);
+        return (option, true);
     }
 
     /// <summary> Add an existing option to a given group. </summary> 
@@ -86,7 +87,8 @@ public abstract class ModOptionEditor<TGroup, TOption>(
             return null;
 
         SaveService.QueueSave(new ModSaveGroup(group, Config.ReplaceNonAsciiOnImport));
-        Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionAdded, group.Mod, group, clonedOption, null, null, -1));
+        Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionAdded, group.Mod, group, clonedOption,
+            null, option.Id, -1));
         return clonedOption;
     }
 
@@ -95,24 +97,26 @@ public abstract class ModOptionEditor<TGroup, TOption>(
     {
         var mod       = option.Mod;
         var group     = option.Group;
-        var optionIdx = option.GetIndex();
-        var oldName   = option.Name;
-        Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.PrepareChange, mod, group, option, null, null, -1));
+        var optionIdx = option.Index;
+        Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.PrepareChange, mod, group, option, null,
+            option.Id, -1));
         RemoveOption((TGroup)group, optionIdx);
         SaveService.QueueSave(new ModSaveGroup(group, Config.ReplaceNonAsciiOnImport));
-        Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionDeleted, mod, group, null, null, oldName, optionIdx));
+        Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionDeleted, mod, group, null, null,
+            option.Id, optionIdx));
     }
 
     /// <summary> Move an option inside the given option group. </summary>
     public void MoveOption(TOption option, int optionIdxTo)
     {
-        var idx   = option.GetIndex();
+        var idx   = option.Index;
         var group = (TGroup)option.Group;
         if (!MoveOption(group, idx, optionIdxTo))
             return;
 
         SaveService.QueueSave(new ModSaveGroup(group, Config.ReplaceNonAsciiOnImport));
-        Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionMoved, group.Mod, group, option, null, null, idx));
+        Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionMoved, group.Mod, group, option, null,
+            option.Id, idx));
     }
 
     protected abstract TGroup   CreateGroup(Mod mod, string newName, ModPriority priority, SaveType saveType = SaveType.ImmediateSync);
@@ -149,6 +153,7 @@ public static class ModOptionChangeTypeExtension
             ModOptionChangeType.OptionMetaChanged    => (false, true, false),
             ModOptionChangeType.DisplayChange        => (false, false, false),
             ModOptionChangeType.DefaultOptionChanged => (true, false, false),
+            ModOptionChangeType.ConditionChanged     => (false, true, false),
             _                                        => (false, false, false),
         };
     }

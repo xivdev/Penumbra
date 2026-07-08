@@ -9,7 +9,12 @@ namespace Penumbra.Api;
 
 public sealed class IpcProviders : IDisposable, IApiService, IRequiredService
 {
+    private static readonly HashSet<CallerPlugin> InternalCallers = [];
+
     private readonly List<IDisposable> _providers;
+
+    public static IReadOnlySet<CallerPlugin> Callers
+        => InternalCallers;
 
     private readonly EventProvider    _disposedProvider;
     private readonly EventProvider    _initializedProvider;
@@ -77,9 +82,10 @@ public sealed class IpcProviders : IDisposable, IApiService, IRequiredService
             IpcSubscribers.ModSettingChanged.Provider(pi, api.ModSettings),
             IpcSubscribers.CopyModSettings.Provider(pi, api.ModSettings),
 
-            IpcSubscribers.ApiVersion.Provider(pi, api),
-            new FuncProvider<(int Major, int Minor)>(pi, "Penumbra.ApiVersions", () => api.ApiVersion), // backward compatibility
-            new FuncProvider<int>(pi, "Penumbra.ApiVersion", () => api.ApiVersion.Breaking),            // backward compatibility
+            IpcSubscribers.ApiVersion.Provider(pi, InternalCallers, api),
+            new FuncProvider<(int Major, int Minor)>(pi, InternalCallers, "Penumbra.ApiVersions",
+                () => api.ApiVersion),                                                                        // backward compatibility
+            new FuncProvider<int>(pi, InternalCallers, "Penumbra.ApiVersion", () => api.ApiVersion.Breaking), // backward compatibility
             IpcSubscribers.GetModDirectory.Provider(pi, api.PluginState),
             IpcSubscribers.GetConfiguration.Provider(pi, api.PluginState),
             IpcSubscribers.ModDirectoryChanged.Provider(pi, api.PluginState),
@@ -111,11 +117,11 @@ public sealed class IpcProviders : IDisposable, IApiService, IRequiredService
             IpcSubscribers.GetGameObjectResourceTrees.Provider(pi, api.ResourceTree),
             IpcSubscribers.GetPlayerResourceTrees.Provider(pi, api.ResourceTree),
 
-            IpcSubscribers.CreateTemporaryCollection.Provider(pi, api.Temporary),
+            IpcSubscribers.CreateTemporaryCollection.Provider(pi, InternalCallers, api.Temporary),
             IpcSubscribers.DeleteTemporaryCollection.Provider(pi, api.Temporary),
             IpcSubscribers.AssignTemporaryCollection.Provider(pi, api.Temporary),
-            IpcSubscribers.AddTemporaryModAll.Provider(pi, api.Temporary),
-            IpcSubscribers.AddTemporaryMod.Provider(pi, api.Temporary),
+            IpcSubscribers.AddTemporaryModAll.Provider(pi, InternalCallers, api.Temporary),
+            IpcSubscribers.AddTemporaryMod.Provider(pi, InternalCallers, api.Temporary),
             IpcSubscribers.RemoveTemporaryModAll.Provider(pi, api.Temporary),
             IpcSubscribers.RemoveTemporaryMod.Provider(pi, api.Temporary),
             IpcSubscribers.SetTemporaryModSettings.Provider(pi, api.Temporary),

@@ -4,7 +4,6 @@ using Newtonsoft.Json.Linq;
 using Penumbra.Files;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Settings;
-using Penumbra.Services;
 
 namespace Penumbra.Collections;
 
@@ -29,10 +28,9 @@ internal readonly struct ModCollectionSave(ModStorage modStorage, ModCollection 
         j.WriteNumber("Version"u8, ModCollection.CurrentVersion);
         j.WriteString("Id"u8, modCollection.Identity.Identifier);
         j.WriteString("Name"u8, modCollection.Identity.Name);
-        j.WritePropertyName("Settings"u8);
 
         // Write all used and unused settings by mod directory name.
-        j.WriteStartObject();
+        j.WriteStartObject("Settings"u8);
         var list = new List<(string, ModSettings.SavedSettings)>(modCollection.Settings.Count + modCollection.Settings.Unused.Count);
         for (var i = 0; i < modCollection.Settings.Count; ++i)
         {

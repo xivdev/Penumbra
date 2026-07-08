@@ -21,9 +21,6 @@ public sealed class ModPathChanged(LunaLogger log)
         /// <seealso cref="ModSettingsApi.OnModPathChange"/>
         ApiModSettings = int.MinValue + 1,
 
-        /// <seealso cref="EphemeralConfig.OnModPathChanged"/>
-        EphemeralConfig = -500,
-
         /// <seealso cref="Collections.Cache.CollectionCacheManager.OnModChangeAddition"/>
         CollectionCacheManagerAddition = -100,
 

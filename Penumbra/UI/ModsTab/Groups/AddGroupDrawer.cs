@@ -32,9 +32,14 @@ public class AddGroupDrawer : Luna.IUiService
 
     public void Draw(Mod mod, float width)
     {
-        var buttonWidth = new Vector2((width - Im.Style.ItemInnerSpacing.X) / 2, 0);
-        DrawBasicGroups(mod, width, buttonWidth);
-        DrawImcData(mod, buttonWidth);
+        using var tree        = Im.Tree.Node("Add Group"u8, TreeNodeFlags.DefaultOpen);
+        if (tree)
+        {
+            var buttonWidth = new Vector2((width - Im.Style.ItemInnerSpacing.X) / 2, 0);
+            DrawBasicGroups(mod, width, buttonWidth);
+            DrawImcData(mod, buttonWidth);
+            UiHelpers.DefaultLineSpace();
+        }
     }
 
     private void DrawBasicGroups(Mod mod, float width, Vector2 buttonWidth)

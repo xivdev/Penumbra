@@ -9,7 +9,7 @@ public sealed class ModDataChanged(LunaLogger log) : EventBase<ModDataChanged.Ar
 {
     public enum Priority
     {
-        /// <seealso cref="UI.ModsTab.ModFileSystemSelector.OnModDataChange"/>
+        /// <seealso cref="UI.ModsTab.Selector.ModFileSystemCache.OnModDataChange"/>
         ModFileSystemCache = -10,
 
         /// <seealso cref="Mods.Manager.ModCacheManager.OnModDataChange"/>
@@ -20,6 +20,9 @@ public sealed class ModDataChanged(LunaLogger log) : EventBase<ModDataChanged.Ar
 
         /// <seealso cref="UI.ModsTab.ModPanelHeader.OnModDataChange"/>
         ModPanelHeader = 0,
+
+        /// <seealso cref="UI.ModsTab.Groups.GroupNameCache.OnModDataChange"/>
+        GroupNameCache = 0,
     }
 
     /// <summary> The arguments for a ModDataChanged event. </summary>

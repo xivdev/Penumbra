@@ -30,6 +30,8 @@ public enum ModDataChangeType : uint
     FileSystemFolder      = 0x010000,
     FileSystemSortOrder   = 0x020000,
     LastConfigEdit        = 0x040000,
+    Identifier            = 0x080000,
+    PageNames             = 0x100000,
 }
 
 public class ModDataEditor(SaveService saveService, CommunicatorService communicatorService, ItemData itemData, LocalModDatabase database)
@@ -113,6 +115,17 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
         communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.RequiredFeatures, mod, null));
     }
 
+    public bool ForceIdentifier(Mod mod, Guid newGuid)
+    {
+        if (newGuid == Guid.Empty || mod.StableIdentifier == newGuid || mod.SubObjects.ContainsKey(newGuid))
+            return false;
+
+        mod.StableIdentifier = newGuid;
+        saveService.QueueSave(new ModMeta(mod));
+        communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.Identifier, mod, null));
+        return true;
+    }
+
     public void ChangeModTag(Mod mod, int tagIdx, string newTag)
         => ChangeTag(mod, tagIdx, newTag, false);
 
@@ -157,6 +170,27 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
         mod.Note = newNote;
         database.UpsertNote(mod);
         communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.Favorite, mod, null));
+    }
+
+    public void ChangePageName(Mod mod, int page, string newName)
+    {
+        var oldName = string.Empty;
+        if (newName.Length is 0)
+        {
+            if (!mod.PageNames.Remove(page))
+                return;
+        }
+        else if (mod.PageNames.TryGetValue(page, out oldName) && oldName == newName)
+        {
+            return;
+        }
+        else
+        {
+            mod.PageNames[page] = newName;
+        }
+
+        saveService.QueueSave(new ModMeta(mod));
+        communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.PageNames, mod, oldName ?? string.Empty));
     }
 
     private void ChangeTag(Mod mod, int tagIdx, string newTag, bool local)

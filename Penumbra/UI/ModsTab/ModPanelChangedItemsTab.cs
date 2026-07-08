@@ -263,7 +263,7 @@ public sealed class ModPanelChangedItemsTab(
         Im.Table.NextColumn();
         if (obj.Expandable)
         {
-            if (ImEx.Icon.Button(obj.Expanded ? LunaStyle.TreeExpandIcon : LunaStyle.TreeCollapseIcon,
+            if (ImEx.Icon.Button(obj.Expanded ? LunaStyle.TreeCollapseIcon : LunaStyle.TreeExpandIcon,
                     obj.Expanded     ? "Hide the other items using the same model."u8 :
                     obj.Children > 1 ? $"Show {obj.Children} other items using the same model." :
                                        "Show one other item using the same model."u8,

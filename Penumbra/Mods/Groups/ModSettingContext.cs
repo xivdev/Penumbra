@@ -1,103 +1,50 @@
 using System.Text.Json;
+using ImSharp;
 using Luna;
-using Penumbra.Api.Enums;
 using Penumbra.Mods.Settings;
+using Penumbra.Mods.SubMods;
 
 namespace Penumbra.Mods.Groups;
 
-public readonly record struct ModSettingContext(Mod Mod, ModSettings Settings);
-
-public sealed class MultiSettingAllCondition(string group, params IReadOnlyCollection<string> options) : MultiSettingCondition(group, options)
+public readonly record struct ModSettingContext(Mod Mod, ModSettings Settings, IModObject? Object = null) : IConditionContext<ModSettingContext>
 {
-    protected override ReadOnlySpan<byte> Type
-        => "MultiSettingAll"u8;
-
-    public override ICondition<ModSettingContext> DeepCopy()
-        => new MultiSettingAllCondition(Group, this);
-
-    protected override bool EvaluateGroup(IModGroup group, Setting settings)
+    public static ICondition<ModSettingContext>? ParseCustomType(ref Utf8JsonReader reader, Utf8JsonObjectLimit obj, StringU8 type)
     {
-        var matches = 0;
-        foreach (var option in this)
-        {
-            var optionIndex = group.Options.IndexOf(o => o.Name == option);
-            if (optionIndex < 0)
-                break;
+        if (!type.Equals("Setting"u8))
+            return null;
 
-            if (group.Type is GroupType.Single)
-            {
-                if (optionIndex == settings.AsIndex)
-                    ++matches;
-            }
-            else if (settings.HasFlag(optionIndex))
-            {
-                ++matches;
-            }
+        var guid = Guid.Empty;
+        while (obj.Read(ref reader))
+        {
+            if (reader.TokenType is not JsonTokenType.PropertyName)
+                return null;
+
+            if (!reader.GuidProperty("Setting"u8, out guid))
+                reader.Skip();
         }
 
-        return matches == Count;
+        if (guid == Guid.Empty)
+            return null;
+
+        return new SettingIdCondition(guid);
     }
+
+    public ICondition<ModSettingContext>? GetRoot()
+        => Object?.Condition;
+
+    public void SetRoot(ICondition<ModSettingContext>? condition)
+        => Object?.Condition = condition?.Reduce();
 }
 
-public sealed class MultiSettingAnyCondition(string group, params IReadOnlyCollection<string> options) : MultiSettingCondition(group, options)
+public sealed class SettingCondition(IModOption option) : ICondition<ModSettingContext>
 {
-    protected override ReadOnlySpan<byte> Type
-        => "MultiSettingAny"u8;
+    public IModOption Option { get; set; } = option;
 
-    public override ICondition<ModSettingContext> DeepCopy()
-        => new MultiSettingAnyCondition(Group, this);
-
-    protected override bool EvaluateGroup(IModGroup group, Setting settings)
-    {
-        foreach (var option in this)
-        {
-            var optionIndex = group.Options.IndexOf(o => o.Name == option);
-            if (optionIndex < 0)
-                break;
-
-            if (group.Type is GroupType.Single)
-            {
-                if (optionIndex == settings.AsIndex)
-                    return true;
-            }
-            else if (settings.HasFlag(optionIndex))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-}
-
-public sealed class SingleSettingCondition(string group, string option) : ICondition<ModSettingContext>
-{
-    public string Group  = group;
-    public string Option = option;
+    public bool Equals(ICondition<ModSettingContext>? other)
+        => other is SettingCondition s && Option == s.Option;
 
     public bool Evaluate(in ModSettingContext context)
-    {
-        foreach (var (index, group) in context.Mod.Groups.Index())
-        {
-            if (group.Name != Group)
-                continue;
-
-            var settings = context.Settings.IsEmpty ? group.DefaultSettings : context.Settings.Settings[index];
-            var option   = group.Options.IndexOf(o => o.Name == Option);
-            if (option < 0)
-                continue;
-
-            switch (group.Type)
-            {
-                case GroupType.Single when option == settings.AsIndex:
-                case GroupType.Multi when settings.HasFlag(option):
-                    return true;
-            }
-        }
-
-        return false;
-    }
-
+        => Option.IsEnabled(context.Settings);
 
     public ICondition<ModSettingContext> Reduce()
         => this;
@@ -105,80 +52,55 @@ public sealed class SingleSettingCondition(string group, string option) : ICondi
     public void WriteJson(Utf8JsonWriter j)
     {
         j.WriteStartObject();
-        j.WriteString("Type"u8,   "SingleSetting"u8);
-        j.WriteString("Group"u8,  Group);
-        j.WriteString("Option"u8, Option);
+        j.WriteString("Type"u8,    "Setting"u8);
+        j.WriteString("Setting"u8, Option.Id);
         j.WriteEndObject();
     }
 
-    /// <inheritdoc/>
     public ICondition<ModSettingContext> DeepCopy()
-        => new SingleSettingCondition(Group, Option);
+        => new SettingCondition(Option);
 
     public IEnumerable<ICondition<ModSettingContext>> Subconditions
         => [];
 
     public int RemoveSubconditions(Func<ICondition<ModSettingContext>, bool> predicate)
         => 0;
+
+    public ICondition<ModSettingContext>? EditConditions(Func<ICondition<ModSettingContext>, ICondition<ModSettingContext>?> method)
+        => method(this);
 }
 
-public abstract class MultiSettingCondition(string group) : List<string>, ICondition<ModSettingContext>
+public sealed class SettingIdCondition(Guid id) : ICondition<ModSettingContext>
 {
-    protected MultiSettingCondition(string group, IReadOnlyCollection<string> options)
-        : this(group)
-    {
-        EnsureCapacity(options.Count);
-        AddRange(options);
-    }
+    public Guid Option { get; } = id;
 
-    public string Group = group;
-
-    public abstract    ICondition<ModSettingContext> DeepCopy();
-    protected abstract ReadOnlySpan<byte>            Type { get; }
-    protected abstract bool                          EvaluateGroup(IModGroup group, Setting settings);
+    public bool Equals(ICondition<ModSettingContext>? other)
+        => other is SettingIdCondition s && Option == s.Option;
 
     public bool Evaluate(in ModSettingContext context)
-    {
-        if (Count is 0)
-            return true;
-
-        foreach (var (index, group) in context.Mod.Groups.Index())
-        {
-            if (group.Name != Group)
-                continue;
-
-            if (group.Type is GroupType.Single && Count > 1)
-                continue;
-
-            var settings = context.Settings.IsEmpty ? group.DefaultSettings : context.Settings.Settings[index];
-            if (EvaluateGroup(group, settings))
-                return true;
-        }
-
-        return false;
-    }
+        => throw new NotImplementedException(
+            $"{nameof(SettingIdCondition)} can not be evaluated and is only for parsing and subsequent conversion to {nameof(SettingCondition)}.");
 
     public ICondition<ModSettingContext> Reduce()
-    {
-        this.RemoveDuplicates();
-        return this;
-    }
+        => this;
 
     public void WriteJson(Utf8JsonWriter j)
     {
         j.WriteStartObject();
-        j.WriteString("Type"u8,  Type);
-        j.WriteString("Group"u8, Group);
-        j.WriteStartArray("Options"u8);
-        foreach (var option in this)
-            j.WriteStringValue(option);
-        j.WriteEndArray();
+        j.WriteString("Type"u8,    "Setting"u8);
+        j.WriteString("Setting"u8, Option);
         j.WriteEndObject();
     }
+
+    public ICondition<ModSettingContext> DeepCopy()
+        => new SettingIdCondition(Option);
 
     public IEnumerable<ICondition<ModSettingContext>> Subconditions
         => [];
 
     public int RemoveSubconditions(Func<ICondition<ModSettingContext>, bool> predicate)
         => 0;
+
+    public ICondition<ModSettingContext>? EditConditions(Func<ICondition<ModSettingContext>, ICondition<ModSettingContext>?> method)
+        => method(this);
 }

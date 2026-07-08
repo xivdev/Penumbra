@@ -233,9 +233,10 @@ public class Penumbra : IDalamudPlugin
             "Glamourer", "CustomizePlus", "SimpleHeels",
             "Ktisis", "Brio",
             "heliosphere-plugin", "VfxEditor", "IllusioVitae", "Aetherment",
-            "DynamicBridge", "GagSpeak", "ProjectGagSpeak", "RoleplayingVoiceDalamud", "AQuestReborn", "Proteus", "DragAndDropTexturing", "CharacterSelectPlugin",
+            "DynamicBridge", "GagSpeak", "ProjectGagSpeak", "RoleplayingVoiceDalamud", "AQuestReborn", "Proteus", "DragAndDropTexturing",
+            "CharacterSelectPlugin",
             "MareSynchronos", "LoporritSync", "KittenSync", "Snowcloak", "LightlessSync", "Sphene", "XivSync",
-            "MareSempiterne" /* PlayerSync */, "AnatoliIliou", "LaciSynchroni", 
+            "MareSempiterne" /* PlayerSync */, "AnatoliIliou", "LaciSynchroni",
         ];
         var plugins = _services.GetService<IDalamudPluginInterface>().InstalledPlugins
             .GroupBy(p => p.InternalName)
@@ -244,8 +245,16 @@ public class Penumbra : IDalamudPlugin
                 var item = g.OrderByDescending(p => p.IsLoaded).ThenByDescending(p => p.Version).First();
                 return (item.IsLoaded, item.Version, item.Name);
             });
+
+        foreach (var plugin in IpcProviders.Callers.OrderBy(p => p.Name).ThenBy(p => p.Version))
+            sb.Append($"> **`{plugin.Name + ':',-29}`** {plugin.Version} (IPC)\n");
+
         foreach (var plugin in relevantPlugins)
         {
+            // Skip plugins included through caller tracking.
+            if (IpcProviders.Callers.Any(c => c.InternalName == plugin))
+                continue;
+
             if (plugins.TryGetValue(plugin, out var data))
                 sb.Append($"> **`{data.Name + ':',-29}`** {data.Version}{(data.IsLoaded ? string.Empty : " (Disabled)")}\n");
         }
@@ -285,7 +294,8 @@ public class Penumbra : IDalamudPlugin
             $"> **`Synchronous Load (Dalamud):  `** {(_services.GetService<DalamudConfigService>().GetDalamudConfig(DalamudConfigService.WaitingForPluginsOption, out bool v) ? v.ToString() : "Unknown")} (first Start: {hdrEnabler.FirstLaunchWaitForPluginsState?.ToString() ?? "Unknown"})\n");
         sb.Append(
             $"> **`Logging:                     `** Log: {_config.Filters.ResourceLoggerWriteToLog}, Watcher: {_config.Filters.ResourceLoggerEnabled} ({_config.Filters.ResourceLoggerMaxEntries})\n");
-        sb.Append($"> **`Use Ownership:               `** {_config.UseOwnerNameForCharacterCollection}\n");
+        sb.Append(
+            $"> **`Use Ownership:               `** {_config.UseOwnerNameForCharacterCollection} (Hostiles: {_config.UseOwnerForHostiles})\n");
         GatherRelevantPlugins(sb);
         sb.AppendLine("**Mods**");
         sb.Append($"> **`Installed Mods:              `** {_modManager.Count}\n");

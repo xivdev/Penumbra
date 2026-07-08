@@ -3,7 +3,6 @@ using Newtonsoft.Json.Linq;
 using Penumbra.Files;
 using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
-using Penumbra.Services;
 
 namespace Penumbra.Mods.Groups;
 
@@ -29,7 +28,7 @@ public readonly struct ModSaveGroup : ISavable
         => new(basePath, group, groupIndex, onlyAscii);
 
     public ModSaveGroup(IModGroup group, bool onlyAscii)
-        : this(group.Mod.ModPath, group, group.GetIndex(), onlyAscii)
+        : this(group.Mod.ModPath, group, group.Index, onlyAscii)
     { }
 
     public ModSaveGroup(DirectoryInfo basePath, DefaultSubMod @default, bool onlyAscii)
@@ -53,7 +52,7 @@ public readonly struct ModSaveGroup : ISavable
         else
         {
             _group    = container.Group!;
-            _groupIdx = _group.GetIndex();
+            _groupIdx = _group.Index;
         }
     }
 
@@ -64,7 +63,7 @@ public readonly struct ModSaveGroup : ISavable
         _defaultMod = container as DefaultSubMod;
         _onlyAscii  = onlyAscii;
         _group      = container.Group;
-        _groupIdx   = _group?.GetIndex() ?? -1;
+        _groupIdx   = _group?.Index ?? -1;
     }
 
     public string ToFilePath(FilenameService fileNames)
@@ -73,7 +72,7 @@ public readonly struct ModSaveGroup : ISavable
     public void Save(Stream stream)
     {
         // TODO: System.Text.Json
-        using var w = new StreamWriter(stream);
+        using var w = new StreamWriter(stream, leaveOpen: true);
         using var j = new JsonTextWriter(w);
         j.Formatting = Formatting.Indented;
         var serializer = new JsonSerializer { Formatting = Formatting.Indented };

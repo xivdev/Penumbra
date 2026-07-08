@@ -2,6 +2,8 @@ using ImSharp;
 using Luna;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.Settings;
+using Penumbra.Mods.SubMods;
+using Penumbra.UI.Classes;
 using Penumbra.UI.ModsTab.Groups;
 
 namespace Penumbra.UI;
@@ -24,7 +26,7 @@ public sealed class SingleGroupCombo : FilterComboBase<SingleGroupCombo.GroupCac
     protected override FilterComboBaseCache<GroupCache> CreateCache()
         => new Cache(this);
 
-    public readonly record struct GroupCache(int OptionIndex, StringU8 Name, StringU8 Description);
+    public readonly record struct GroupCache(int OptionIndex, StringU8 Name, StringU8 Description, Vector4 Color, bool Separator);
 
     private readonly WeakReference<SingleModGroup> _group = new(null!);
     private          Setting                       _currentOption;
@@ -41,7 +43,8 @@ public sealed class SingleGroupCombo : FilterComboBase<SingleGroupCombo.GroupCac
 
     protected override IEnumerable<GroupCache> GetItems()
         => _group.TryGetTarget(out var target)
-            ? target.OptionData.Select(o => new GroupCache(o.GetIndex(), new StringU8(o.Name), new StringU8(o.Description)))
+            ? target.OptionData.Select(o => new GroupCache(o.GetIndex(), new StringU8(o.Name), new StringU8(o.Description),
+                o.Color is 0 ? Im.Style[ImGuiColor.Text] : o.Color.Value().ToVector(), o.Layout.HasFlag(ModSettingsLayout.Separator)))
             : [];
 
     protected override float ItemHeight
@@ -49,7 +52,18 @@ public sealed class SingleGroupCombo : FilterComboBase<SingleGroupCombo.GroupCac
 
     protected override bool DrawItem(in GroupCache item, int globalIndex, bool selected)
     {
-        var ret = Im.Selectable(item.Name, selected);
+        bool ret;
+        using (ImGuiColor.Text.Push(item.Color))
+        {
+            ret = Im.Selectable(item.Name, selected);
+        }
+
+        if (item.Separator)
+        {
+            var right = Im.Item.LowerRightCorner;
+            Im.Window.DrawList.Shape.Line(right with { X = Im.Item.UpperLeftCorner.X }, right, ImGuiColor.Separator.Get());
+        }
+
         if (item.Description.Length > 0)
         {
             Im.Line.SameInner();
@@ -67,7 +81,8 @@ public sealed class SingleGroupCombo : FilterComboBase<SingleGroupCombo.GroupCac
         protected override void ComputeWidth()
         {
             ComboWidth = AllItems.Max(i => i.Name.CalculateSize().X + (i.Description.Length > 0 ? Im.Style.FrameHeightWithSpacing : 0))
-              + 2 * Im.Style.FramePadding.X + Im.Style.ScrollbarSize;
+              + 2 * Im.Style.FramePadding.X
+              + Im.Style.ScrollbarSize;
         }
     }
 }

@@ -244,7 +244,7 @@ public class MigrationManager(Configuration config) : IService
             return;
         }
 
-        var       path = Path.Combine(directory, reader.Entry.Key!);
+        var       path = Path.CombineSafely(directory, reader.Entry.Key!);
         using var s    = new MemoryStream();
         using var e    = reader.OpenEntryStream();
         e.CopyTo(s);
@@ -276,7 +276,7 @@ public class MigrationManager(Configuration config) : IService
             return;
         }
 
-        var       path = Path.Combine(directory, reader.Entry.Key);
+        var       path = Path.CombineSafely(directory, reader.Entry.Key);
         using var s    = new MemoryStream();
         using var e    = reader.OpenEntryStream();
         e.CopyTo(s);
@@ -299,7 +299,7 @@ public class MigrationManager(Configuration config) : IService
 
     public void FixMipMaps(ArchiveUtility.ReaderShim reader, string directory)
     {
-        var       path = Path.Combine(directory, reader.Entry.Key!);
+        var       path = Path.CombineSafely(directory, reader.Entry.Key!);
         using var s    = new MemoryStream();
         using var e    = reader.OpenEntryStream();
         e.CopyTo(s);

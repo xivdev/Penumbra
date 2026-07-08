@@ -25,33 +25,32 @@
       },
       "PeNet": {
         "type": "Direct",
-        "requested": "[5.1.0, )",
-        "resolved": "5.1.0",
-        "contentHash": "XSd1PUwWo5uI8iqVHk7Mm02RT1bjndtAYsaRwLmdYZoHOAmb4ohkvRcZiqxJ7iLfBfdiwm+PHKQIMqDmOavBtw==",
+        "requested": "[6.1.2, )",
+        "resolved": "6.1.2",
+        "contentHash": "iA4YoK12fozNlikTmedzWkH8RxxfjzC5Z321MRTutQbik/90U5sRW7Vab49+o5u7rZBhjq3nBDjjXv9B83jiaQ==",
         "dependencies": {
-          "PeNet.Asn1": "2.0.1",
-          "System.Security.Cryptography.Pkcs": "8.0.1"
+          "System.Security.Cryptography.Pkcs": "10.0.7"
         }
       },
       "SharpCompress": {
         "type": "Direct",
-        "requested": "[0.44.1, )",
-        "resolved": "0.44.1",
-        "contentHash": "QHhxJHoyIXKeu3vLJ0XY2rDJLd4fLvZ0xXPCMO854OOcSz62uHB5uPloBMtg236MFDMVUSUHuO1E8WY5HpLp6Q=="
+        "requested": "[0.48.1, )",
+        "resolved": "0.48.1",
+        "contentHash": "SqGaVniGG943Gph/gHhUQUiZPyC7y0tXZyMf0/B2oGsMav9dqs7JJOuUA+xOkwKYaWM2TM7aZQjNK91f4bX71A=="
       },
       "SharpGLTF.Core": {
         "type": "Direct",
-        "requested": "[1.0.5, )",
-        "resolved": "1.0.5",
-        "contentHash": "HNHKPqaHXm7R1nlXZ764K5UI02IeDOQ5DQKLjwYUVNTsSW27jJpw+wLGQx6ZFoiFYqUlyZjmsu+WfEak2GmJAg=="
+        "requested": "[1.0.6, )",
+        "resolved": "1.0.6",
+        "contentHash": "m3qIvUnpvRRfQ0fp0TFfpPk+vsHkCIOf/uIVJ19fe9dwa29KCO/PeHVXKAph8nsFxFLXitTIIqCa5W8JGLMhBg=="
       },
       "SharpGLTF.Toolkit": {
         "type": "Direct",
-        "requested": "[1.0.5, )",
-        "resolved": "1.0.5",
-        "contentHash": "piQKk7PH2pSWQSQmCSd8cYPaDtAy/ppAD+Mrh2RUhhHI8awl81HqqLyAauwQhJwea3LNaiJ6f4ehZuOGk89TlA==",
+        "requested": "[1.0.6, )",
+        "resolved": "1.0.6",
+        "contentHash": "wb9Ebb4uwXevL4WiLlry29RWIYlxa+NiAa0BB8iSR7VbmgSa5Ij/QaPNlKi1jjA4oL8aEygg5V76zY1SJfIS+Q==",
         "dependencies": {
-          "SharpGLTF.Runtime": "1.0.5"
+          "SharpGLTF.Runtime": "1.0.6"
         }
       },
       "SixLabors.ImageSharp": {
@@ -120,17 +119,12 @@
         "resolved": "9.0.0",
         "contentHash": "N3qEBzmLMYiASUlKxxFIISP4AiwuPTHF5uCh+2CWSwwzAJiIYx0kBJsS30cp1nvhSySFAVi30jecD307jV+8Kg=="
       },
-      "PeNet.Asn1": {
-        "type": "Transitive",
-        "resolved": "2.0.1",
-        "contentHash": "YR2O2YokSAYB+7CXkCDN3bd6/p0K3/AicCPkOJHKUz500v1D/hulCuVlggguqNc3M0LgSfOZKGvVYg2ud1GA9A=="
-      },
       "SharpGLTF.Runtime": {
         "type": "Transitive",
-        "resolved": "1.0.5",
-        "contentHash": "EVP32k4LqERxSVICiupT8xQvhHSHJCiXajBjNpqdfdajtREHayuVhH0Jmk6uSjTLX8/IIH9XfT34sw3TwvCziw==",
+        "resolved": "1.0.6",
+        "contentHash": "MVb0p0gzwnjHB03b0kMhf9bVUd6gSvs/jBpTkL6rMa0RtzSGARbCvZkpGbHXjxgSTncprEuzV4nAaaAucifc3Q==",
         "dependencies": {
-          "SharpGLTF.Core": "1.0.5"
+          "SharpGLTF.Core": "1.0.6"
         }
       },
       "System.IO.Hashing": {
@@ -140,8 +134,8 @@
       },
       "System.Security.Cryptography.Pkcs": {
         "type": "Transitive",
-        "resolved": "8.0.1",
-        "contentHash": "CoCRHFym33aUSf/NtWSVSZa99dkd0Hm7OCZUxORBjRB16LNhIEOf8THPqzIYlvKM0nNDAPTRBa1FxEECrgaxxA=="
+        "resolved": "10.0.7",
+        "contentHash": "dbdKfF3eA5l+CXiAbDxiCxdezoxeanbue1ck8m49ih1L9uZG6ry8Ul8On6vpragyMDJJP4rQHUY/SWgk66tCYA=="
       },
       "Unosquare.Swan.Lite": {
         "type": "Transitive",

@@ -1,3 +1,4 @@
+using ImSharp;
 using Newtonsoft.Json.Linq;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
@@ -18,11 +19,11 @@ public readonly record struct AtchIdentifier(AtchType Type, GenderRace GenderRac
     public int CompareTo(AtchIdentifier other)
     {
         var typeComparison = Type.CompareTo(other.Type);
-        if (typeComparison != 0)
+        if (typeComparison is not 0)
             return typeComparison;
 
         var genderRaceComparison = GenderRace.CompareTo(other.GenderRace);
-        if (genderRaceComparison != 0)
+        if (genderRaceComparison is not 0)
             return genderRaceComparison;
 
         return EntryIndex.CompareTo(other.EntryIndex);
@@ -41,9 +42,12 @@ public readonly record struct AtchIdentifier(AtchType Type, GenderRace GenderRac
 
     public bool Validate()
     {
+        if (EntryIndex is ushort.MaxValue || GenderRace is GenderRace.Unknown || Type is AtchType.Unknown)
+            return false;
+
         var race      = (int)GenderRace / 100;
         var remainder = (int)GenderRace - 100 * race;
-        if (remainder != 1)
+        if (remainder is not 1)
             return false;
 
         return race is >= 0 and <= 18;
@@ -52,11 +56,21 @@ public readonly record struct AtchIdentifier(AtchType Type, GenderRace GenderRac
     public JObject AddToJson(JObject jObj)
     {
         var (gender, race) = GenderRace.Split();
-        jObj["Gender"]     = gender.ToString();
-        jObj["Race"]       = race.ToString();
+        jObj["Gender"]     = gender.String;
+        jObj["Race"]       = race.String;
         jObj["Type"]       = Type.ToAbbreviation();
         jObj["Index"]      = EntryIndex;
         return jObj;
+    }
+
+    public System.Text.Json.Utf8JsonWriter AddToJson(System.Text.Json.Utf8JsonWriter j)
+    {
+        var (gender, race) = GenderRace.Split();
+        j.WriteString("Gender"u8, gender.StringU8);
+        j.WriteString("Race"u8,   race.StringU8);
+        j.WriteString("Type"u8, Type.ToAbbreviation());
+        j.WriteNumber("Index"u8, EntryIndex);
+        return j;
     }
 
     public static AtchIdentifier? FromJson(JObject jObj)
