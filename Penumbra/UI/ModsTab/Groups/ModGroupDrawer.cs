@@ -81,7 +81,7 @@ public sealed class ModGroupDrawer(
         else if (group.Behaviour is GroupDrawBehaviour.MultiSelection)
             DrawMultiGroupNew(group, setting);
         else
-            DrawSingleGroupRadio(group, setting);
+            DrawSingleGroupRadioNew(group, setting);
 
         foreach (var child in group.Children)
             DrawGroup(child);
@@ -108,6 +108,42 @@ public sealed class ModGroupDrawer(
             if (Im.Selectable(option.Name, option.Data.Index == setting.AsIndex))
                 SetModSetting(group.Group, group.Group.Index, Setting.Single(option.Data.Index));
             id.Pop();
+        }
+    }
+
+    private void DrawSingleGroupRadioNew(ModSettingsCache.ModGroupCache group, Setting setting)
+    {
+        using var id = Im.Id.Push(group.Index);
+        var line = new HeaderLine
+        {
+            Collapsible   = true,
+            DefaultClosed = group.Group.Layout.HasFlag(ModSettingsLayout.DefaultClosed),
+            LeftDistance  = 30 * Im.Style.GlobalScale,
+        };
+        var options = group.Options;
+        if (group.HideHeader || line.Basic(group.Name, group.Description))
+            DrawOptions();
+
+        void DrawOptions()
+        {
+            using var disabled = Im.Disabled(_locked);
+            for (var idx = 0; idx < options.Count; ++idx)
+            {
+                using var i       = Im.Id.Push(idx);
+                var       option  = options[idx];
+
+                if (Im.RadioButton(option.Name, idx == setting.AsIndex))
+                    SetModSetting(group.Group, group.Index, Setting.Single(idx));
+
+                if (option.Description.Length > 0)
+                {
+                    Im.Line.SameInner();
+                    LunaStyle.DrawAlignedHelpMarker(option.Description, treatAsHovered: Im.Item.Hovered());
+                }
+
+                foreach (var childGroup in option.Children)
+                    DrawGroup(childGroup);
+            }
         }
     }
 
