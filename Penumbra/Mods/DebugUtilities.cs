@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Text.Json;
 using Luna;
 using Penumbra.Files;
@@ -11,6 +12,83 @@ namespace Penumbra.Mods;
 
 public static class DebugUtilities
 {
+    /// <summary> Back-up all (nested) folder/*.json* files in the root directory into a zip archive, including their relative paths. </summary>
+    /// <param name="rootDirectory"> The root directory. </param>
+    public static void BackupJsonFiles(string rootDirectory)
+    {
+        var directories = Directory.EnumerateDirectories(rootDirectory, "*", SearchOption.TopDirectoryOnly).ToList();
+        var files = new ConcurrentDictionary<string, string>();
+        Parallel.ForEach(directories, directory =>
+        {
+            foreach (var file in Directory.EnumerateFiles(directory, "*.json*", SearchOption.AllDirectories))
+            {
+                var relativePath = Path.GetRelativePath(rootDirectory, file);
+                files.TryAdd(relativePath, file);
+            }
+        });
+        using var fs = new FileStream(Path.Combine(rootDirectory, $"json_backup_{DateTime.UtcNow:yyyyMMddHHmmss}.zip"), FileMode.Create);
+        using var archive = new ZipArchive(fs, ZipArchiveMode.Create);
+        foreach (var (rel, full) in files)
+            archive.CreateEntryFromFile(full, rel, CompressionLevel.SmallestSize);
+    }
+
+    /// <summary>
+    ///   For all folders included in the backup, restore their *.json* files to those in the backup.
+    ///   If a folder is not included in the backup, its files are untouched.
+    ///   If a folder is included, all *.json* files inside it are deleted and the backed up files are copied back.
+    /// </summary>
+    /// <param name="rootDirectory"> The root directory. </param>
+    /// <param name="backupArchive"> The backup archive. </param>
+    public static void RestoreBackupJsonFiles(string rootDirectory, string backupArchive)
+    {
+        try
+        {
+            using var fileStream = File.OpenRead(backupArchive);
+            using var archive = new ZipArchive(fileStream, ZipArchiveMode.Read);
+            var directories = new HashSet<string>();
+            var separators = SearchValues.Create(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            foreach (var entry in archive.Entries)
+            {
+                var fileName = entry.FullName;
+                if (Path.IsPathFullyQualified(fileName))
+                    continue;
+
+                var firstDirectorySeparator = fileName.IndexOfAny(separators);
+                if (firstDirectorySeparator < 0)
+                    continue;
+
+
+                var entryFolder = fileName[..firstDirectorySeparator];
+                var rootFolder = Path.Combine(rootDirectory, entryFolder);
+                if (!Directory.Exists(rootFolder))
+                    continue;
+
+                if (!directories.Add(rootFolder))
+                {
+                    foreach (var file in Directory.EnumerateFiles(rootFolder, "*.json*", SearchOption.AllDirectories))
+                    {
+                        try
+                        {
+                            File.Delete(file);
+                        }
+                        catch
+                        {
+                            //
+                        }
+                    }
+                }
+
+                var path = Path.Combine(rootFolder, fileName);
+                Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+                entry.ExtractToFile(path);
+            }
+        }
+        catch (Exception ex)
+        {
+            ;
+        }
+    }
+
     public static void CompareModSerDeser(ModManager mods)
     {
         foreach (var mod in mods)
