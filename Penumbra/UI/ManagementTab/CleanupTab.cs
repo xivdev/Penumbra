@@ -4,7 +4,7 @@ using Penumbra.Services;
 
 namespace Penumbra.UI.ManagementTab;
 
-public sealed class CleanupTab(CleanupService cleanup, Configuration config) : ITab<ManagementTabType>
+public sealed class CleanupTab(CleanupService cleanup, FileWatcher fileWatcher, Configuration config) : ITab<ManagementTabType>
 {
     public ReadOnlySpan<byte> Label
         => "General Cleanup"u8;
@@ -52,5 +52,12 @@ public sealed class CleanupTab(CleanupService cleanup, Configuration config) : I
             cleanup.CleanupAllUnusedSettings();
         if (!enabled)
             Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"Hold {config.DeleteModModifier} while clicking to remove settings.");
+
+        if (ImEx.Button("Clear Extracted Archive Files"u8, default,
+                "Delete all temporary files extracted from archives by the File Watcher. Extracted files that have not yet been imported will be lost."u8,
+                !enabled || cleanup.IsRunning))
+            fileWatcher.CleanExtracted();
+        if (!enabled)
+            Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"Hold {config.DeleteModModifier} while clicking to delete files.");
     }
 }
