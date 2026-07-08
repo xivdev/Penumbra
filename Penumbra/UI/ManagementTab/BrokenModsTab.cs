@@ -2,6 +2,7 @@ using System.Text.Json;
 using Dalamud.Interface.ImGuiNotification;
 using ImSharp;
 using Luna;
+using Penumbra.Files;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 
@@ -194,21 +195,22 @@ public sealed class BrokenModsTab(ModManager mods, FailedModNotification notific
             BrokenMods.Clear();
             Dirty &= ~IManagedCache.DirtyFlags.Custom;
 
-            var fileNames = mods.DataEditor.SaveService.FileNames;
             foreach (var directory in mods.BasePath.EnumerateDirectories())
             {
                 // Mod is loaded, ignore.
                 if (mods.TryGetMod(directory.Name, string.Empty, out _))
                     continue;
 
-                var metaFile = fileNames.ModMetaPath(directory.FullName);
                 try
                 {
-                    var text   = JsonFunctions.ReadUtf8Bytes(metaFile, out _);
-                    var reader = new Utf8JsonReader(text.Span, JsonFunctions.ReaderOptions);
-                    var dto    = ModMeta.Dto.Read(ref reader);
-                    if (!dto.Validate(out var error))
-                        BrokenMods.Add(new BrokenModData(directory, new Exception(error)));
+                    try
+                    {
+                        ModDeserialization.ReloadMod(mods.DataEditor.SaveService, new Mod(directory));
+                    }
+                    catch (Exception error)
+                    {
+                        BrokenMods.Add(new BrokenModData(directory, error));
+                    }
                 }
                 catch (Exception ex)
                 {

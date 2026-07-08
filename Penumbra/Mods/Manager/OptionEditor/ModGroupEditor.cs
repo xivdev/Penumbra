@@ -44,8 +44,7 @@ public class ModGroupEditor(
     ImcModGroupEditor imcEditor,
     CombiningModGroupEditor combiningEditor,
     CommunicatorService communicator,
-    SaveService saveService,
-    Configuration config) : IService
+    SaveService saveService) : IService
 {
     public SingleModGroupEditor SingleEditor
         => singleEditor;
@@ -66,7 +65,7 @@ public class ModGroupEditor(
             return;
 
         group.DefaultSettings = defaultOption;
-        saveService.QueueSave(new ModSaveGroup(group, config.ReplaceNonAsciiOnImport));
+        saveService.QueueSave(group);
         communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.DefaultOptionChanged, group.Mod, group, null,
             null, group.Id, -1));
     }
@@ -78,11 +77,10 @@ public class ModGroupEditor(
         if (oldName == newName || !VerifyFileName(group.Mod, group, newName, true))
             return;
 
-        saveService.ImmediateDelete(new ModSaveGroup(group, config.ReplaceNonAsciiOnImport));
         group.Name = newName;
         communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.GroupRenamed, group.Mod, group, null, null,
             group.Id, -1));
-        saveService.ImmediateSave(new ModSaveGroup(group, config.ReplaceNonAsciiOnImport));
+        saveService.ImmediateSave(group);
     }
 
     /// <summary> Delete a given option group. Fires an event to prepare before actually deleting. </summary>
@@ -93,7 +91,7 @@ public class ModGroupEditor(
         communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.PrepareGroupDeletion, mod, group, null, null,
             group.Id, -1));
         mod.Groups.RemoveAt(idx);
-        saveService.SaveAllOptionGroups(mod, false, config.ReplaceNonAsciiOnImport);
+        saveService.ImmediateSaveSync(mod);
         communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.GroupDeleted, mod, null, null, null, group.Id,
             idx));
     }
@@ -106,7 +104,7 @@ public class ModGroupEditor(
         if (!mod.Groups.Move(ref idxFrom, ref groupIdxTo))
             return;
 
-        saveService.SaveAllOptionGroups(mod, false, config.ReplaceNonAsciiOnImport);
+        saveService.ImmediateSaveSync(group);
         communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.GroupMoved, mod, group, null, null, group.Id,
             idxFrom));
     }
@@ -122,7 +120,7 @@ public class ModGroupEditor(
 
         var oldGuid = @object.Id;
         @object.Id = newGuid;
-        saveService.SaveAllOptionGroups(@object.Mod, false, config.ReplaceNonAsciiOnImport);
+        saveService.ImmediateSaveSync(@object);
         var changeType = @object is IModGroup ? ModOptionChangeType.GroupIdentifierChanged : ModOptionChangeType.OptionIdentifierChanged;
         communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(changeType, @object.Mod, @object.Group, @object as IModOption, null,
             oldGuid, -1));
@@ -135,7 +133,7 @@ public class ModGroupEditor(
             return;
 
         @object.Condition = condition;
-        saveService.QueueSave(new ModSaveGroup(@object.Group, config.ReplaceNonAsciiOnImport));
+        saveService.QueueSave(@object);
         communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.ConditionChanged, @object.Mod, @object.Group,
             @object as IModOption, null, @object.Id, -1));
     }
@@ -146,7 +144,7 @@ public class ModGroupEditor(
             return;
 
         group.Page = page;
-        saveService.QueueSave(new ModSaveGroup(group, config.ReplaceNonAsciiOnImport));
+        saveService.QueueSave(group);
         communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.DisplayChange, group.Mod, group,
             null, null, group.Id, -1));
     }
@@ -157,7 +155,7 @@ public class ModGroupEditor(
             return;
 
         group.ParentSetting = parent;
-        saveService.QueueSave(new ModSaveGroup(group.Group, config.ReplaceNonAsciiOnImport));
+        saveService.QueueSave(group);
         communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.DisplayChange, group.Mod, group.Group, null,
             null, group.Id, -1));
     }
@@ -169,7 +167,7 @@ public class ModGroupEditor(
             return;
 
         @object.Layout = layout;
-        saveService.QueueSave(new ModSaveGroup(@object.Group, config.ReplaceNonAsciiOnImport));
+        saveService.QueueSave(@object);
         communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.DisplayChange, @object.Mod, @object.Group,
             @object as IModOption, null, @object.Id, -1));
     }
@@ -181,7 +179,7 @@ public class ModGroupEditor(
             return;
 
         option.Color = color;
-        saveService.QueueSave(new ModSaveGroup(option.Group, config.ReplaceNonAsciiOnImport));
+        saveService.QueueSave(option);
         communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.DisplayChange, option.Mod, option.Group,
             option, null, option.Id, -1));
     }
@@ -193,7 +191,7 @@ public class ModGroupEditor(
             return;
 
         group.Priority = newPriority;
-        saveService.QueueSave(new ModSaveGroup(group, config.ReplaceNonAsciiOnImport));
+        saveService.QueueSave(group);
         communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.PriorityChanged, group.Mod, group, null, null,
             group.Id, -1));
     }
@@ -205,7 +203,7 @@ public class ModGroupEditor(
             return;
 
         group.Description = newDescription;
-        saveService.QueueSave(new ModSaveGroup(group, config.ReplaceNonAsciiOnImport));
+        saveService.QueueSave(group);
         communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.DisplayChange, group.Mod, group, null, null,
             group.Id, -1));
     }
@@ -218,7 +216,7 @@ public class ModGroupEditor(
             return;
 
         option.Name = newName;
-        saveService.QueueSave(new ModSaveGroup(option.Group, config.ReplaceNonAsciiOnImport));
+        saveService.QueueSave(option);
         communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionRenamed, option.Mod, option.Group, option,
             null, option.Id, -1));
     }
@@ -230,7 +228,7 @@ public class ModGroupEditor(
             return;
 
         option.Description = newDescription;
-        saveService.QueueSave(new ModSaveGroup(option.Group, config.ReplaceNonAsciiOnImport));
+        saveService.QueueSave(option);
         communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.DisplayChange, option.Mod, option.Group, option,
             null, option.Id, -1));
     }
@@ -244,7 +242,7 @@ public class ModGroupEditor(
         communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.PrepareChange, (Mod)subMod.Mod, subMod.Group,
             null, subMod, Guid.Empty, -1));
         subMod.Manipulations.SetTo(manipulations);
-        saveService.Save(saveType, new ModSaveGroup(subMod, config.ReplaceNonAsciiOnImport));
+        saveService.Save(saveType, subMod);
         communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionMetaChanged, (Mod)subMod.Mod,
             subMod.Group, null, subMod, Guid.Empty, -1));
     }
@@ -258,14 +256,14 @@ public class ModGroupEditor(
         communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.PrepareChange, (Mod)subMod.Mod, subMod.Group,
             null, subMod, Guid.Empty, -1));
         subMod.Files.SetTo(replacements);
-        saveService.Save(saveType, new ModSaveGroup(subMod, config.ReplaceNonAsciiOnImport));
+        saveService.Save(saveType, subMod);
         communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionFilesChanged, (Mod)subMod.Mod,
             subMod.Group, null, subMod, Guid.Empty, -1));
     }
 
     /// <summary> Forces a file save of the given container's group. </summary>
     public void ForceSave(IModDataContainer subMod, SaveType saveType = SaveType.Queue)
-        => saveService.Save(saveType, new ModSaveGroup(subMod, config.ReplaceNonAsciiOnImport));
+        => saveService.Save(saveType, subMod);
 
     /// <summary> Add additional file redirections to a given option, keeping already existing ones. Only fires an event if anything is actually added.</summary>
     public void AddFiles(IModDataContainer subMod, IReadOnlyDictionary<Utf8GamePath, FullPath> additions)
@@ -274,7 +272,7 @@ public class ModGroupEditor(
         subMod.Files.AddFrom(additions);
         if (oldCount != subMod.Files.Count)
         {
-            saveService.QueueSave(new ModSaveGroup(subMod, config.ReplaceNonAsciiOnImport));
+            saveService.QueueSave(subMod);
             communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionFilesAdded, (Mod)subMod.Mod,
                 subMod.Group, null, subMod, Guid.Empty, -1));
         }
@@ -289,7 +287,7 @@ public class ModGroupEditor(
         communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.PrepareChange, (Mod)subMod.Mod, subMod.Group,
             null, subMod, Guid.Empty, -1));
         subMod.FileSwaps.SetTo(swaps);
-        saveService.Save(saveType, new ModSaveGroup(subMod, config.ReplaceNonAsciiOnImport));
+        saveService.Save(saveType, subMod);
         communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionSwapsChanged, (Mod)subMod.Mod,
             subMod.Group, null, subMod, Guid.Empty, -1));
     }
@@ -298,7 +296,7 @@ public class ModGroupEditor(
     public static bool VerifyFileName(Mod mod, IModGroup? group, string newName, bool message)
     {
         var path = newName.RemoveInvalidPathSymbols();
-        if (path.Length != 0
+        if (path.Length is not 0
          && !mod.Groups.Any(o => !ReferenceEquals(o, group)
              && string.Equals(o.Name.RemoveInvalidPathSymbols(), path, StringComparison.OrdinalIgnoreCase)))
             return true;

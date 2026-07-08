@@ -95,7 +95,7 @@ public class TemporaryMod : IMod
             var manips = new MetaDictionary(collection.MetaCache);
             defaultMod.Manipulations.UnionWith(manips);
 
-            saveService.ImmediateSaveSync(new ModSaveGroup(dir, defaultMod, config.ReplaceNonAsciiOnImport));
+            saveService.ImmediateSaveSync(mod);
             modManager.AddMod(dir, false);
             Penumbra.Log.Information(
                 $"Successfully generated mod {mod.Name} at {mod.ModPath.FullName} for collection {collection.Identity.Identifier}.");

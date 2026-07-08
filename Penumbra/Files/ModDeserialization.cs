@@ -72,7 +72,6 @@ public static class ModDeserialization
         }
     }
 
-
     public static ModDataChangeType ReloadMod(SaveService files, Mod mod)
     {
         mod.ModPath.Refresh();

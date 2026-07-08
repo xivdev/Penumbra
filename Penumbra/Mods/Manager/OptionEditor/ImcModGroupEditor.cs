@@ -23,7 +23,7 @@ public sealed class ImcModGroupEditor(CommunicatorService communicator, SaveServ
         var maxPriority = mod.Groups.Count is 0 ? ModPriority.Default : mod.Groups.Max(o => o.Priority) + 1;
         var group       = CreateGroup(mod, newName, identifier, defaultEntry, maxPriority);
         mod.Groups.Add(group);
-        SaveService.Save(saveType, new ModSaveGroup(group, Config.ReplaceNonAsciiOnImport));
+        SaveService.Save(saveType, group);
         Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.GroupAdded, mod, group, null, null, group.Id,
             -1));
         return group;
@@ -42,7 +42,7 @@ public sealed class ImcModGroupEditor(CommunicatorService communicator, SaveServ
             AttributeMask = cache.LowestUnsetMask,
         };
         group.OptionData.Add(subMod);
-        SaveService.Save(saveType, new ModSaveGroup(group, Config.ReplaceNonAsciiOnImport));
+        SaveService.Save(saveType, group);
         Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionAdded, group.Mod, group, subMod, null,
             subMod.Id, -1));
         return subMod;
@@ -57,7 +57,7 @@ public sealed class ImcModGroupEditor(CommunicatorService communicator, SaveServ
         if (!cache.Set(group, idx, value))
             return;
 
-        SaveService.Save(saveType, new ModSaveGroup(group, Config.ReplaceNonAsciiOnImport));
+        SaveService.Save(saveType, group);
         Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionMetaChanged, group.Mod, group, null, null,
             group.Id, -1));
     }
@@ -69,7 +69,7 @@ public sealed class ImcModGroupEditor(CommunicatorService communicator, SaveServ
             return;
 
         group.DefaultEntry = entry;
-        SaveService.Save(saveType, new ModSaveGroup(group, Config.ReplaceNonAsciiOnImport));
+        SaveService.Save(saveType, group);
         Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionMetaChanged, group.Mod, group, null, null,
             group.Id, -1));
     }
@@ -79,7 +79,7 @@ public sealed class ImcModGroupEditor(CommunicatorService communicator, SaveServ
         if (!cache.Set(option, idx, value))
             return;
 
-        SaveService.Save(saveType, new ModSaveGroup(option.Group, Config.ReplaceNonAsciiOnImport));
+        SaveService.Save(saveType, option);
         Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionMetaChanged, option.Mod, option.Group,
             option, null, option.Id, -1));
     }
@@ -90,7 +90,7 @@ public sealed class ImcModGroupEditor(CommunicatorService communicator, SaveServ
             return;
 
         group.AllVariants = allVariants;
-        SaveService.Save(saveType, new ModSaveGroup(group, Config.ReplaceNonAsciiOnImport));
+        SaveService.Save(saveType, group);
         Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionMetaChanged, group.Mod, group, null, null,
             group.Id, -1));
     }
@@ -101,7 +101,7 @@ public sealed class ImcModGroupEditor(CommunicatorService communicator, SaveServ
             return;
 
         group.OnlyAttributes = onlyAttributes;
-        SaveService.Save(saveType, new ModSaveGroup(group, Config.ReplaceNonAsciiOnImport));
+        SaveService.Save(saveType, group);
         Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionMetaChanged, group.Mod, group, null, null,
             group.Id, -1));
     }
@@ -112,7 +112,7 @@ public sealed class ImcModGroupEditor(CommunicatorService communicator, SaveServ
             return;
 
         group.CanBeDisabled = canBeDisabled;
-        SaveService.Save(saveType, new ModSaveGroup(group, Config.ReplaceNonAsciiOnImport));
+        SaveService.Save(saveType, group);
         Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionMetaChanged, group.Mod, group, null, null,
             group.Id, -1));
     }

@@ -73,11 +73,13 @@ public partial class ModCreator(
         if (!Directory.Exists(mod.ModPath.FullName))
             return false;
 
-        modDataChange = ModMeta.Load(dataEditor, this, mod);
-        if (mod.Name.Length is 0)
+        try
         {
-            // Can not be base path not existing because that is checked before.
-            Penumbra.Log.Warning($"Mod at {mod.ModPath.Name} without name is not supported.");
+            modDataChange = ModDeserialization.ReloadMod(saveService, mod);
+        }
+        catch (Exception ex)
+        {
+            Penumbra.Log.Error($"Failed to reload mod:\n{ex}");
             return false;
         }
 
@@ -85,54 +87,11 @@ public partial class ModCreator(
             return false;
 
         modDataChange |= localModDatabase.AddData(mod);
-        LoadDefaultOption(mod);
-        LoadAllGroups(mod);
         if (incorporateMetaChanges)
             IncorporateAllMetaChanges(mod, true, deleteDefaultMetaChanges);
         else if (deleteDefaultMetaChanges)
             ModMetaEditor.DeleteDefaultValues(mod, metaFileManager, saveService);
-
         return true;
-    }
-
-    /// <summary> Load all option groups for a given mod. </summary>
-    public void LoadAllGroups(Mod mod)
-    {
-        mod.Groups.Clear();
-        var changes = false;
-        foreach (var file in saveService.FileNames.GetOptionGroupFiles(mod))
-        {
-            var group = LoadModGroup(mod, file);
-            if (group != null && mod.Groups.All(g => g.Name != group.Name))
-            {
-                changes = changes
-                 || saveService.FileNames.OptionGroupFile(mod.ModPath.FullName, mod.Groups.Count, group.Name, true)
-                 != Path.Combine(file.DirectoryName!, file.Name.ReplaceBadXivSymbols(true));
-                mod.AddGroup(group, file.FullName);
-            }
-            else
-            {
-                changes = true;
-            }
-        }
-
-        if (changes)
-            saveService.SaveAllOptionGroups(mod, true, Config.ReplaceNonAsciiOnImport);
-    }
-
-    /// <summary> Load the default option for a given mod.</summary>
-    public void LoadDefaultOption(Mod mod)
-    {
-        var defaultFile = saveService.FileNames.OptionGroupFile(mod, -1, Config.ReplaceNonAsciiOnImport);
-        try
-        {
-            var jObject = File.Exists(defaultFile) ? JObject.Parse(File.ReadAllText(defaultFile)) : new JObject();
-            SubMod.LoadDataContainer(jObject, mod.Default, mod.ModPath);
-        }
-        catch (Exception e)
-        {
-            Penumbra.Log.Error($"Could not parse default file for {mod.Name}:\n{e}");
-        }
     }
 
     /// <summary>
@@ -181,8 +140,7 @@ public partial class ModCreator(
         if (!changes)
             return;
 
-        saveService.SaveAllOptionGroups(mod, false, Config.ReplaceNonAsciiOnImport);
-        saveService.ImmediateSaveSync(new ModSaveGroup(mod.ModPath, mod.Default, Config.ReplaceNonAsciiOnImport));
+        saveService.ImmediateSaveSync(mod);
     }
 
 
@@ -249,49 +207,21 @@ public partial class ModCreator(
         return newModFolder.Length == 0 ? null : new DirectoryInfo(newModFolder);
     }
 
-    /// <summary> Create a file for an option group from given data. </summary>
-    public void CreateOptionGroup(DirectoryInfo baseFolder, GroupType type, string name,
-        ModPriority priority, int index, Setting defaultSettings, string desc, IEnumerable<MultiSubMod> subMods)
-    {
-        switch (type)
-        {
-            case GroupType.Multi:
-            {
-                var group = MultiModGroup.WithoutMod(name);
-                group.Description     = desc;
-                group.Priority        = priority;
-                group.DefaultSettings = defaultSettings;
-                group.OptionData.AddRange(subMods.Select(s => s.Clone(group)));
-                saveService.ImmediateSaveSync(ModSaveGroup.WithoutMod(baseFolder, group, index, Config.ReplaceNonAsciiOnImport));
-                break;
-            }
-            case GroupType.Single:
-            {
-                var group = SingleModGroup.CreateForSaving(name);
-                group.Description     = desc;
-                group.Priority        = priority;
-                group.DefaultSettings = defaultSettings;
-                group.OptionData.AddRange(subMods.Select(s => s.ConvertToSingle(group)));
-                saveService.ImmediateSaveSync(ModSaveGroup.WithoutMod(baseFolder, group, index, Config.ReplaceNonAsciiOnImport));
-                break;
-            }
-        }
-    }
-
     /// <summary> Create the data for a given sub mod from its data and the folder it is based on. </summary>
-    public MultiSubMod CreateSubMod(DirectoryInfo baseFolder, DirectoryInfo optionFolder, OptionList option, ModPriority priority)
+    public void CreateSubMod(ITexToolsGroup group, DirectoryInfo baseFolder, DirectoryInfo optionFolder, OptionList option, ModPriority priority)
     {
         var list = optionFolder.EnumerateNonHiddenFiles()
             .Select(f => (Utf8GamePath.FromFile(f, optionFolder, out var gamePath), gamePath, new FullPath(f)))
             .Where(t => t.Item1);
 
-        var mod = MultiSubMod.WithoutGroup(option.Name, option.Description, priority);
+
+        var container = (OptionSubMod) group.AddOption(option.Name, option.Description)!;
+        if (container is MultiSubMod multi)
+            multi.Priority = priority;
         foreach (var (_, gamePath, file) in list)
-            mod.Files.TryAdd(gamePath, file);
+            container.Files.TryAdd(gamePath, file);
 
-        IncorporateMetaChanges(mod, baseFolder, true);
-
-        return mod;
+        IncorporateMetaChanges(container, baseFolder, true);
     }
 
     /// <summary>
@@ -309,7 +239,7 @@ public partial class ModCreator(
         }
 
         IncorporateMetaChanges(mod.Default, directory, true);
-        saveService.ImmediateSaveSync(new ModSaveGroup(mod.ModPath, mod.Default, Config.ReplaceNonAsciiOnImport));
+        saveService.ImmediateSaveSync(mod);
     }
 
     /// <summary> Return the name of a new valid directory based on the base directory and the given name. </summary>
@@ -411,31 +341,6 @@ public partial class ModCreator(
     [GeneratedRegex(@", Part (\d+)$", RegexOptions.NonBacktracking)]
     private static partial Regex DuplicateNumber();
 
-
-    /// <summary> Load an option group for a specific mod by its file and index. </summary>
-    private static IModGroup? LoadModGroup(Mod mod, FileInfo file)
-    {
-        if (!File.Exists(file.FullName))
-            return null;
-
-        try
-        {
-            var json = JObject.Parse(File.ReadAllText(file.FullName));
-            switch (json[nameof(Type)]?.ToObject<GroupType>() ?? GroupType.Single)
-            {
-                case GroupType.Multi:     return MultiModGroup.Load(mod, json);
-                case GroupType.Single:    return SingleModGroup.Load(mod, json);
-                case GroupType.Imc:       return ImcModGroup.Load(mod, json);
-                case GroupType.Combining: return CombiningModGroup.Load(mod, json);
-            }
-        }
-        catch (Exception e)
-        {
-            Penumbra.Log.Error($"Could not read mod group from {file.FullName}:\n{e}");
-        }
-
-        return null;
-    }
 
     internal static void DeleteDeleteList(IEnumerable<string> deleteList, bool delete)
     {

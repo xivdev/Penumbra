@@ -70,33 +70,6 @@ public sealed class
         return subMod;
     }
 
-    public static MultiModGroup? Load(Mod mod, JObject json)
-    {
-        var ret = new MultiModGroup(mod);
-        if (!ModSaveGroup.ReadJsonBase(json, ret))
-            return null;
-
-        var options = json["Options"];
-        if (options != null)
-            foreach (var child in options.Children())
-            {
-                if (ret.OptionData.Count == IModGroup.MaxMultiOptions)
-                {
-                    Penumbra.Messager.NotificationMessage(
-                        $"Multi Group {ret.Name} in {mod.Name} has more than {IModGroup.MaxMultiOptions} options, ignoring excessive options.",
-                        NotificationType.Warning);
-                    break;
-                }
-
-                var subMod = new MultiSubMod(ret, child);
-                ret.OptionData.Add(subMod);
-            }
-
-        ret.DefaultSettings = ret.FixSetting(ret.DefaultSettings);
-
-        return ret;
-    }
-
     public SingleModGroup ConvertToSingle()
     {
         var single = new SingleModGroup(Mod)
@@ -135,24 +108,6 @@ public sealed class
     {
         foreach (var container in DataContainers)
             identifier.AddChangedItems(container, changedItems);
-    }
-
-    public void WriteJson(JsonTextWriter jWriter, JsonSerializer serializer, DirectoryInfo? basePath = null)
-    {
-        ModSaveGroup.WriteJsonBase(jWriter, this);
-        jWriter.WritePropertyName("Options");
-        jWriter.WriteStartArray();
-        foreach (var option in OptionData)
-        {
-            jWriter.WriteStartObject();
-            SubMod.WriteModOption(jWriter, option);
-            jWriter.WritePropertyName(nameof(option.Priority));
-            jWriter.WriteValue(option.Priority.Value);
-            SubMod.WriteModContainer(jWriter, serializer, option, basePath ?? Mod.ModPath);
-            jWriter.WriteEndObject();
-        }
-
-        jWriter.WriteEndArray();
     }
 
     public (int Redirections, int Swaps, int Manips) GetCounts()

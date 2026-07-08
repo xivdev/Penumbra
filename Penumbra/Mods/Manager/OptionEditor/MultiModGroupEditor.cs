@@ -16,7 +16,7 @@ public sealed class MultiModGroupEditor(CommunicatorService communicator, SaveSe
         var idx = group.Index;
         var singleGroup = group.ConvertToSingle();
         group.Mod.Groups[idx] = singleGroup;
-        SaveService.QueueSave(new ModSaveGroup(singleGroup, Config.ReplaceNonAsciiOnImport));
+        SaveService.QueueSave(singleGroup);
         Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.GroupTypeChanged, singleGroup.Mod, singleGroup, null, null, group.Id, -1));
     }
 
@@ -27,7 +27,7 @@ public sealed class MultiModGroupEditor(CommunicatorService communicator, SaveSe
             return;
 
         option.Priority = newPriority;
-        SaveService.QueueSave(new ModSaveGroup(option.Group, Config.ReplaceNonAsciiOnImport));
+        SaveService.QueueSave(option);
         Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.PriorityChanged, option.Mod, option.Group, option, null, option.Id, -1));
     }
 

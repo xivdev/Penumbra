@@ -573,8 +573,6 @@ public sealed class FileWatcher : IDisposable, IService
         {
             return false;
         }
-
-        return true; // Ignore this path.
     }
 
 

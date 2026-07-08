@@ -51,7 +51,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
         mod.Version     = version ?? mod.Version;
         mod.Website     = website ?? mod.Website;
         mod.ModTags     = tags;
-        saveService.ImmediateSaveSync(new ModMeta(mod));
+        saveService.ImmediateSaveSync(new ModMeta(saveService, mod));
     }
 
     public void ChangeModName(Mod mod, string newName)
@@ -61,7 +61,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
 
         var oldName = mod.Name;
         mod.Name = newName;
-        saveService.QueueSave(new ModMeta(mod));
+        saveService.QueueSave(new ModMeta(saveService, mod));
         communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.Name, mod, oldName));
     }
 
@@ -71,7 +71,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
             return;
 
         mod.Author = newAuthor;
-        saveService.QueueSave(new ModMeta(mod));
+        saveService.QueueSave(new ModMeta(saveService, mod));
         communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.Author, mod, null));
     }
 
@@ -81,7 +81,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
             return;
 
         mod.Description = newDescription;
-        saveService.QueueSave(new ModMeta(mod));
+        saveService.QueueSave(new ModMeta(saveService, mod));
         communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.Description, mod, null));
     }
 
@@ -91,7 +91,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
             return;
 
         mod.Version = newVersion;
-        saveService.QueueSave(new ModMeta(mod));
+        saveService.QueueSave(new ModMeta(saveService, mod));
         communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.Version, mod, null));
     }
 
@@ -101,7 +101,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
             return;
 
         mod.Website = newWebsite;
-        saveService.QueueSave(new ModMeta(mod));
+        saveService.QueueSave(new ModMeta(saveService, mod));
         communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.Website, mod, null));
     }
 
@@ -111,7 +111,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
             return;
 
         mod.RequiredFeatures = flags;
-        saveService.QueueSave(new ModMeta(mod));
+        saveService.QueueSave(new ModMeta(saveService, mod));
         communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.RequiredFeatures, mod, null));
     }
 
@@ -121,7 +121,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
             return false;
 
         mod.StableIdentifier = newGuid;
-        saveService.QueueSave(new ModMeta(mod));
+        saveService.QueueSave(new ModMeta(saveService, mod));
         communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.Identifier, mod, null));
         return true;
     }
@@ -189,7 +189,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
             mod.PageNames[page] = newName;
         }
 
-        saveService.QueueSave(new ModMeta(mod));
+        saveService.QueueSave(new ModMeta(saveService, mod));
         communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.PageNames, mod, oldName ?? string.Empty));
     }
 
@@ -212,7 +212,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
         }
 
         if (flags.HasFlag(ModDataChangeType.ModTags))
-            saveService.QueueSave(new ModMeta(mod));
+            saveService.QueueSave(new ModMeta(saveService, mod));
 
         if (flags.HasFlag(ModDataChangeType.LocalTags))
             database.UpsertTags(mod);
@@ -244,7 +244,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
 
         if (toDefault && CleanExisting(mod.DefaultPreferredItems))
         {
-            saveService.QueueSave(new ModMeta(mod));
+            saveService.QueueSave(new ModMeta(saveService, mod));
             communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.DefaultChangedItems, mod, null));
         }
 
@@ -299,7 +299,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
 
         if (fromDefault && mod.DefaultPreferredItems.Remove(id))
         {
-            saveService.QueueSave(new ModMeta(mod));
+            saveService.QueueSave(new ModMeta(saveService, mod));
             communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.DefaultChangedItems, mod, null));
         }
     }
@@ -321,7 +321,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
         if (CheckItems(mod.DefaultPreferredItems))
         {
             mod.DefaultPreferredItems = newSet;
-            saveService.QueueSave(new ModMeta(mod));
+            saveService.QueueSave(new ModMeta(saveService, mod));
             communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.DefaultChangedItems, mod, null));
         }
 

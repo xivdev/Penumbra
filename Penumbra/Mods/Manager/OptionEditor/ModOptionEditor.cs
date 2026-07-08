@@ -28,7 +28,7 @@ public abstract class ModOptionEditor<TGroup, TOption>(
         var maxPriority = mod.Groups.Count is 0 ? ModPriority.Default : mod.Groups.Max(o => o.Priority) + 1;
         var group       = CreateGroup(mod, newName, maxPriority);
         mod.Groups.Add(group);
-        SaveService.Save(saveType, new ModSaveGroup(group, Config.ReplaceNonAsciiOnImport));
+        SaveService.Save(saveType, group);
         Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.GroupAdded, mod, group, null, null, group.Id,
             -1));
         return group;
@@ -57,7 +57,7 @@ public abstract class ModOptionEditor<TGroup, TOption>(
         if (group.AddOption(newName) is not TOption option)
             return null;
 
-        SaveService.Save(saveType, new ModSaveGroup(group, Config.ReplaceNonAsciiOnImport));
+        SaveService.Save(saveType, option);
         Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionAdded, group.Mod, group, option, null,
             option.Id, -1));
         return option;
@@ -86,7 +86,7 @@ public abstract class ModOptionEditor<TGroup, TOption>(
         if (CloneOption(group, option) is not { } clonedOption)
             return null;
 
-        SaveService.QueueSave(new ModSaveGroup(group, Config.ReplaceNonAsciiOnImport));
+        SaveService.QueueSave(option);
         Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionAdded, group.Mod, group, clonedOption,
             null, option.Id, -1));
         return clonedOption;
@@ -101,7 +101,7 @@ public abstract class ModOptionEditor<TGroup, TOption>(
         Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.PrepareChange, mod, group, option, null,
             option.Id, -1));
         RemoveOption((TGroup)group, optionIdx);
-        SaveService.QueueSave(new ModSaveGroup(group, Config.ReplaceNonAsciiOnImport));
+        SaveService.QueueSave(group);
         Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionDeleted, mod, group, null, null,
             option.Id, optionIdx));
     }
@@ -114,7 +114,7 @@ public abstract class ModOptionEditor<TGroup, TOption>(
         if (!MoveOption(group, idx, optionIdxTo))
             return;
 
-        SaveService.QueueSave(new ModSaveGroup(group, Config.ReplaceNonAsciiOnImport));
+        SaveService.QueueSave(option);
         Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionMoved, group.Mod, group, option, null,
             option.Id, idx));
     }

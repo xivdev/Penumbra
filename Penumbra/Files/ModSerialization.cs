@@ -9,6 +9,21 @@ public static class ModSerialization
 {
     public const uint CurrentFileVersion = 4;
 
+    public static void UpdateModOnSave(SaveService files, Utf8JsonWriter j, Mod mod)
+    {
+        if (mod.LoadedVersion >= 4)
+        {
+            WriteMod(j, mod);
+            return;
+        }
+
+        Penumbra.Log.Information($"Migrating mod {mod.Name} from {mod.LoadedVersion} to {CurrentFileVersion}, deleting group files...");
+        mod.LoadedVersion = 4;
+        foreach (var file in files.FileNames.GetOptionGroupFiles(mod))
+            files.DeleteWithBackup(file.FullName);
+        WriteMod(j, mod);
+    }
+
     public static void WriteMod(Utf8JsonWriter j, Mod mod)
     {
         j.WriteStartObject();

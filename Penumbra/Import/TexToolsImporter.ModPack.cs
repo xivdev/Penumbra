@@ -1,4 +1,5 @@
 using Luna;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Penumbra.Api.Enums;
 using Penumbra.Import.Structs;
@@ -140,9 +141,10 @@ public partial class TexToolsImporter
         _modManager.DataEditor.CreateMeta(_currentModDirectory, _currentModName, modList.Author, modList.Description, modList.Version,
             modList.Url);
 
-        if (_currentNumOptions == 0)
+        if (_currentNumOptions is 0)
             return _currentModDirectory;
 
+        var mod = new Mod(_currentModDirectory);
         // Open the mod data file from the mod pack as a SqPackStream
         _streamDisposer = GetSqPackStreamStream(extractedModPack, "TTMPD.mpd");
 
@@ -156,7 +158,6 @@ public partial class TexToolsImporter
         }
 
         // Iterate through all pages
-        var options       = new List<MultiSubMod>();
         var groupPriority = ModPriority.Default;
         var groupNames    = new HashSet<string>();
         foreach (var page in modList.ModPackPages)
@@ -164,7 +165,7 @@ public partial class TexToolsImporter
             foreach (var group in page.ModGroups.Where(group => group.GroupName.Length > 0 && group.OptionList.Length > 0))
             {
                 var allOptions = group.OptionList.Where(option => option.Name.Length > 0 && option.ModsJsons.Length > 0).ToList();
-                var (numGroups, maxOptions) = group.SelectionType == GroupType.Single
+                var (numGroups, maxOptions) = group.SelectionType is GroupType.Single
                     ? (1, allOptions.Count)
                     : (1 + allOptions.Count / IModGroup.MaxMultiOptions, IModGroup.MaxMultiOptions);
                 _currentGroupName = GetGroupName(group.GroupName, groupNames);
@@ -172,13 +173,16 @@ public partial class TexToolsImporter
                 var optionIdx = 0;
                 for (var groupId = 0; groupId < numGroups; ++groupId)
                 {
-                    var name = numGroups == 1 ? _currentGroupName : $"{_currentGroupName}, Part {groupId + 1}";
-                    options.Clear();
-                    var groupFolder = ModCreator.NewSubFolderName(_currentModDirectory, name, _config.ReplaceNonAsciiOnImport)
-                     ?? new DirectoryInfo(Path.Combine(_currentModDirectory.FullName,
-                            numGroups == 1 ? $"Group {groupPriority + 1}" : $"Group {groupPriority + 1}, Part {groupId + 1}"));
+                    ITexToolsGroup groupData = group.SelectionType is GroupType.Single ? new SingleModGroup(mod) : new MultiModGroup(mod);
+                    groupData.Name        = numGroups is 1 ? _currentGroupName : $"{_currentGroupName}, Part {groupId + 1}";
+                    groupData.Description = group.Description;
+                    groupData.Priority    = groupPriority;
 
-                    Setting? defaultSettings = group.SelectionType == GroupType.Multi ? Setting.Zero : null;
+                    var groupFolder = ModCreator.NewSubFolderName(_currentModDirectory, groupData.Name, _config.ReplaceNonAsciiOnImport)
+                     ?? new DirectoryInfo(Path.Combine(_currentModDirectory.FullName,
+                            numGroups is 1 ? $"Group {groupPriority + 1}" : $"Group {groupPriority + 1}, Part {groupId + 1}"));
+
+                    Setting? defaultSettings = group.SelectionType is GroupType.Multi ? Setting.Zero : null;
                     for (var i = 0; i + optionIdx < allOptions.Count && i < maxOptions; ++i)
                     {
                         var option = allOptions[i + optionIdx];
@@ -187,9 +191,9 @@ public partial class TexToolsImporter
                         var optionFolder = ModCreator.NewSubFolderName(groupFolder, option.Name, _config.ReplaceNonAsciiOnImport)
                          ?? new DirectoryInfo(Path.Combine(groupFolder.FullName, $"Option {i + optionIdx + 1}"));
                         ExtractSimpleModList(optionFolder, option.ModsJsons);
-                        options.Add(_modManager.Creator.CreateSubMod(_currentModDirectory, optionFolder, option, new ModPriority(i)));
+                        _modManager.Creator.CreateSubMod(groupData, _currentModDirectory, optionFolder, option, new ModPriority(i));
                         if (option.IsChecked)
-                            defaultSettings = group.SelectionType == GroupType.Multi
+                            defaultSettings = group.SelectionType is GroupType.Multi
                                 ? defaultSettings!.Value | Setting.Multi(i)
                                 : Setting.Single(i);
 
@@ -200,23 +204,26 @@ public partial class TexToolsImporter
 
                     // Handle empty options for single select groups without creating a folder for them.
                     // We only want one of those at most.
-                    if (group.SelectionType == GroupType.Single)
+                    if (groupData is SingleModGroup singleGroup)
                     {
-                        var idx = group.OptionList.IndexOf(o => o.Name.Length > 0 && o.ModsJsons.Length == 0);
+                        var idx = group.OptionList.IndexOf(o => o.Name.Length > 0 && o.ModsJsons.Length is 0);
                         if (idx >= 0)
                         {
                             var option = group.OptionList[idx];
                             _currentOptionName = option.Name;
-                            options.Insert(idx, MultiSubMod.WithoutGroup(option.Name, option.Description, ModPriority.Default));
+                            singleGroup.OptionData.Insert(idx, new SingleSubMod(singleGroup)
+                            {
+                                Name        = option.Name,
+                                Description = option.Description,
+                            });
                             if (option.IsChecked)
                                 defaultSettings = Setting.Single(idx);
                             ++_currentOptionIdx;
                         }
                     }
 
-                    _modManager.Creator.CreateOptionGroup(_currentModDirectory, group.SelectionType, name, groupPriority, groupPriority.Value,
-                        defaultSettings ?? Setting.Zero, group.Description, options);
-                    groupPriority += 1;
+                    groupData.DefaultSettings =  defaultSettings ?? Setting.Zero;
+                    groupPriority             += 1;
                 }
             }
         }

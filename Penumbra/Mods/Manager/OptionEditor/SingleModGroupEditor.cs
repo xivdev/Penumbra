@@ -16,7 +16,7 @@ public sealed class SingleModGroupEditor(CommunicatorService communicator, SaveS
         var idx        = group.Index;
         var multiGroup = group.ConvertToMulti();
         group.Mod.Groups[idx] = multiGroup;
-        SaveService.QueueSave(new ModSaveGroup(multiGroup, Config.ReplaceNonAsciiOnImport));
+        SaveService.QueueSave(multiGroup);
         Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.GroupTypeChanged, multiGroup.Mod, multiGroup, null, null, group.Id, -1));
     }
 

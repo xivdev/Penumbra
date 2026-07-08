@@ -1,7 +1,4 @@
-using Dalamud.Interface.ImGuiNotification;
 using Luna;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Data;
 using Penumbra.Meta.Manipulations;
@@ -78,60 +75,6 @@ public sealed class CombiningModGroup : IModGroup
             : null;
     }
 
-    public static CombiningModGroup? Load(Mod mod, JObject json)
-    {
-        var ret = new CombiningModGroup(mod, true);
-        if (!ModSaveGroup.ReadJsonBase(json, ret))
-            return null;
-
-        var options = json["Options"];
-        if (options is not null)
-            foreach (var child in options.Children())
-            {
-                if (ret.OptionData.Count == IModGroup.MaxCombiningOptions)
-                {
-                    Penumbra.Messager.NotificationMessage(
-                        $"Combining Group {ret.Name} in {mod.Name} has more than {IModGroup.MaxCombiningOptions} options, ignoring excessive options.",
-                        NotificationType.Warning);
-                    break;
-                }
-
-                var subMod = new CombiningSubMod(ret, child);
-                ret.OptionData.Add(subMod);
-            }
-
-        var requiredContainers = 1 << ret.OptionData.Count;
-        var containers         = json["Containers"];
-        if (containers is not null)
-            foreach (var child in containers.Children())
-            {
-                if (requiredContainers <= ret.Data.Count)
-                {
-                    Penumbra.Messager.NotificationMessage(
-                        $"Combining Group {ret.Name} in {mod.Name} has more data containers than it can support with {ret.OptionData.Count} options, ignoring excessive containers.",
-                        NotificationType.Warning);
-                    break;
-                }
-
-                var container = new CombinedDataContainer(ret, child);
-                ret.Data.Add(container);
-            }
-
-        if (requiredContainers > ret.Data.Count)
-        {
-            Penumbra.Messager.NotificationMessage(
-                $"Combining Group {ret.Name} in {mod.Name} has not enough data containers for its {ret.OptionData.Count} options, filling with empty containers.",
-                NotificationType.Warning);
-            ret.Data.EnsureCapacity(requiredContainers);
-            ret.Data.AddRange(Enumerable.Repeat(0, requiredContainers - ret.Data.Count)
-                .Select(_ => new CombinedDataContainer(ret)));
-        }
-
-        ret.DefaultSettings = ret.FixSetting(ret.DefaultSettings);
-
-        return ret;
-    }
-
     public IModGroupEditDrawer EditDrawer(ModGroupEditDrawer editDrawer)
         => new CombiningModGroupEditDrawer(editDrawer, this);
 
@@ -162,38 +105,6 @@ public sealed class CombiningModGroup : IModGroup
     {
         foreach (var container in DataContainers)
             identifier.AddChangedItems(container, changedItems);
-    }
-
-    public void WriteJson(JsonTextWriter jWriter, JsonSerializer serializer, DirectoryInfo? basePath = null)
-    {
-        ModSaveGroup.WriteJsonBase(jWriter, this);
-        jWriter.WritePropertyName("Options");
-        jWriter.WriteStartArray();
-        foreach (var option in OptionData)
-        {
-            jWriter.WriteStartObject();
-            SubMod.WriteModOption(jWriter, option);
-            jWriter.WriteEndObject();
-        }
-
-        jWriter.WriteEndArray();
-
-        jWriter.WritePropertyName("Containers");
-        jWriter.WriteStartArray();
-        foreach (var container in Data)
-        {
-            jWriter.WriteStartObject();
-            if (container.Name.Length > 0)
-            {
-                jWriter.WritePropertyName("Name");
-                jWriter.WriteValue(container.Name);
-            }
-
-            SubMod.WriteModContainer(jWriter, serializer, container, basePath ?? Mod.ModPath);
-            jWriter.WriteEndObject();
-        }
-
-        jWriter.WriteEndArray();
     }
 
     public (int Redirections, int Swaps, int Manips) GetCounts()

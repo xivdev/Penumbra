@@ -37,6 +37,7 @@ internal sealed class ConditionCombo : ModObjectCombo
          || option == existingCondition?.Option)
         {
             newCondition = existingCondition;
+            _style.Dispose();
             return false;
         }
 

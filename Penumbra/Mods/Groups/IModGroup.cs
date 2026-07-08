@@ -10,7 +10,7 @@ using Penumbra.UI.ModsTab.Groups;
 
 namespace Penumbra.Mods.Groups;
 
-public interface ITexToolsGroup
+public interface ITexToolsGroup : IModGroup
 {
     public IReadOnlyList<OptionSubMod> OptionData { get; }
 }
@@ -63,8 +63,5 @@ public interface IModGroup : IModObject, IIndexed
 
     /// <summary> Ensure that a value is valid for a group. </summary>
     public Setting FixSetting(Setting setting);
-
-    public void WriteJson(JsonTextWriter jWriter, JsonSerializer serializer, DirectoryInfo? basePath = null);
-
     public (int Redirections, int Swaps, int Manips) GetCounts();
 }
