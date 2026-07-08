@@ -516,9 +516,9 @@ public sealed class FileWatcher : IDisposable, IService
     private static IArchive? OpenArchive(string path, string extension)
         => extension.ToLowerInvariant() switch
         {
-            ".zip" => ZipArchive.Open(path),
-            ".rar" => RarArchive.Open(path),
-            ".7z"  => SevenZipArchive.Open(path),
+            ".zip" => ZipArchive.OpenArchive(path),
+            ".rar" => RarArchive.OpenArchive(path),
+            ".7z"  => SevenZipArchive.OpenArchive(path),
             _ => null,
         };
 
