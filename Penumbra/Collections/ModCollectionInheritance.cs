@@ -48,7 +48,7 @@ public struct ModCollectionInheritance
     {
         var parent = DirectlyInheritsFrom[idx];
         _directlyInheritsFrom.RemoveAt(idx);
-        parent.Inheritance._directlyInheritedBy.Remove(parent);
+        parent.Inheritance._directlyInheritedBy.Remove(inheritor);
         UpdateFlattenedInheritance(inheritor);
         return parent;
     }
