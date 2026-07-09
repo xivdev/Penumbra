@@ -21,6 +21,7 @@ public static class ModSerialization
         mod.LoadedVersion = 4;
         foreach (var file in files.FileNames.GetOptionGroupFiles(mod))
             files.DeleteWithBackup(file.FullName);
+        files.DeleteWithBackup(files.FileNames.OptionGroupFile(mod, -1, false));
         WriteMod(j, mod);
     }
 
