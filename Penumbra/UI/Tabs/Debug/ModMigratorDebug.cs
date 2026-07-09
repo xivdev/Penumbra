@@ -13,11 +13,67 @@ public class ModMigratorDebug(ModManager modManager, ModMigrator migrator) : IUi
     private Task?  _indexTask;
     private Task?  _mdlTask;
 
+    private string _selectedBackup = string.Empty;
+
+    private void DrawJsonBackup()
+    {
+        if (Im.Button("Backup JSON Files"u8))
+            DebugUtilities.BackupJsonFiles(modManager.BasePath.FullName);
+
+        var enabled = _selectedBackup.Length > 0 && File.Exists(_selectedBackup);
+        if (ImEx.Button("Restore JSON Files from selected Backup"u8, default, !enabled))
+            DebugUtilities.RestoreBackupJsonFiles(modManager.BasePath.FullName, _selectedBackup);
+
+        var backupFiles = Directory.EnumerateFiles(modManager.BasePath.FullName, "json_backup_*.zip", SearchOption.TopDirectoryOnly).Reverse().ToList();
+        if (backupFiles.Count <= 0)
+            return;
+
+        using var list = Im.ListBox.Begin("Backups"u8,
+            Im.ContentRegion.Available with { Y = 6 * Im.Style.TextHeightWithSpacing - Im.Style.ItemSpacing.Y + 2 * Im.Style.FramePadding.Y });
+        if (!list)
+            return;
+
+        using var clip = new Im.ListClipper(backupFiles.Count, Im.Style.TextHeightWithSpacing);
+        foreach (var backup in clip.Iterate(backupFiles))
+        {
+            var dateString = Path.GetFileNameWithoutExtension(backup).AsSpan("json_backup_".Length);
+            if (DateTime.TryParseExact(dateString, "yyyyMMddHHmmss", null, DateTimeStyles.AssumeUniversal, out var time))
+            {
+                if (Im.Selectable($"{time:u}", backup == _selectedBackup))
+                    _selectedBackup = backup;
+            }
+            else
+            {
+                if (Im.Selectable(dateString, backup == _selectedBackup))
+                    _selectedBackup = backup;
+            }
+
+            using var context = Im.Popup.BeginContextItem();
+            if (!context)
+                continue;
+
+            if (!Im.Menu.Item("Delete"u8))
+                continue;
+
+            try
+            {
+                File.Delete(backup);
+            }
+            catch
+            {
+                // Nothing
+            }
+        }
+    }
+
     public void Draw()
     {
         using var header = Im.Tree.HeaderId("Mod Migrator"u8);
         if (!header)
             return;
+
+        DrawJsonBackup();
+        LunaStyle.DrawSeparator();
 
         if (Im.Button("Test Mod Serializing/Deserializing"u8))
             DebugUtilities.CompareModSerDeser(modManager);
@@ -104,8 +160,10 @@ public class ModMigratorDebug(ModManager modManager, ModMigrator migrator) : IUi
                 {
                     if (containers)
                         foreach (var container in group.DataContainers)
+                        {
                             Im.Tree.Leaf(
                                 $"{container.GetName()} ({container.Index}): {container.Files.Count} | {container.FileSwaps.Count} | {container.Manipulations.Count}");
+                        }
                 }
             }
         }

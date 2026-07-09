@@ -63,7 +63,7 @@ public static class DebugUtilities
                 if (!Directory.Exists(rootFolder))
                     continue;
 
-                if (!directories.Add(rootFolder))
+                if (directories.Add(rootFolder))
                 {
                     foreach (var file in Directory.EnumerateFiles(rootFolder, "*.json*", SearchOption.AllDirectories))
                     {
@@ -78,7 +78,7 @@ public static class DebugUtilities
                     }
                 }
 
-                var path = Path.Combine(rootFolder, fileName);
+                var path = Path.Combine(rootDirectory, fileName);
                 Directory.CreateDirectory(Path.GetDirectoryName(path)!);
                 entry.ExtractToFile(path);
             }
