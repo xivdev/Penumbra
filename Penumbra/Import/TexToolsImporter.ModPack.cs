@@ -1,5 +1,4 @@
 using Luna;
-using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Penumbra.Api.Enums;
 using Penumbra.Import.Structs;
@@ -43,13 +42,13 @@ public partial class TexToolsImporter
         _currentModDirectory = ModCreator.CreateModFolder(_baseDirectory, Path.GetFileNameWithoutExtension(modPackFile.Name),
             _config.ReplaceNonAsciiOnImport, true);
         // Create a new ModMeta from the TTMP mod list info
-        _modManager.DataEditor.CreateMeta(_currentModDirectory, _currentModName, DefaultTexToolsData.Author, DefaultTexToolsData.Description,
+        var mod = _modManager.DataEditor.CreateMeta(_currentModDirectory, _currentModName, DefaultTexToolsData.Author, DefaultTexToolsData.Description,
             null, null);
 
         // Open the mod data file from the mod pack as a SqPackStream
         _streamDisposer = GetSqPackStreamStream(extractedModPack, "TTMPD.mpd");
         ExtractSimpleModList(_currentModDirectory, modList);
-        _modManager.Creator.CreateDefaultFiles(_currentModDirectory);
+        _modManager.Creator.CreateDefaultFiles(mod);
         ResetStreamDisposer();
         return _currentModDirectory;
     }
@@ -95,14 +94,14 @@ public partial class TexToolsImporter
         Penumbra.Log.Information("    -> Importing Simple V2 ModPack");
 
         _currentModDirectory = ModCreator.CreateModFolder(_baseDirectory, _currentModName, _config.ReplaceNonAsciiOnImport, true);
-        _modManager.DataEditor.CreateMeta(_currentModDirectory, _currentModName, modList.Author, string.IsNullOrEmpty(modList.Description)
+        var mod = _modManager.DataEditor.CreateMeta(_currentModDirectory, _currentModName, modList.Author, string.IsNullOrEmpty(modList.Description)
             ? "Mod imported from TexTools mod pack"
             : modList.Description, modList.Version, modList.Url);
 
         // Open the mod data file from the mod pack as a SqPackStream
         _streamDisposer = GetSqPackStreamStream(extractedModPack, "TTMPD.mpd");
         ExtractSimpleModList(_currentModDirectory, modList.SimpleModsList);
-        _modManager.Creator.CreateDefaultFiles(_currentModDirectory);
+        _modManager.Creator.CreateDefaultFiles(mod);
         ResetStreamDisposer();
         return _currentModDirectory;
     }
@@ -138,13 +137,12 @@ public partial class TexToolsImporter
         _currentModName    = modList.Name;
 
         _currentModDirectory = ModCreator.CreateModFolder(_baseDirectory, _currentModName, _config.ReplaceNonAsciiOnImport, true);
-        _modManager.DataEditor.CreateMeta(_currentModDirectory, _currentModName, modList.Author, modList.Description, modList.Version,
+        var mod = _modManager.DataEditor.CreateMeta(_currentModDirectory, _currentModName, modList.Author, modList.Description, modList.Version,
             modList.Url);
 
         if (_currentNumOptions is 0)
             return _currentModDirectory;
 
-        var mod = new Mod(_currentModDirectory);
         // Open the mod data file from the mod pack as a SqPackStream
         _streamDisposer = GetSqPackStreamStream(extractedModPack, "TTMPD.mpd");
 
@@ -174,6 +172,7 @@ public partial class TexToolsImporter
                 for (var groupId = 0; groupId < numGroups; ++groupId)
                 {
                     ITexToolsGroup groupData = group.SelectionType is GroupType.Single ? new SingleModGroup(mod) : new MultiModGroup(mod);
+                    mod.Groups.Add(groupData);
                     groupData.Name        = numGroups is 1 ? _currentGroupName : $"{_currentGroupName}, Part {groupId + 1}";
                     groupData.Description = group.Description;
                     groupData.Priority    = groupPriority;
@@ -229,7 +228,7 @@ public partial class TexToolsImporter
         }
 
         ResetStreamDisposer();
-        _modManager.Creator.CreateDefaultFiles(_currentModDirectory);
+        _modManager.Creator.CreateDefaultFiles(mod);
         return _currentModDirectory;
     }
 

@@ -30,6 +30,7 @@ public partial class ModCreator(
     public const    FeatureFlags          SupportedFeatures = FeatureFlags.Atch | FeatureFlags.Shp | FeatureFlags.Atr;
     public readonly Configuration         Config            = config;
     public readonly FailedModNotification FailedMod         = failedMod;
+    public readonly SaveService           SaveService       = saveService;
 
     /// <summary> Creates directory and files necessary for a new mod without adding it to the manager. </summary>
     public DirectoryInfo? CreateEmptyMod(DirectoryInfo basePath, string newName, string description = "", string? author = null,
@@ -38,8 +39,8 @@ public partial class ModCreator(
         try
         {
             var newDir = CreateModFolder(basePath, newName, Config.ReplaceNonAsciiOnImport, true);
-            dataEditor.CreateMeta(newDir, newName, author ?? Config.DefaultModAuthor, description, "1.0", string.Empty, tags);
-            CreateDefaultFiles(newDir);
+            var mod = dataEditor.CreateMeta(newDir, newName, author ?? Config.DefaultModAuthor, description, "1.0", string.Empty, tags);
+            CreateDefaultFiles(mod);
             return newDir;
         }
         catch (Exception e)
@@ -75,7 +76,7 @@ public partial class ModCreator(
 
         try
         {
-            modDataChange = ModDeserialization.ReloadMod(saveService, mod);
+            modDataChange = ModDeserialization.ReloadMod(SaveService, mod);
         }
         catch (Exception ex)
         {
@@ -90,7 +91,7 @@ public partial class ModCreator(
         if (incorporateMetaChanges)
             IncorporateAllMetaChanges(mod, true, deleteDefaultMetaChanges);
         else if (deleteDefaultMetaChanges)
-            ModMetaEditor.DeleteDefaultValues(mod, metaFileManager, saveService);
+            ModMetaEditor.DeleteDefaultValues(mod, metaFileManager, SaveService);
         return true;
     }
 
@@ -140,7 +141,7 @@ public partial class ModCreator(
         if (!changes)
             return;
 
-        saveService.ImmediateSaveSync(mod);
+        SaveService.ImmediateSaveSync(mod);
     }
 
 
@@ -208,14 +209,14 @@ public partial class ModCreator(
     }
 
     /// <summary> Create the data for a given sub mod from its data and the folder it is based on. </summary>
-    public void CreateSubMod(ITexToolsGroup group, DirectoryInfo baseFolder, DirectoryInfo optionFolder, OptionList option, ModPriority priority)
+    public void CreateSubMod(ITexToolsGroup group, DirectoryInfo baseFolder, DirectoryInfo optionFolder, OptionList option,
+        ModPriority priority)
     {
         var list = optionFolder.EnumerateNonHiddenFiles()
             .Select(f => (Utf8GamePath.FromFile(f, optionFolder, out var gamePath), gamePath, new FullPath(f)))
             .Where(t => t.Item1);
 
-
-        var container = (OptionSubMod) group.AddOption(option.Name, option.Description)!;
+        var container = (OptionSubMod)group.AddOption(option.Name, option.Description)!;
         if (container is MultiSubMod multi)
             multi.Priority = priority;
         foreach (var (_, gamePath, file) in list)
@@ -228,18 +229,16 @@ public partial class ModCreator(
     /// Create the default data file from all unused files that were not handled before
     /// and are used in sub mods.
     /// </summary>
-    internal void CreateDefaultFiles(DirectoryInfo directory)
+    internal void CreateDefaultFiles(Mod mod)
     {
-        var mod = new Mod(directory);
-        ReloadMod(mod, false, false, out _);
         foreach (var file in mod.FindUnusedFiles())
         {
-            if (Utf8GamePath.FromFile(new FileInfo(file.FullName), directory, out var gamePath))
+            if (Utf8GamePath.FromFile(new FileInfo(file.FullName), mod.ModPath, out var gamePath))
                 mod.Default.Files.TryAdd(gamePath, file);
         }
 
-        IncorporateMetaChanges(mod.Default, directory, true);
-        saveService.ImmediateSaveSync(mod);
+        IncorporateMetaChanges(mod.Default, mod.ModPath, true);
+        SaveService.ImmediateSaveSync(mod);
     }
 
     /// <summary> Return the name of a new valid directory based on the base directory and the given name. </summary>
@@ -253,7 +252,7 @@ public partial class ModCreator(
     {
         var mod = new Mod(baseDir);
 
-        var files   = saveService.FileNames.GetOptionGroupFiles(mod).ToList();
+        var files   = SaveService.FileNames.GetOptionGroupFiles(mod).ToList();
         var idx     = 0;
         var reorder = false;
         foreach (var groupFile in files)

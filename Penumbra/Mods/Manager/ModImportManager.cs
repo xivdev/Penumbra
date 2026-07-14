@@ -139,9 +139,9 @@ public class ModImportManager(
     /// </summary>
     private void AddNewMod(FileInfo file, DirectoryInfo? dir, Exception? error)
     {
-        if (error != null)
+        if (error is not null)
         {
-            if (dir != null && Directory.Exists(dir.FullName))
+            if (dir is not null && Directory.Exists(dir.FullName))
                 try
                 {
                     Directory.Delete(dir.FullName, true);
@@ -154,7 +154,7 @@ public class ModImportManager(
             if (error is not OperationCanceledException)
                 Penumbra.Log.Error($"Error extracting {file.FullName}, mod skipped:\n{error}");
         }
-        else if (dir != null)
+        else if (dir is not null)
         {
             Penumbra.Log.Debug($"Adding newly installed mod to queue: {dir.FullName}");
             _modsToAdd.Enqueue(dir);

@@ -327,7 +327,7 @@ public sealed class ModManager : ModStorage, IDisposable, IService
     {
         try
         {
-            var options = new ParallelOptions()
+            var options = new ParallelOptions
             {
                 MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount),
             };
@@ -336,12 +336,13 @@ public sealed class ModManager : ModStorage, IDisposable, IService
             {
                 try
                 {
-                    if (Creator.LoadMod(dir, false, false) is {} mod)
+                    if (Creator.LoadMod(dir, false, false) is { } mod)
                         queue.Enqueue(mod);
                 }
                 catch (Exception ex)
                 {
-                    Penumbra.Messager.NotificationMessage(ex, $"Failed to load mod {dir.Name}.", $"Failed to load mod at {dir.FullName}", NotificationType.Error);
+                    Penumbra.Messager.NotificationMessage(ex, $"Failed to load mod {dir.Name}.", $"Failed to load mod at {dir.FullName}",
+                        NotificationType.Error);
                 }
             });
 

@@ -8,7 +8,6 @@ using SharpCompress.Archives;
 using SharpCompress.Writers.Zip;
 using FileMode = System.IO.FileMode;
 using ZipArchive = SharpCompress.Archives.Zip.ZipArchive;
-using ZipArchiveEntry = SharpCompress.Archives.Zip.ZipArchiveEntry;
 
 namespace Penumbra.Import;
 
