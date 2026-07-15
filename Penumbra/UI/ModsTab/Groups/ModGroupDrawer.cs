@@ -100,20 +100,7 @@ public sealed class ModGroupDrawer(
             ComboDistance = Im.Style.ItemSpacing.X * 2,
             ComboDisabled = group.Disabled,
         };
-        var (drawChildren, popupId, popupBox) = line.Combo(group.Name, group.Description, group.Group.Options[setting.AsIndex].Name);
-        using var popup = Im.Combo.DrawPopup(popupId, popupBox);
-        if (!popup)
-            return drawChildren;
-
-        foreach (var option in group.Options)
-        {
-            id.Push(option.Data.Index);
-            if (Im.Selectable(option.Name, option.Data.Index == setting.AsIndex))
-                SetModSetting(group.Group, group.Group.Index, Setting.Single(option.Data.Index));
-            id.Pop();
-        }
-
-        return drawChildren;
+        return line.Combo(() => combo.Draw(this, group, setting), group.ComboWidth, group.Name, group.Description);
     }
 
     private bool DrawSingleGroupRadioNew(ModSettingsCache.ModGroupCache group, Setting setting)

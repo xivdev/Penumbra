@@ -12,7 +12,6 @@ internal sealed class ModObjectCache
     public readonly StringPair      Name;
     public readonly StringPair      GroupName;
     public          bool            CausesCycle;
-    public          bool            InvalidCondition;
     public          bool            Visible;
 
     public Guid Id

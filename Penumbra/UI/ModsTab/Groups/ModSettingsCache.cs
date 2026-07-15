@@ -205,6 +205,8 @@ public sealed class ModSettingsCache : BasicCache
         if (ret.Options.Count is 0 || ret.Options.Count is 1 && group.Type is GroupType.Single)
             return null;
 
+        ret.ComboWidth += Im.Style.FrameHeight + 2 * Im.Style.FramePadding.X;
+
         return ret;
     }
 
