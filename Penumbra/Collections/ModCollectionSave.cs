@@ -59,12 +59,12 @@ internal readonly struct ModCollectionSave(ModStorage modStorage, ModCollection 
         j.WriteEndObject();
     }
 
-    public static bool LoadFromFile(FileInfo file, out Guid id, out string name, out int version, out Dictionary<string, ModSettings.SavedSettings> settings,
+    public static bool LoadFromFile(string file, out Guid id, out string name, out int version, out Dictionary<string, ModSettings.SavedSettings> settings,
         out IReadOnlyList<string> inheritance)
     {
         settings    = [];
         inheritance = [];
-        if (!file.Exists)
+        if (!File.Exists(file))
         {
             Penumbra.Log.Error("Could not read collection because file does not exist.");
             name    = string.Empty;
@@ -75,7 +75,7 @@ internal readonly struct ModCollectionSave(ModStorage modStorage, ModCollection 
 
         try
         {
-            var obj = JObject.Parse(File.ReadAllText(file.FullName));
+            var obj = JObject.Parse(File.ReadAllText(file));
             version = obj["Version"]?.ToObject<int>() ?? 0;
             name    = obj[nameof(ModCollectionIdentity.Name)]?.ToObject<string>() ?? string.Empty;
             id      = obj[nameof(ModCollectionIdentity.Id)]?.ToObject<Guid>() ?? (version is 1 ? Guid.NewGuid() : Guid.Empty);

@@ -135,7 +135,7 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
         if (_config.Version is not 9)
             return;
 
-        backupService.CreateMigrationBackup("pre_filesystem_update", saveService.FileNames.OldLocalDataFiles.Append(new FileInfo(saveService.FileNames.OldFilesystemFile)));
+        backupService.CreateMigrationBackup("pre_filesystem_update", saveService.FileNames.OldLocalDataFiles.Append(saveService.FileNames.OldFilesystemFile));
         _config.Version           = 10;
         _config.Ephemeral.Version = 10;
         _config.Save();
@@ -148,7 +148,7 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
         if (_config.Version is not 8)
             return;
 
-        backupService.CreateMigrationBackup("pre_collection_identifiers", saveService.FileNames.OldLocalDataFiles.Append(new FileInfo(saveService.FileNames.OldFilesystemFile)));
+        backupService.CreateMigrationBackup("pre_collection_identifiers", saveService.FileNames.OldLocalDataFiles.Append(saveService.FileNames.OldFilesystemFile));
         _config.Version           = 9;
         _config.Ephemeral.Version = 9;
         _config.Save();
@@ -300,12 +300,12 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
         {
             try
             {
-                var jObject = JObject.Parse(File.ReadAllText(collection.FullName));
+                var jObject = JObject.Parse(File.ReadAllText(collection));
                 if (jObject["Name"]?.ToObject<string>() == ForcedCollection)
                     continue;
 
                 jObject[nameof(ModCollectionInheritance.DirectlyInheritsFrom)] = JToken.FromObject(new List<string> { ForcedCollection });
-                File.WriteAllText(collection.FullName, jObject.ToString());
+                File.WriteAllText(collection, jObject.ToString());
             }
             catch (Exception e)
             {

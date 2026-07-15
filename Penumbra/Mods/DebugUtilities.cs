@@ -83,7 +83,7 @@ public static class DebugUtilities
                 entry.ExtractToFile(path);
             }
         }
-        catch (Exception ex)
+        catch
         {
             ;
         }

@@ -3,15 +3,19 @@ using LiteDB;
 using Luna;
 using Penumbra.Files;
 using Penumbra.GameData.Structs;
-using Penumbra.Services;
 
 namespace Penumbra.Mods.Manager;
 
-public sealed class LocalModDatabase(FilenameService filenames) : IDisposable, IService
+public sealed class LocalModDatabase(ServiceManager services) : IDisposable, IService
 {
     private readonly Lock                   _lock = new();
     private          LiteDatabase?          _database;
     private          ILiteCollection<Data>? _collection;
+
+    public string FilePath
+    {
+        get => field ??= services.GetService<FilenameService>().LocalModDatabase;
+    }
 
     [MemberNotNull(nameof(_collection))]
     private ILiteCollection<Data> Check([CallerMemberName] string callerName = "")
@@ -22,13 +26,44 @@ public sealed class LocalModDatabase(FilenameService filenames) : IDisposable, I
             if (_collection is { } collection)
                 return collection;
 
-            _database = new LiteDatabase($"Filename={filenames.LocalModDatabase};Connection=Shared;Timeout=00:00:02");
-            _database.Mapper.EmptyStringToNull = false;
-            _database.Mapper.IncludeFields = true;
+            _database = new LiteDatabase(
+                $"Filename={FilePath};Connection=Shared;Timeout=00:00:02");
+            _database.Mapper.EmptyStringToNull   = false;
+            _database.Mapper.IncludeFields       = true;
             _database.Mapper.SerializeNullValues = false;
-            _collection = _database.GetCollection<Data>("LocalModData");
+            _collection                          = _database.GetCollection<Data>("LocalModData");
             _collection.EnsureIndex(x => x.Id, true);
-            return _collection;
+        }
+
+        return _collection;
+    }
+
+    public IBackupFile CreateBackupFile(string filePath)
+        => new DatabaseBackup(this, filePath);
+
+    private sealed class DatabaseBackup(LocalModDatabase db, string filePath) : IBackupFile
+    {
+        public bool Exists
+            => true;
+
+        public string Path
+            => filePath;
+
+        public bool Equals(Stream other)
+        {
+            lock (db._lock)
+            {
+                using var currentData = File.Open(Path, FileMode.Open, FileAccess.Read, FileShare.Read);
+                return IBackupFile.Equals(currentData, other);
+            }
+        }
+            
+        public void   CreateEntry(ZipArchive archive, string rootDirectory)
+        {
+            lock (db._lock)
+            {
+                archive.CreateEntryFromFile(filePath, System.IO.Path.GetRelativePath(rootDirectory, filePath), CompressionLevel.Optimal);
+            }
         }
     }
 
@@ -44,12 +79,13 @@ public sealed class LocalModDatabase(FilenameService filenames) : IDisposable, I
 
     public void Migrate()
     {
-        if (!Directory.Exists(filenames.OldLocalDataDirectory))
+        var oldPath = services.GetService<FilenameService>().OldLocalDataDirectory;
+        if (!Directory.Exists(oldPath))
             return;
 
         using (Transaction())
         {
-            foreach (var file in Directory.GetFiles(filenames.OldLocalDataDirectory, "*.json"))
+            foreach (var file in Directory.GetFiles(oldPath, "*.json"))
             {
                 var id = Path.GetFileNameWithoutExtension(file);
                 try
@@ -135,12 +171,12 @@ public sealed class LocalModDatabase(FilenameService filenames) : IDisposable, I
 
         try
         {
-            Directory.Delete(filenames.OldLocalDataDirectory, true);
-            Penumbra.Log.Information($"Deleted old local mod data directory at {filenames.OldLocalDataDirectory}.");
+            Directory.Delete(oldPath, true);
+            Penumbra.Log.Information($"Deleted old local mod data directory at {oldPath}.");
         }
         catch (Exception ex)
         {
-            Penumbra.Log.Error($"Failed to delete old local mod data directory at {filenames.OldLocalDataDirectory}:\n{ex}");
+            Penumbra.Log.Error($"Failed to delete old local mod data directory at {oldPath}:\n{ex}");
         }
     }
 

@@ -2,10 +2,11 @@ using Dalamud.Plugin;
 using Luna;
 using Penumbra.Collections;
 using Penumbra.Mods;
+using Penumbra.Mods.Manager;
 
 namespace Penumbra.Files;
 
-public sealed class FilenameService(IDalamudPluginInterface pi) : BaseFilePathProvider(pi)
+public sealed class FilenameService(IDalamudPluginInterface pi, LocalModDatabase database) : BaseFilePathProvider(pi)
 {
     public readonly string CollectionDirectory = Path.Combine(pi.ConfigDirectory.FullName, "collections");
     public readonly string LocalModDatabase = Path.Combine(pi.ConfigDirectory.FullName, "mod_data.db");
@@ -39,14 +40,8 @@ public sealed class FilenameService(IDalamudPluginInterface pi) : BaseFilePathPr
         => Path.Combine(CollectionDirectory, $"{collectionName}.json");
 
     /// <summary> Enumerate all collection files. </summary>
-    public IEnumerable<FileInfo> CollectionFiles
-    {
-        get
-        {
-            var directory = new DirectoryInfo(CollectionDirectory);
-            return directory.Exists ? directory.EnumerateFiles("*.json") : [];
-        }
-    }
+    public IEnumerable<string> CollectionFiles
+        => !Directory.Exists(CollectionDirectory) ? [] : Directory.EnumerateFiles(CollectionDirectory, "*.json");
 
     /// <summary> Obtain the path of the meta file for a given mod. Returns an empty string if the mod is temporary. </summary>
     public string ModMetaPath(Mod mod)
@@ -74,25 +69,19 @@ public sealed class FilenameService(IDalamudPluginInterface pi) : BaseFilePathPr
         => mod.ModPath.EnumerateFiles("group_*.json");
 
     /// <summary> Enumerate all outdated local data files. </summary>
-    public IEnumerable<FileInfo> OldLocalDataFiles
-    {
-        get
-        {
-            var directory = new DirectoryInfo(OldLocalDataDirectory);
-            return directory.Exists ? directory.EnumerateFiles("*.json") : [];
-        }
-    }
+    public IEnumerable<string> OldLocalDataFiles
+        => !Directory.Exists(OldLocalDataDirectory) ? [] : Directory.EnumerateFiles("*.json");
 
     /// <summary> Collect all relevant files for penumbra configuration. </summary>
-    public override List<FileInfo> GetBackupFiles()
+    public override List<IBackupFile> GetBackupFiles()
     {
-        var list = CollectionFiles.ToList();
-        list.Add(new FileInfo(LocalModDatabase));
-        list.Add(new FileInfo(ConfigurationFile));
-        list.Add(new FileInfo(ActiveCollectionsFile));
-        list.Add(new FileInfo(PredefinedTagFile));
-        list.Add(new FileInfo(FileSystemLockedNodes));
-        list.Add(new FileInfo(FileSystemOrganization));
+        var list = CollectionFiles.Select(IBackupFile (f) => new DefaultBackupFile(f)).ToList();
+        list.Add(database.CreateBackupFile(LocalModDatabase));
+        list.Add(new DefaultBackupFile(ConfigurationFile));
+        list.Add(new DefaultBackupFile(ActiveCollectionsFile));
+        list.Add(new DefaultBackupFile(PredefinedTagFile));
+        list.Add(new DefaultBackupFile(FileSystemLockedNodes));
+        list.Add(new DefaultBackupFile(FileSystemOrganization));
         // Do not back up expanded folders, selected nodes, ui configuration or ephemeral config.
         return list;
     }
