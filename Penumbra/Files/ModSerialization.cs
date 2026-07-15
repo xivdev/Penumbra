@@ -68,6 +68,14 @@ public static class ModSerialization
             j.WriteEndArray();
         }
 
+        if (mod.PageNames.Count > 0)
+        {
+            j.WriteStartObject("PageNames"u8);
+            foreach (var (page, name) in mod.PageNames)
+                j.WriteString(page.ToString(), name);
+            j.WriteEndObject();
+        }
+
         GroupSerialization.WriteDefaultContainer(j, mod, mod.ModPath);
 
         if (mod.Groups.Count > 0)
