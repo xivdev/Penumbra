@@ -98,6 +98,7 @@ public sealed class ModGroupDrawer(
             LeftDistance  = 30 * Im.Style.GlobalScale,
             RightDistance = 30 * Im.Style.GlobalScale,
             ComboDistance = Im.Style.ItemSpacing.X * 2,
+            ComboDisabled = group.Disabled,
         };
         var (drawChildren, popupId, popupBox) = line.Combo(group.Name, group.Description, group.Group.Options[setting.AsIndex].Name);
         using var popup = Im.Combo.DrawPopup(popupId, popupBox);
@@ -133,7 +134,7 @@ public sealed class ModGroupDrawer(
 
         void DrawOptions()
         {
-            using var disabled = Im.Disabled(_locked);
+            using var disabled = Im.Disabled(_locked || group.Disabled);
             using var color    = Im.Color.Empty();
             for (var idx = 0; idx < options.Count; ++idx)
             {
@@ -156,6 +157,7 @@ public sealed class ModGroupDrawer(
                 if (option.Separator)
                     Im.Separator();
 
+                using var _ = Im.Enabled();
                 foreach (var childGroup in option.Children)
                     DrawGroup(childGroup);
             }
@@ -180,7 +182,7 @@ public sealed class ModGroupDrawer(
 
         void DrawOptions()
         {
-            using var disabled = Im.Disabled(_locked);
+            using var disabled = Im.Disabled(_locked || group.Disabled);
             using var color    = Im.Color.Empty();
             for (var idx = 0; idx < options.Count; ++idx)
             {
@@ -204,182 +206,9 @@ public sealed class ModGroupDrawer(
                 if (option.Separator)
                     Im.Separator();
 
+                using var _ = Im.Enabled();
                 foreach (var childGroup in option.Children)
                     DrawGroup(childGroup);
-            }
-        }
-    }
-
-    /// <summary>
-    /// Draw a single group selector as a combo box.
-    /// If a description is provided, add a help marker besides it.
-    /// </summary>
-    private void DrawSingleGroupCombo(ModSettingsCache.ModGroupCache group, Setting setting)
-    {
-        using var id       = Im.Id.Push(group.Group.Index);
-        using var disabled = Im.Disabled(_locked);
-        combo.Draw(this, (SingleModGroup)group.Group, group.Group.Index, setting);
-        if (group.Description.Length > 0)
-        {
-            LunaStyle.DrawHelpMarkerLabel(group.Name, group.Description);
-        }
-        else
-        {
-            Im.Line.SameInner();
-            Im.Text(group.Name);
-        }
-    }
-
-    /// <summary>
-    /// Draw a single group selector as a set of radio buttons.
-    /// If a description is provided, add a help marker besides it.
-    /// </summary>
-    private void DrawSingleGroupRadio(ModSettingsCache.ModGroupCache group, Setting setting)
-    {
-        using var id             = Im.Id.Push(group.Group.Index);
-        var       options        = group.Options;
-        var       selectedOption = setting.AsIndex;
-        if (group.HideHeader)
-        {
-            DrawOptions();
-        }
-        else
-        {
-            using var g = ImEx.FramedGroup(group.Name, LunaStyle.HelpMarker, group.Description);
-            DrawCollapseHandling(options, g.MinimumWidth, DrawOptions);
-        }
-
-        return;
-
-        void DrawOptions()
-        {
-            using var disabled = Im.Disabled(_locked);
-            for (var idx = 0; idx < group.Options.Count; ++idx)
-            {
-                using var i      = Im.Id.Push(idx);
-                var       option = options[idx];
-                if (Im.RadioButton(option.Name, selectedOption == idx))
-                    SetModSetting(group.Group, group.Group.Index, Setting.Single(idx));
-
-                if (option.Description.Length is 0)
-                    continue;
-
-                Im.Line.SameInner();
-                LunaStyle.DrawAlignedHelpMarker(option.Description, treatAsHovered: Im.Item.Hovered());
-
-                foreach (var childGroup in option.Children)
-                    DrawGroup(childGroup);
-            }
-        }
-    }
-
-    /// <summary>
-    /// Draw a multi group selector as a bordered set of checkboxes.
-    /// If a description is provided, add a help marker in the title.
-    /// </summary>
-    private void DrawMultiGroup(ModSettingsCache.ModGroupCache group, Setting setting)
-    {
-        using var id      = Im.Id.Push(group.Group.Index);
-        var       options = group.Options;
-        if (group.HideHeader)
-        {
-            DrawOptions();
-        }
-        else
-        {
-            using var g = ImEx.FramedGroup(group.Name, LunaStyle.HelpMarker, group.Description);
-            DrawCollapseHandling(options, g.MinimumWidth, DrawOptions);
-        }
-
-        var label = new InlineStringU8<ulong>($"##m{group.Group.Index:D4}");
-        if (Im.Item.RightClicked())
-            Im.Popup.Open(label);
-
-        DrawMultiPopup(group, group.Group.Index, label.GetBytes());
-        return;
-
-        void DrawOptions()
-        {
-            using var disabled = Im.Disabled(_locked);
-            for (var idx = 0; idx < options.Count; ++idx)
-            {
-                using var i       = Im.Id.Push(idx);
-                var       option  = options[idx];
-                var       enabled = setting.HasFlag(idx);
-
-                if (Im.Checkbox(option.Name, ref enabled))
-                    SetModSetting(group.Group, group.Group.Index, setting.SetBit(idx, enabled));
-
-                if (option.Description.Length > 0)
-                {
-                    Im.Line.SameInner();
-                    LunaStyle.DrawAlignedHelpMarker(option.Description, treatAsHovered: Im.Item.Hovered());
-                }
-
-                foreach (var childGroup in option.Children)
-                    DrawGroup(childGroup);
-            }
-        }
-    }
-
-    private void DrawMultiPopup(ModSettingsCache.ModGroupCache group, int groupIdx, ReadOnlySpan<byte> label)
-    {
-        using var style = ImStyleSingle.PopupBorderThickness.Push(Im.Style.GlobalScale);
-        using var popup = Im.Popup.Begin(label);
-        if (!popup)
-            return;
-
-        Im.Text(group.Name);
-        using var disabled = Im.Disabled(_locked);
-        Im.Separator();
-        if (Im.Selectable("Enable All"u8))
-            SetModSetting(group.Group, groupIdx, Setting.AllBits(group.Options.Count));
-
-        if (Im.Selectable("Disable All"u8))
-            SetModSetting(group.Group, groupIdx, Setting.Zero);
-    }
-
-    private void DrawCollapseHandling(IReadOnlyList<ModSettingsCache.Option> options, float minWidth, Action draw)
-    {
-        if (options.Count <= config.OptionGroupCollapsibleMin)
-        {
-            draw();
-        }
-        else
-        {
-            var collapseId     = Im.Id.Get("Collapse"u8);
-            var shown          = Im.State.Storage.GetBool(collapseId, true);
-            var buttonTextShow = new StringU8($"Show {options.Count} Options");
-            var buttonTextHide = new StringU8($"Hide {options.Count} Options");
-            var buttonWidth = Math.Max(Im.Font.CalculateSize(buttonTextShow).X, Im.Font.CalculateSize(buttonTextHide).X)
-              + 2 * Im.Style.FramePadding.X;
-            minWidth = Math.Max(buttonWidth, minWidth);
-            if (shown)
-            {
-                var pos = Im.Cursor.Position;
-                Im.FrameDummy();
-                using (Im.Group())
-                {
-                    draw();
-                }
-
-                var width  = Math.Max(Im.Item.Size.X, minWidth);
-                var endPos = Im.Cursor.Position;
-                Im.Cursor.Position = pos;
-                if (Im.Button(buttonTextHide, new Vector2(width, 0)))
-                    Im.State.Storage.SetBool(collapseId, !shown);
-
-                Im.Cursor.Position = endPos;
-            }
-            else
-            {
-                var optionWidth = options.Max(o => Im.Font.CalculateSize(o.Name).X)
-                  + Im.Style.ItemInnerSpacing.X
-                  + Im.Style.FrameHeight
-                  + Im.Style.FramePadding.X;
-                var width = Math.Max(optionWidth, minWidth);
-                if (Im.Button(buttonTextShow, new Vector2(width, 0)))
-                    Im.State.Storage.SetBool(collapseId, !shown);
             }
         }
     }
