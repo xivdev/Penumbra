@@ -16,6 +16,8 @@ public sealed class ModSettingsCache : BasicCache
     {
         public readonly StringU8            Name   = new(name);
         public readonly List<ModGroupCache> Groups = [];
+        public          float               WidestLabel;
+        public          float               WidestCombo;
     }
 
     public record Node(StringU8 Name, StringU8 Description)
@@ -55,6 +57,10 @@ public sealed class ModSettingsCache : BasicCache
     private readonly ModSelection                          _selection;
     private readonly Configuration                         _config;
     private readonly CommunicatorService                   _communicator;
+    public           float                                 LeftSpacing;
+    public           float                                 RightSpacing;
+    public           float                                 CenterSpacing;
+    public           float                                 Indentation;
     public           int                                   Count;
     public           bool                                  AnyConditions;
     public           int                                   ActivePages;
@@ -75,8 +81,12 @@ public sealed class ModSettingsCache : BasicCache
         Dirty         = IManagedCache.DirtyFlags.Clean;
         _children.Clear();
         Pages.Clear();
-        Count       = 0;
-        ActivePages = 0;
+        Count         = 0;
+        ActivePages   = 0;
+        LeftSpacing   = 30 * Im.Style.GlobalScale;
+        RightSpacing  = LeftSpacing;
+        CenterSpacing = 2 * Im.Style.ItemSpacing.X;
+        Indentation   = Im.Style.FrameHeight + Im.Style.ItemInnerSpacing.X;
     }
 
     public override void Update()
@@ -141,6 +151,32 @@ public sealed class ModSettingsCache : BasicCache
 
             if (page.Groups.Count is 0)
                 --ActivePages;
+
+            page.WidestCombo = 100 * Im.Style.GlobalScale;
+            page.WidestLabel = 0;
+            foreach (var group in page.Groups)
+            {
+                if (group.IsCombo && group.ComboWidth > page.WidestCombo)
+                    page.WidestCombo = group.ComboWidth;
+
+                CheckExtend(group, 0);
+            }
+            continue;
+
+            void CheckExtend(ModGroupCache cache, int indentation)
+            {
+                if (cache.Indented)
+                    ++indentation;
+
+                var extend = cache.NameWidth + indentation * Indentation + 2 * Im.Style.FramePadding.X;
+                if (cache.Collapsible)
+                    extend += Im.Style.TextHeight + Im.Style.ItemInnerSpacing.X;
+                if (extend > page.WidestLabel)
+                    page.WidestLabel = extend;
+
+                foreach (var child in cache.Children.Concat(cache.Options.SelectMany(o => o.Children)))
+                    CheckExtend(child, indentation);
+            }
         }
     }
 

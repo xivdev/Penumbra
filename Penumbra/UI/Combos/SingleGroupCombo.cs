@@ -1,9 +1,6 @@
 using ImSharp;
 using Luna;
-using Penumbra.Mods.Groups;
 using Penumbra.Mods.Settings;
-using Penumbra.Mods.SubMods;
-using Penumbra.UI.Classes;
 using Penumbra.UI.ModsTab.Groups;
 
 namespace Penumbra.UI;
@@ -28,18 +25,27 @@ public sealed class SingleGroupCombo : FilterComboBase<ModSettingsCache.Option>,
 
     private readonly WeakReference<ModSettingsCache.ModGroupCache> _group = new(null!);
     private          Setting                                       _currentOption;
+    private          Vector4                                       _currentColor;
 
-    public void Draw(ModGroupDrawer parent, ModSettingsCache.ModGroupCache group, Setting currentOption)
+    public void Draw(ModGroupDrawer parent, ModSettingsCache.ModGroupCache group, Setting currentOption, float width)
     {
         if (!group.IsCombo)
             return;
 
         using var id = Im.Id.Push(group.Group.Index);
         _currentOption = currentOption;
+        var currentValue = group.Options[currentOption.AsIndex];
+        _currentColor = currentValue.Color;
         _group.SetTarget(group);
-        if (base.Draw(StringU8.Empty, group.Options[currentOption.AsIndex].Name, StringU8.Empty, group.ComboWidth, out var newOption))
+        if (base.Draw(StringU8.Empty, currentValue.Name, StringU8.Empty, width, out var newOption))
             parent.SetModSetting(group.Group, group.Group.Index, Setting.Single(newOption.Data.Index));
     }
+
+    protected override void PreDrawCombo(float width)
+        => ImGuiColor.Text.Push(_currentColor);
+
+    protected override void PostDrawCombo(float width)
+        => Im.ColorDisposable.PopUnsafe();
 
     protected override IEnumerable<ModSettingsCache.Option> GetItems()
         => _group.TryGetTarget(out var target) ? target.Options : [];

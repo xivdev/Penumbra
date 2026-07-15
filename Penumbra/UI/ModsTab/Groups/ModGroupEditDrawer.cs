@@ -269,7 +269,7 @@ public sealed class ModGroupEditDrawer(
     private void DrawOptionLayout(IModOption option)
     {
         if (ImEx.Icon.Button(LunaStyle.LayoutIcon, "Edit option layout settings."u8,
-                textColor: option.Layout is not 0 ? LunaStyle.FavoriteColor : ColorParameter.Default))
+                textColor: option.Layout is not 0 || option.ColorAsInteger is not 0 ? LunaStyle.FavoriteColor : ColorParameter.Default))
             layoutPopup.Open(option);
     }
 

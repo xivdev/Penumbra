@@ -18,6 +18,9 @@ public sealed class ModGroupDrawer(
     CommunicatorService communicator)
     : IUiService
 {
+    private float                 _currentIndent;
+    private float                 _labelExtend;
+    private float                 _comboWidth;
     private bool                  _temporary;
     private bool                  _locked;
     private TemporaryModSettings? _tempSettings;
@@ -28,10 +31,11 @@ public sealed class ModGroupDrawer(
         if (cache.Count is 0 || cache.ActivePages is 0)
             return;
 
-        _context      = new ModSettingContext(mod, tempSettings ?? settings);
-        _tempSettings = tempSettings;
-        _temporary    = tempSettings is not null;
-        _locked       = (tempSettings?.Lock ?? 0) > 0;
+        _context       = new ModSettingContext(mod, tempSettings ?? settings);
+        _tempSettings  = tempSettings;
+        _temporary     = tempSettings is not null;
+        _locked        = (tempSettings?.Lock ?? 0) > 0;
+        _currentIndent = 0;
 
         if (cache.ActivePages > 1)
         {
@@ -51,9 +55,11 @@ public sealed class ModGroupDrawer(
                 if (!child)
                     continue;
 
+                _labelExtend = page.WidestLabel;
+                _comboWidth  = page.WidestCombo;
                 Im.Dummy(UiHelpers.DefaultSpace);
                 foreach (var group in page.Groups)
-                    DrawGroup(group);
+                    DrawGroup(cache, group);
 
                 UiHelpers.DefaultLineSpace();
                 communicator.PostSettingsPanelDraw.Invoke(new PostSettingsPanelDraw.Arguments(mod));
@@ -63,54 +69,65 @@ public sealed class ModGroupDrawer(
         {
             var (id, page) = cache.Pages.First();
             using var _ = Im.Id.Push(id);
+            _labelExtend = page.WidestLabel;
+            _comboWidth  = page.WidestCombo;
             Im.Dummy(UiHelpers.DefaultSpace);
             foreach (var group in page.Groups)
-                DrawGroup(group);
+                DrawGroup(cache, group);
 
             UiHelpers.DefaultLineSpace();
             communicator.PostSettingsPanelDraw.Invoke(new PostSettingsPanelDraw.Arguments(mod));
         }
     }
 
-    private void DrawGroup(ModSettingsCache.ModGroupCache group)
+    private void DrawGroup(ModSettingsCache cache, ModSettingsCache.ModGroupCache group)
     {
-        using var indent  = IndentGroup(group.Indented);
+        using var indent  = IndentGroup(cache, group.Indented);
         var       setting = _context.Settings.IsEmpty ? group.Group.DefaultSettings : _context.Settings.Settings[group.Group.Index];
-        bool      drawChildren;
-        if (group.IsCombo)
-            drawChildren = DrawSingleGroupComboNew(group, setting);
-        else if (group.Behaviour is GroupDrawBehaviour.MultiSelection)
-            drawChildren = DrawMultiGroupNew(group, setting);
-        else
-            drawChildren = DrawSingleGroupRadioNew(group, setting);
 
-        if (drawChildren)
+        if (DoDrawGroup(cache, group, setting))
             foreach (var child in group.Children)
-                DrawGroup(child);
+                DrawGroup(cache, child);
+
+        if (indent is not null)
+            _currentIndent -= indent.CurrentIndent;
     }
 
-    private bool DrawSingleGroupComboNew(ModSettingsCache.ModGroupCache group, Setting setting)
+    private bool DoDrawGroup(ModSettingsCache cache, ModSettingsCache.ModGroupCache group, Setting setting)
     {
         using var id = Im.Id.Push(group.Group.Index);
+        if (group.IsCombo)
+            return DrawSingleGroupComboNew(cache, group, setting);
+
+        if (group.Behaviour is GroupDrawBehaviour.MultiSelection)
+            return DrawMultiGroupNew(cache, group, setting);
+
+        return DrawSingleGroupRadioNew(cache, group, setting);
+    }
+
+    private bool DrawSingleGroupComboNew(ModSettingsCache cache, ModSettingsCache.ModGroupCache group, Setting setting)
+    {
         var line = new HeaderLine
         {
-            Collapsible   = group.Children.Count > 0,
-            LeftDistance  = 30 * Im.Style.GlobalScale,
-            RightDistance = 30 * Im.Style.GlobalScale,
-            ComboDistance = Im.Style.ItemSpacing.X * 2,
-            ComboDisabled = group.Disabled,
+            Collapsible      = group.Children.Count > 0,
+            LeftDistance     = cache.LeftSpacing,
+            RightDistance    = -1f,
+            ComboDistance    = cache.CenterSpacing,
+            ComboDisabled    = group.Disabled,
+            FixedComboWidth  = _comboWidth,
+            FixedButtonWidth = _labelExtend - _currentIndent,
         };
-        return line.Combo(() => combo.Draw(this, group, setting), group.ComboWidth, group.Name, group.Description);
+        return line.Combo(w => combo.Draw(this, group, setting, w), group.ComboWidth, group.Name, group.Description);
     }
 
-    private bool DrawSingleGroupRadioNew(ModSettingsCache.ModGroupCache group, Setting setting)
+    private bool DrawSingleGroupRadioNew(ModSettingsCache cache, ModSettingsCache.ModGroupCache group, Setting setting)
     {
-        using var id = Im.Id.Push(group.Group.Index);
         var line = new HeaderLine
         {
-            Collapsible   = true,
-            DefaultClosed = group.Group.Layout.HasFlag(ModSettingsLayout.DefaultClosed),
-            LeftDistance  = 30 * Im.Style.GlobalScale,
+            Collapsible      = true,
+            DefaultClosed    = group.Group.Layout.HasFlag(ModSettingsLayout.DefaultClosed),
+            LeftDistance     = cache.LeftSpacing,
+            FixedButtonWidth = _labelExtend - _currentIndent,
         };
         var options      = group.Options;
         var drawChildren = group.HideHeader || line.Basic(group.Name, group.Description);
@@ -130,6 +147,7 @@ public sealed class ModGroupDrawer(
 
                 disabled.Push(option.Disabled);
                 color.Push(ImGuiColor.Text, option.Color);
+                Im.Cursor.X += cache.LeftSpacing;
                 if (Im.RadioButton(option.Name, idx == setting.AsIndex))
                     SetModSetting(group.Group, group.Group.Index, Setting.Single(idx));
                 color.Pop();
@@ -146,19 +164,19 @@ public sealed class ModGroupDrawer(
 
                 using var _ = Im.Enabled();
                 foreach (var childGroup in option.Children)
-                    DrawGroup(childGroup);
+                    DrawGroup(cache, childGroup);
             }
         }
     }
 
-    private bool DrawMultiGroupNew(ModSettingsCache.ModGroupCache group, Setting setting)
+    private bool DrawMultiGroupNew(ModSettingsCache cache, ModSettingsCache.ModGroupCache group, Setting setting)
     {
-        using var id = Im.Id.Push(group.Group.Index);
         var line = new HeaderLine
         {
-            Collapsible   = true,
-            DefaultClosed = group.Group.Layout.HasFlag(ModSettingsLayout.DefaultClosed),
-            LeftDistance  = 30 * Im.Style.GlobalScale,
+            Collapsible      = true,
+            DefaultClosed    = group.Group.Layout.HasFlag(ModSettingsLayout.DefaultClosed),
+            LeftDistance     = cache.LeftSpacing,
+            FixedButtonWidth = _labelExtend - _currentIndent,
         };
         var options      = group.Options;
         var drawChildren = group.HideHeader || line.Basic(group.Name, group.Description);
@@ -179,6 +197,7 @@ public sealed class ModGroupDrawer(
 
                 disabled.Push(option.Disabled);
                 color.Push(ImGuiColor.Text, option.Color);
+                Im.Cursor.X += cache.LeftSpacing;
                 if (Im.Checkbox(option.Name, ref enabled))
                     SetModSetting(group.Group, group.Group.Index, setting.SetBit(idx, enabled));
                 color.Pop();
@@ -195,7 +214,7 @@ public sealed class ModGroupDrawer(
 
                 using var _ = Im.Enabled();
                 foreach (var childGroup in option.Children)
-                    DrawGroup(childGroup);
+                    DrawGroup(cache, childGroup);
             }
         }
     }
@@ -219,6 +238,12 @@ public sealed class ModGroupDrawer(
         }
     }
 
-    private static Im.IndentDisposable? IndentGroup(bool indent)
-        => indent ? Im.Indent(Im.Style.FrameHeight + Im.Style.ItemInnerSpacing.X) : null;
+    private Im.IndentDisposable? IndentGroup(ModSettingsCache cache, bool indent)
+    {
+        if (!indent)
+            return null;
+
+        _currentIndent += cache.Indentation;
+        return Im.Indent(cache.Indentation);
+    }
 }
