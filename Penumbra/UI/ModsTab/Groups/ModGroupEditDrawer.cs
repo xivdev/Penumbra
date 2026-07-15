@@ -29,9 +29,9 @@ public sealed class ModGroupEditDrawer(
     private static ReadOnlySpan<byte> InsideGroupLabel
         => "##DragOptionInside"u8;
 
-    internal readonly ImcChecker              ImcChecker      = imcChecker;
-    internal readonly ModManager              ModManager      = modManager;
-    internal readonly Queue<Action>           ActionQueue     = new();
+    internal readonly ImcChecker    ImcChecker  = imcChecker;
+    internal readonly ModManager    ModManager  = modManager;
+    internal readonly Queue<Action> ActionQueue = new();
 
     internal Vector2 OptionIdxSelectable;
     internal Vector2 AvailableWidth;
@@ -155,14 +155,16 @@ public sealed class ModGroupEditDrawer(
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void DrawGroupDescription(IModGroup group)
     {
-        if (ImEx.Icon.Button(LunaStyle.EditIcon, "Edit group description."u8))
+        if (ImEx.Icon.Button(LunaStyle.EditIcon, "Edit group description."u8,
+                textColor: group.Description.Length > 0 ? LunaStyle.FavoriteColor : ColorParameter.Default))
             descriptionPopup.Open(group);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void DrawGroupLayout(IModGroup group)
     {
-        if (ImEx.Icon.Button(LunaStyle.LayoutIcon, "Edit group layout settings."u8))
+        if (ImEx.Icon.Button(LunaStyle.LayoutIcon, "Edit group layout settings."u8,
+                textColor: group.Layout is not 0 || group.ParentSetting is not null ? LunaStyle.FavoriteColor : ColorParameter.Default))
             layoutPopup.Open(group);
     }
 
@@ -258,14 +260,16 @@ public sealed class ModGroupEditDrawer(
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void DrawOptionDescription(IModOption option)
     {
-        if (ImEx.Icon.Button(LunaStyle.EditIcon, "Edit option description."u8))
+        if (ImEx.Icon.Button(LunaStyle.EditIcon, "Edit option description."u8,
+                textColor: option.Description.Length > 0 ? LunaStyle.FavoriteColor : ColorParameter.Default))
             descriptionPopup.Open(option);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void DrawOptionLayout(IModOption option)
     {
-        if (ImEx.Icon.Button(LunaStyle.LayoutIcon, "Edit option layout settings."u8))
+        if (ImEx.Icon.Button(LunaStyle.LayoutIcon, "Edit option layout settings."u8,
+                textColor: option.Layout is not 0 ? LunaStyle.FavoriteColor : ColorParameter.Default))
             layoutPopup.Open(option);
     }
 

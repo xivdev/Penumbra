@@ -1,3 +1,4 @@
+using ImSharp;
 using Luna;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.Settings;
@@ -55,6 +56,9 @@ public interface IModOption : IModObject, IIndexed
             8 => ColorId.OptionColor8,
             _ => default,
         };
+
+    public Vector4 ColorValue
+        => ColorAsInteger is 0 ? Im.Style[ImGuiColor.Text] : Color.Value().ToVector();
 
     public int ColorAsInteger
         => Color switch

@@ -24,7 +24,7 @@ public static class ModDeserialization
                 if (!Mod.SubObjects.TryGetValue(guid, out var parentObject))
                     throw new InvalidMetaException(Mod, string.Empty, $"The specified parent object {guid} for {group.Name} does not exist.");
 
-                if (CycleChecker.Check(group, parentObject))
+                if (!CycleChecker.Check(group, parentObject))
                     throw new InvalidMetaException(Mod, string.Empty,
                         $"The specified parent object {parentObject.Name} for {group.Name} would cause a cycle.");
 
@@ -405,13 +405,13 @@ public static class ModDeserialization
     }
 }
 
-public sealed class MetaMissingException(Mod mod, string metaPath) : FileNotFoundException
+public sealed class MetaMissingException(Mod mod, string metaPath) : FileNotFoundException($"No meta file {metaPath} for {mod.Name} found.")
 {
     public readonly Mod    Mod      = mod;
     public readonly string MetaPath = metaPath;
 }
 
-public sealed class InvalidMetaException(Mod mod, string filePath, string reason) : JsonException
+public sealed class InvalidMetaException(Mod mod, string filePath, string reason) : JsonException($"Failure reading {filePath} for {mod.Name}: {reason}")
 {
     public readonly Mod    Mod      = mod;
     public readonly string FilePath = filePath;

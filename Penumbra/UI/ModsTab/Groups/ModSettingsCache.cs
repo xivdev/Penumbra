@@ -12,39 +12,42 @@ namespace Penumbra.UI.ModsTab.Groups;
 
 public sealed class ModSettingsCache : BasicCache
 {
-    public sealed class ModGroupCache
-    {
-        public record Option(
-            IModOption Data,
-            StringU8 Name,
-            StringU8 Description,
-            Setting Value,
-            float Width,
-            bool Disabled,
-            List<ModGroupCache> Children);
-
-        public GroupDrawBehaviour Behaviour
-            => Group.Behaviour;
-
-        public          IModGroup           Group = null!;
-        public          StringU8            Name;
-        public          StringU8            Description;
-        public readonly List<Option>        Options  = [];
-        public readonly List<ModGroupCache> Children = [];
-        public          bool                Indented;
-        public          int                 Index;
-        public          float               NameWidth;
-        public          float               ComboWidth;
-        public          bool                IsCombo;
-        public          bool                HideHeader;
-        public          bool                Disabled;
-    }
-
     public sealed class Page(string name)
     {
         public readonly StringU8            Name   = new(name);
         public readonly List<ModGroupCache> Groups = [];
     }
+
+    public record Node(StringU8 Name, StringU8 Description)
+    {
+        public readonly List<ModGroupCache> Children = [];
+    }
+
+    public sealed record Option(
+        IModOption Data,
+        StringU8 Name,
+        StringU8 Description,
+        Vector4 Color,
+        Setting Value,
+        float Width,
+        bool Disabled,
+        bool Separator) : Node(Name, Description);
+
+    public sealed record ModGroupCache(IModGroup Group, StringU8 Name, StringU8 Description) : Node(Name, Description)
+    {
+        public GroupDrawBehaviour Behaviour
+            => Group.Behaviour;
+
+        public readonly List<Option> Options = [];
+        public          float        NameWidth;
+        public          float        ComboWidth;
+        public          bool         Collapsible;
+        public          bool         Indented;
+        public          bool         IsCombo;
+        public          bool         HideHeader;
+        public          bool         Disabled;
+    }
+
 
     public readonly Dictionary<int, Page> Pages = [];
 
@@ -64,6 +67,145 @@ public sealed class ModSettingsCache : BasicCache
         _selection.Subscribe(OnSelectionChanged, ModSelection.Priority.ModPanel);
         _communicator.ModOptionChanged.Subscribe(OnModOptionChanged, ModOptionChanged.Priority.ModCacheManager);
         _communicator.ModSettingChanged.Subscribe(OnModSettingChanged, ModSettingChanged.Priority.ModGroupCache);
+    }
+
+    private void Reset()
+    {
+        AnyConditions = false;
+        Dirty         = IManagedCache.DirtyFlags.Clean;
+        _children.Clear();
+        Pages.Clear();
+        Count       = 0;
+        ActivePages = 0;
+    }
+
+    public override void Update()
+    {
+        if (!AnyDirty)
+            return;
+
+        Reset();
+
+        if (_selection.Mod is not { } mod)
+            return;
+
+        var context = new ModSettingContext(_selection.Mod, _selection.Settings);
+        foreach (var group in mod.Groups)
+        {
+            if (Create(context, group) is { } cache)
+            {
+                ++Count;
+                var page = SetupPage(mod, group.Page);
+                page.Groups.Add(cache);
+                _children.TryAdd(cache.Group.Id, cache.Children);
+                if (cache.IsCombo)
+                    foreach (var option in cache.Options)
+                        _children.TryAdd(option.Data.Id, cache.Children);
+                else
+                    foreach (var option in cache.Options)
+                        _children.TryAdd(option.Data.Id, option.Children);
+            }
+        }
+
+        NormalizePages();
+        NormalizeCollapsible();
+    }
+
+    private Page SetupPage(Mod mod, int pageNumber)
+    {
+        if (Pages.TryGetValue(pageNumber, out var page))
+            return page;
+
+        page = new Page(mod.PageNames.TryGetValue(pageNumber, out var name) ? name : $"Page {pageNumber + 1}");
+        Pages.Add(pageNumber, page);
+        return page;
+    }
+
+    private void NormalizePages()
+    {
+        ActivePages = Pages.Count;
+        foreach (var page in Pages.Values)
+        {
+            for (var i = 0; i < page.Groups.Count; ++i)
+            {
+                var group = page.Groups[i];
+                if (group.Group.ParentSetting is null)
+                    continue;
+
+                if (_children.TryGetValue(group.Group.ParentSetting.Id, out var obj))
+                {
+                    obj.Add(group);
+                    page.Groups.RemoveAt(i--);
+                }
+            }
+
+            if (page.Groups.Count is 0)
+                --ActivePages;
+        }
+    }
+
+    private void NormalizeCollapsible()
+    {
+        foreach (var group in Pages.Values.SelectMany(p => p.Groups))
+        {
+            if (group is { IsCombo: true, Children.Count: 0 })
+                group.Collapsible = false;
+        }
+
+        foreach (var group in _children.Values.SelectMany(p => p))
+        {
+            if (group is { IsCombo: true, Children.Count: 0 })
+                group.Collapsible = false;
+        }
+    }
+
+    public ModGroupCache? Create(in ModSettingContext context, IModGroup group)
+    {
+        if (!group.IsOption)
+            return null;
+
+        AnyConditions |= group.Condition is not null;
+        var condition = group.Condition is null || group.Condition.Evaluate(context);
+        if (!condition && !group.Layout.HasFlag(ModSettingsLayout.Disable))
+            return null;
+
+        var ret = new ModGroupCache(group, new StringU8(group.Name), new StringU8(group.Description))
+        {
+            Collapsible = true,
+            IsCombo     = group.Behaviour is GroupDrawBehaviour.SingleSelection && group.Options.Count > _config.SingleGroupRadioMax,
+            Disabled    = !condition,
+            HideHeader  = group.Group.Layout.HasFlag(ModSettingsLayout.ParentHeader),
+            Indented    = group.Group.Layout.HasFlag(ModSettingsLayout.Indent),
+        };
+        ret.NameWidth = ret.Name.CalculateSize().X;
+        if (!ret.Description.IsEmpty && ret.IsCombo)
+            ret.NameWidth += Im.Style.ItemInnerSpacing.X + LunaStyle.HelpMarker.CalculateSize().X;
+
+        ret.Options.EnsureCapacity(group.Options.Count);
+        foreach (var (index, option) in group.Options.Index())
+        {
+            AnyConditions |= option.Condition is not null;
+            condition     =  option.Condition is null || option.Condition.Evaluate(context);
+            if (!condition && !option.Layout.HasFlag(ModSettingsLayout.Disable))
+                continue;
+
+            var name        = new StringU8(option.Name);
+            var description = new StringU8(option.Description);
+            var width       = name.CalculateSize().X;
+            if (!description.IsEmpty)
+                width += Im.Style.ItemInnerSpacing.X + LunaStyle.HelpMarker.CalculateSize().X;
+            ret.Options.Add(new Option(option, name, description, option.ColorValue,
+                group.Type is GroupType.Single ? Setting.Single(index) : Setting.Multi(index), width,
+                !condition, option.Layout.HasFlag(ModSettingsLayout.Separator)));
+
+            if (width > ret.ComboWidth)
+                ret.ComboWidth = width;
+        }
+
+        if (ret.Options.Count is 0 || ret.Options.Count is 1 && group.Type is GroupType.Single)
+            return null;
+
+        return ret;
     }
 
     private void OnModSettingChanged(in ModSettingChanged.Arguments arguments)
@@ -91,113 +233,5 @@ public sealed class ModSettingsCache : BasicCache
         _selection.Unsubscribe(OnSelectionChanged);
         _communicator.ModOptionChanged.Unsubscribe(OnModOptionChanged);
         _communicator.ModSettingChanged.Unsubscribe(OnModSettingChanged);
-    }
-
-    public override void Update()
-    {
-        if (!AnyDirty)
-            return;
-
-        AnyConditions = false;
-        Dirty         = IManagedCache.DirtyFlags.Clean;
-        _children.Clear();
-        Pages.Clear();
-        Count = 0;
-        if (_selection.Mod is {} mod)
-        {
-            var context = new ModSettingContext(_selection.Mod, _selection.Settings);
-            foreach (var (index, group) in mod.Groups.Index())
-            {
-                if (Create(context, group, index) is { } cache)
-                {
-                    if (!Pages.TryGetValue(group.Page, out var page))
-                    {
-                        page = new Page(mod.PageNames.TryGetValue(group.Page, out var name) ? name : $"Page {group.Page + 1}");
-                        Pages.Add(group.Page, page);
-                    }
-
-                    ++Count;
-                    page.Groups.Add(cache);
-                    _children.TryAdd(cache.Group.Id, cache.Children);
-                    if (cache.IsCombo)
-                        foreach (var option in cache.Options)
-                            _children.TryAdd(option.Data.Id, cache.Children);
-                    else
-                        foreach (var option in cache.Options)
-                            _children.TryAdd(option.Data.Id, option.Children);
-                }
-            }
-        }
-
-        ActivePages = Pages.Count;
-        foreach (var page in Pages.Values)
-        {
-            for (var i = 0; i < page.Groups.Count; ++i)
-            {
-                var group = page.Groups[i];
-                if (group.Group.ParentSetting is null)
-                    continue;
-
-                if (_children.TryGetValue(group.Group.ParentSetting.Id, out var obj))
-                {
-                    obj.Add(group);
-                    page.Groups.RemoveAt(i--);
-                }
-            }
-
-            if (page.Groups.Count is 0)
-                --ActivePages;
-        }
-    }
-
-    public ModGroupCache? Create(in ModSettingContext context, IModGroup group, int groupIndex)
-    {
-        if (!group.IsOption)
-            return null;
-
-        AnyConditions |= group.Condition is not null;
-        var condition = group.Condition is null || group.Condition.Evaluate(context);
-        if (!condition && !group.Layout.HasFlag(ModSettingsLayout.Disable))
-            return null;
-
-        var ret = new ModGroupCache
-        {
-            Group       = group,
-            Index       = groupIndex,
-            Name        = new StringU8(group.Name),
-            Description = new StringU8(group.Description),
-            IsCombo     = group.Behaviour is GroupDrawBehaviour.SingleSelection && group.Options.Count > _config.SingleGroupRadioMax,
-            Disabled    = !condition,
-            HideHeader  = group.Group.Layout.HasFlag(ModSettingsLayout.ParentHeader),
-            Indented    = group.Group.Layout.HasFlag(ModSettingsLayout.Indent),
-        };
-        ret.NameWidth = ret.Name.CalculateSize().X;
-        if (!ret.Description.IsEmpty && ret.IsCombo)
-            ret.NameWidth += Im.Style.ItemInnerSpacing.X + LunaStyle.HelpMarker.CalculateSize().X;
-
-        ret.Options.EnsureCapacity(group.Options.Count);
-        foreach (var (index, option) in group.Options.Index())
-        {
-            AnyConditions |= option.Condition is not null;
-            condition     =  option.Condition is null || option.Condition.Evaluate(context);
-            if (!condition && !option.Layout.HasFlag(ModSettingsLayout.Disable))
-                continue;
-
-            var name        = new StringU8(option.Name);
-            var description = new StringU8(option.Description);
-            var width       = name.CalculateSize().X;
-            if (!description.IsEmpty)
-                width += Im.Style.ItemInnerSpacing.X + LunaStyle.HelpMarker.CalculateSize().X;
-            ret.Options.Add(new ModGroupCache.Option(option, name, description,
-                group.Type is GroupType.Single ? Setting.Single(index) : Setting.Multi(index), width,
-                !condition, []));
-            if (width > ret.ComboWidth)
-                ret.ComboWidth = width;
-        }
-
-        if (ret.Options.Count is 0 || ret.Options.Count is 1 && group.Type is GroupType.Single)
-            return null;
-
-        return ret;
     }
 }

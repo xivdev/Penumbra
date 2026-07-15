@@ -552,7 +552,7 @@ public static class GroupDeserialization
             return true;
         }
 
-        if (j.GuidProperty("ParentSettings"u8, out var parent))
+        if (j.GuidProperty("ParentSetting"u8, out var parent))
         {
             context.Parents[group] = parent;
             return true;

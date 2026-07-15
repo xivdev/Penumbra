@@ -118,8 +118,11 @@ public static class DebugUtilities
                         var text       = ms.ToArray();
                         var reader     = new Utf8JsonReader(text);
                         var writtenMod = new Mod(mod.ModPath);
-                        var context    = new Context(writtenMod);
-                        ModMetaData.Read(ref reader, "memory", context);
+                        using (var context = new Context(writtenMod))
+                        {
+                            ModMetaData.Read(ref reader, "memory", context);
+                        }
+
                         var writtenEqual = CompareMod(mod, writtenMod, false);
                         if (writtenEqual)
                         {
