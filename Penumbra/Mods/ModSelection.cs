@@ -23,7 +23,8 @@ public class ModSelection : EventBase<ModSelection.Arguments, ModSelection.Prior
     private readonly ModFileSystem       _modFileSystem;
     private readonly UiNavigator         _navigator;
 
-    public ModSelection(LunaLogger log, CommunicatorService communicator, ModManager mods, ActiveCollections collections, EphemeralConfig config,
+    public ModSelection(LunaLogger log, CommunicatorService communicator, ModManager mods, ActiveCollections collections,
+        EphemeralConfig config,
         ModFileSystem modFileSystem, UiNavigator navigator)
         : base(nameof(ModSelection), log)
     {
@@ -34,6 +35,7 @@ public class ModSelection : EventBase<ModSelection.Arguments, ModSelection.Prior
         _communicator.CollectionChange.Subscribe(OnCollectionChange, CollectionChange.Priority.ModSelection);
         _communicator.CollectionInheritanceChanged.Subscribe(OnInheritanceChange, CollectionInheritanceChanged.Priority.ModSelection);
         _communicator.ModSettingChanged.Subscribe(OnSettingChange, ModSettingChanged.Priority.ModSelection);
+        _communicator.ModOptionChanged.Subscribe(OnModOptionChange, ModOptionChanged.Priority.ModSelection);
         _modFileSystem.Selection.Changed += OnSelectionChanged;
         _navigator.ModSelector           += SelectMod;
         SelectModInternal(_modFileSystem.Selection.Selection?.GetValue<Mod>());
@@ -70,11 +72,18 @@ public class ModSelection : EventBase<ModSelection.Arguments, ModSelection.Prior
 
     protected override void Dispose(bool _)
     {
+        _communicator.ModOptionChanged.Unsubscribe(OnModOptionChange);
         _communicator.CollectionChange.Unsubscribe(OnCollectionChange);
         _communicator.CollectionInheritanceChanged.Unsubscribe(OnInheritanceChange);
         _communicator.ModSettingChanged.Unsubscribe(OnSettingChange);
         _modFileSystem.Selection.Changed -= OnSelectionChanged;
         _navigator.ModSelector           -= SelectMod;
+    }
+
+    private void OnModOptionChange(in ModOptionChanged.Arguments arguments)
+    {
+        if (arguments.Mod == Mod)
+            UpdateSettings();
     }
 
     private void OnCollectionChange(in CollectionChange.Arguments arguments)
