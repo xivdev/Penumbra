@@ -7,7 +7,9 @@ using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.Enums;
 using Penumbra.Files;
+using Penumbra.GameData.Gui.Debug;
 using Penumbra.Interop.Services;
+using Penumbra.Mods;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Settings;
@@ -76,7 +78,20 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
         Version10To11();
         Version11To12();
         Version12To13();
+        Version13To14();
         AddColors(config, true);
+    }
+
+    private void Version13To14()
+    {
+        if (_config.Version is not 13)
+            return;
+
+        _config.Version           = 14;
+        _config.Ephemeral.Version = 14;
+        _config.Save();
+        _config.Ephemeral.Save();
+        DebugUtilities.BackupJsonFiles(_config.ModDirectory);
     }
 
     private void Version12To13()

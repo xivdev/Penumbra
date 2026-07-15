@@ -92,6 +92,7 @@ public partial class ModCreator(
             IncorporateAllMetaChanges(mod, true, deleteDefaultMetaChanges);
         else if (deleteDefaultMetaChanges)
             ModMetaEditor.DeleteDefaultValues(mod, metaFileManager, SaveService);
+
         return true;
     }
 

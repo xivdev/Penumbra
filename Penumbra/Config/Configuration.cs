@@ -224,7 +224,7 @@ public partial class Configuration : IPluginConfiguration, ISavable, IService
     /// <summary> Contains some default values or boundaries for config values. </summary>
     public static class Constants
     {
-        public const int CurrentVersion = 13;
+        public const int CurrentVersion = 14;
         public const int MinimumSizeX   = 900;
         public const int MinimumSizeY   = 675;
     }

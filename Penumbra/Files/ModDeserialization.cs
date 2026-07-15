@@ -100,6 +100,7 @@ public static class ModDeserialization
             if (GroupDeserialization.ReadGroupFile(files, context, groupFile) is { } group)
                 context.Mod.AddGroup(group, groupFile.FullName);
         }
+        files.ImmediateSaveSync(new ModMeta(files, context.Mod));
     }
 
     public ref struct ModMetaData : IJsonParsable<ModMetaData>
