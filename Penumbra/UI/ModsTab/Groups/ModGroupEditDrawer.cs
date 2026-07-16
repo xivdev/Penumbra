@@ -1,8 +1,6 @@
 using Dalamud.Interface;
-using Dalamud.Interface.ImGuiNotification;
 using ImSharp;
 using Luna;
-using Penumbra.Files;
 using Penumbra.Meta;
 using Penumbra.Mods;
 using Penumbra.Mods.Groups;
@@ -17,7 +15,6 @@ namespace Penumbra.UI.ModsTab.Groups;
 public sealed class ModGroupEditDrawer(
     ModManager modManager,
     Configuration config,
-    FilenameService filenames,
     DescriptionEditPopup descriptionPopup,
     LayoutEditPopup layoutPopup,
     ConditionEditPopup conditionPopup,
