@@ -90,6 +90,7 @@ public class PenumbraChangelog : IUiService
             .RegisterEntry("If conditions are not fulfilled, the Option or Group will not apply (regardless of its settings), and will either not display at all, or display as disabled, depending on settings."u8, 2)
             .RegisterEntry("Additionally, Options can have one of 8 (user-, not creator-defined) colors assigned, and can be set to add a separator line after them."u8, 1)
             .RegisterHighlight("To support all these new options, the Settings tab UI has been changed considerably. I would like some feedback on how to improve the display here."u8)
+            .RegisterEntry("One consequence is that, barring parenting or pages, groups are now always displayed in the correct order, not first filtered for their display type."u8, 1)
             .RegisterHighlight("Hostile NPCs like those spawned by quests are no longer considered by Ownership settings unless a separate setting is enabled."u8)
             .RegisterHighlight("The file watcher for auto import of mods can now be set to peek into archives, recognize mod archives inside those archives, and install the packed mods (thanks Stoia and Ny!)."u8)
             .RegisterEntry("The Enable/Disable/Inherit All Descendants context menu buttons now have misclick prevention."u8)
