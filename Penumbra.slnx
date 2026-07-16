@@ -17,7 +17,6 @@
     <File Path="schemas/mod_meta-v4.json" />
   </Folder>
   <Folder Name="/Solution Items/Schemas/Structs/">
-    <File Path="schemas/structs/option_condition.json" />
     <File Path="schemas/structs/container.json" />
     <File Path="schemas/structs/group_combining.json" />
     <File Path="schemas/structs/group_imc.json" />

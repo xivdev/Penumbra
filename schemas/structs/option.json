@@ -43,10 +43,6 @@
             "minimum": 0,
             "maximum": 8
         },
-        "Separator": {
-            "description": "Whether to draw a separator line below this option.",
-            "type": "boolean"
-        }
     },
 	"required": [ "Name" ]
 }

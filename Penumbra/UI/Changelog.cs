@@ -66,9 +66,55 @@ public class PenumbraChangelog : IUiService
         AddDummy(Changelog);
         Add1_6_0_0(Changelog);
         Add1_6_1_0(Changelog);
+        Add1_7_0_0(Changelog);
     }
 
     #region Changelogs
+
+    private static void Add1_7_0_0(Changelog log)
+        => log.NextVersion("Version 1.7.0.0"u8)
+            .RegisterImportant("When updating to this version, all installed mods will migrate to a new meta version."u8)
+            .RegisterEntry("This version gets rid of the group- and default option JSON files and instead stores all this information in the meta.json again."u8, 1)
+            .RegisterEntry("The old files should be moved to backups, there should also be a permanent archive with all JSONs from your mods be created beforehand in case of any errors."u8, 1)
+            .RegisterHighlight("All mods will be supplied stable GUID identifiers, and every option group and option will also get a GUID."u8)
+            .RegisterEntry("While the mod GUID is currently unused, when mod creators establish stable identifiers for their mods, they could be use to verify dependencies or similar later on."u8, 1)
+            .RegisterEntry("The option GUIDs are already used within a single mod for several new features."u8, 1)
+            .RegisterHighlight("Mod Creators have several new very versatile options:"u8)
+            .RegisterEntry("Option Groups now respect the numerical 'Page' entry from TexTools imports (and it can of course be set in Penumbra, too)."u8, 1)
+            .RegisterEntry("If there is more than one page with actual visible options, pages are displayed as sub-tabs in the Settings tab."u8, 2)
+            .RegisterEntry("By default, Pages are named 'Page #', but you can assign custom names to the numerical values in Group Editing."u8, 2)
+            .RegisterEntry("Option Groups can now be parented to other Groups or Options, causing them to be displayed right below said Group or Option."u8, 1)
+            .RegisterEntry("There are several layout options when using parenting - you can choose to indent the group or not, and you can choose whether to show the group header or not."u8, 2)
+            .RegisterEntry("All Group Headers with options or other groups parented to them can now be collapsed - and groups can be set to be collapsed by default."u8, 1)
+            .RegisterHighlight("Entire Groups and single Options can have arbitrary conditions on settings within this mod assigned."u8, 1)
+            .RegisterEntry("If conditions are not fulfilled, the Option or Group will not apply (regardless of its settings), and will either not display at all, or display as disabled, depending on settings."u8, 2)
+            .RegisterEntry("Additionally, Options can have one of 8 (user-, not creator-defined) colors assigned, and can be set to add a separator line after them."u8, 1)
+            .RegisterHighlight("To support all these new options, the Settings tab UI has been changed considerably. I would like some feedback on how to improve the display here."u8)
+            .RegisterHighlight("Hostile NPCs like those spawned by quests are no longer considered by Ownership settings unless a separate setting is enabled."u8)
+            .RegisterHighlight("The file watcher for auto import of mods can now be set to peek into archives, recognize mod archives inside those archives, and install the packed mods (thanks Stoia and Ny!)."u8)
+            .RegisterEntry("The Enable/Disable/Inherit All Descendants context menu buttons now have misclick prevention."u8)
+            .RegisterEntry("Added several plugins, and all plugins that call specific IPC functions, to the support info blob."u8)
+            .RegisterEntry("The advanced editing model tab now uses 0-based indexing instead of 1-based, by popular demand."u8)
+            .RegisterEntry("Limited the number of concurrent mod installation notifications when using the file system watcher to 3."u8)
+            .RegisterEntry("Moved several deserialization and serialization functions to System.Text.JSON for considerable speed increases."u8)
+            .RegisterEntry("Use a new recovery strategy for syntactically broken JSON files in several situations (Thanks Ny!)"u8)
+            .RegisterEntry("The 'Failed to Load Resource' log warning will no longer trigger on the deliberately failing path used by EasyEyes."u8)
+            .RegisterEntry("Added safeguards against some import vulnerabilities concerning out-of-folder files."u8)
+            .RegisterEntry("Fixed an issue with temporary settings breaking when options are changed."u8)
+            .RegisterEntry("Fixed several issues with the automatic backup functionality."u8)
+            .RegisterEntry("Fixed an issue with collection inheritance display and update."u8)
+            .RegisterEntry("Fixed several issues with redundant saving of files."u8)
+            .RegisterEntry("Fixed an issue with material suffices during model export."u8)
+            .RegisterEntry("Fiexd a crash when resolving accessory skin materials with the resource tree."u8)
+            .RegisterEntry("Fixed an issue with the folder tree lines in the mod selector."u8)
+            .RegisterEntry("Fixed an issue with unclamped values when editing color tables."u8)
+            .RegisterEntry("Fixed an issue with the Move to Quick Folder button selection."u8)
+            .RegisterHighlight("Added a management tab for broken mods that can not correctly load. (1.6.1.9)"u8 )
+            .RegisterEntry("Fixed an issue with folder separators within mod archives. (1.6.1.9)"u8 )
+            .RegisterEntry("Specific animations will now correctly associate to characters. (1.6.1.7)"u8 )
+            .RegisterEntry("Folders and mods can now be renamed when only capitalization changes. (1.6.1.6)"u8 )
+            .RegisterEntry("Mods will not accidentally import more than once in quick succession. (1.6.1.6)"u8 )
+            .RegisterEntry("Backup files are now excluded from PMP exports. (1.6.1.6)"u8 );
 
     private static void Add1_6_1_0(Changelog log)
         => log.NextVersion("Version 1.6.1.0"u8)
