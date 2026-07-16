@@ -52,7 +52,6 @@ public static class FeatureChecker
         var       buttonColor  = Im.Style[ImGuiColor.FrameBackground];
         var       textColor    = Im.Style[ImGuiColor.TextDisabled];
         using (var style = ImStyleBorder.Frame.Push(ColorId.FolderLine.Value(), 0)
-                   .Push(ImStyleDouble.ItemSpacing, innerSpacing)
                    .Push(ImGuiColor.Button,         buttonColor)
                    .Push(ImGuiColor.Text,           textColor))
         {
@@ -73,18 +72,18 @@ public static class FeatureChecker
                     editor.ChangeRequiredFeatures(mod, mod.RequiredFeatures | flag);
                 }
 
-                Im.Line.Same();
+                Im.Line.SameInner();
             }
         }
 
         if (ImEx.Button("Compute"u8, size, "Compute the required features automatically from the used features."u8))
             editor.ChangeRequiredFeatures(mod, mod.ComputeRequiredFeatures());
 
-        Im.Line.Same();
+        Im.Line.SameInner();
         if (ImEx.Button("Clear"u8, size, "Clear all required features."u8))
             editor.ChangeRequiredFeatures(mod, FeatureFlags.None);
 
-        Im.Line.Same();
+        Im.Line.SameInner();
         Im.Text("Required Features"u8);
     }
 }

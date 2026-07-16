@@ -255,7 +255,7 @@ public sealed class SettingsTab : ITab<TabType>
         bool save, selected;
         using (Im.Group())
         {
-            Im.Item.SetNextWidth(UiHelpers.InputTextMinusButton3);
+            Im.Item.SetNextWidth(UiHelpers.InputTextMinusButtonInner);
             using (var color = ImStyleBorder.Frame.Push(Colors.RegexWarningBorder, Im.Style.GlobalScale, !_modManager.Valid))
             {
                 color.Push(ImGuiColor.TextDisabled, Colors.RegexWarningBorder, !_modManager.Valid);
@@ -264,10 +264,8 @@ public sealed class SettingsTab : ITab<TabType>
             }
 
             selected = Im.Item.Active;
-            using var style = ImStyleDouble.ItemSpacing.Push(new Vector2(Im.Style.GlobalScale * 3, 0));
-            Im.Line.Same();
+            Im.Line.SameInner();
             DrawDirectoryPickerButton();
-            style.Pop();
 
             var tt = "This is where Penumbra will store your extracted mod files.\n"u8
               + "TTMP files are not copied, just extracted.\n"u8
@@ -655,10 +653,7 @@ public sealed class SettingsTab : ITab<TabType>
     private void DrawDefaultModImportPath()
     {
         using var id      = Im.Id.Push("##dmi"u8);
-        var       spacing = new Vector2(Im.Style.GlobalScale * 3);
-        using var style   = ImStyleDouble.ItemSpacing.Push(spacing);
-
-        Im.Item.SetNextWidth(UiHelpers.InputTextMinusButton3);
+        Im.Item.SetNextWidth(UiHelpers.InputTextMinusButtonInner);
         if (ImEx.InputOnDeactivation.Text(StringU8.Empty, _config.DefaultModImportPath, out string newDirectory))
         {
             _config.DefaultModImportPath = newDirectory;
@@ -684,7 +679,6 @@ public sealed class SettingsTab : ITab<TabType>
             }, startDir, false);
         }
 
-        style.Pop();
         LunaStyle.DrawAlignedHelpMarkerLabel("Default Mod Import Directory"u8,
             "Set the directory that gets opened when using the file picker to import mods for the first time."u8);
     }
@@ -693,13 +687,11 @@ public sealed class SettingsTab : ITab<TabType>
     private void DrawDefaultModExportPath()
     {
         using var id      = Im.Id.Push("##dme"u8);
-        var       spacing = new Vector2(Im.Style.GlobalScale * 3);
-        using var style   = ImStyleDouble.ItemSpacing.Push(spacing);
-        Im.Item.SetNextWidth(UiHelpers.InputTextMinusButton3);
+        Im.Item.SetNextWidth(UiHelpers.InputTextMinusButtonInner);
         if (ImEx.InputOnDeactivation.Text(StringU8.Empty, _config.ExportDirectory, out string newDirectory))
             _modExportManager.UpdateExportDirectory(newDirectory);
 
-        Im.Line.Same();
+        Im.Line.SameInner();
         if (ImEx.Icon.Button(LunaStyle.FolderIcon, "Select a directory via dialog."u8))
         {
             var startDir = _config.ExportDirectory.Length > 0 && Directory.Exists(_config.ExportDirectory)
@@ -714,7 +706,6 @@ public sealed class SettingsTab : ITab<TabType>
             }, startDir, false);
         }
 
-        style.Pop();
         LunaStyle.DrawAlignedHelpMarkerLabel("Default Mod Export Directory"u8,
             "Set the directory mods get saved to when using the export function or loaded from when reimporting backups.\n"u8
           + "Keep this empty to use the root directory."u8);
@@ -724,13 +715,11 @@ public sealed class SettingsTab : ITab<TabType>
     private void DrawFileWatcherPath()
     {
         using var id      = Im.Id.Push("fw"u8);
-        var       spacing = new Vector2(Im.Style.GlobalScale * 3);
-        using var style   = ImStyleDouble.ItemSpacing.Push(spacing);
-        Im.Item.SetNextWidth(UiHelpers.InputTextMinusButton3);
+        Im.Item.SetNextWidth(UiHelpers.InputTextMinusButtonInner);
         if (ImEx.InputOnDeactivation.Text(StringU8.Empty, _config.WatchDirectory, out string newDirectory, maxLength: 256))
             _fileWatcher.UpdateDirectory(newDirectory);
 
-        Im.Line.Same();
+        Im.Line.SameInner();
         if (ImEx.Icon.Button(LunaStyle.FolderIcon, "Select a directory via dialog."u8))
         {
             var startDir = _config.WatchDirectory.Length > 0 && Directory.Exists(_config.WatchDirectory)
@@ -745,7 +734,6 @@ public sealed class SettingsTab : ITab<TabType>
             }, startDir, false);
         }
 
-        style.Pop();
         LunaStyle.DrawAlignedHelpMarkerLabel("Automatic Import Directory"u8,
             "Choose the Directory the File Watcher listens to."u8);
     }

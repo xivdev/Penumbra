@@ -54,18 +54,13 @@ public static class UiHelpers
     public static Vector2 IconButtonSize;
 
     /// <summary> Input Text Width with space for an additional button with spacing of 3 between them. </summary>
-    public static float InputTextMinusButton3;
+    public static float InputTextMinusButtonInner;
 
     /// <summary> Input Text Width with space for an additional button with spacing of default item spacing between them. </summary>
     public static float InputTextMinusButton;
 
     /// <summary> Multiples of the current Global Scale </summary>
     public static float Scale;
-
-    public static float ScaleX2;
-    public static float ScaleX3;
-    public static float ScaleX4;
-    public static float ScaleX5;
 
     public static void SetupCommonSizes()
     {
@@ -74,14 +69,10 @@ public static class UiHelpers
             Scale          = Im.Style.GlobalScale;
             DefaultSpace   = new Vector2(0,            10 * Scale);
             InputTextWidth = new Vector2(350f * Scale, 0);
-            ScaleX2        = Scale * 2;
-            ScaleX3        = Scale * 3;
-            ScaleX4        = Scale * 4;
-            ScaleX5        = Scale * 5;
         }
 
-        IconButtonSize        = new Vector2(Im.Style.FrameHeight);
-        InputTextMinusButton3 = InputTextWidth.X - IconButtonSize.X - ScaleX3;
-        InputTextMinusButton  = InputTextWidth.X - IconButtonSize.X - Im.Style.ItemSpacing.X;
+        IconButtonSize            = new Vector2(Im.Style.FrameHeight);
+        InputTextMinusButtonInner = InputTextWidth.X - IconButtonSize.X - Im.Style.ItemInnerSpacing.X;
+        InputTextMinusButton      = InputTextWidth.X - IconButtonSize.X - Im.Style.ItemSpacing.X;
     }
 }

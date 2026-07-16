@@ -89,6 +89,7 @@ public class ModPanelEditTab(
 
                 id.Pop();
             }
+
             UiHelpers.DefaultLineSpace();
         }
     }
@@ -136,7 +137,7 @@ public class ModPanelEditTab(
         {
             UiHelpers.DefaultLineSpace();
             DrawGroupNameEdit(cache);
-            
+
             addGroupDrawer.Draw(Mod, UiHelpers.InputTextWidth.X);
 
             if (Im.RadioButton("Group Edit Mode"u8, !_groupReorderMode))
@@ -306,14 +307,20 @@ public class ModPanelEditTab(
                 UiHelpers.InputTextWidth.X))
             modManager.DataEditor.ChangeModWebsite(Mod, newWebsite);
 
-        using var style = ImStyleDouble.ItemSpacing.Push(new Vector2(Im.Style.GlobalScale * 3));
+        Guid? guid = Mod.StableIdentifier;
+        if (ImEx.GuidInput("##modGuid"u8, ref guid, UiHelpers.InputTextMinusButtonInner) && guid.HasValue)
+            modManager.DataEditor.ForceIdentifier(Mod, guid.Value);
+        Im.Line.SameInner();
+        if (ImEx.Icon.Button(LunaStyle.RefreshIcon, "Set a new GUID for this mod."u8))
+            modManager.DataEditor.ForceIdentifier(Mod, Guid.NewGuid());
+        Im.Line.SameInner();
+        ImEx.TextFrameAligned("Stable Identifier (GUID)"u8);
 
-        var reducedSize = new Vector2(UiHelpers.InputTextMinusButton3, 0);
+        var reducedSize = new Vector2(UiHelpers.InputTextMinusButtonInner, 0);
         if (Im.Button("Edit Description"u8, reducedSize))
             descriptionPopup.Open(Mod);
 
-
-        Im.Line.Same();
+        Im.Line.SameInner();
         var fileExists = File.Exists(filenames.ModMetaPath(Mod));
         var tt = fileExists
             ? "Open the metadata json file in the text editor of your choice."u8
@@ -323,8 +330,6 @@ public class ModPanelEditTab(
             if (ImEx.Icon.Button(LunaStyle.FileExportIcon, tt, !fileExists))
                 Process.Start(new ProcessStartInfo(filenames.ModMetaPath(Mod)) { UseShellExecute = true });
         }
-
-        DrawOpenDefaultMod();
     }
 
     private void EditLocalData()
@@ -337,12 +342,12 @@ public class ModPanelEditTab(
     {
         using var id = Im.Id.Push(1);
         ImEx.TextFramed($"{DateTimeOffset.FromUnixTimeMilliseconds(Mod.ImportDate).ToLocalTime():yyyy/MM/dd HH:mm}",
-            new Vector2(UiHelpers.InputTextMinusButton3, 0), ImGuiColor.FrameBackground.Get(0.5f));
+            new Vector2(UiHelpers.InputTextMinusButtonInner, 0), ImGuiColor.FrameBackground.Get(0.5f));
         if (Im.Item.Clicked())
             Im.Clipboard.Set($"{Mod.ImportDate}");
         Im.Tooltip.OnHover($"Click to copy timestamp: {Mod.ImportDate}");
 
-        Im.Line.Same(0, 3 * Im.Style.GlobalScale);
+        Im.Line.SameInner();
         var canRefresh = config.DeleteModModifier.IsActive();
         if (ImEx.Icon.Button(LunaStyle.RefreshIcon, canRefresh
                     ? "Reset the import date to the current date and time."u8
@@ -358,12 +363,12 @@ public class ModPanelEditTab(
     {
         using var id = Im.Id.Push(2);
         ImEx.TextFramed($"{DateTimeOffset.FromUnixTimeMilliseconds(Mod.LastConfigEdit).ToLocalTime():yyyy/MM/dd HH:mm}",
-            new Vector2(UiHelpers.InputTextMinusButton3, 0), ImGuiColor.FrameBackground.Get(0.5f));
+            new Vector2(UiHelpers.InputTextMinusButtonInner, 0), ImGuiColor.FrameBackground.Get(0.5f));
         if (Im.Item.Clicked())
             Im.Clipboard.Set($"{Mod.LastConfigEdit}");
         Im.Tooltip.OnHover($"Click to copy timestamp: {Mod.LastConfigEdit}");
 
-        Im.Line.Same(0, 3 * Im.Style.GlobalScale);
+        Im.Line.SameInner();
         var canRefresh = config.IncognitoModifier.IsActive();
         if (ImEx.Icon.Button(LunaStyle.RefreshIcon, canRefresh
                     ? "Reset the last config edit date to the current date and time."u8
@@ -374,18 +379,6 @@ public class ModPanelEditTab(
         Im.Line.SameInner();
         Im.Text("Last Config Edit"u8);
     }
-
-    private void DrawOpenDefaultMod()
-    {
-        var file       = filenames.OptionGroupFile(Mod, -1, false);
-        var fileExists = File.Exists(file);
-        var tt = fileExists
-            ? "Open the default mod data file in the text editor of your choice."u8
-            : "The default mod data file does not exist."u8;
-        if (ImEx.Button("Open Default Data"u8, UiHelpers.InputTextWidth, tt, !fileExists))
-            Process.Start(new ProcessStartInfo(file) { UseShellExecute = true });
-    }
-
 
     /// <summary> A text input for the new directory name and a button to apply the move. </summary>
     private static class MoveDirectory

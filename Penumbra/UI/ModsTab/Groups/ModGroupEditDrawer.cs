@@ -80,8 +80,6 @@ public sealed class ModGroupEditDrawer(
         Im.Line.SameInner();
         DrawGroupMoveButtons(group, idx);
         Im.Line.SameInner();
-        DrawGroupOpenFile(group, idx);
-        Im.Line.SameInner();
         DrawGroupDescription(group);
         Im.Line.SameInner();
         DrawGroupLayout(group);
@@ -198,27 +196,6 @@ public sealed class ModGroupEditDrawer(
         else
             Im.Tooltip.OnHover($"Move this group down to group {idx + 2}.");
     }
-
-    private void DrawGroupOpenFile(IModGroup group, int idx)
-    {
-        var fileName   = filenames.OptionGroupFile(group.Mod, idx, config.ReplaceNonAsciiOnImport);
-        var fileExists = File.Exists(fileName);
-        if (ImEx.Icon.Button(LunaStyle.OpenExternalIcon, !fileExists))
-            try
-            {
-                Process.Start(new ProcessStartInfo(fileName) { UseShellExecute = true });
-            }
-            catch (Exception e)
-            {
-                Penumbra.Messager.NotificationMessage(e, "Could not open editor.", NotificationType.Error);
-            }
-
-        if (fileExists)
-            Im.Tooltip.OnHover($"Open the {group.Name} json file in the text editor of your choice.");
-        else
-            Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"The {group.Name} json file does not exist.");
-    }
-
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal void DrawOptionPosition(IModGroup group, IModOption option, int optionIdx)
@@ -400,7 +377,7 @@ public sealed class ModGroupEditDrawer(
         _groupNameWidth     = totalWidth - 5 * (_buttonSize.X + _spacing);
         _spacing            = Im.Style.ItemInnerSpacing.X;
         OptionIdxSelectable = Im.Font.CalculateSize("Option #88."u8);
-        _optionNameWidth    = totalWidth - OptionIdxSelectable.X - 3 * _buttonSize.X - 4 * _spacing;
+        _optionNameWidth    = totalWidth - OptionIdxSelectable.X - 4 * _buttonSize.X - 5 * _spacing;
         _deleteEnabled      = config.DeleteModModifier.IsActive();
     }
 }

@@ -19,7 +19,8 @@ public sealed class LayoutEditPopup(ModManager mods) : ObjectEditPopup, IUiServi
 
     private void DrawGroup(IModGroup group)
     {
-        _parentCombo.Draw("Parent Setting"u8, group, 200 * Im.Style.GlobalScale);
+        DrawIdentifier(group);
+        _parentCombo.Draw("Parent Setting"u8, group, ImEx.GuidInputWidth + Im.Style.ItemInnerSpacing.X + Im.Style.FrameHeight);
         var layout = group.Layout;
         if (Im.Checkbox("Disable When Condition Not Met"u8, ref layout, ModSettingsLayout.Disable))
             mods.OptionEditor.SetLayout(group, layout);
@@ -38,8 +39,21 @@ public sealed class LayoutEditPopup(ModManager mods) : ObjectEditPopup, IUiServi
             "When this is checked, this group only shows its options and not the group header if it is placed under a parent group or option."u8);
     }
 
+    private void DrawIdentifier(IModObject @object)
+    {
+        Guid? guid = @object.Id;
+        if (ImEx.GuidInput("##guid"u8, ref guid) && guid.HasValue)
+            mods.OptionEditor.ForceIdentifier(@object, guid.Value);
+        Im.Line.SameInner();
+        if (ImEx.Icon.Button(LunaStyle.RefreshIcon, "Set a new GUID for this object."u8))
+            mods.OptionEditor.ForceIdentifier(@object, Guid.NewGuid());
+        Im.Line.SameInner();
+        ImEx.TextFrameAligned("Identifier"u8);
+    }
+
     private void DrawOption(IModOption option)
     {
+        DrawIdentifier(option);
         DrawColorCombo(option);
         var layout = option.Layout;
         if (Im.Checkbox("Disable When Condition Not Met"u8, ref layout, ModSettingsLayout.Disable))
@@ -83,7 +97,7 @@ public sealed class LayoutEditPopup(ModManager mods) : ObjectEditPopup, IUiServi
         Rectangle bb;
         using (ImGuiColor.Text.Push(color))
         {
-            Im.Item.SetNextWidthScaled(150);
+            Im.Item.SetNextWidth(ImEx.GuidInputWidth + Im.Style.ItemInnerSpacing.X + Im.Style.FrameHeight);
             Im.Combo.DrawPreview("##Color"u8, name, out popupId, out bb, ComboFlags.HeightLargest);
         }
 
