@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Penumbra.Meta.Manipulations;
 using Penumbra.String.Classes;
+using Penumbra.UI.Classes;
 
 namespace Penumbra.Mods.SubMods;
 
@@ -127,5 +128,11 @@ public static class SubMod
         j.WriteValue(option.Name);
         j.WritePropertyName(nameof(option.Description));
         j.WriteValue(option.Description);
+        var color = option.ColorAsInteger;
+        if (color is not 0)
+        {
+            j.WritePropertyName(nameof(option.Color));
+            j.WriteValue(color);
+        }
     }
 }

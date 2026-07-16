@@ -42,7 +42,8 @@ public sealed class CombiningModGroupEditor(CommunicatorService communicator, Sa
             return;
 
         container.Name = name;
-        SaveService.Save(saveType, new ModSaveGroup(container.Group, Config.ReplaceNonAsciiOnImport));
-        Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.DisplayChange, container.Group.Mod, container.Group, null, null, null, -1));
+        SaveService.Save(saveType, container.Group);
+        Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.DisplayChange, container.Group.Mod,
+            container.Group, null, null, Guid.Empty, -1));
     }
 }

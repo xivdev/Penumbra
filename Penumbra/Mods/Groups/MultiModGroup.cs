@@ -14,7 +14,8 @@ using Penumbra.Util;
 namespace Penumbra.Mods.Groups;
 
 /// <summary> Groups that allow all available options to be selected at once. </summary>
-public sealed class MultiModGroup(Mod mod) : IModGroup, ITexToolsGroup
+public sealed class
+    MultiModGroup(Mod mod) : IModGroup, ITexToolsGroup
 {
     public GroupType Type
         => GroupType.Multi;
@@ -22,7 +23,13 @@ public sealed class MultiModGroup(Mod mod) : IModGroup, ITexToolsGroup
     public GroupDrawBehaviour Behaviour
         => GroupDrawBehaviour.MultiSelection;
 
+    public int Index { get; private set; } = -1;
+
+    public void SetIndex(int index)
+        => Index = index;
+
     public          Mod                            Mod             { get; }      = mod;
+    public          Guid                           Id              { get; set; } = Guid.NewGuid();
     public          string                         Name            { get; set; } = "Group";
     public          string                         Description     { get; set; } = string.Empty;
     public          string                         Image           { get; set; } = string.Empty;
@@ -30,9 +37,9 @@ public sealed class MultiModGroup(Mod mod) : IModGroup, ITexToolsGroup
     public          int                            Page            { get; set; }
     public          Setting                        DefaultSettings { get; set; }
     public          ModSettingsLayout              Layout          { get; set; }
-    public          ParentSetting                  ParentSetting   { get; set; } = ParentSetting.None;
+    public          IModObject?                    ParentSetting   { get; set; }
     public          ICondition<ModSettingContext>? Condition       { get; set; }
-    public readonly List<MultiSubMod>              OptionData = [];
+    public readonly IndexList<MultiSubMod>         OptionData = [];
 
     public IReadOnlyList<IModOption> Options
         => OptionData;
@@ -52,12 +59,8 @@ public sealed class MultiModGroup(Mod mod) : IModGroup, ITexToolsGroup
         return null;
     }
 
-    public IModOption? AddOption(string name, string description = "")
+    public IModOption AddOption(string name, string description = "")
     {
-        var groupIdx = Mod.Groups.IndexOf(this);
-        if (groupIdx < 0)
-            return null;
-
         var subMod = new MultiSubMod(this)
         {
             Name        = name,
@@ -65,33 +68,6 @@ public sealed class MultiModGroup(Mod mod) : IModGroup, ITexToolsGroup
         };
         OptionData.Add(subMod);
         return subMod;
-    }
-
-    public static MultiModGroup? Load(Mod mod, JObject json)
-    {
-        var ret = new MultiModGroup(mod);
-        if (!ModSaveGroup.ReadJsonBase(json, ret))
-            return null;
-
-        var options = json["Options"];
-        if (options != null)
-            foreach (var child in options.Children())
-            {
-                if (ret.OptionData.Count == IModGroup.MaxMultiOptions)
-                {
-                    Penumbra.Messager.NotificationMessage(
-                        $"Multi Group {ret.Name} in {mod.Name} has more than {IModGroup.MaxMultiOptions} options, ignoring excessive options.",
-                        NotificationType.Warning);
-                    break;
-                }
-
-                var subMod = new MultiSubMod(ret, child);
-                ret.OptionData.Add(subMod);
-            }
-
-        ret.DefaultSettings = ret.FixSetting(ret.DefaultSettings);
-
-        return ret;
     }
 
     public SingleModGroup ConvertToSingle()
@@ -108,9 +84,6 @@ public sealed class MultiModGroup(Mod mod) : IModGroup, ITexToolsGroup
         single.OptionData.AddRange(OptionData.Select(o => o.ConvertToSingle(single)));
         return single;
     }
-
-    public int GetIndex()
-        => ModGroup.GetIndex(this);
 
     public IModGroupEditDrawer EditDrawer(ModGroupEditDrawer editDrawer)
         => new MultiModGroupEditDrawer(editDrawer, this);
@@ -135,24 +108,6 @@ public sealed class MultiModGroup(Mod mod) : IModGroup, ITexToolsGroup
     {
         foreach (var container in DataContainers)
             identifier.AddChangedItems(container, changedItems);
-    }
-
-    public void WriteJson(JsonTextWriter jWriter, JsonSerializer serializer, DirectoryInfo? basePath = null)
-    {
-        ModSaveGroup.WriteJsonBase(jWriter, this);
-        jWriter.WritePropertyName("Options");
-        jWriter.WriteStartArray();
-        foreach (var option in OptionData)
-        {
-            jWriter.WriteStartObject();
-            SubMod.WriteModOption(jWriter, option);
-            jWriter.WritePropertyName(nameof(option.Priority));
-            jWriter.WriteValue(option.Priority.Value);
-            SubMod.WriteModContainer(jWriter, serializer, option, basePath ?? Mod.ModPath);
-            jWriter.WriteEndObject();
-        }
-
-        jWriter.WriteEndArray();
     }
 
     public (int Redirections, int Swaps, int Manips) GetCounts()

@@ -7,7 +7,9 @@ using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.Enums;
 using Penumbra.Files;
+using Penumbra.GameData.Gui.Debug;
 using Penumbra.Interop.Services;
+using Penumbra.Mods;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Settings;
@@ -76,7 +78,20 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
         Version10To11();
         Version11To12();
         Version12To13();
+        Version13To14();
         AddColors(config, true);
+    }
+
+    private void Version13To14()
+    {
+        if (_config.Version is not 13)
+            return;
+
+        _config.Version           = 14;
+        _config.Ephemeral.Version = 14;
+        _config.Save();
+        _config.Ephemeral.Save();
+        DebugUtilities.BackupJsonFiles(_config.ModDirectory);
     }
 
     private void Version12To13()
@@ -135,7 +150,7 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
         if (_config.Version is not 9)
             return;
 
-        backupService.CreateMigrationBackup("pre_filesystem_update", saveService.FileNames.OldLocalDataFiles.Append(new FileInfo(saveService.FileNames.OldFilesystemFile)));
+        backupService.CreateMigrationBackup("pre_filesystem_update", saveService.FileNames.OldLocalDataFiles.Append(saveService.FileNames.OldFilesystemFile));
         _config.Version           = 10;
         _config.Ephemeral.Version = 10;
         _config.Save();
@@ -148,7 +163,7 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
         if (_config.Version is not 8)
             return;
 
-        backupService.CreateMigrationBackup("pre_collection_identifiers", saveService.FileNames.OldLocalDataFiles.Append(new FileInfo(saveService.FileNames.OldFilesystemFile)));
+        backupService.CreateMigrationBackup("pre_collection_identifiers", saveService.FileNames.OldLocalDataFiles.Append(saveService.FileNames.OldFilesystemFile));
         _config.Version           = 9;
         _config.Ephemeral.Version = 9;
         _config.Save();
@@ -300,12 +315,12 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
         {
             try
             {
-                var jObject = JObject.Parse(File.ReadAllText(collection.FullName));
+                var jObject = JObject.Parse(File.ReadAllText(collection));
                 if (jObject["Name"]?.ToObject<string>() == ForcedCollection)
                     continue;
 
                 jObject[nameof(ModCollectionInheritance.DirectlyInheritsFrom)] = JToken.FromObject(new List<string> { ForcedCollection });
-                File.WriteAllText(collection.FullName, jObject.ToString());
+                File.WriteAllText(collection, jObject.ToString());
             }
             catch (Exception e)
             {

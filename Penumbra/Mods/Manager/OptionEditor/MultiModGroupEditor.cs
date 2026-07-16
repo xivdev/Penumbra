@@ -13,11 +13,11 @@ public sealed class MultiModGroupEditor(CommunicatorService communicator, SaveSe
 {
     public void ChangeToSingle(MultiModGroup group)
     {
-        var idx = group.GetIndex();
+        var idx = group.Index;
         var singleGroup = group.ConvertToSingle();
         group.Mod.Groups[idx] = singleGroup;
-        SaveService.QueueSave(new ModSaveGroup(singleGroup, Config.ReplaceNonAsciiOnImport));
-        Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.GroupTypeChanged, singleGroup.Mod, singleGroup, null, null, null, -1));
+        SaveService.QueueSave(singleGroup);
+        Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.GroupTypeChanged, singleGroup.Mod, singleGroup, null, null, group.Id, -1));
     }
 
     /// <summary> Change the internal priority of the given option. </summary>
@@ -27,8 +27,8 @@ public sealed class MultiModGroupEditor(CommunicatorService communicator, SaveSe
             return;
 
         option.Priority = newPriority;
-        SaveService.QueueSave(new ModSaveGroup(option.Group, Config.ReplaceNonAsciiOnImport));
-        Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.PriorityChanged, option.Mod, option.Group, option, null, null, -1));
+        SaveService.QueueSave(option);
+        Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.PriorityChanged, option.Mod, option.Group, option, null, option.Id, -1));
     }
 
     protected override MultiModGroup CreateGroup(Mod mod, string newName, ModPriority priority, SaveType saveType = SaveType.ImmediateSync)

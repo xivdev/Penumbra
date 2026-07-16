@@ -1,16 +1,15 @@
 using ImSharp;
 using Luna;
-using Penumbra.Mods.Groups;
 using Penumbra.Mods.Settings;
 using Penumbra.UI.ModsTab.Groups;
 
 namespace Penumbra.UI;
 
-public sealed class SingleGroupCombo : FilterComboBase<SingleGroupCombo.GroupCache>, IUiService
+public sealed class SingleGroupCombo : FilterComboBase<ModSettingsCache.Option>, IUiService
 {
-    private class OptionFilter : Utf8FilterBase<GroupCache>
+    private class OptionFilter : Utf8FilterBase<ModSettingsCache.Option>
     {
-        protected override ReadOnlySpan<byte> ToFilterString(in GroupCache item, int globalIndex)
+        protected override ReadOnlySpan<byte> ToFilterString(in ModSettingsCache.Option item, int globalIndex)
             => item.Name;
     }
 
@@ -21,53 +20,75 @@ public sealed class SingleGroupCombo : FilterComboBase<SingleGroupCombo.GroupCac
         DirtyCacheOnClosingPopup = true;
     }
 
-    protected override FilterComboBaseCache<GroupCache> CreateCache()
+    protected override FilterComboBaseCache<ModSettingsCache.Option> CreateCache()
         => new Cache(this);
 
-    public readonly record struct GroupCache(int OptionIndex, StringU8 Name, StringU8 Description);
+    private readonly WeakReference<ModSettingsCache.ModGroupCache> _group = new(null!);
+    private          Setting                                       _currentOption;
+    private          Vector4                                       _currentColor;
 
-    private readonly WeakReference<SingleModGroup> _group = new(null!);
-    private          Setting                       _currentOption;
-
-    public void Draw(ModGroupDrawer parent, SingleModGroup group, int groupIndex, Setting currentOption)
+    public void Draw(ModGroupDrawer parent, ModSettingsCache.ModGroupCache group, Setting currentOption, float width)
     {
-        using var id = Im.Id.Push(groupIndex);
+        if (!group.IsCombo)
+            return;
+
+        using var id = Im.Id.Push(group.Group.Index);
         _currentOption = currentOption;
+        var currentValue = group.Options[currentOption.AsIndex];
+        _currentColor = currentValue.Color;
         _group.SetTarget(group);
-        if (base.Draw(StringU8.Empty, group.OptionData[currentOption.AsIndex].Name, StringU8.Empty, UiHelpers.InputTextWidth.X * 3 / 4,
-                out var newOption))
-            parent.SetModSetting(group, groupIndex, Setting.Single(newOption.OptionIndex));
+        if (base.Draw(StringU8.Empty, currentValue.Name, StringU8.Empty, width, out var newOption))
+            parent.SetModSetting(group.Group, group.Group.Index, Setting.Single(newOption.Data.Index));
     }
 
-    protected override IEnumerable<GroupCache> GetItems()
-        => _group.TryGetTarget(out var target)
-            ? target.OptionData.Select(o => new GroupCache(o.GetIndex(), new StringU8(o.Name), new StringU8(o.Description)))
-            : [];
+    protected override void PreDrawCombo(float width)
+        => ImGuiColor.Text.Push(_currentColor);
+
+    protected override void PostDrawCombo(float width)
+        => Im.ColorDisposable.PopUnsafe();
+
+    protected override IEnumerable<ModSettingsCache.Option> GetItems()
+        => _group.TryGetTarget(out var target) ? target.Options : [];
 
     protected override float ItemHeight
         => Im.Style.TextHeightWithSpacing;
 
-    protected override bool DrawItem(in GroupCache item, int globalIndex, bool selected)
+    protected override bool DrawItem(in ModSettingsCache.Option item, int globalIndex, bool selected)
     {
-        var ret = Im.Selectable(item.Name, selected);
+        bool ret;
+        using (Im.Disabled(item.Disabled))
+        {
+            using (ImGuiColor.Text.Push(item.Color))
+            {
+                ret = Im.Selectable(item.Name, selected);
+            }
+        }
+
+        if (item.Separator)
+        {
+            var right = Im.Item.LowerRightCorner;
+            Im.Window.DrawList.Shape.Line(right with { X = Im.Item.UpperLeftCorner.X }, right, ImGuiColor.Separator.Get());
+        }
+
         if (item.Description.Length > 0)
         {
             Im.Line.SameInner();
-            LunaStyle.DrawHelpMarker(item.Description, treatAsHovered: Im.Item.Hovered());
+            LunaStyle.DrawHelpMarker(item.Description, treatAsHovered: Im.Item.Hovered(HoveredFlags.AllowWhenDisabled));
         }
 
         return ret;
     }
 
-    protected override bool IsSelected(GroupCache item, int globalIndex)
-        => item.OptionIndex == _currentOption.AsIndex;
+    protected override bool IsSelected(ModSettingsCache.Option item, int globalIndex)
+        => item.Data.Index == _currentOption.AsIndex;
 
-    private sealed class Cache(SingleGroupCombo parent) : FilterComboBaseCache<GroupCache>(parent)
+    private sealed class Cache(SingleGroupCombo parent) : FilterComboBaseCache<ModSettingsCache.Option>(parent)
     {
         protected override void ComputeWidth()
         {
-            ComboWidth = AllItems.Max(i => i.Name.CalculateSize().X + (i.Description.Length > 0 ? Im.Style.FrameHeightWithSpacing : 0))
-              + 2 * Im.Style.FramePadding.X + Im.Style.ScrollbarSize;
+            ComboWidth = AllItems.Max(i => i.Width + (i.Description.Length > 0 ? Im.Style.FrameHeightWithSpacing : 0))
+              + 2 * Im.Style.FramePadding.X
+              + Im.Style.ScrollbarSize;
         }
     }
 }

@@ -1,0 +1,13 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$dynamicAnchor": "Condition",
+	"oneOf": [
+		{ "$ref": "../../Luna/schemas/and_condition.json" },
+		{ "$ref": "../../Luna/schemas/or_condition.json" },
+		{ "$ref": "../../Luna/schemas/not_condition.json" },
+		{ "$ref": "../../Luna/schemas/true_condition.json" },
+		{ "$ref": "../../Luna/schemas/false_condition.json" },
+		{ "$ref": "any_setting_condition.json" },
+		{ "$ref": "all_settings_condition.json" }
+	]
+}

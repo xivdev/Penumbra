@@ -284,6 +284,10 @@ public sealed class ResourceWatcher : IDisposable, ITab<TabType>
         if (resource is null || resource->UnkState is not 2 || resource->LoadState <= LoadState.Success)
             return;
 
+        // Exempt a deliberate failure used by EasyEyes to remove some effects.
+        if (originalPath.Path.Span.EqualsCaseSensitive("vfx/path/nothing.avfx"u8))
+            return;
+
         Penumbra.Log.Warning(
             $"Failed to {(isAsync ? "asynchronously" : "synchronously")} load resource {resource->CsHandle.FileName}, original path: {originalPath}, state: {resource->UnkState}:{resource->LoadState}");
     }

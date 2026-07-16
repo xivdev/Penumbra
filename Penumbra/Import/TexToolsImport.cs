@@ -4,9 +4,10 @@ using Penumbra.Import.Structs;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
+using SharpCompress.Archives;
+using SharpCompress.Writers.Zip;
 using FileMode = System.IO.FileMode;
 using ZipArchive = SharpCompress.Archives.Zip.ZipArchive;
-using ZipArchiveEntry = SharpCompress.Archives.Zip.ZipArchiveEntry;
 
 namespace Penumbra.Import;
 
@@ -26,8 +27,8 @@ public partial class TexToolsImporter : IDisposable
     private readonly CancellationTokenSource _cancellation = new();
     private readonly CancellationToken       _token;
 
-    public          ImporterState                                               State { get; private set; }
-    public readonly List<(FileInfo File, DirectoryInfo? Mod, Exception? Error)> ExtractedMods;
+    public          ImporterState         State { get; private set; }
+    public readonly List<ModImportResult> ExtractedMods;
 
     private readonly Configuration    _config;
     private readonly DuplicateManager _duplicates;
@@ -37,8 +38,9 @@ public partial class TexToolsImporter : IDisposable
     private readonly MigrationManager _migrationManager;
 
     public TexToolsImporter(int count, IEnumerable<FileInfo> modPackFiles, Action<FileInfo, DirectoryInfo?, Exception?> handler,
-        Configuration config, DuplicateManager duplicates, ModNormalizer modNormalizer, ModManager modManager, FileCompactor compactor,
-        MigrationManager migrationManager, TexToolsImporter? previous)
+        TaskCompletionSource<ModImportResult[]> taskCompletionSource, Configuration config, DuplicateManager duplicates,
+        ModNormalizer modNormalizer, ModManager modManager, FileCompactor compactor, MigrationManager migrationManager,
+        TexToolsImporter? previous)
     {
         if (previous is not null)
         {
@@ -58,7 +60,7 @@ public partial class TexToolsImporter : IDisposable
         _compactor        = compactor;
         _migrationManager = migrationManager;
         _modPackCount     = count + _previousModPackCount;
-        ExtractedMods     = new List<(FileInfo, DirectoryInfo?, Exception?)>(count + _previousModPackCount);
+        ExtractedMods     = new List<ModImportResult>(count + _previousModPackCount);
         _token            = _cancellation.Token;
         if (previous is not null)
             ExtractedMods.AddRange(previous.ExtractedMods);
@@ -68,7 +70,9 @@ public partial class TexToolsImporter : IDisposable
             {
                 foreach (var (file, dir, error) in ExtractedMods.Skip(_previousModPackCount))
                     handler(file, dir, error);
-            }, TaskScheduler.Default);
+            }, TaskScheduler.Default)
+            .ContinueWith(_ => { taskCompletionSource.SetResult(ExtractedMods.Skip(_previousModPackCount).ToArray()); },
+                TaskScheduler.Default);
     }
 
     private void CloseStreams()
@@ -100,14 +104,14 @@ public partial class TexToolsImporter : IDisposable
             _currentModDirectory = null;
             if (_token.IsCancellationRequested)
             {
-                ExtractedMods.Add((file, null, new TaskCanceledException("Task canceled by user.")));
+                ExtractedMods.Add(new ModImportResult(file, null, new TaskCanceledException("Task canceled by user.")));
                 continue;
             }
 
             try
             {
                 var directory = VerifyVersionAndImport(file);
-                ExtractedMods.Add((file, directory, null));
+                ExtractedMods.Add(new ModImportResult(file, directory, null));
                 if (_config.AutoDeduplicateOnImport)
                 {
                     State = ImporterState.DeduplicatingFiles;
@@ -116,7 +120,7 @@ public partial class TexToolsImporter : IDisposable
             }
             catch (Exception e)
             {
-                ExtractedMods.Add((file, _currentModDirectory, e));
+                ExtractedMods.Add(new ModImportResult(file, _currentModDirectory, e));
                 _currentNumOptions = 0;
                 _currentOptionIdx  = 0;
                 _currentFileIdx    = 0;
@@ -137,7 +141,7 @@ public partial class TexToolsImporter : IDisposable
             return HandleRegularArchive(modPackFile);
 
         using var zfs              = modPackFile.OpenRead();
-        using var extractedModPack = ZipArchive.Open(zfs);
+        using var extractedModPack = ZipArchive.OpenArchive(zfs);
 
         var mpl = FindZipEntry(extractedModPack, "TTMPL.mpl");
         if (mpl == null)
@@ -161,10 +165,10 @@ public partial class TexToolsImporter : IDisposable
     }
 
     // You can in no way rely on any file paths in TTMPs so we need to just do this, sorry
-    private static ZipArchiveEntry? FindZipEntry(ZipArchive file, string fileName)
+    private static IArchiveEntry? FindZipEntry(IWritableArchive<ZipWriterOptions> file, string fileName)
         => file.Entries.FirstOrDefault(e => e is { IsDirectory: false, Key: not null } && e.Key.Contains(fileName));
 
-    private static string GetStringFromZipEntry(ZipArchiveEntry entry, Encoding encoding)
+    private static string GetStringFromZipEntry(IArchiveEntry entry, Encoding encoding)
     {
         using var ms = new MemoryStream();
         using var s  = entry.OpenEntryStream();
@@ -184,7 +188,7 @@ public partial class TexToolsImporter : IDisposable
         _tmpFileStream = null;
     }
 
-    private StreamDisposer GetSqPackStreamStream(ZipArchive file, string entryName)
+    private StreamDisposer GetSqPackStreamStream(IWritableArchive<ZipWriterOptions> file, string entryName)
     {
         State = ImporterState.WritingPackToDisk;
 

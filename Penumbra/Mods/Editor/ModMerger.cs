@@ -95,14 +95,14 @@ public sealed class ModMerger : IDisposable, IConstructedService
                 case GroupType.Single:
                 case GroupType.Multi:
                 {
-                    var (group, groupIdx, groupCreated) = _groupEditor.FindOrAddModGroup(MergeToMod!, originalGroup.Type, originalGroup.Name);
+                    var (group, groupCreated) = _groupEditor.FindOrAddModGroup(MergeToMod!, originalGroup.Type, originalGroup.Name);
                     if (group is null)
                         throw new Exception(
                             $"The merged group {originalGroup.Name} already existed, but had a different type than the original group of type {originalGroup.Type}.");
 
                     if (groupCreated)
                     {
-                        _createdGroups.Add(groupIdx);
+                        _createdGroups.Add(group.Index);
                         group.Description     = originalGroup.Description;
                         group.Image           = originalGroup.Image;
                         group.DefaultSettings = originalGroup.DefaultSettings;
@@ -112,7 +112,7 @@ public sealed class ModMerger : IDisposable, IConstructedService
 
                     foreach (var originalOption in originalGroup.Options)
                     {
-                        var (option, _, optionCreated) = _groupEditor.FindOrAddOption(group, originalOption.Name);
+                        var (option, optionCreated) = _groupEditor.FindOrAddOption(group, originalOption.Name);
                         if (optionCreated)
                         {
                             _createdOptions.Add(option!);
@@ -220,10 +220,10 @@ public sealed class ModMerger : IDisposable, IConstructedService
             return;
         }
 
-        var (group, groupIdx, groupCreated) = _groupEditor.FindOrAddModGroup(MergeToMod!, GroupType.Multi, groupName, SaveType.None);
+        var (group, groupCreated) = _groupEditor.FindOrAddModGroup(MergeToMod!, GroupType.Multi, groupName, SaveType.None);
         if (groupCreated)
-            _createdGroups.Add(groupIdx);
-        var (option, _, optionCreated) = _groupEditor.FindOrAddOption(group!, optionName, SaveType.None);
+            _createdGroups.Add(group!.Index);
+        var (option, optionCreated) = _groupEditor.FindOrAddOption(group!, optionName, SaveType.None);
         if (optionCreated)
             _createdOptions.Add(option!);
         var dir = ModCreator.NewOptionDirectory(MergeToMod!.ModPath, groupName, _config.ReplaceNonAsciiOnImport);
@@ -362,8 +362,8 @@ public sealed class ModMerger : IDisposable, IConstructedService
                     }
                     else
                     {
-                        var (group, _, _)  = _groupEditor.FindOrAddModGroup(result, originalGroup.Type, originalGroup.Name);
-                        var (option, _, _) = _groupEditor.FindOrAddOption(group!, originalOption.GetName());
+                        var (group, _)  = _groupEditor.FindOrAddModGroup(result, originalGroup.Type, originalGroup.Name);
+                        var (option, _) = _groupEditor.FindOrAddOption(group!, originalOption.GetName());
                         var folder = Path.Combine(dir.FullName, group!.Name, option!.Name);
                         var files  = CopySubModFiles(originalOption, new DirectoryInfo(folder));
                         _groupEditor.SetFiles((IModDataContainer)option, files, SaveType.None);

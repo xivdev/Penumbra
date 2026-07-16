@@ -3,6 +3,7 @@ using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Groups;
 using Penumbra.String.Classes;
+using Penumbra.UI.Classes;
 
 namespace Penumbra.Mods.SubMods;
 
@@ -13,16 +14,23 @@ public abstract class OptionSubMod(IModGroup group) : IModOption, IModDataContai
     public Mod Mod
         => Group.Mod;
 
+    public int Index { get; private set; } = -1;
+
+    public void SetIndex(int index)
+        => Index = index;
+
     public string            Name        { get; set; } = "Option";
     public string            Description { get; set; } = string.Empty;
     public ModSettingsLayout Layout      { get; set; }
+
+    public ColorId Color     { get; set; }
 
     public ICondition<ModSettingContext>? Condition { get; set; }
 
     public string FullName
         => $"{Group.Name}: {Name}";
 
-    Mod IModOption.Mod
+    Mod IModObject.Mod
         => Mod;
 
     IMod IModDataContainer.Mod
@@ -31,7 +39,9 @@ public abstract class OptionSubMod(IModGroup group) : IModOption, IModDataContai
     IModGroup IModDataContainer.Group
         => Group;
 
-    IModGroup IModOption.Group
+    public Guid Id { get; set; } = Guid.NewGuid();
+
+    IModGroup IModObject.Group
         => Group;
 
     public Dictionary<Utf8GamePath, FullPath> Files         { get; set; } = [];
@@ -51,7 +61,7 @@ public abstract class OptionSubMod(IModGroup group) : IModOption, IModDataContai
         => FullName;
 
     public (int GroupIndex, int DataIndex) GetDataIndices()
-        => (Group.GetIndex(), GetDataIndex());
+        => (Group.Index, GetDataIndex());
 
     public int GetIndex()
         => SubMod.GetIndex(this);

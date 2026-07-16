@@ -1,7 +1,6 @@
 using Dalamud.Interface.ImGuiNotification;
 using Luna;
 using Penumbra.Files;
-using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.SubMods;
 using Penumbra.String.Classes;
@@ -130,8 +129,7 @@ public class ModNormalizer(ModManager modManager, Configuration config, SaveServ
         if (anyChanges == 0)
             return;
 
-        saveService.Save(SaveType.ImmediateSync, new ModSaveGroup(mod.Default, config.ReplaceNonAsciiOnImport));
-        saveService.SaveAllOptionGroups(mod, false, config.ReplaceNonAsciiOnImport);
+        saveService.Save(SaveType.ImmediateSync, new ModMeta(saveService, mod));
         Penumbra.Log.Information($"[UIReduplication] Saved groups after {anyChanges} changes.");
     }
 

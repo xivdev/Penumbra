@@ -64,10 +64,9 @@ public class TemporaryMod : IMod
         {
             dir = ModCreator.CreateModFolder(modManager.BasePath, collection.Identity.Name, config.ReplaceNonAsciiOnImport, true);
             var fileDir = Directory.CreateDirectory(Path.Combine(dir.FullName, "files"));
-            modManager.DataEditor.CreateMeta(dir, collection.Identity.Name, character ?? config.DefaultModAuthor,
+            var mod = modManager.DataEditor.CreateMeta(dir, collection.Identity.Name, character ?? config.DefaultModAuthor,
                 $"Mod generated from temporary collection {collection.Identity.Id} for {character ?? "Unknown Character"} with name {collection.Identity.Name}.",
                 null, null);
-            var mod        = new Mod(dir);
             var defaultMod = mod.Default;
             foreach (var (gamePath, fullPath) in collection.ResolvedFiles)
             {
@@ -95,7 +94,7 @@ public class TemporaryMod : IMod
             var manips = new MetaDictionary(collection.MetaCache);
             defaultMod.Manipulations.UnionWith(manips);
 
-            saveService.ImmediateSaveSync(new ModSaveGroup(dir, defaultMod, config.ReplaceNonAsciiOnImport));
+            saveService.ImmediateSaveSync(mod);
             modManager.AddMod(dir, false);
             Penumbra.Log.Information(
                 $"Successfully generated mod {mod.Name} at {mod.ModPath.FullName} for collection {collection.Identity.Identifier}.");

@@ -10,7 +10,7 @@ using Penumbra.UI.ModsTab.Groups;
 
 namespace Penumbra.Mods.Groups;
 
-public interface ITexToolsGroup
+public interface ITexToolsGroup : IModGroup
 {
     public IReadOnlyList<OptionSubMod> OptionData { get; }
 }
@@ -21,37 +21,13 @@ public enum GroupDrawBehaviour
     MultiSelection,
 }
 
-public readonly struct ParentSetting
-{
-    public readonly string? Group;
-    public readonly string? Option;
-
-    public static readonly ParentSetting None = new(null);
-
-    public bool IsNone
-        => Group is null;
-
-    public ParentSetting(string? group = null)
-    {
-        Group  = group;
-        Option = null;
-    }
-
-    public ParentSetting(string group, string? option = null)
-    {
-        Group  = group;
-        Option = option;
-    }
-}
-
-public interface IModGroup
+public interface IModGroup : IModObject, IIndexed
 {
     public const int MaxMultiOptions     = 32;
     public const int MaxCombiningOptions = 8;
 
-    public Mod    Mod         { get; }
-    public string Name        { get; set; }
-    public string Description { get; set; }
+    IModGroup IModObject.Group
+        => this;
 
     /// <summary> Unused in Penumbra but for better TexTools interop. </summary>
     public string Image { get; set; }
@@ -65,9 +41,13 @@ public interface IModGroup
 
     public Setting DefaultSettings { get; set; }
 
-    public ModSettingsLayout              Layout        { get; set; }
-    public ParentSetting                  ParentSetting { get; set; }
-    public ICondition<ModSettingContext>? Condition     { get; set; }
+    public IModObject? ParentSetting { get; set; }
+
+    IModObject? CycleChecker.IHasParent<IModObject>.Parent
+        => ParentSetting;
+
+    bool CycleChecker.IHasParent<IModObject>.CausesCycle(IModObject parent)
+        => ReferenceEquals(this, parent.Group);
 
     public FullPath?   FindBestMatch(Utf8GamePath gamePath);
     public IModOption? AddOption(string name, string description = "");
@@ -76,8 +56,6 @@ public interface IModGroup
     public IReadOnlyList<IModDataContainer> DataContainers { get; }
     public bool                             IsOption       { get; }
 
-    public int GetIndex();
-
     public IModGroupEditDrawer EditDrawer(ModGroupEditDrawer editDrawer);
 
     public void AddData(ModSettings settings, Setting setting, Dictionary<Utf8GamePath, FullPath> redirections, MetaDictionary manipulations);
@@ -85,8 +63,5 @@ public interface IModGroup
 
     /// <summary> Ensure that a value is valid for a group. </summary>
     public Setting FixSetting(Setting setting);
-
-    public void WriteJson(JsonTextWriter jWriter, JsonSerializer serializer, DirectoryInfo? basePath = null);
-
     public (int Redirections, int Swaps, int Manips) GetCounts();
 }

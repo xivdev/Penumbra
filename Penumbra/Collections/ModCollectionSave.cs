@@ -4,7 +4,6 @@ using Newtonsoft.Json.Linq;
 using Penumbra.Files;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Settings;
-using Penumbra.Services;
 
 namespace Penumbra.Collections;
 
@@ -29,10 +28,9 @@ internal readonly struct ModCollectionSave(ModStorage modStorage, ModCollection 
         j.WriteNumber("Version"u8, ModCollection.CurrentVersion);
         j.WriteString("Id"u8, modCollection.Identity.Identifier);
         j.WriteString("Name"u8, modCollection.Identity.Name);
-        j.WritePropertyName("Settings"u8);
 
         // Write all used and unused settings by mod directory name.
-        j.WriteStartObject();
+        j.WriteStartObject("Settings"u8);
         var list = new List<(string, ModSettings.SavedSettings)>(modCollection.Settings.Count + modCollection.Settings.Unused.Count);
         for (var i = 0; i < modCollection.Settings.Count; ++i)
         {
@@ -61,12 +59,12 @@ internal readonly struct ModCollectionSave(ModStorage modStorage, ModCollection 
         j.WriteEndObject();
     }
 
-    public static bool LoadFromFile(FileInfo file, out Guid id, out string name, out int version, out Dictionary<string, ModSettings.SavedSettings> settings,
+    public static bool LoadFromFile(string file, out Guid id, out string name, out int version, out Dictionary<string, ModSettings.SavedSettings> settings,
         out IReadOnlyList<string> inheritance)
     {
         settings    = [];
         inheritance = [];
-        if (!file.Exists)
+        if (!File.Exists(file))
         {
             Penumbra.Log.Error("Could not read collection because file does not exist.");
             name    = string.Empty;
@@ -77,7 +75,7 @@ internal readonly struct ModCollectionSave(ModStorage modStorage, ModCollection 
 
         try
         {
-            var obj = JObject.Parse(File.ReadAllText(file.FullName));
+            var obj = JObject.Parse(File.ReadAllText(file));
             version = obj["Version"]?.ToObject<int>() ?? 0;
             name    = obj[nameof(ModCollectionIdentity.Name)]?.ToObject<string>() ?? string.Empty;
             id      = obj[nameof(ModCollectionIdentity.Id)]?.ToObject<Guid>() ?? (version is 1 ? Guid.NewGuid() : Guid.Empty);

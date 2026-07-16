@@ -107,7 +107,7 @@ public readonly record struct MaterialInfo(ObjectIndex ObjectIndex, DrawObjectTy
             DrawObjectType.Character => address.Model,
             DrawObjectType.Mainhand  => address.AsCharacter->DrawData.Weapon(DrawDataContainer.WeaponSlot.MainHand).DrawObject,
             DrawObjectType.Offhand   => address.AsCharacter->DrawData.Weapon(DrawDataContainer.WeaponSlot.OffHand).DrawObject,
-            DrawObjectType.Vfx       => address.AsCharacter->DrawData.Weapon(DrawDataContainer.WeaponSlot.Unk).DrawObject,
+            DrawObjectType.Vfx       => address.AsCharacter->DrawData.Weapon(DrawDataContainer.WeaponSlot.System).DrawObject,
             _                        => Model.Null,
         };
     }

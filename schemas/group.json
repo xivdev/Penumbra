@@ -17,7 +17,7 @@
         },
         "Image": {
             "description": "Relative path to a preview image for the group. Unused by Penumbra, present for round-trip import/export of TexTools-generated mods.",
-            "type": ["string", "null" ]
+            "type": [ "string", "null" ]
         },
         "Page": {
             "description": "TexTools page of the group. Unused by Penumbra, present for round-trip import/export of TexTools-generated mods.",
@@ -34,6 +34,24 @@
         "DefaultSettings": {
             "description": "Default configuration for the group.",
             "type": "integer"
+        },
+        "Id": {
+            "description": "A unique identifier to reference this group within this mod.",
+            "type": "string",
+            "format": "uuid"
+        },
+        "Layout": {
+            "description": "Additional flags to control this groups layout behaviour when drawn.",
+            "type": [ "null", "array" ],
+            "items": {
+                "type": "string",
+                "enum": [ "Disable", "Indent", "ParentHeader" ]
+            }
+        },
+        "Condition": {
+            "description": "Conditions on the full settings of this mod to control whether this group is visible and applied.",
+            "type": [ "null", "object" ],
+            "$ref": "structs/condition.json"
         }
     },
     "required": [

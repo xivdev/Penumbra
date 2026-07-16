@@ -1,7 +1,4 @@
-using Dalamud.Interface.ImGuiNotification;
 using Luna;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Data;
 using Penumbra.Meta.Manipulations;
@@ -22,18 +19,24 @@ public sealed class CombiningModGroup : IModGroup
     public GroupDrawBehaviour Behaviour
         => GroupDrawBehaviour.MultiSelection;
 
-    public          Mod                            Mod             { get; }
-    public          string                         Name            { get; set; } = "Group";
-    public          string                         Description     { get; set; } = string.Empty;
-    public          string                         Image           { get; set; } = string.Empty;
-    public          ModPriority                    Priority        { get; set; }
-    public          int                            Page            { get; set; }
-    public          Setting                        DefaultSettings { get; set; }
-    public          ModSettingsLayout              Layout          { get; set; }
-    public          ParentSetting                  ParentSetting   { get; set; } = ParentSetting.None;
-    public          ICondition<ModSettingContext>? Condition       { get; set; }
-    public readonly List<CombiningSubMod>          OptionData = [];
-    public          List<CombinedDataContainer>    Data { get; private set; }
+    public int Index { get; private set; } = -1;
+
+    public void SetIndex(int index)
+        => Index = index;
+
+    public          Mod                              Mod             { get; }
+    public          Guid                             Id              { get; set; } = Guid.NewGuid();
+    public          string                           Name            { get; set; } = "Group";
+    public          string                           Description     { get; set; } = string.Empty;
+    public          string                           Image           { get; set; } = string.Empty;
+    public          ModPriority                      Priority        { get; set; }
+    public          int                              Page            { get; set; }
+    public          Setting                          DefaultSettings { get; set; }
+    public          ModSettingsLayout                Layout          { get; set; }
+    public          IModObject?                      ParentSetting   { get; set; }
+    public          ICondition<ModSettingContext>?   Condition       { get; set; }
+    public readonly IndexList<CombiningSubMod>       OptionData = [];
+    public          IndexList<CombinedDataContainer> Data { get; private set; }
 
     /// <summary> Groups that allow all available options to be selected at once. </summary>
     public CombiningModGroup(Mod mod)
@@ -62,10 +65,6 @@ public sealed class CombiningModGroup : IModGroup
 
     public IModOption? AddOption(string name, string description = "")
     {
-        var groupIdx = Mod.Groups.IndexOf(this);
-        if (groupIdx < 0)
-            return null;
-
         var subMod = new CombiningSubMod(this)
         {
             Name        = name,
@@ -75,62 +74,6 @@ public sealed class CombiningModGroup : IModGroup
             ? subMod
             : null;
     }
-
-    public static CombiningModGroup? Load(Mod mod, JObject json)
-    {
-        var ret = new CombiningModGroup(mod, true);
-        if (!ModSaveGroup.ReadJsonBase(json, ret))
-            return null;
-
-        var options = json["Options"];
-        if (options != null)
-            foreach (var child in options.Children())
-            {
-                if (ret.OptionData.Count == IModGroup.MaxCombiningOptions)
-                {
-                    Penumbra.Messager.NotificationMessage(
-                        $"Combining Group {ret.Name} in {mod.Name} has more than {IModGroup.MaxCombiningOptions} options, ignoring excessive options.",
-                        NotificationType.Warning);
-                    break;
-                }
-
-                var subMod = new CombiningSubMod(ret, child);
-                ret.OptionData.Add(subMod);
-            }
-
-        var requiredContainers = 1 << ret.OptionData.Count;
-        var containers         = json["Containers"];
-        if (containers != null)
-            foreach (var child in containers.Children())
-            {
-                if (requiredContainers <= ret.Data.Count)
-                {
-                    Penumbra.Messager.NotificationMessage(
-                        $"Combining Group {ret.Name} in {mod.Name} has more data containers than it can support with {ret.OptionData.Count} options, ignoring excessive containers.",
-                        NotificationType.Warning);
-                    break;
-                }
-
-                var container = new CombinedDataContainer(ret, child);
-                ret.Data.Add(container);
-            }
-
-        if (requiredContainers > ret.Data.Count)
-        {
-            Penumbra.Messager.NotificationMessage(
-                $"Combining Group {ret.Name} in {mod.Name} has not enough data containers for its {ret.OptionData.Count} options, filling with empty containers.",
-                NotificationType.Warning);
-            ret.Data.EnsureCapacity(requiredContainers);
-            ret.Data.AddRange(Enumerable.Repeat(0, requiredContainers - ret.Data.Count).Select(_ => new CombinedDataContainer(ret)));
-        }
-
-        ret.DefaultSettings = ret.FixSetting(ret.DefaultSettings);
-
-        return ret;
-    }
-
-    public int GetIndex()
-        => ModGroup.GetIndex(this);
 
     public IModGroupEditDrawer EditDrawer(ModGroupEditDrawer editDrawer)
         => new CombiningModGroupEditDrawer(editDrawer, this);
@@ -164,38 +107,6 @@ public sealed class CombiningModGroup : IModGroup
             identifier.AddChangedItems(container, changedItems);
     }
 
-    public void WriteJson(JsonTextWriter jWriter, JsonSerializer serializer, DirectoryInfo? basePath = null)
-    {
-        ModSaveGroup.WriteJsonBase(jWriter, this);
-        jWriter.WritePropertyName("Options");
-        jWriter.WriteStartArray();
-        foreach (var option in OptionData)
-        {
-            jWriter.WriteStartObject();
-            SubMod.WriteModOption(jWriter, option);
-            jWriter.WriteEndObject();
-        }
-
-        jWriter.WriteEndArray();
-
-        jWriter.WritePropertyName("Containers");
-        jWriter.WriteStartArray();
-        foreach (var container in Data)
-        {
-            jWriter.WriteStartObject();
-            if (container.Name.Length > 0)
-            {
-                jWriter.WritePropertyName("Name");
-                jWriter.WriteValue(container.Name);
-            }
-
-            SubMod.WriteModContainer(jWriter, serializer, container, basePath ?? Mod.ModPath);
-            jWriter.WriteEndObject();
-        }
-
-        jWriter.WriteEndArray();
-    }
-
     public (int Redirections, int Swaps, int Manips) GetCounts()
         => ModGroup.GetCountsBase(this);
 
@@ -210,6 +121,9 @@ public sealed class CombiningModGroup : IModGroup
         };
 
     /// <summary> For loading when no empty container should be created. </summary>
+    internal static CombiningModGroup EmptyData(Mod mod)
+        => new(mod, false);
+
     private CombiningModGroup(Mod mod, bool _)
     {
         Mod  = mod;

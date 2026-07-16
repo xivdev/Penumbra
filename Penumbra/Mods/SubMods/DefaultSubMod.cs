@@ -1,3 +1,4 @@
+using Luna;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Groups;
@@ -10,6 +11,12 @@ public class DefaultSubMod(IMod mod) : IModDataContainer
     public const string FullName = "Default Option";
 
     internal readonly IMod Mod = mod;
+
+    int IIndexed.Index
+        => -1;
+
+    void IIndexed.SetIndex(int _)
+    { }
 
     public Dictionary<Utf8GamePath, FullPath> Files         { get; set; } = [];
     public Dictionary<Utf8GamePath, FullPath> FileSwaps     { get; set; } = [];

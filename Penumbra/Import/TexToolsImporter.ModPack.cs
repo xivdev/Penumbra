@@ -7,7 +7,8 @@ using Penumbra.Mods.Groups;
 using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
 using Penumbra.Util;
-using ZipArchive = SharpCompress.Archives.Zip.ZipArchive;
+using SharpCompress.Archives;
+using SharpCompress.Writers.Zip;
 
 namespace Penumbra.Import;
 
@@ -16,7 +17,7 @@ public partial class TexToolsImporter
     private DirectoryInfo? _currentModDirectory;
 
     // Version 1 mod packs are a simple collection of files without much information.
-    private DirectoryInfo ImportV1ModPack(FileInfo modPackFile, ZipArchive extractedModPack, string modRaw)
+    private DirectoryInfo ImportV1ModPack(FileInfo modPackFile, IWritableArchive<ZipWriterOptions> extractedModPack, string modRaw)
     {
         _currentOptionIdx  = 0;
         _currentNumOptions = 1;
@@ -41,19 +42,19 @@ public partial class TexToolsImporter
         _currentModDirectory = ModCreator.CreateModFolder(_baseDirectory, Path.GetFileNameWithoutExtension(modPackFile.Name),
             _config.ReplaceNonAsciiOnImport, true);
         // Create a new ModMeta from the TTMP mod list info
-        _modManager.DataEditor.CreateMeta(_currentModDirectory, _currentModName, DefaultTexToolsData.Author, DefaultTexToolsData.Description,
+        var mod = _modManager.DataEditor.CreateMeta(_currentModDirectory, _currentModName, DefaultTexToolsData.Author, DefaultTexToolsData.Description,
             null, null);
 
         // Open the mod data file from the mod pack as a SqPackStream
         _streamDisposer = GetSqPackStreamStream(extractedModPack, "TTMPD.mpd");
         ExtractSimpleModList(_currentModDirectory, modList);
-        _modManager.Creator.CreateDefaultFiles(_currentModDirectory);
+        _modManager.Creator.CreateDefaultFiles(mod);
         ResetStreamDisposer();
         return _currentModDirectory;
     }
 
     // Version 2 mod packs can either be simple or extended, import accordingly.
-    private DirectoryInfo ImportV2ModPack(FileInfo _, ZipArchive extractedModPack, string modRaw)
+    private DirectoryInfo ImportV2ModPack(FileInfo _, IWritableArchive<ZipWriterOptions> extractedModPack, string modRaw)
     {
         var modList = JsonConvert.DeserializeObject<SimpleModPack>(modRaw, JsonSettings)!;
 
@@ -83,7 +84,7 @@ public partial class TexToolsImporter
     }
 
     // Simple V2 mod packs are basically the same as V1 mod packs.
-    private DirectoryInfo ImportSimpleV2ModPack(ZipArchive extractedModPack, SimpleModPack modList)
+    private DirectoryInfo ImportSimpleV2ModPack(IWritableArchive<ZipWriterOptions> extractedModPack, SimpleModPack modList)
     {
         _currentOptionIdx  = 0;
         _currentNumOptions = 1;
@@ -93,14 +94,14 @@ public partial class TexToolsImporter
         Penumbra.Log.Information("    -> Importing Simple V2 ModPack");
 
         _currentModDirectory = ModCreator.CreateModFolder(_baseDirectory, _currentModName, _config.ReplaceNonAsciiOnImport, true);
-        _modManager.DataEditor.CreateMeta(_currentModDirectory, _currentModName, modList.Author, string.IsNullOrEmpty(modList.Description)
+        var mod = _modManager.DataEditor.CreateMeta(_currentModDirectory, _currentModName, modList.Author, string.IsNullOrEmpty(modList.Description)
             ? "Mod imported from TexTools mod pack"
             : modList.Description, modList.Version, modList.Url);
 
         // Open the mod data file from the mod pack as a SqPackStream
         _streamDisposer = GetSqPackStreamStream(extractedModPack, "TTMPD.mpd");
         ExtractSimpleModList(_currentModDirectory, modList.SimpleModsList);
-        _modManager.Creator.CreateDefaultFiles(_currentModDirectory);
+        _modManager.Creator.CreateDefaultFiles(mod);
         ResetStreamDisposer();
         return _currentModDirectory;
     }
@@ -126,7 +127,7 @@ public partial class TexToolsImporter
     }
 
     // Extended V2 mod packs contain multiple options that need to be handled separately.
-    private DirectoryInfo ImportExtendedV2ModPack(ZipArchive extractedModPack, string modRaw)
+    private DirectoryInfo ImportExtendedV2ModPack(IWritableArchive<ZipWriterOptions> extractedModPack, string modRaw)
     {
         _currentOptionIdx = 0;
         Penumbra.Log.Information("    -> Importing Extended V2 ModPack");
@@ -136,10 +137,10 @@ public partial class TexToolsImporter
         _currentModName    = modList.Name;
 
         _currentModDirectory = ModCreator.CreateModFolder(_baseDirectory, _currentModName, _config.ReplaceNonAsciiOnImport, true);
-        _modManager.DataEditor.CreateMeta(_currentModDirectory, _currentModName, modList.Author, modList.Description, modList.Version,
+        var mod = _modManager.DataEditor.CreateMeta(_currentModDirectory, _currentModName, modList.Author, modList.Description, modList.Version,
             modList.Url);
 
-        if (_currentNumOptions == 0)
+        if (_currentNumOptions is 0)
             return _currentModDirectory;
 
         // Open the mod data file from the mod pack as a SqPackStream
@@ -155,7 +156,6 @@ public partial class TexToolsImporter
         }
 
         // Iterate through all pages
-        var options       = new List<MultiSubMod>();
         var groupPriority = ModPriority.Default;
         var groupNames    = new HashSet<string>();
         foreach (var page in modList.ModPackPages)
@@ -163,7 +163,7 @@ public partial class TexToolsImporter
             foreach (var group in page.ModGroups.Where(group => group.GroupName.Length > 0 && group.OptionList.Length > 0))
             {
                 var allOptions = group.OptionList.Where(option => option.Name.Length > 0 && option.ModsJsons.Length > 0).ToList();
-                var (numGroups, maxOptions) = group.SelectionType == GroupType.Single
+                var (numGroups, maxOptions) = group.SelectionType is GroupType.Single
                     ? (1, allOptions.Count)
                     : (1 + allOptions.Count / IModGroup.MaxMultiOptions, IModGroup.MaxMultiOptions);
                 _currentGroupName = GetGroupName(group.GroupName, groupNames);
@@ -171,13 +171,17 @@ public partial class TexToolsImporter
                 var optionIdx = 0;
                 for (var groupId = 0; groupId < numGroups; ++groupId)
                 {
-                    var name = numGroups == 1 ? _currentGroupName : $"{_currentGroupName}, Part {groupId + 1}";
-                    options.Clear();
-                    var groupFolder = ModCreator.NewSubFolderName(_currentModDirectory, name, _config.ReplaceNonAsciiOnImport)
-                     ?? new DirectoryInfo(Path.Combine(_currentModDirectory.FullName,
-                            numGroups == 1 ? $"Group {groupPriority + 1}" : $"Group {groupPriority + 1}, Part {groupId + 1}"));
+                    ITexToolsGroup groupData = group.SelectionType is GroupType.Single ? new SingleModGroup(mod) : new MultiModGroup(mod);
+                    mod.Groups.Add(groupData);
+                    groupData.Name        = numGroups is 1 ? _currentGroupName : $"{_currentGroupName}, Part {groupId + 1}";
+                    groupData.Description = group.Description;
+                    groupData.Priority    = groupPriority;
 
-                    Setting? defaultSettings = group.SelectionType == GroupType.Multi ? Setting.Zero : null;
+                    var groupFolder = ModCreator.NewSubFolderName(_currentModDirectory, groupData.Name, _config.ReplaceNonAsciiOnImport)
+                     ?? new DirectoryInfo(Path.Combine(_currentModDirectory.FullName,
+                            numGroups is 1 ? $"Group {groupPriority + 1}" : $"Group {groupPriority + 1}, Part {groupId + 1}"));
+
+                    Setting? defaultSettings = group.SelectionType is GroupType.Multi ? Setting.Zero : null;
                     for (var i = 0; i + optionIdx < allOptions.Count && i < maxOptions; ++i)
                     {
                         var option = allOptions[i + optionIdx];
@@ -186,9 +190,9 @@ public partial class TexToolsImporter
                         var optionFolder = ModCreator.NewSubFolderName(groupFolder, option.Name, _config.ReplaceNonAsciiOnImport)
                          ?? new DirectoryInfo(Path.Combine(groupFolder.FullName, $"Option {i + optionIdx + 1}"));
                         ExtractSimpleModList(optionFolder, option.ModsJsons);
-                        options.Add(_modManager.Creator.CreateSubMod(_currentModDirectory, optionFolder, option, new ModPriority(i)));
+                        _modManager.Creator.CreateSubMod(groupData, _currentModDirectory, optionFolder, option, new ModPriority(i));
                         if (option.IsChecked)
-                            defaultSettings = group.SelectionType == GroupType.Multi
+                            defaultSettings = group.SelectionType is GroupType.Multi
                                 ? defaultSettings!.Value | Setting.Multi(i)
                                 : Setting.Single(i);
 
@@ -199,29 +203,32 @@ public partial class TexToolsImporter
 
                     // Handle empty options for single select groups without creating a folder for them.
                     // We only want one of those at most.
-                    if (group.SelectionType == GroupType.Single)
+                    if (groupData is SingleModGroup singleGroup)
                     {
-                        var idx = group.OptionList.IndexOf(o => o.Name.Length > 0 && o.ModsJsons.Length == 0);
+                        var idx = group.OptionList.IndexOf(o => o.Name.Length > 0 && o.ModsJsons.Length is 0);
                         if (idx >= 0)
                         {
                             var option = group.OptionList[idx];
                             _currentOptionName = option.Name;
-                            options.Insert(idx, MultiSubMod.WithoutGroup(option.Name, option.Description, ModPriority.Default));
+                            singleGroup.OptionData.Insert(idx, new SingleSubMod(singleGroup)
+                            {
+                                Name        = option.Name,
+                                Description = option.Description,
+                            });
                             if (option.IsChecked)
                                 defaultSettings = Setting.Single(idx);
                             ++_currentOptionIdx;
                         }
                     }
 
-                    _modManager.Creator.CreateOptionGroup(_currentModDirectory, group.SelectionType, name, groupPriority, groupPriority.Value,
-                        defaultSettings ?? Setting.Zero, group.Description, options);
-                    groupPriority += 1;
+                    groupData.DefaultSettings =  defaultSettings ?? Setting.Zero;
+                    groupPriority             += 1;
                 }
             }
         }
 
         ResetStreamDisposer();
-        _modManager.Creator.CreateDefaultFiles(_currentModDirectory);
+        _modManager.Creator.CreateDefaultFiles(mod);
         return _currentModDirectory;
     }
 
@@ -251,7 +258,7 @@ public partial class TexToolsImporter
         var data = stream.ReadFile<PenumbraSqPackStream.PenumbraFileResource>(mod.ModOffset);
 
         _currentFileName = mod.FullPath;
-        var extractedFile = new FileInfo(Path.Combine(outDirectory.FullName, mod.FullPath));
+        var extractedFile = new FileInfo(Path.CombineSafely(outDirectory.FullName, mod.FullPath));
 
         extractedFile.Directory?.Create();
 

@@ -1,7 +1,8 @@
 using Luna;
 using Penumbra.Mods;
-using Penumbra.Mods.Groups;
+using Penumbra.Mods.SubMods;
 using Penumbra.Services;
+using TerraFX.Interop.Windows;
 
 namespace Penumbra.Files;
 
@@ -19,30 +20,51 @@ public sealed class SaveService : BaseSaveService<FilenameService>, IService
         BackupMode = BackupMode.SingleBackup;
     }
 
-    /// <summary> Immediately delete all existing option group files for a mod and save them anew. </summary>
-    public void SaveAllOptionGroups(Mod mod, bool backup, bool onlyAscii)
-    {
-        foreach (var file in FileNames.GetOptionGroupFiles(mod))
-        {
-            try
-            {
-                if (file.Exists)
-                    if (backup)
-                        file.MoveTo(file.FullName + ".bak", true);
-                    else
-                        file.Delete();
-            }
-            catch (Exception e)
-            {
-                Log.Error($"Could not {(backup ? "move" : "delete")} outdated group file {file}:\n{e}");
-            }
-        }
+    [OverloadResolutionPriority(100)]
+    public void Save(SaveType type, Mod mod)
+        => Save(type, new ModMeta(this, mod));
 
-        if (mod.Groups.Count > 0)
-        {
-            foreach (var group in mod.Groups.SkipLast(1))
-                ImmediateSave(new ModSaveGroup(group, onlyAscii));
-            ImmediateSaveSync(new ModSaveGroup(mod.Groups[^1], onlyAscii));
-        }
-    }
+    [OverloadResolutionPriority(100)]
+    public void ImmediateSaveSync(Mod mod)
+        => ImmediateSaveSync(new ModMeta(this, mod));
+
+    [OverloadResolutionPriority(100)]
+    public void QueueSave(Mod mod)
+        => QueueSave(new ModMeta(this, mod));
+
+    [OverloadResolutionPriority(100)]
+    public void ImmediateSave(Mod mod)
+        => ImmediateSave(new ModMeta(this, mod));
+
+    [OverloadResolutionPriority(10)]
+    public void Save(SaveType type, IModObject obj)
+        => Save(type, new ModMeta(this, obj.Mod));
+
+    [OverloadResolutionPriority(10)]
+    public void ImmediateSaveSync(IModObject obj)
+        => ImmediateSaveSync(new ModMeta(this, obj.Mod));
+
+    [OverloadResolutionPriority(10)]
+    public void QueueSave(IModObject obj)
+        => QueueSave(new ModMeta(this, obj.Mod));
+
+    [OverloadResolutionPriority(10)]
+    public void ImmediateSave(IModObject obj)
+        => ImmediateSave(new ModMeta(this, obj.Mod));
+
+    public void Save(SaveType type, IModDataContainer container)
+        => Save(type, new ModMeta(this, container.Mod as Mod ?? ContainerThrowHelper()));
+
+    public void ImmediateSaveSync(IModDataContainer container)
+        => ImmediateSaveSync(new ModMeta(this, container.Mod as Mod ?? ContainerThrowHelper()));
+
+    public void QueueSave(IModDataContainer container)
+        => QueueSave(new ModMeta(this, container.Mod as Mod ?? ContainerThrowHelper()));
+
+    public void ImmediateSave(IModDataContainer container)
+        => ImmediateSave(new ModMeta(this, container.Mod as Mod ?? ContainerThrowHelper()));
+
+    [DoesNotReturn]
+    private static Mod ContainerThrowHelper()
+        => throw new ArgumentException("Can not save containers that do not actually belong to a mod.");
 }

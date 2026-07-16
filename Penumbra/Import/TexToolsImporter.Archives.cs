@@ -8,19 +8,12 @@ using Penumbra.Util;
 using SharpCompress.Archives;
 using SharpCompress.Archives.Rar;
 using SharpCompress.Archives.SevenZip;
-using SharpCompress.Common;
 using ZipArchive = SharpCompress.Archives.Zip.ZipArchive;
 
 namespace Penumbra.Import;
 
 public partial class TexToolsImporter
 {
-    private static readonly ExtractionOptions ExtractionOptions = new()
-    {
-        ExtractFullPath = true,
-        Overwrite       = true,
-    };
-
     /// <summary>
     /// Extract regular compressed archives that are folders containing penumbra-formatted mods.
     /// The mod has to either contain a meta.json at top level, or one folder deep.
@@ -31,7 +24,7 @@ public partial class TexToolsImporter
     private DirectoryInfo HandleRegularArchive(FileInfo modPackFile)
     {
         using var zfs     = modPackFile.OpenRead();
-        using var archive = ArchiveFactory.Open(zfs);
+        using var archive = ArchiveFactory.OpenArchive(zfs);
 
         var baseName = FindArchiveModMeta(archive, out var leadDir);
         var name     = string.Empty;
@@ -40,18 +33,16 @@ public partial class TexToolsImporter
         _currentModName    = modPackFile.Name;
         _currentGroupName  = string.Empty;
         _currentOptionName = DefaultTexToolsData.Name;
-        _currentNumFiles =
-            archive switch
-            {
-                RarArchive r      => r.Entries.Count,
-                ZipArchive z      => z.Entries.Count,
-                SevenZipArchive s => s.Entries.Count,
-                _                 => archive.Entries.Count(),
-            };
+        _currentNumFiles = archive switch
+        {
+            RarArchive r      => r.Entries.Count,
+            ZipArchive z      => z.Entries.Count,
+            SevenZipArchive s => s.Entries.Count,
+            _                 => archive.Entries.Count(),
+        };
         Penumbra.Log.Information($"    -> Importing {archive.Type} Archive.");
 
         _currentModDirectory = ModCreator.CreateModFolder(_baseDirectory, Path.GetRandomFileName(), _config.ReplaceNonAsciiOnImport, true);
-
 
         State           = ImporterState.ExtractingModFiles;
         _currentFileIdx = 0;
@@ -59,15 +50,18 @@ public partial class TexToolsImporter
         {
             _token.ThrowIfCancellationRequested();
 
-            if (reader.Entry.IsDirectory)
+            if (reader.Entry.IsDirectory || string.IsNullOrEmpty(reader.Entry.Key))
             {
                 --_currentNumFiles;
                 return;
             }
 
+            if (!string.IsNullOrEmpty(reader.Entry.LinkTarget))
+                throw new ArchiveUtility.SymbolicLinkException(reader.Entry.Key, reader.Entry.LinkTarget);
+
             Penumbra.Log.Information($"        -> Extracting {reader.Entry.Key}");
             // Check that the mod has a valid name in the meta.json file.
-            if (Path.GetFileName(reader.Entry.Key) == "meta.json")
+            if (Path.GetFileName(reader.Entry.Key.AsSpan()).Equals("meta.json", StringComparison.OrdinalIgnoreCase))
             {
                 using var s = new MemoryStream();
                 using var e = reader.OpenEntryStream();
@@ -80,7 +74,7 @@ public partial class TexToolsImporter
                 if (name.Length is 0)
                     throw new Exception("Invalid mod archive: mod meta has no name.");
 
-                using var f = File.OpenWrite(Path.Combine(_currentModDirectory.FullName, reader.Entry.Key!));
+                using var f = File.OpenWrite(Path.CombineSafely(_currentModDirectory.FullName, reader.Entry.Key!));
                 s.Seek(0, SeekOrigin.Begin);
                 s.WriteTo(f);
             }
@@ -105,7 +99,7 @@ public partial class TexToolsImporter
                 if (leadDir)
                 {
                     _currentModDirectory = ModCreator.CreateModFolder(_baseDirectory, baseName, _config.ReplaceNonAsciiOnImport, false);
-                    Directory.Move(Path.Combine(oldName, baseName), _currentModDirectory.FullName);
+                    Directory.Move(Path.CombineSafely(oldName, baseName), _currentModDirectory.FullName);
                     Directory.Delete(oldName);
                 }
                 else
@@ -138,18 +132,10 @@ public partial class TexToolsImporter
     {
         switch (Path.GetExtension(reader.Entry.Key))
         {
-            case ".mdl":
-                _migrationManager.MigrateMdlDuringExtraction(reader, _currentModDirectory!.FullName);
-                break;
-            case ".mtrl":
-                _migrationManager.MigrateMtrlDuringExtraction(reader, _currentModDirectory!.FullName);
-                break;
-            case ".tex":
-                _migrationManager.FixMipMaps(reader, _currentModDirectory!.FullName);
-                break;
-            default:
-                reader.WriteEntryToDirectory(_currentModDirectory!.FullName);
-                break;
+            case ".mdl":  _migrationManager.MigrateMdlDuringExtraction(reader, _currentModDirectory!.FullName); break;
+            case ".mtrl": _migrationManager.MigrateMtrlDuringExtraction(reader, _currentModDirectory!.FullName); break;
+            case ".tex":  _migrationManager.FixMipMaps(reader, _currentModDirectory!.FullName); break;
+            default:      reader.WriteEntryToDirectory(_currentModDirectory!.FullName); break;
         }
     }
 

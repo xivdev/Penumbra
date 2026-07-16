@@ -17,6 +17,8 @@ public sealed partial class EphemeralConfig : ISavable, IService
     [JsonIgnore]
     private readonly SaveService _saveService;
 
+    private bool _init;
+
     public int                 Version             { get; set; } = Configuration.Constants.CurrentVersion;
     public int                 LastSeenVersion     { get; set; } = PenumbraChangelog.LastChangelogVersion;
     public bool                DebugSeparateWindow { get; set; } = false;
@@ -59,6 +61,7 @@ public sealed partial class EphemeralConfig : ISavable, IService
         try
         {
             var text = File.ReadAllText(_saveService.FileNames.EphemeralConfigFile);
+            _init = true;
             JsonConvert.PopulateObject(text, this, new JsonSerializerSettings
             {
                 Error = HandleDeserializationError,
@@ -70,11 +73,16 @@ public sealed partial class EphemeralConfig : ISavable, IService
                 "Error reading ephemeral Configuration, reverting to default.",
                 "Error reading ephemeral Configuration", NotificationType.Error);
         }
+
+        _init = false;
     }
 
     /// <summary> Save the current configuration. </summary>
     public void Save()
-        => _saveService.DelaySave(this, TimeSpan.FromSeconds(5));
+    {
+        if (!_init)
+            _saveService.DelaySave(this, TimeSpan.FromSeconds(5));
+    }
 
 
     public string ToFilePath(FilenameService fileNames)
@@ -82,7 +90,7 @@ public sealed partial class EphemeralConfig : ISavable, IService
 
     public void Save(Stream stream)
     {
-        using var writer  = new StreamWriter(stream);
+        using var writer  = new StreamWriter(stream, leaveOpen: true);
         using var jWriter = new JsonTextWriter(writer);
         jWriter.Formatting = Formatting.Indented;
         var serializer = new JsonSerializer { Formatting = Formatting.Indented };
