@@ -1,6 +1,5 @@
 using ImSharp;
 using Luna;
-using Penumbra.Mods;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager.OptionEditor;
 using Penumbra.Mods.Settings;
@@ -28,17 +27,14 @@ public sealed class ConditionEditPopup(ModGroupEditor editor, CommunicatorServic
             () => new ModGroupConditionCache(communicator, new ModSettingContext(obj.Mod, ModSettings.Empty, obj)));
         if (cache.Draw())
             editor.SetCondition(obj, obj.Condition?.Reduce(), true);
-        //ImNodes.Tester.Show("editor"u8);
-
-        //Im.ScaledDummy(640);
-        //Im.Cursor.Position = cursor;
-        //if (drawer.Draw(obj.Condition, new ModSettingContext(obj.Mod, ModSettings.Empty, obj), out var newCondition))
-        //    obj.Condition = newCondition;
     }
+
+    protected override Im.PopupDisposable Begin()
+        => Im.Popup.BeginResizable(PopupId);
 
     protected override void PrePopup()
     {
-        Im.Window.SetNextSize(ImEx.ScaledVector(640, 640));
+        Im.Window.SetNextSizeConstraints(ImEx.ScaledVector(640, 640), Vector2.PositiveInfinity);
         ImStyleDouble.WindowPadding.Push(Vector2.Zero);
     }
 

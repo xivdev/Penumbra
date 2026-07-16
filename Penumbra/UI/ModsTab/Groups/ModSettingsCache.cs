@@ -119,6 +119,7 @@ public sealed class ModSettingsCache : BasicCache
 
         NormalizePages();
         NormalizeCollapsible();
+        ComputeExtent();
     }
 
     private Page SetupPage(Mod mod, int pageNumber)
@@ -151,32 +152,6 @@ public sealed class ModSettingsCache : BasicCache
 
             if (page.Groups.Count is 0)
                 --ActivePages;
-
-            page.WidestCombo = 100 * Im.Style.GlobalScale;
-            page.WidestLabel = 0;
-            foreach (var group in page.Groups)
-            {
-                if (group.IsCombo && group.ComboWidth > page.WidestCombo)
-                    page.WidestCombo = group.ComboWidth;
-
-                CheckExtend(group, 0);
-            }
-            continue;
-
-            void CheckExtend(ModGroupCache cache, int indentation)
-            {
-                if (cache.Indented)
-                    ++indentation;
-
-                var extend = cache.NameWidth + indentation * Indentation + 2 * Im.Style.FramePadding.X;
-                if (cache.Collapsible)
-                    extend += Im.Style.TextHeight + Im.Style.ItemInnerSpacing.X;
-                if (extend > page.WidestLabel)
-                    page.WidestLabel = extend;
-
-                foreach (var child in cache.Children.Concat(cache.Options.SelectMany(o => o.Children)))
-                    CheckExtend(child, indentation);
-            }
         }
     }
 
@@ -192,6 +167,42 @@ public sealed class ModSettingsCache : BasicCache
         {
             if (group is { IsCombo: true, Children.Count: 0 })
                 group.Collapsible = false;
+        }
+    }
+
+    private void ComputeExtent()
+    {
+        foreach (var page in Pages.Values)
+        {
+            page.WidestCombo = 100 * Im.Style.GlobalScale;
+            page.WidestLabel = 0;
+            foreach (var group in page.Groups)
+            {
+                if (group.IsCombo && group.ComboWidth > page.WidestCombo)
+                    page.WidestCombo = group.ComboWidth;
+
+                CheckExtend(group, 0);
+            }
+
+            continue;
+
+            void CheckExtend(ModGroupCache cache, int indentation)
+            {
+                if (cache.Indented)
+                    ++indentation;
+
+                if (!cache.HideHeader)
+                {
+                    var extend = cache.NameWidth + indentation * Indentation + 2 * Im.Style.FramePadding.X;
+                    if (cache.Collapsible)
+                        extend += Im.Style.TextHeight + Im.Style.ItemInnerSpacing.X;
+                    if (extend > page.WidestLabel)
+                        page.WidestLabel = extend;
+                }
+
+                foreach (var child in cache.Children.Concat(cache.Options.SelectMany(o => o.Children)))
+                    CheckExtend(child, indentation);
+            }
         }
     }
 
