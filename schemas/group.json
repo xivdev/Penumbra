@@ -45,7 +45,7 @@
             "type": [ "null", "array" ],
             "items": {
                 "type": "string",
-                "enum": [ "Disable", "Indent", "ParentHeader" ]
+                "enum": [ "Disable", "Indent", "ParentHeader", "DefaultClosed" ]
             }
         },
         "Condition": {
