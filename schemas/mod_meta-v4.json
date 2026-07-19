@@ -68,7 +68,7 @@
             "type": "array",
             "items": {
                 "type": "string",
-                "enum": [ "Atch", "Shp", "Atr" ]
+                "enum": [ "Atch", "Shp", "Atr", "Layout" ]
             },
             "uniqueItems": true
         },

@@ -20,6 +20,7 @@ public enum FeatureFlags : ulong
     Atch    = 1ul << 0,
     Shp     = 1ul << 1,
     Atr     = 1ul << 2,
+    Layout  = 1ul << 3,
     Invalid = 1ul << 62,
 }
 
@@ -114,6 +115,15 @@ public sealed class Mod : IMod, IFileSystemValue<Mod>
                 flags |= FeatureFlags.Atr;
             if (option.Manipulations.Shp.Count > 0)
                 flags |= FeatureFlags.Shp;
+        }
+
+        foreach (var group in Groups)
+        {
+            if (group.Layout is not 0 || group.ParentSetting is not null || group.Condition is not null)
+                flags |= FeatureFlags.Layout;
+            foreach(var option in group.Options)
+                if (option.ColorAsInteger is not 0 || option.Layout is not 0 || option.Condition is not null)
+                    flags |= FeatureFlags.Layout;
         }
 
         return flags;

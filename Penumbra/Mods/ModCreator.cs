@@ -80,7 +80,7 @@ public partial class ModCreator(
         }
         catch (Exception ex)
         {
-            Penumbra.Log.Error($"Failed to reload mod:\n{ex}");
+            FailedMod.Add(mod, ex);
             return false;
         }
 

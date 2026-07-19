@@ -1,28 +1,31 @@
 using System.Collections.Frozen;
 using ImSharp;
+using Penumbra.Files;
 using Penumbra.Mods.Manager;
 using Penumbra.UI.Classes;
-using Notification = Luna.Notification;
 
 namespace Penumbra.Mods;
 
 public static class FeatureChecker
 {
     /// <summary> Manually setup supported features to exclude None and Invalid and not make something supported too early. </summary>
-    private static readonly FrozenDictionary<string, FeatureFlags> SupportedFlags = new[]
+    private static readonly FrozenDictionary<StringU8, FeatureFlags> SupportedFlags = new[]
     {
         FeatureFlags.Atch,
         FeatureFlags.Shp,
         FeatureFlags.Atr,
-    }.ToFrozenDictionary(f => f.ToString(), f => f);
+        FeatureFlags.Layout,
+    }.ToFrozenDictionary(f => f.ToNameU8(), f => f);
 
-    public static IReadOnlyCollection<string> SupportedFeatures
+    public static IReadOnlyCollection<StringU8> SupportedFeatures
         => SupportedFlags.Keys;
 
-    public static FeatureFlags ParseFlags(string modDirectory, string modName, IEnumerable<string> features)
+    public static readonly FrozenSet<string> SupportedFeaturesU16 = SupportedFeatures.Select(s => s.ToString()).ToFrozenSet();
+
+    public static FeatureFlags ParseFlags(Mod mod, IReadOnlyCollection<StringU8> features)
     {
-        var             featureFlags    = FeatureFlags.None;
-        HashSet<string> missingFeatures = [];
+        var               featureFlags    = FeatureFlags.None;
+        HashSet<StringU8> missingFeatures = new(features.Count);
         foreach (var feature in features)
         {
             if (SupportedFlags.TryGetValue(feature, out var featureFlag))
@@ -32,17 +35,16 @@ public static class FeatureChecker
         }
 
         if (missingFeatures.Count > 0)
-        {
-            Penumbra.Messager.AddMessage(new Notification($"Please update Penumbra to use the mod {modName}{(modDirectory != modName ? $" at {modDirectory}" : string.Empty)}!\n\n"
-              + $"Loading failed because it requires the unsupported feature{(missingFeatures.Count > 1 ? $"s\n\n\t[{string.Join("], [", missingFeatures)}]." : $" [{missingFeatures.First()}].")}"));
-            return FeatureFlags.Invalid;
-        }
+            throw new MissingFeatureException(mod, missingFeatures);
 
         return featureFlags;
     }
 
-    public static bool Supported(string features)
+    public static bool Supported(StringU8 features)
         => SupportedFlags.ContainsKey(features);
+
+    public static bool Supported(string features)
+        => SupportedFeaturesU16.Contains(features);
 
     public static void DrawFeatureFlagInput(ModDataEditor editor, Mod mod, float width)
     {
@@ -52,8 +54,8 @@ public static class FeatureChecker
         var       buttonColor  = Im.Style[ImGuiColor.FrameBackground];
         var       textColor    = Im.Style[ImGuiColor.TextDisabled];
         using (var style = ImStyleBorder.Frame.Push(ColorId.FolderLine.Value(), 0)
-                   .Push(ImGuiColor.Button,         buttonColor)
-                   .Push(ImGuiColor.Text,           textColor))
+                   .Push(ImGuiColor.Button, buttonColor)
+                   .Push(ImGuiColor.Text,   textColor))
         {
             foreach (var flag in SupportedFlags.Values)
             {
@@ -76,11 +78,10 @@ public static class FeatureChecker
             }
         }
 
-        if (ImEx.Button("Compute"u8, size, "Compute the required features automatically from the used features."u8))
+        if (ImEx.Button("Compute"u8, size,
+                "Compute the required features automatically from the used features.\n\nRight-click to clear all features."u8))
             editor.ChangeRequiredFeatures(mod, mod.ComputeRequiredFeatures());
-
-        Im.Line.SameInner();
-        if (ImEx.Button("Clear"u8, size, "Clear all required features."u8))
+        if (Im.Item.RightClicked())
             editor.ChangeRequiredFeatures(mod, FeatureFlags.None);
 
         Im.Line.SameInner();

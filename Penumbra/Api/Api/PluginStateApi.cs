@@ -40,7 +40,7 @@ public class PluginStateApi : IPenumbraApiPluginState, IApiService, IDisposable
     public event Action<bool>? EnabledChange;
 
     public FrozenSet<string> SupportedFeatures
-        => FeatureChecker.SupportedFeatures.ToFrozenSet();
+        => FeatureChecker.SupportedFeaturesU16;
 
     public string[] CheckSupportedFeatures(IEnumerable<string> requiredFeatures)
         => requiredFeatures.Where(f => !FeatureChecker.Supported(f)).ToArray();

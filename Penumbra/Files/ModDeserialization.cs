@@ -1,4 +1,5 @@
 using System.Text.Json;
+using ImSharp;
 using Luna;
 using Penumbra.GameData.Structs;
 using Penumbra.Mods;
@@ -60,6 +61,7 @@ public static class ModDeserialization
         {
             if (ValidateCondition(parent, condition.Option, out var option) is { } error)
                 throw new InvalidMetaException(parent.Mod, string.Empty, error);
+
             return new SettingCondition(option!);
         }
 
@@ -100,8 +102,14 @@ public static class ModDeserialization
             if (GroupDeserialization.ReadGroupFile(files, context, groupFile) is { } group)
                 context.Mod.AddGroup(group, groupFile.FullName);
         }
+
         files.ImmediateSaveSync(new ModMeta(files, context.Mod));
     }
+
+    private static bool CheckControlCharacters(string text)
+        => text.EnumerateRunes().All(rune
+            => Rune.GetUnicodeCategory(rune) is not (UnicodeCategory.Control or UnicodeCategory.LineSeparator
+                or UnicodeCategory.ParagraphSeparator));
 
     public ref struct ModMetaData : IJsonParsable<ModMetaData>
     {
@@ -155,6 +163,10 @@ public static class ModDeserialization
                 {
                     if (string.IsNullOrEmpty(name))
                         throw new InvalidMetaException(context.Mod, filePath, "Mod with empty name is not allowed.");
+
+                    if (!CheckControlCharacters(name))
+                        throw new InvalidMetaException(context.Mod, filePath,
+                            "Mod name contains unsupported symbols (newline, paragraph, or control characters).");
 
                     if (context.Mod.Name != name)
                     {
@@ -263,11 +275,12 @@ public static class ModDeserialization
 
                 if (reader.ArrayProperty("RequiredFeatures"u8, out _, true))
                 {
-                    var features = reader.ReadFlagEnumArray<FeatureFlags>() ?? FeatureFlags.None;
-                    if (context.Mod.RequiredFeatures != features)
+                    var features     = reader.ReadStringUtf8Array() ?? [];
+                    var featureFlags = FeatureChecker.ParseFlags(context.Mod, features);
+                    if (context.Mod.RequiredFeatures != featureFlags)
                     {
                         ret                          |= ModDataChangeType.RequiredFeatures;
-                        context.Mod.RequiredFeatures =  features;
+                        context.Mod.RequiredFeatures =  featureFlags;
                     }
 
                     visited |= ModDataChangeType.RequiredFeatures;
@@ -406,15 +419,49 @@ public static class ModDeserialization
     }
 }
 
-public sealed class MetaMissingException(Mod mod, string metaPath) : FileNotFoundException($"No meta file {metaPath} for {mod.Name} found.")
+public sealed class MetaMissingException(Mod mod, string metaPath)
+    : FileNotFoundException($"No meta file {metaPath} for {mod.Name} found.")
 {
-    public readonly Mod    Mod      = mod;
+    public          Mod    Mod { get; } = mod;
     public readonly string MetaPath = metaPath;
 }
 
-public sealed class InvalidMetaException(Mod mod, string filePath, string reason) : JsonException($"Failure reading {filePath} for {mod.Name}: {reason}")
+public sealed class InvalidMetaException(Mod mod, string filePath, string reason)
+    : JsonException($"Failure reading {filePath} for {mod.Name}: {reason}")
 {
-    public readonly Mod    Mod      = mod;
+    public          Mod    Mod { get; } = mod;
     public readonly string FilePath = filePath;
     public readonly string Reason   = reason;
+}
+
+public sealed class MissingFeatureException(Mod mod, HashSet<StringU8> missingFeatures)
+    : Exception(CreateMessage(mod, missingFeatures))
+{
+    public Mod Mod { get; } = mod;
+
+    private static string CreateMessage(Mod mod, HashSet<StringU8> missingFeatures)
+    {
+        var sb = new StringBuilder(256);
+        sb.Append("Failure loading mod ")
+            .Append(mod.Name)
+            .Append(": The feature");
+        if (missingFeatures.Count is 1)
+        {
+            sb.Append(" [")
+                .Append(missingFeatures.First())
+                .Append("] is ");
+        }
+        else
+        {
+            sb.Append("s [")
+                .Append(missingFeatures.First());
+            foreach (var feature in missingFeatures.Skip(1))
+                sb.Append(", ").Append(feature);
+            sb.Append("] are ");
+        }
+
+        sb.Append("required for this mod, but unsupported in this Penumbra version. Please update Penumbra.");
+
+        return sb.ToString();
+    }
 }
