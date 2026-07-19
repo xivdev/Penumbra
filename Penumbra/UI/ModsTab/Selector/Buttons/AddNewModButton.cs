@@ -29,7 +29,7 @@ public sealed class AddNewModButton(ModFileSystemDrawer drawer) : BaseIconButton
         if (!InputPopup.OpenName("newMod"u8, out var newModName))
             return;
 
-        if (drawer.ModManager.Creator.CreateEmptyMod(drawer.ModManager.BasePath, newModName) is { } directory)
+        if (drawer.ModManager.Creator.CreateEmptyMod(drawer.ModManager.BasePath, newModName)?.ModPath is { } directory)
             drawer.ModManager.AddMod(directory, false);
     }
 }

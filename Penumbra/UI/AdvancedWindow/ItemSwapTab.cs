@@ -313,7 +313,7 @@ public class ItemSwapTab : IDisposable, ITab
 
     private void CreateMod()
     {
-        var newDir = _modManager.Creator.CreateEmptyMod(_modManager.BasePath, _newModName, CreateDescription(), CreateAuthor());
+        var newDir = _modManager.Creator.CreateEmptyMod(_modManager.BasePath, _newModName, CreateDescription(), CreateAuthor())?.ModPath;
         if (newDir is null)
             return;
 

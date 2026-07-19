@@ -186,12 +186,12 @@ public class PcpService : IApiService, IDisposable
             });
             cancel.ThrowIfCancellationRequested();
             var time         = DateTime.Now;
-            var modDirectory = CreateMod(identifier, note, time);
-            await CreateDefaultMod(new Mod(modDirectory), meta, tree, cancel);
-            await CreateCollectionInfo(modDirectory, objectIndex, identifier, note, time, cancel);
-            var file = GetFullZipPath(modDirectory, modPath, Extension);
+            var mod = CreateMod(identifier, note, time);
+            await CreateDefaultMod(mod, meta, tree, cancel);
+            await CreateCollectionInfo(mod.ModPath, objectIndex, identifier, note, time, cancel);
+            var file = GetFullZipPath(mod.ModPath, modPath, Extension);
             _modExport.IgnoreExportedFile(file);
-            ZipUp(modDirectory, file);
+            ZipUp(mod.ModPath, file);
             return (true, file);
         }
         catch (Exception ex)
@@ -240,7 +240,7 @@ public class PcpService : IApiService, IDisposable
         await jObj.WriteToAsync(json, cancel);
     }
 
-    private DirectoryInfo CreateMod(ActorIdentifier actor, string note, DateTime time)
+    private Mod CreateMod(ActorIdentifier actor, string note, DateTime time)
     {
         var directory = _modExport.ExportDirectory;
         directory.Create();

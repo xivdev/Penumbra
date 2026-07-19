@@ -33,7 +33,7 @@ public partial class ModCreator(
     public readonly SaveService           SaveService       = saveService;
 
     /// <summary> Creates directory and files necessary for a new mod without adding it to the manager. </summary>
-    public DirectoryInfo? CreateEmptyMod(DirectoryInfo basePath, string newName, string description = "", string? author = null,
+    public Mod? CreateEmptyMod(DirectoryInfo basePath, string newName, string description = "", string? author = null,
         params string[] tags)
     {
         try
@@ -41,7 +41,7 @@ public partial class ModCreator(
             var newDir = CreateModFolder(basePath, newName, Config.ReplaceNonAsciiOnImport, true);
             var mod = dataEditor.CreateMeta(newDir, newName, author ?? Config.DefaultModAuthor, description, "1.0", string.Empty, tags);
             CreateDefaultFiles(mod);
-            return newDir;
+            return mod;
         }
         catch (Exception e)
         {

@@ -334,7 +334,7 @@ public sealed class ModMerger : IDisposable, IConstructedService
         Mod?           result = null;
         try
         {
-            dir = _creator.CreateEmptyMod(_mods.BasePath, modName, $"Split off from {mods[0].Mod.Name}.");
+            dir = _creator.CreateEmptyMod(_mods.BasePath, modName, $"Split off from {mods[0].Mod.Name}.")?.ModPath;
             if (dir is null)
                 throw new Exception($"Could not split off mods, unable to create new mod with name {modName}.");
 
