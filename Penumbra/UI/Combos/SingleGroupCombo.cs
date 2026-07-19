@@ -1,6 +1,7 @@
 using ImSharp;
 using Luna;
 using Penumbra.Mods.Settings;
+using Penumbra.UI.Classes;
 using Penumbra.UI.ModsTab.Groups;
 
 namespace Penumbra.UI;
@@ -42,10 +43,10 @@ public sealed class SingleGroupCombo : FilterComboBase<ModSettingsCache.Option>,
     }
 
     protected override void PreDrawCombo(float width)
-        => ImGuiColor.Text.Push(_currentColor);
+        => ImGuiColor.Text.Push(_currentColor).Push(ImGuiColor.FrameBackground, ColorId.OptionFrameBackGround.Value());
 
     protected override void PostDrawCombo(float width)
-        => Im.ColorDisposable.PopUnsafe();
+        => Im.ColorDisposable.PopUnsafe(2);
 
     protected override IEnumerable<ModSettingsCache.Option> GetItems()
         => _group.TryGetTarget(out var target) ? target.Options : [];

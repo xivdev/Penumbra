@@ -7,6 +7,7 @@ using Penumbra.Mods.Groups;
 using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
 using Penumbra.Services;
+using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.ModsTab.Groups;
 
@@ -57,6 +58,11 @@ public sealed class ModSettingsCache : BasicCache
     private readonly ModSelection                          _selection;
     private readonly Configuration                         _config;
     private readonly CommunicatorService                   _communicator;
+    public           Rgba32                                LineColorExpanded;
+    public           Rgba32                                LineColorCollapsed;
+    public           Rgba32                                TextColorExpanded;
+    public           Rgba32                                TextColorCollapsed;
+    public           Rgba32                                FrameColor;
     public           float                                 LeftSpacing;
     public           float                                 RightSpacing;
     public           float                                 CenterSpacing;
@@ -81,12 +87,17 @@ public sealed class ModSettingsCache : BasicCache
         Dirty         = IManagedCache.DirtyFlags.Clean;
         _children.Clear();
         Pages.Clear();
-        Count         = 0;
-        ActivePages   = 0;
-        LeftSpacing   = 30 * Im.Style.GlobalScale;
-        RightSpacing  = LeftSpacing;
-        CenterSpacing = 2 * Im.Style.ItemSpacing.X;
-        Indentation   = Im.Style.FrameHeight + Im.Style.ItemInnerSpacing.X;
+        Count              = 0;
+        ActivePages        = 0;
+        LeftSpacing        = 30 * Im.Style.GlobalScale;
+        RightSpacing       = LeftSpacing;
+        CenterSpacing      = 2 * Im.Style.ItemSpacing.X;
+        Indentation        = Im.Style.FrameHeight + Im.Style.ItemInnerSpacing.X;
+        LineColorExpanded  = ColorId.GroupSeparatorExpanded.Value();
+        LineColorCollapsed = ColorId.GroupSeparatorCollapsed.Value();
+        TextColorExpanded  = ColorId.GroupLabelTextExpanded.Value();
+        TextColorCollapsed = ColorId.GroupLabelTextCollapsed.Value();
+        FrameColor         = ColorId.OptionFrameBackGround.Value();
     }
 
     public override void Update()
