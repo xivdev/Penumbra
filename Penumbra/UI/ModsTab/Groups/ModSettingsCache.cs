@@ -52,7 +52,7 @@ public sealed class ModSettingsCache : BasicCache
     }
 
 
-    public readonly Dictionary<int, Page> Pages = [];
+    public readonly SortedList<int, Page> Pages = [];
 
     private readonly Dictionary<Guid, List<ModGroupCache>> _children = [];
     private readonly ModSelection                          _selection;

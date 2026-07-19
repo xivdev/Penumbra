@@ -115,7 +115,6 @@ public partial class Configuration : IPluginConfiguration, ISavable, IService
     private AuxiliaryDeviceMode _auxiliaryDeviceMode = AuxiliaryDeviceMode.Singleton;
 
     public ChangedItemMode ChangedItemDisplay        { get; set; } = ChangedItemMode.GroupedCollapsed;
-    public int             OptionGroupCollapsibleMin { get; set; } = 5;
 
     public Vector2 MinimumSize = new(Constants.MinimumSizeX, Constants.MinimumSizeY);
 
@@ -131,6 +130,9 @@ public partial class Configuration : IPluginConfiguration, ISavable, IService
 
     public bool   OpenFoldersByDefault { get; set; } = false;
     public int    SingleGroupRadioMax  { get; set; } = 2;
+
+    [ConfigProperty]
+    private bool _displayPages = true;
     public string DefaultImportFolder  { get; set; } = string.Empty;
     public string QuickMoveFolder1     { get; set; } = string.Empty;
     public string QuickMoveFolder2     { get; set; } = string.Empty;

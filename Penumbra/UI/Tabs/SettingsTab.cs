@@ -365,22 +365,6 @@ public sealed class SettingsTab : ITab<TabType>
           + "All other Single-Selection Groups will be displayed as a set of Radio-Buttons."u8);
     }
 
-    /// <summary> Draw a selection for the minimum number of options after which a group is drawn as collapsible. </summary>
-    private void DrawCollapsibleGroupMin()
-    {
-        Im.Item.SetNextWidth(UiHelpers.InputTextWidth.X);
-        if (ImEx.InputOnDeactivation.Drag("##CollapsibleGroupMin"u8, _config.OptionGroupCollapsibleMin, out var newValue, 2, null, 0.01f,
-                SliderFlags.AlwaysClamp))
-        {
-            _config.OptionGroupCollapsibleMin = newValue;
-            _config.Save();
-        }
-
-        LunaStyle.DrawAlignedHelpMarkerLabel("Collapsible Option Group Limit"u8,
-            "Lower Limit for option groups displaying the Collapse/Expand button at the top."u8);
-    }
-
-
     /// <summary> Draw the window hiding state checkboxes.  </summary>
     private void DrawHidingSettings()
     {
@@ -474,8 +458,10 @@ public sealed class SettingsTab : ITab<TabType>
         Checkbox("Hide Priority Numbers in Mod Selector"u8,
             "Hides the bracketed non-zero priority numbers displayed in the mod selector when there is enough space for them."u8,
             _config.HidePrioritiesInSelector, v => _config.HidePrioritiesInSelector = v);
+        Checkbox("Draw Tabs for Option Pages"u8,
+            "When this is on, pages set for options in a mod's metadata are drawn as a tab bar. When it is off, pages are drawn successively on the same page using sections of collapsing headers."u8,
+            _config.DisplayPages, v => _config.DisplayPages = v);
         DrawSingleSelectRadioMax();
-        DrawCollapsibleGroupMin();
     }
 
     /// <summary> Draw all settings pertaining to actor identification for collections. </summary>
@@ -652,7 +638,7 @@ public sealed class SettingsTab : ITab<TabType>
     /// <summary> Draw input for the default import path for a mod. </summary>
     private void DrawDefaultModImportPath()
     {
-        using var id      = Im.Id.Push("##dmi"u8);
+        using var id = Im.Id.Push("##dmi"u8);
         Im.Item.SetNextWidth(UiHelpers.InputTextMinusButtonInner);
         if (ImEx.InputOnDeactivation.Text(StringU8.Empty, _config.DefaultModImportPath, out string newDirectory))
         {
@@ -686,7 +672,7 @@ public sealed class SettingsTab : ITab<TabType>
     /// <summary> Draw input for the default export/backup path for mods. </summary>
     private void DrawDefaultModExportPath()
     {
-        using var id      = Im.Id.Push("##dme"u8);
+        using var id = Im.Id.Push("##dme"u8);
         Im.Item.SetNextWidth(UiHelpers.InputTextMinusButtonInner);
         if (ImEx.InputOnDeactivation.Text(StringU8.Empty, _config.ExportDirectory, out string newDirectory))
             _modExportManager.UpdateExportDirectory(newDirectory);
@@ -714,7 +700,7 @@ public sealed class SettingsTab : ITab<TabType>
     /// <summary> Draw input for the Automatic Mod import path. </summary>
     private void DrawFileWatcherPath()
     {
-        using var id      = Im.Id.Push("fw"u8);
+        using var id = Im.Id.Push("fw"u8);
         Im.Item.SetNextWidth(UiHelpers.InputTextMinusButtonInner);
         if (ImEx.InputOnDeactivation.Text(StringU8.Empty, _config.WatchDirectory, out string newDirectory, maxLength: 256))
             _fileWatcher.UpdateDirectory(newDirectory);

@@ -37,7 +37,7 @@ public sealed class ModGroupDrawer(
         _locked        = (tempSettings?.Lock ?? 0) > 0;
         _currentIndent = 0;
 
-        if (cache.ActivePages > 1)
+        if (cache.ActivePages > 1 && config.DisplayPages)
         {
             Im.Dummy(UiHelpers.DefaultSpace);
             using var tabBar = Im.TabBar.Begin("##pages"u8, TabBarFlags.FittingPolicyScroll);
@@ -67,13 +67,18 @@ public sealed class ModGroupDrawer(
         }
         else
         {
-            var (id, page) = cache.Pages.First();
-            using var _ = Im.Id.Push(id);
-            _labelExtend = page.WidestLabel;
-            _comboWidth  = page.WidestCombo;
             Im.Dummy(UiHelpers.DefaultSpace);
-            foreach (var group in page.Groups)
-                DrawGroup(cache, group);
+            foreach (var (id, page) in cache.Pages)
+            {
+                using var _ = Im.Id.Push(id);
+                if (cache.Pages.Count > 1 && !Im.Tree.Header(page.Name, TreeNodeFlags.DefaultOpen))
+                    continue;
+
+                _labelExtend = page.WidestLabel;
+                _comboWidth  = page.WidestCombo;
+                foreach (var group in page.Groups)
+                    DrawGroup(cache, group);
+            }
 
             UiHelpers.DefaultLineSpace();
             communicator.PostSettingsPanelDraw.Invoke(new PostSettingsPanelDraw.Arguments(mod));
