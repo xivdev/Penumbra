@@ -33,23 +33,31 @@ public sealed class
         _description = new StringU8(option.Description);
     }
 
+    protected override void PrePopup()
+    {
+        Im.Window.SetNextSizeConstraints(ImEx.ScaledVector(300), Vector2.PositiveInfinity);
+        Im.Window.SetNextSize(ImEx.ScaledVector(500), Condition.FirstUseEver);
+    }
+
+    protected override Im.PopupDisposable Begin()
+        => Im.Popup.BeginResizable(PopupId);
+
     protected override void DrawInternal()
     {
         if (Im.Window.Appearing)
             Im.Keyboard.SetFocusHere();
 
-        var inputSize = ImEx.ScaledVector(800);
+        var inputSize = Im.ContentRegion.Available;
+        inputSize.Y -= Im.Style.FrameHeight * 2;
         if (Im.Input.MultiLine("##editDescription"u8, ref _description, inputSize))
             Edited = true;
-        UiHelpers.DefaultLineSpace();
 
         var buttonSize = ImEx.ScaledVectorX(100);
 
-        var width = 2 * buttonSize.X
-          + 4 * Im.Style.FramePadding.X
-          + Im.Style.ItemSpacing.X;
+        var width = 2 * buttonSize.X + Im.Style.ItemSpacing.X;
 
-        Im.Cursor.X = (inputSize.X - width) / 2;
+        Im.Cursor.Y += Im.Style.FrameHeight / 2;
+        Im.Cursor.X +=  (Im.ContentRegion.Available.X - width) / 2;
         DrawSaveButton(buttonSize);
         Im.Line.Same();
         DrawCancelButton(buttonSize);
