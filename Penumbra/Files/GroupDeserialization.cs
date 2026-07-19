@@ -430,7 +430,12 @@ public static class GroupDeserialization
                 var length = j.CopyString(buffer);
                 buffer[length] = 0;
                 if (length is 0 || !Utf8GamePath.FromSpan(buffer[..length], MetaDataComputation.All, out var gamePathTmp))
+                {
+                    if (!j.TrySkip())
+                        throw new JsonException("Malformed JSON in file dictionary, no value for empty key.");
+
                     continue;
+                }
 
                 if (!j.Read() || !j.TryReadString(out var rel) || !Utf8RelPath.FromString(rel, out var relPath))
                     throw new JsonException($"Expected relative path in file dictionary for key {gamePathTmp}.");
@@ -453,7 +458,12 @@ public static class GroupDeserialization
                 var length = j.CopyString(buffer);
                 buffer[length] = 0;
                 if (length is 0 || !Utf8GamePath.FromSpan(buffer[..length], MetaDataComputation.All, out var gamePathTmp))
+                {
+                    if (!j.TrySkip())
+                        throw new JsonException("Malformed JSON in file swap dictionary, no value for empty key.");
+
                     continue;
+                }
 
                 if (!j.Read() || !j.TryReadString(out var swap))
                     throw new JsonException($"Expected game path in file swap dictionary for key {gamePathTmp}.");
