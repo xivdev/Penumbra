@@ -47,6 +47,8 @@ public sealed class ModSettingsCache : BasicCache
         public          bool         Collapsible;
         public          bool         Indented;
         public          bool         IsCombo;
+        public          bool         IsSameLineOption;
+        public          bool         IsCheckbox;
         public          bool         HideHeader;
         public          bool         Disabled;
     }
@@ -171,15 +173,37 @@ public sealed class ModSettingsCache : BasicCache
     private void NormalizeCollapsible()
     {
         foreach (var group in Pages.Values.SelectMany(p => p.Groups))
-        {
-            if (group is { IsCombo: true, Children.Count: 0 })
-                group.Collapsible = false;
-        }
+            HandleGroup(group);
 
         foreach (var group in _children.Values.SelectMany(p => p))
+            HandleGroup(group);
+        return;
+
+        static void HandleGroup(ModGroupCache group)
         {
             if (group is { IsCombo: true, Children.Count: 0 })
                 group.Collapsible = false;
+
+            if (group is not { IsCombo: false, Behaviour: not GroupDrawBehaviour.SingleSelection, Options.Count: 1 })
+                return;
+
+            var option = group.Options[0];
+            if (option.Children.Count is not 0)
+                return;
+
+            group.IsSameLineOption = true;
+            if (option.Name.IsEmpty && option.Description.IsEmpty)
+            {
+                group.IsCheckbox = true;
+                group.ComboWidth = Im.Style.FrameHeight;
+            }
+            else
+            {
+                group.ComboWidth = option.Width
+                  + Im.Style.ItemInnerSpacing.X
+                  + Im.Style.FrameHeight
+                  + Im.Style.FramePadding.X;
+            }
         }
     }
 
@@ -191,7 +215,7 @@ public sealed class ModSettingsCache : BasicCache
             page.WidestLabel = 0;
             foreach (var group in page.Groups)
             {
-                if (group.IsCombo && group.ComboWidth > page.WidestCombo)
+                if ((group.IsCombo || group.IsSameLineOption) && group.ComboWidth > page.WidestCombo)
                     page.WidestCombo = group.ComboWidth;
 
                 CheckExtend(group, 0);
@@ -216,6 +240,15 @@ public sealed class ModSettingsCache : BasicCache
                 foreach (var child in cache.Children.Concat(cache.Options.SelectMany(o => o.Children)))
                     CheckExtend(child, indentation);
             }
+        }
+    }
+
+    private void CheckSameLineOptions()
+    {
+        foreach (var page in Pages.Values)
+        {
+            foreach (var group in page.Groups)
+            { }
         }
     }
 

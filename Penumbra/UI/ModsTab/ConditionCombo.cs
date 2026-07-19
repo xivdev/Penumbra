@@ -94,7 +94,7 @@ internal sealed class ConditionCombo : ModObjectCombo
 
     protected override bool DrawItem(in ModObjectCache item, int globalIndex, bool selected)
     {
-        var ret = Im.Selectable(item.Name.Utf8, selected);
+        var ret = Im.Selectable(item.Name.IsEmpty ? "<No Name>"u8 : item.Name.Utf8, selected);
         Im.Line.NoSpacing();
         using (ImGuiColor.Text.Push(Im.Style[ImGuiColor.TextDisabled]))
         {

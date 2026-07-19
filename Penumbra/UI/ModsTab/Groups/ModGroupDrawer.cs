@@ -59,7 +59,7 @@ public sealed class ModGroupDrawer(
                 _comboWidth  = page.WidestCombo;
                 Im.Dummy(UiHelpers.DefaultSpace);
                 foreach (var group in page.Groups)
-                    DrawGroup(cache, group);
+                    DrawGroup(cache, group, false);
 
                 UiHelpers.DefaultLineSpace();
                 communicator.PostSettingsPanelDraw.Invoke(new PostSettingsPanelDraw.Arguments(mod));
@@ -77,7 +77,7 @@ public sealed class ModGroupDrawer(
                 _labelExtend = page.WidestLabel;
                 _comboWidth  = page.WidestCombo;
                 foreach (var group in page.Groups)
-                    DrawGroup(cache, group);
+                    DrawGroup(cache, group, false);
             }
 
             UiHelpers.DefaultLineSpace();
@@ -85,40 +85,40 @@ public sealed class ModGroupDrawer(
         }
     }
 
-    private void DrawGroup(ModSettingsCache cache, ModSettingsCache.ModGroupCache group)
+    private void DrawGroup(ModSettingsCache cache, ModSettingsCache.ModGroupCache group, bool hasParent)
     {
         using var indent  = IndentGroup(cache, group.Indented);
         var       setting = _context.Settings.IsEmpty ? group.Group.DefaultSettings : _context.Settings.Settings[group.Group.Index];
 
-        if (DoDrawGroup(cache, group, setting))
+        if (DoDrawGroup(cache, group, setting, hasParent))
             foreach (var child in group.Children)
-                DrawGroup(cache, child);
+                DrawGroup(cache, child, true);
 
         if (indent is not null)
             _currentIndent -= indent.CurrentIndent;
     }
 
-    private bool DoDrawGroup(ModSettingsCache cache, ModSettingsCache.ModGroupCache group, Setting setting)
+    private bool DoDrawGroup(ModSettingsCache cache, ModSettingsCache.ModGroupCache group, Setting setting, bool hasParent)
     {
         using var id = Im.Id.Push(group.Group.Index);
         if (group.IsCombo)
-            return DrawSingleGroupComboNew(cache, group, setting);
+            return DrawSingleGroupComboNew(cache, group, setting, hasParent);
+
+        if (group.IsSameLineOption)
+            return DrawToggleGroup(cache, group, setting, hasParent);
 
         if (group.Behaviour is GroupDrawBehaviour.MultiSelection)
-            return DrawMultiGroupNew(cache, group, setting);
+            return DrawMultiGroupNew(cache, group, setting, hasParent);
 
-        return DrawSingleGroupRadioNew(cache, group, setting);
+        return DrawSingleGroupRadioNew(cache, group, setting, hasParent);
     }
 
-    private bool DrawSingleGroupComboNew(ModSettingsCache cache, ModSettingsCache.ModGroupCache group, Setting setting)
-    {
-        var line = new HeaderLine
+    private HeaderLine HeaderLineBase(ModSettingsCache cache, ModSettingsCache.ModGroupCache group)
+        => new()
         {
-            Collapsible               = group.Children.Count > 0,
             LeftDistance              = cache.LeftSpacing,
             RightDistance             = -1f,
             ComboDistance             = cache.CenterSpacing,
-            ComboDisabled             = group.Disabled,
             FixedComboWidth           = _comboWidth,
             FixedButtonWidth          = _labelExtend - _currentIndent,
             LineColorExpanded         = cache.LineColorExpanded,
@@ -127,27 +127,60 @@ public sealed class ModGroupDrawer(
             TextColorCollapsed        = cache.TextColorCollapsed,
             ButtonBackgroundExpanded  = cache.FrameColorExpanded,
             ButtonBackgroundCollapsed = cache.FrameColorCollapsed,
+            DefaultClosed             = group.Group.Layout.HasFlag(ModSettingsLayout.DefaultClosed),
+            ComboDisabled             = group.Disabled,
         };
+
+    private bool DrawSingleGroupComboNew(ModSettingsCache cache, ModSettingsCache.ModGroupCache group, Setting setting, bool hasParent)
+    {
+        var line = HeaderLineBase(cache, group);
+        line.Collapsible = group.Children.Count > 0;
+        line.NoLabel     = group.HideHeader && hasParent;
         return line.Combo(w => combo.Draw(this, group, setting, w), group.ComboWidth, group.Name, group.Description);
     }
 
-    private bool DrawSingleGroupRadioNew(ModSettingsCache cache, ModSettingsCache.ModGroupCache group, Setting setting)
+    private bool DrawToggleGroup(ModSettingsCache cache, ModSettingsCache.ModGroupCache group, Setting setting, bool hasParent)
     {
-        var line = new HeaderLine
+        var line = HeaderLineBase(cache, group);
+        line.Collapsible = group.Children.Count > 0;
+        line.NoLabel     = group.HideHeader && hasParent;
+        if (group.IsCheckbox)
+            line.FixedComboWidth = group.ComboWidth;
+        return line.Combo(DrawCheckbox, group.ComboWidth, group.Name, group.Description);
+
+        void DrawCheckbox(float width)
         {
-            Collapsible               = true,
-            DefaultClosed             = group.Group.Layout.HasFlag(ModSettingsLayout.DefaultClosed),
-            LeftDistance              = cache.LeftSpacing,
-            FixedButtonWidth          = _labelExtend - _currentIndent,
-            LineColorExpanded         = cache.LineColorExpanded,
-            LineColorCollapsed        = cache.LineColorCollapsed,
-            TextColorExpanded         = cache.TextColorExpanded,
-            TextColorCollapsed        = cache.TextColorCollapsed,
-            ButtonBackgroundExpanded  = cache.FrameColorExpanded,
-            ButtonBackgroundCollapsed = cache.FrameColorCollapsed,
-        };
+            using var i       = Im.Id.Push(0);
+            var       option  = group.Options[0];
+            var       enabled = setting.HasFlag(option.Data.Index);
+            if (!group.IsCheckbox)
+            {
+                ImEx.TextFramed(StringU8.Empty, new Vector2(width, 0), Rgba32.Transparent);
+                Im.Line.NoSpacing();
+                Im.Cursor.X -= width;
+            }
+
+            using (Im.Disabled(option.Disabled))
+            {
+                using var c = ImGuiColor.Text.Push(option.Color);
+                if (Im.Checkbox(option.Name, ref enabled))
+                    SetModSetting(group.Group, group.Group.Index, setting.SetBit(option.Data.Index, enabled));
+            }
+
+            if (option.Description.Length > 0)
+            {
+                Im.Line.SameInner();
+                LunaStyle.DrawAlignedHelpMarker(option.Description, treatAsHovered: Im.Item.Hovered(HoveredFlags.AllowWhenDisabled));
+            }
+        }
+    }
+
+    private bool DrawSingleGroupRadioNew(ModSettingsCache cache, ModSettingsCache.ModGroupCache group, Setting setting, bool hasParent)
+    {
+        var line = HeaderLineBase(cache, group);
+        line.Collapsible = true;
         var options      = group.Options;
-        var drawChildren = group.HideHeader || line.Basic(group.Name, group.Description);
+        var drawChildren = hasParent && group.HideHeader || line.Basic(group.Name, group.Description);
         if (drawChildren)
             DrawOptions();
 
@@ -182,28 +215,17 @@ public sealed class ModGroupDrawer(
 
                 using var _ = Im.Enabled();
                 foreach (var childGroup in option.Children)
-                    DrawGroup(cache, childGroup);
+                    DrawGroup(cache, childGroup, true);
             }
         }
     }
 
-    private bool DrawMultiGroupNew(ModSettingsCache cache, ModSettingsCache.ModGroupCache group, Setting setting)
+    private bool DrawMultiGroupNew(ModSettingsCache cache, ModSettingsCache.ModGroupCache group, Setting setting, bool hasParent)
     {
-        var line = new HeaderLine
-        {
-            Collapsible               = true,
-            DefaultClosed             = group.Group.Layout.HasFlag(ModSettingsLayout.DefaultClosed),
-            LeftDistance              = cache.LeftSpacing,
-            FixedButtonWidth          = _labelExtend - _currentIndent,
-            LineColorExpanded         = cache.LineColorExpanded,
-            LineColorCollapsed        = cache.LineColorCollapsed,
-            TextColorExpanded         = cache.TextColorExpanded,
-            TextColorCollapsed        = cache.TextColorCollapsed,
-            ButtonBackgroundExpanded  = cache.FrameColorExpanded,
-            ButtonBackgroundCollapsed = cache.FrameColorCollapsed,
-        };
+        var line = HeaderLineBase(cache, group);
+        line.Collapsible = true;
         var options      = group.Options;
-        var drawChildren = group.HideHeader || line.Basic(group.Name, group.Description);
+        var drawChildren = hasParent && group.HideHeader || line.Basic(group.Name, group.Description);
         if (drawChildren)
             DrawOptions();
 
@@ -218,13 +240,13 @@ public sealed class ModGroupDrawer(
             {
                 using var i       = Im.Id.Push(idx);
                 var       option  = options[idx];
-                var       enabled = setting.HasFlag(idx);
+                var       enabled = setting.HasFlag(option.Data.Index);
 
                 disabled.Push(option.Disabled);
                 color.Push(ImGuiColor.Text, option.Color);
                 Im.Cursor.X += cache.LeftSpacing;
                 if (Im.Checkbox(option.Name, ref enabled))
-                    SetModSetting(group.Group, group.Group.Index, setting.SetBit(idx, enabled));
+                    SetModSetting(group.Group, group.Group.Index, setting.SetBit(option.Data.Index, enabled));
                 color.Pop();
                 disabled.Pop();
 
@@ -239,7 +261,7 @@ public sealed class ModGroupDrawer(
 
                 using var _ = Im.Enabled();
                 foreach (var childGroup in option.Children)
-                    DrawGroup(cache, childGroup);
+                    DrawGroup(cache, childGroup, true);
             }
         }
     }

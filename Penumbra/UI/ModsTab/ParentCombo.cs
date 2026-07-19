@@ -63,11 +63,11 @@ internal sealed class ParentCombo(ModManager mods) : ModObjectCombo
             else if (group.Visible)
             {
                 using var indent = Im.Indent();
-                ret = Im.Selectable(item.Name.Utf8, selected);
+                ret = Im.Selectable(item.Name.IsEmpty ? "<No Name>"u8 : item.Name.Utf8, selected);
             }
             else
             {
-                ret = Im.Selectable(item.Name.Utf8, selected);
+                ret = Im.Selectable(item.Name.IsEmpty ? "<No Name>"u8 : item.Name.Utf8, selected);
                 if (!item.GroupName.IsEmpty)
                 {
                     Im.Line.NoSpacing();
