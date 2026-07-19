@@ -47,7 +47,9 @@ public enum ColorId : short
     GroupSeparatorCollapsed,
     GroupLabelTextExpanded,
     GroupLabelTextCollapsed,
-    OptionFrameBackGround,
+    GroupComboBackground,
+    GroupFrameBackgroundExpanded,
+    GroupFrameBackgroundCollapsed,
 }
 
 public static class Colors
@@ -60,7 +62,9 @@ public static class Colors
     public const           uint    FilterActive        = 0x807070FF;
     public const           uint    TutorialMarker      = 0xFF20FFFF;
     public const           uint    TutorialBorder      = 0xD00000FF;
-    private const string OptionColorTooltip = "A color used for the selectable text or label for a mod option. The mod creator can associate one of these 8 colors (or none for default text), but you can choose the actual color.";
+
+    private const string OptionColorTooltip =
+        "A color used for the selectable text or label for a mod option. The mod creator can associate one of these 8 colors (or none for default text), but you can choose the actual color.";
 
     public static (uint DefaultColor, string Name, string Description) Data(this ColorId color)
         => color switch
@@ -109,7 +113,9 @@ public static class Colors
             ColorId.GroupSeparatorCollapsed       => ( 0x80806E6E, "Option Group Separator and Border (Collapsed)", "The color for the line separator for option groups and the frame borders for them, when the group is collapsed."),
             ColorId.GroupLabelTextExpanded        => ( 0xFFFFFFFF, "Option Group Label (Expanded)",                 "The color for the label text for option groups when the group is expanded."),
             ColorId.GroupLabelTextCollapsed       => ( 0xFFA0A0A0, "Option Group Label (Collapsed)",                "The color for the label text for option groups when the group is collapsed."),
-            ColorId.OptionFrameBackGround         => ( 0x8A4A4A4A, "Option Group Frame Background",                 "The color of the background for option group label frames and single option combo preview background."),
+            ColorId.GroupComboBackground          => ( 0x8A4A4A4A, "Option Group Combo Preview Background",         "The color of the background for single selection group combo previews."),
+            ColorId.GroupFrameBackgroundExpanded  => ( 0x8A4A4A4A, "Option Group Frame Background (Expanded)",      "The color of the background for option group label frames when the group is expanded."),
+            ColorId.GroupFrameBackgroundCollapsed => ( 0x8A4A4A4A, "Option Group Frame Background (Collapsed)",     "The color of the background for option group label frames when the group is collapsed."),
             _                                     => throw new ArgumentOutOfRangeException( nameof( color ), color, null ),
             // @formatter:on
         };

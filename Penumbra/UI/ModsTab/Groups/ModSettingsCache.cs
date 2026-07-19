@@ -62,7 +62,8 @@ public sealed class ModSettingsCache : BasicCache
     public           Rgba32                                LineColorCollapsed;
     public           Rgba32                                TextColorExpanded;
     public           Rgba32                                TextColorCollapsed;
-    public           Rgba32                                FrameColor;
+    public           Rgba32                                FrameColorExpanded;
+    public           Rgba32                                FrameColorCollapsed;
     public           float                                 LeftSpacing;
     public           float                                 RightSpacing;
     public           float                                 CenterSpacing;
@@ -87,17 +88,18 @@ public sealed class ModSettingsCache : BasicCache
         Dirty         = IManagedCache.DirtyFlags.Clean;
         _children.Clear();
         Pages.Clear();
-        Count              = 0;
-        ActivePages        = 0;
-        LeftSpacing        = 30 * Im.Style.GlobalScale;
-        RightSpacing       = LeftSpacing;
-        CenterSpacing      = 2 * Im.Style.ItemSpacing.X;
-        Indentation        = Im.Style.FrameHeight + Im.Style.ItemInnerSpacing.X;
-        LineColorExpanded  = ColorId.GroupSeparatorExpanded.Value();
-        LineColorCollapsed = ColorId.GroupSeparatorCollapsed.Value();
-        TextColorExpanded  = ColorId.GroupLabelTextExpanded.Value();
-        TextColorCollapsed = ColorId.GroupLabelTextCollapsed.Value();
-        FrameColor         = ColorId.OptionFrameBackGround.Value();
+        Count               = 0;
+        ActivePages         = 0;
+        LeftSpacing         = 30 * Im.Style.GlobalScale;
+        RightSpacing        = LeftSpacing;
+        CenterSpacing       = 2 * Im.Style.ItemSpacing.X;
+        Indentation         = Im.Style.FrameHeight + Im.Style.ItemInnerSpacing.X;
+        LineColorExpanded   = ColorId.GroupSeparatorExpanded.Value();
+        LineColorCollapsed  = ColorId.GroupSeparatorCollapsed.Value();
+        TextColorExpanded   = ColorId.GroupLabelTextExpanded.Value();
+        TextColorCollapsed  = ColorId.GroupLabelTextCollapsed.Value();
+        FrameColorExpanded  = ColorId.GroupFrameBackgroundExpanded.Value();
+        FrameColorCollapsed = ColorId.GroupFrameBackgroundCollapsed.Value();
     }
 
     public override void Update()

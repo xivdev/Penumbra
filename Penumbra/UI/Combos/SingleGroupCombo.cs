@@ -43,7 +43,7 @@ public sealed class SingleGroupCombo : FilterComboBase<ModSettingsCache.Option>,
     }
 
     protected override void PreDrawCombo(float width)
-        => ImGuiColor.Text.Push(_currentColor).Push(ImGuiColor.FrameBackground, ColorId.OptionFrameBackGround.Value());
+        => ImGuiColor.Text.Push(_currentColor).Push(ImGuiColor.FrameBackground, ColorId.GroupComboBackground.Value());
 
     protected override void PostDrawCombo(float width)
         => Im.ColorDisposable.PopUnsafe(2);

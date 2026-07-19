@@ -114,18 +114,19 @@ public sealed class ModGroupDrawer(
     {
         var line = new HeaderLine
         {
-            Collapsible        = group.Children.Count > 0,
-            LeftDistance       = cache.LeftSpacing,
-            RightDistance      = -1f,
-            ComboDistance      = cache.CenterSpacing,
-            ComboDisabled      = group.Disabled,
-            FixedComboWidth    = _comboWidth,
-            FixedButtonWidth   = _labelExtend - _currentIndent,
-            LineColorExpanded  = cache.LineColorExpanded,
-            LineColorCollapsed = cache.LineColorCollapsed,
-            TextColorExpanded  = cache.TextColorExpanded,
-            TextColorCollapsed = cache.TextColorCollapsed,
-            ButtonBackground   = cache.FrameColor,
+            Collapsible               = group.Children.Count > 0,
+            LeftDistance              = cache.LeftSpacing,
+            RightDistance             = -1f,
+            ComboDistance             = cache.CenterSpacing,
+            ComboDisabled             = group.Disabled,
+            FixedComboWidth           = _comboWidth,
+            FixedButtonWidth          = _labelExtend - _currentIndent,
+            LineColorExpanded         = cache.LineColorExpanded,
+            LineColorCollapsed        = cache.LineColorCollapsed,
+            TextColorExpanded         = cache.TextColorExpanded,
+            TextColorCollapsed        = cache.TextColorCollapsed,
+            ButtonBackgroundExpanded  = cache.FrameColorExpanded,
+            ButtonBackgroundCollapsed = cache.FrameColorCollapsed,
         };
         return line.Combo(w => combo.Draw(this, group, setting, w), group.ComboWidth, group.Name, group.Description);
     }
@@ -134,15 +135,16 @@ public sealed class ModGroupDrawer(
     {
         var line = new HeaderLine
         {
-            Collapsible        = true,
-            DefaultClosed      = group.Group.Layout.HasFlag(ModSettingsLayout.DefaultClosed),
-            LeftDistance       = cache.LeftSpacing,
-            FixedButtonWidth   = _labelExtend - _currentIndent,
-            LineColorExpanded  = cache.LineColorExpanded,
-            LineColorCollapsed = cache.LineColorCollapsed,
-            TextColorExpanded  = cache.TextColorExpanded,
-            TextColorCollapsed = cache.TextColorCollapsed,
-            ButtonBackground   = cache.FrameColor,
+            Collapsible               = true,
+            DefaultClosed             = group.Group.Layout.HasFlag(ModSettingsLayout.DefaultClosed),
+            LeftDistance              = cache.LeftSpacing,
+            FixedButtonWidth          = _labelExtend - _currentIndent,
+            LineColorExpanded         = cache.LineColorExpanded,
+            LineColorCollapsed        = cache.LineColorCollapsed,
+            TextColorExpanded         = cache.TextColorExpanded,
+            TextColorCollapsed        = cache.TextColorCollapsed,
+            ButtonBackgroundExpanded  = cache.FrameColorExpanded,
+            ButtonBackgroundCollapsed = cache.FrameColorCollapsed,
         };
         var options      = group.Options;
         var drawChildren = group.HideHeader || line.Basic(group.Name, group.Description);
@@ -153,6 +155,7 @@ public sealed class ModGroupDrawer(
 
         void DrawOptions()
         {
+            using var indent   = Im.Indent(cache.Indentation);
             using var disabled = Im.Disabled(_locked || group.Disabled);
             using var color    = Im.Color.Empty();
             for (var idx = 0; idx < options.Count; ++idx)
@@ -188,15 +191,16 @@ public sealed class ModGroupDrawer(
     {
         var line = new HeaderLine
         {
-            Collapsible        = true,
-            DefaultClosed      = group.Group.Layout.HasFlag(ModSettingsLayout.DefaultClosed),
-            LeftDistance       = cache.LeftSpacing,
-            FixedButtonWidth   = _labelExtend - _currentIndent,
-            LineColorExpanded  = cache.LineColorExpanded,
-            LineColorCollapsed = cache.LineColorCollapsed,
-            TextColorExpanded  = cache.TextColorExpanded,
-            TextColorCollapsed = cache.TextColorCollapsed,
-            ButtonBackground   = cache.FrameColor,
+            Collapsible               = true,
+            DefaultClosed             = group.Group.Layout.HasFlag(ModSettingsLayout.DefaultClosed),
+            LeftDistance              = cache.LeftSpacing,
+            FixedButtonWidth          = _labelExtend - _currentIndent,
+            LineColorExpanded         = cache.LineColorExpanded,
+            LineColorCollapsed        = cache.LineColorCollapsed,
+            TextColorExpanded         = cache.TextColorExpanded,
+            TextColorCollapsed        = cache.TextColorCollapsed,
+            ButtonBackgroundExpanded  = cache.FrameColorExpanded,
+            ButtonBackgroundCollapsed = cache.FrameColorCollapsed,
         };
         var options      = group.Options;
         var drawChildren = group.HideHeader || line.Basic(group.Name, group.Description);
@@ -207,6 +211,7 @@ public sealed class ModGroupDrawer(
 
         void DrawOptions()
         {
+            using var indent   = Im.Indent(cache.Indentation);
             using var disabled = Im.Disabled(_locked || group.Disabled);
             using var color    = Im.Color.Empty();
             for (var idx = 0; idx < options.Count; ++idx)
