@@ -461,6 +461,9 @@ public sealed class SettingsTab : ITab<TabType>
         Checkbox("Draw Tabs for Option Pages"u8,
             "When this is on, pages set for options in a mod's metadata are drawn as a tab bar. When it is off, pages are drawn successively on the same page using sections of collapsing headers."u8,
             _config.DisplayPages, v => _config.DisplayPages = v);
+        Checkbox("Hide Right Part of Option Group Lines"u8,
+            "When this is on, only the left (and center parts) of the header lines for option groups are drawn, otherwise the line continues to the right of the window."u8,
+            _config.HideRightOptionGroupLine, v => _config.HideRightOptionGroupLine = v);
         DrawSingleSelectRadioMax();
     }
 

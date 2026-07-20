@@ -132,6 +132,9 @@ public partial class Configuration : IPluginConfiguration, ISavable, IService
     public int    SingleGroupRadioMax  { get; set; } = 2;
 
     [ConfigProperty]
+    private bool _hideRightOptionGroupLine = true;
+
+    [ConfigProperty]
     private bool _displayPages = true;
     public string DefaultImportFolder  { get; set; } = string.Empty;
     public string QuickMoveFolder1     { get; set; } = string.Empty;
