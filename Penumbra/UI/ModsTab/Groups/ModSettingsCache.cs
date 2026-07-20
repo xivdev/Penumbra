@@ -4,7 +4,6 @@ using Penumbra.Api.Enums;
 using Penumbra.Communication;
 using Penumbra.Mods;
 using Penumbra.Mods.Groups;
-using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
@@ -31,7 +30,6 @@ public sealed class ModSettingsCache : BasicCache
         StringU8 Name,
         StringU8 Description,
         Vector4 Color,
-        Setting Value,
         float Width,
         bool Disabled,
         bool Separator) : Node(Name, Description);
@@ -41,7 +39,8 @@ public sealed class ModSettingsCache : BasicCache
         public GroupDrawBehaviour Behaviour
             => Group.Behaviour;
 
-        public readonly List<Option> Options = [];
+        public readonly List<Option> Options    = [];
+        public readonly List<Option> AllOptions = [];
         public          float        NameWidth;
         public          float        ComboWidth;
         public          bool         Collapsible;
@@ -243,15 +242,6 @@ public sealed class ModSettingsCache : BasicCache
         }
     }
 
-    private void CheckSameLineOptions()
-    {
-        foreach (var page in Pages.Values)
-        {
-            foreach (var group in page.Groups)
-            { }
-        }
-    }
-
     public ModGroupCache? Create(in ModSettingContext context, IModGroup group)
     {
         if (!group.IsOption)
@@ -274,23 +264,27 @@ public sealed class ModSettingsCache : BasicCache
         if (!ret.Description.IsEmpty && ret.IsCombo)
             ret.NameWidth += Im.Style.ItemInnerSpacing.X + LunaStyle.HelpMarker.CalculateSize().X;
 
+        ret.AllOptions.EnsureCapacity(group.Options.Count);
         ret.Options.EnsureCapacity(group.Options.Count);
-        foreach (var (index, option) in group.Options.Index())
+        foreach (var option in group.Options)
         {
             AnyConditions |= option.Condition is not null;
             condition     =  option.Condition is null || option.Condition.Evaluate(context);
-            if (!condition && !option.Layout.HasFlag(ModSettingsLayout.Disable))
-                continue;
-
+            var hidden      = !condition && !option.Layout.HasFlag(ModSettingsLayout.Disable);
             var name        = new StringU8(option.Name);
             var description = new StringU8(option.Description);
             var width       = name.CalculateSize().X;
             if (!description.IsEmpty)
                 width += Im.Style.ItemInnerSpacing.X + LunaStyle.HelpMarker.CalculateSize().X;
-            ret.Options.Add(new Option(option, name, description, option.ColorValue,
-                group.Type is GroupType.Single ? Setting.Single(index) : Setting.Multi(index), width,
-                !condition, option.Layout.HasFlag(ModSettingsLayout.Separator)));
 
+            var newOption = new Option(option, name, description, option.ColorValue, width,
+                !condition, option.Layout.HasFlag(ModSettingsLayout.Separator));
+
+            ret.AllOptions.Add(newOption);
+            if (hidden)
+                continue;
+
+            ret.Options.Add(newOption);
             if (width > ret.ComboWidth)
                 ret.ComboWidth = width;
         }

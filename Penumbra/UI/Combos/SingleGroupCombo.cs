@@ -35,7 +35,7 @@ public sealed class SingleGroupCombo : FilterComboBase<ModSettingsCache.Option>,
 
         using var id = Im.Id.Push(group.Group.Index);
         _currentOption = currentOption;
-        var currentValue = group.Options[currentOption.AsIndex];
+        var currentValue = group.AllOptions[currentOption.AsIndex];
         _currentColor = currentValue.Color;
         _group.SetTarget(group);
         if (base.Draw(StringU8.Empty, currentValue.Name, StringU8.Empty, width, out var newOption))
