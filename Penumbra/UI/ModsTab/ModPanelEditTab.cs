@@ -167,7 +167,7 @@ public class ModPanelEditTab(
 
     private void DrawGroupReordering(Mod mod)
     {
-        using var table = Im.Table.Begin("##reorder"u8, 5, TableFlags.BordersOuter | TableFlags.RowBackground);
+        using var table = Im.Table.Begin("##reorder"u8, 7, TableFlags.BordersOuter | TableFlags.RowBackground);
         if (!table)
             return;
 
@@ -175,7 +175,9 @@ public class ModPanelEditTab(
         table.SetupColumn("Group"u8,             TableColumnFlags.WidthStretch);
         table.SetupColumn("Type"u8,              TableColumnFlags.WidthFixed, Im.Font.CalculateSize("Combining  "u8).X);
         table.SetupColumn("Options"u8,           TableColumnFlags.WidthFixed, Im.Font.CalculateSize("1000 Options  "u8).X);
-        table.SetupColumn("Priority##actions"u8, TableColumnFlags.WidthFixed, Im.Style.FrameHeight * 3 + Im.Style.ItemInnerSpacing.X);
+        table.SetupColumn("Priority##actions"u8, TableColumnFlags.WidthFixed, Im.Style.FrameHeight * 2);
+        table.SetupColumn("Page"u8,              TableColumnFlags.WidthFixed, Im.Style.TextHeight * 2);
+        table.SetupColumn("##actions"u8,         TableColumnFlags.WidthFixed, Im.Style.FrameHeight);
         table.HeaderRow();
 
         var        active   = config.DeleteModModifier.IsActive();
@@ -217,7 +219,16 @@ public class ModPanelEditTab(
             Im.Item.SetNextWidth(2 * Im.Style.FrameHeight);
             if (ImEx.InputOnDeactivation.Scalar("##prio"u8, group.Priority.Value, out var newPriority))
                 modManager.OptionEditor.ChangeGroupPriority(group, new ModPriority(newPriority));
-            Im.Line.SameInner();
+
+            table.NextColumn();
+            Im.Item.SetNextWidth(2 * Im.Style.TextHeight);
+            if (ImEx.InputOnDeactivation.Drag("##page"u8, group.Page, out var newPage, 0, null, 0.02f))
+                modManager.OptionEditor.SetPage(group, newPage);
+
+            Im.Tooltip.OnHover(group.Mod.PageNames.TryGetValue(group.Page, out var name) ? name : $"Page {group.Page + 1}");
+
+
+            table.NextColumn();
             if (ImEx.Icon.Button(LunaStyle.DeleteIcon, "Delete this option group."u8, !active))
                 deletion = group;
 
