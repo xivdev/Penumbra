@@ -556,7 +556,7 @@ public static class GroupDeserialization
             return true;
         }
 
-        if (j.NumberProperty("DefaultSettings"u8, out ulong settings))
+        if (j.NumberProperty("DefaultSettings"u8, out ulong settings, true))
         {
             group.DefaultSettings = new Setting(settings);
             return true;
