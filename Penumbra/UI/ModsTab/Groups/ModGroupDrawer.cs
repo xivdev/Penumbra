@@ -46,6 +46,9 @@ public sealed class ModGroupDrawer(
 
             foreach (var (id, page) in cache.Pages)
             {
+                if (page.Groups.Count is 0)
+                    continue;
+
                 using var _       = Im.Id.Push(id);
                 using var tabItem = tabBar.Item(page.Name, TabItemFlags.NoPushId);
                 if (!tabItem)
@@ -70,6 +73,9 @@ public sealed class ModGroupDrawer(
             Im.Dummy(UiHelpers.DefaultSpace);
             foreach (var (id, page) in cache.Pages)
             {
+                if (page.Groups.Count is 0)
+                    continue;
+
                 using var _ = Im.Id.Push(id);
                 if (cache.Pages.Count > 1 && !Im.Tree.Header(page.Name, TreeNodeFlags.DefaultOpen))
                     continue;

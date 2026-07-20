@@ -546,16 +546,16 @@ public sealed class SettingsTab : ITab<TabType>
                 // SetFilterDirty
             });
 
-        KeySelector.DoubleModifier("Mod Deletion Modifier"u8,
-            "A modifier you need to hold while clicking the Delete Mod button for it to take effect."u8, UiHelpers.InputTextWidth.X,
+        KeySelector.DoubleModifier("Destructive Modifier"u8,
+            "A modifier you need to hold while clicking buttons that perform particularly destructive and generally irrecoverable actions, like deletions."u8, UiHelpers.InputTextWidth.X,
             _config.DeleteModModifier,
             v =>
             {
                 _config.DeleteModModifier = v;
                 _config.Save();
             });
-        KeySelector.DoubleModifier("Incognito Modifier"u8,
-            "A modifier you need to hold while clicking the Incognito or Temporary Settings Mode button for it to take effect."u8,
+        KeySelector.DoubleModifier("Misclick Modifier"u8,
+            "A modifier you need to hold while clicking buttons that should not be toggled by accident, but are generally easily revertible, like the Incognito or Temporary Settings Mode toggles.."u8,
             UiHelpers.InputTextWidth.X,
             _config.IncognitoModifier,
             v =>
