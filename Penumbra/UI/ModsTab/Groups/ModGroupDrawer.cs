@@ -135,6 +135,8 @@ public sealed class ModGroupDrawer(
             ButtonBackgroundCollapsed = cache.FrameColorCollapsed,
             DefaultClosed             = group.Group.Layout.HasFlag(ModSettingsLayout.DefaultClosed),
             ComboDisabled             = group.Disabled,
+            TooltipIcon               = LunaStyle.HelpMarker,
+            HideRightLine             = config.HideRightOptionGroupLine,
         };
 
     private bool DrawSingleGroupComboNew(ModSettingsCache cache, ModSettingsCache.ModGroupCache group, Setting setting, bool hasParent)
@@ -169,11 +171,18 @@ public sealed class ModGroupDrawer(
             using (Im.Disabled(option.Disabled))
             {
                 using var c = ImGuiColor.Text.Push(option.Color);
-                if (Im.Checkbox(option.Name, ref enabled))
+                if (Im.Checkbox(option.HideLabel ? "##check"u8 : option.Name, ref enabled))
                     SetModSetting(group.Group, group.Group.Index, setting.SetBit(option.Data.Index, enabled));
             }
 
-            if (option.Description.Length > 0)
+            if (option.Description.Length <= 0)
+                return;
+
+            if (option.HideLabel)
+            {
+                Im.Tooltip.OnHover(option.Description);
+            }
+            else
             {
                 Im.Line.SameInner();
                 LunaStyle.DrawAlignedHelpMarker(option.Description, treatAsHovered: Im.Item.Hovered(HoveredFlags.AllowWhenDisabled));

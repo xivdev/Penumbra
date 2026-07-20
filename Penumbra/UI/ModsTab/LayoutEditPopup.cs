@@ -65,6 +65,11 @@ public sealed class LayoutEditPopup(ModManager mods) : ObjectEditPopup, IUiServi
             mods.OptionEditor.SetLayout(option, layout);
         Im.Tooltip.OnHover(
             "When this is checked, a separator line is placed below this option both when displayed as a checkbox or radio toggle as well as in a combo."u8);
+
+        if (Im.Checkbox("Hide Option Label (Single Line)"u8, ref layout, ModSettingsLayout.HideOptionLabel))
+            mods.OptionEditor.SetLayout(option, layout);
+        Im.Tooltip.OnHover(
+            "When this is checked, and this option is a single checkbox option on the same line as its group label, only display the checkbox, not the option's name or description as a label."u8);
     }
 
     protected override void DrawInternal()

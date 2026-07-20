@@ -32,7 +32,8 @@ public sealed class ModSettingsCache : BasicCache
         Vector4 Color,
         float Width,
         bool Disabled,
-        bool Separator) : Node(Name, Description);
+        bool Separator,
+        bool HideLabel) : Node(Name, Description);
 
     public sealed record ModGroupCache(IModGroup Group, StringU8 Name, StringU8 Description) : Node(Name, Description)
     {
@@ -191,7 +192,7 @@ public sealed class ModSettingsCache : BasicCache
                 return;
 
             group.IsSameLineOption = true;
-            if (option.Name.IsEmpty && option.Description.IsEmpty)
+            if (option.HideLabel || option.Name.IsEmpty && option.Description.IsEmpty)
             {
                 group.IsCheckbox = true;
                 group.ComboWidth = Im.Style.FrameHeight;
@@ -261,7 +262,7 @@ public sealed class ModSettingsCache : BasicCache
             Indented    = group.Group.Layout.HasFlag(ModSettingsLayout.Indent),
         };
         ret.NameWidth = ret.Name.CalculateSize().X;
-        if (!ret.Description.IsEmpty && ret.IsCombo)
+        if (!ret.Description.IsEmpty)
             ret.NameWidth += Im.Style.ItemInnerSpacing.X + LunaStyle.HelpMarker.CalculateSize().X;
 
         ret.AllOptions.EnsureCapacity(group.Options.Count);
@@ -278,7 +279,7 @@ public sealed class ModSettingsCache : BasicCache
                 width += Im.Style.ItemInnerSpacing.X + LunaStyle.HelpMarker.CalculateSize().X;
 
             var newOption = new Option(option, name, description, option.ColorValue, width,
-                !condition, option.Layout.HasFlag(ModSettingsLayout.Separator));
+                !condition, option.Layout.HasFlag(ModSettingsLayout.Separator), option.Layout.HasFlag(ModSettingsLayout.HideOptionLabel));
 
             ret.AllOptions.Add(newOption);
             if (hidden)

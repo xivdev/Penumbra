@@ -9,12 +9,13 @@ namespace Penumbra.Mods.SubMods;
 [Flags]
 public enum ModSettingsLayout : ulong
 {
-    None          = 0,
-    Disable       = 0x01, // Disable the option or group instead of hiding it when the conditions are not fulfilled.
-    Indent        = 0x02, // Indent the group if it is placed under another option or group.
-    ParentHeader  = 0x04, // Show the groups name or just its options if it is placed under another option or group.
-    Separator     = 0x08, // Add a separator after this option.
-    DefaultClosed = 0x10, // A group should be closed by default.
+    None            = 0,
+    Disable         = 0x01, // Disable the option or group instead of hiding it when the conditions are not fulfilled.
+    Indent          = 0x02, // Indent the group if it is placed under another option or group.
+    ParentHeader    = 0x04, // Show the groups name or just its options if it is placed under another option or group.
+    Separator       = 0x08, // Add a separator after this option.
+    DefaultClosed   = 0x10, // A group should be closed by default.
+    HideOptionLabel = 0x20, // An option's label should not be drawn when it is in a single line checkbox.
 }
 
 public interface IModObject : CycleChecker.IHasParent<IModObject>, IEquatable<IModObject>
@@ -88,8 +89,12 @@ public interface IModOption : IModObject, IIndexed
 
 public static class ModSettingsLayoutExtensions
 {
-    public const ModSettingsLayout GroupValid  = ModSettingsLayout.Disable | ModSettingsLayout.Indent | ModSettingsLayout.ParentHeader | ModSettingsLayout.DefaultClosed;
-    public const ModSettingsLayout OptionValid = ModSettingsLayout.Disable | ModSettingsLayout.Separator;
+    public const ModSettingsLayout GroupValid = ModSettingsLayout.Disable
+      | ModSettingsLayout.Indent
+      | ModSettingsLayout.ParentHeader
+      | ModSettingsLayout.DefaultClosed;
+
+    public const ModSettingsLayout OptionValid = ModSettingsLayout.Disable | ModSettingsLayout.Separator | ModSettingsLayout.HideOptionLabel;
 
     extension(ModSettingsLayout layout)
     {
@@ -105,6 +110,8 @@ public static class ModSettingsLayoutExtensions
                 yield return ModSettingsLayout.Separator;
             if (layout.HasFlag(ModSettingsLayout.DefaultClosed))
                 yield return ModSettingsLayout.DefaultClosed;
+            if (layout.HasFlag(ModSettingsLayout.HideOptionLabel))
+                yield return ModSettingsLayout.HideOptionLabel;
         }
 
         public ModSettingsLayout Reduce(IModObject @object)

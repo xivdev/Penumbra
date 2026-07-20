@@ -29,7 +29,7 @@
             "type": [ "null", "array" ],
             "items": {
                 "type": "string",
-                "enum": [ "Disable", "Separator" ]
+                "enum": [ "Disable", "Separator", "HideOptionLabel" ]
             }
         },
         "Condition": {
