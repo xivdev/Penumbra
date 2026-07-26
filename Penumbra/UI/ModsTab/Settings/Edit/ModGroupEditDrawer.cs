@@ -56,6 +56,14 @@ public sealed class ModGroupEditDrawer(
     private IModOption? _dragDropOption;
     private bool        _draggingAcross;
 
+    private IModObject?                    _dragDropCondition;
+    private ICondition<ModSettingContext>? _copiedCondition;
+
+    private ModSettingsLayout? _copiedLayout;
+    private IModObject?        _copiedParent;
+    private int?               _copiedColor;
+    private bool               _didCopyParent;
+
     public void Draw(GroupNameCache cache, Mod mod)
     {
         PrepareStyle();
@@ -158,6 +166,7 @@ public sealed class ModGroupEditDrawer(
         if (ImEx.Icon.Button(LunaStyle.EditIcon, "Edit group description."u8,
                 textColor: group.Description.Length > 0 ? LunaStyle.FavoriteColor : ColorParameter.Default))
             descriptionPopup.Open(group);
+        DrawDescriptionInteraction(group);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -166,6 +175,7 @@ public sealed class ModGroupEditDrawer(
         if (ImEx.Icon.Button(LunaStyle.LayoutIcon, "Edit group layout settings."u8,
                 textColor: group.Layout is not 0 || group.ParentSetting is not null ? LunaStyle.FavoriteColor : ColorParameter.Default))
             layoutPopup.Open(group);
+        DrawLayoutInteraction(group);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -174,6 +184,8 @@ public sealed class ModGroupEditDrawer(
         if (ImEx.Icon.Button(LunaStyle.ConditionIcon, "Edit group conditions."u8,
                 textColor: group.Condition is not null ? LunaStyle.FavoriteColor : ColorParameter.Default))
             conditionPopup.Open(group);
+
+        DrawConditionInteraction(group);
     }
 
     private void DrawGroupMoveButtons(IModGroup group, int idx)
@@ -242,6 +254,7 @@ public sealed class ModGroupEditDrawer(
         if (ImEx.Icon.Button(LunaStyle.EditIcon, "Edit option description."u8,
                 textColor: option.Description.Length > 0 ? LunaStyle.FavoriteColor : ColorParameter.Default))
             descriptionPopup.Open(option);
+        DrawDescriptionInteraction(option);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -250,6 +263,7 @@ public sealed class ModGroupEditDrawer(
         if (ImEx.Icon.Button(LunaStyle.LayoutIcon, "Edit option layout settings."u8,
                 textColor: option.Layout is not 0 || option.ColorAsInteger is not 0 ? LunaStyle.FavoriteColor : ColorParameter.Default))
             layoutPopup.Open(option);
+        DrawLayoutInteraction(option);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -258,6 +272,7 @@ public sealed class ModGroupEditDrawer(
         if (ImEx.Icon.Button(LunaStyle.ConditionIcon, "Edit option conditions."u8,
                 textColor: option.Condition is not null ? LunaStyle.FavoriteColor : ColorParameter.Default))
             conditionPopup.Open(option);
+        DrawConditionInteraction(option);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -367,6 +382,110 @@ public sealed class ModGroupEditDrawer(
         _dragDropGroup  = null;
         _dragDropOption = null;
         _draggingAcross = false;
+    }
+
+    private void DrawDescriptionInteraction(IModObject @object)
+    {
+        using var menu = Im.Popup.BeginContextItem();
+        if (!menu)
+            return;
+
+        using (Im.Disabled(@object.Description.Length is 0))
+        {
+            if (!Im.Menu.Item("Clear"u8))
+                return;
+
+            if (@object is IModGroup g)
+                ModManager.OptionEditor.ChangeGroupDescription(g, string.Empty);
+            else
+                ModManager.OptionEditor.ChangeOptionDescription((IModOption)@object, string.Empty);
+        }
+    }
+
+    private void DrawLayoutInteraction(IModObject @object)
+    {
+        using var menu = Im.Popup.BeginContextItem();
+        if (!menu)
+            return;
+
+        using (Im.Disabled(@object.Layout is 0))
+        {
+            if (Im.Menu.Item("Copy"u8))
+            {
+                _copiedLayout  = @object.Layout;
+                _didCopyParent = @object is IModGroup;
+                _copiedParent  = @object is IModGroup g ? g.ParentSetting : null;
+                _copiedColor   = @object is IModOption o ? o.ColorAsInteger : null;
+            }
+        }
+
+        using (Im.Disabled(_copiedLayout is null))
+        {
+            if (Im.Menu.Item("Paste"u8))
+            {
+                ModManager.OptionEditor.SetLayout(@object, _copiedLayout!.Value);
+                if (_didCopyParent && @object is IModGroup g && CycleChecker.Check(g, _copiedParent))
+                    ModManager.OptionEditor.SetParent(g, _copiedParent);
+                if (_copiedColor.HasValue && @object is IModOption o)
+                    ModManager.OptionEditor.SetColor(o, _copiedColor.Value);
+            }
+        }
+
+        using (Im.Disabled(@object.Layout is 0))
+        {
+            if (Im.Menu.Item("Clear"u8))
+            {
+                ModManager.OptionEditor.SetLayout(@object, 0);
+                if (@object is IModGroup g)
+                    ModManager.OptionEditor.SetParent(g, null);
+                if (@object is IModOption o)
+                    ModManager.OptionEditor.SetColor(o, 0);
+            }
+        }
+    }
+
+    private void DrawConditionInteraction(IModObject @object)
+    {
+        using (var menu = Im.Popup.BeginContextItem())
+        {
+            if (menu)
+            {
+                using (Im.Disabled(@object.Condition is null))
+                {
+                    if (Im.Menu.Item("Copy"u8))
+                        _copiedCondition = @object.Condition!.DeepCopy();
+                }
+
+                using (Im.Disabled(_copiedCondition is null))
+                {
+                    if (Im.Menu.Item("Paste"u8))
+                        ModManager.OptionEditor.SetCondition(@object, _copiedCondition!.DeepCopy(), false);
+                }
+
+                using (Im.Disabled(@object.Condition is null))
+                {
+                    if (Im.Menu.Item("Clear"u8))
+                        ModManager.OptionEditor.SetCondition(@object, null, false);
+                }
+            }
+        }
+
+        using (var drag = Im.DragDrop.Source())
+        {
+            if (drag)
+            {
+                drag.SetPayload("Condition"u8);
+                _dragDropCondition = @object;
+                Im.Text($"Dragging {@object.Name}'s condition...");
+            }
+        }
+
+        if (_dragDropCondition is not null)
+        {
+            using var drag = Im.DragDrop.Target();
+            if (drag.IsDropping("Condition"u8))
+                modManager.OptionEditor.SetCondition(@object, _dragDropCondition.Condition?.DeepCopy(), false);
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
