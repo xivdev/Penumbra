@@ -220,7 +220,7 @@ public sealed class DebugTab : Window, ITab<TabType>
         {
             if (collection.HasCache)
             {
-                using var color = ImGuiColor.Text.Push(ColorId.FolderExpanded.Value());
+                using var color = ImGuiColor.Text.Push(ColorId.FolderExpanded.Vector);
                 using var node =
                     Im.Tree.Node($"{collection.Identity.Name} (Change Counter {collection.Counters.Change})###{collection.Identity.Name}");
                 if (!node)
@@ -285,7 +285,7 @@ public sealed class DebugTab : Window, ITab<TabType>
             }
             else
             {
-                using var color = ImGuiColor.Text.Push(ColorId.UndefinedMod.Value());
+                using var color = ImGuiColor.Text.Push(ColorId.UndefinedMod.Vector);
                 Im.Tree.Leaf($"{collection.Identity.Name} (Change Counter {collection.Counters.Change})");
             }
         }

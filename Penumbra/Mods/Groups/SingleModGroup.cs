@@ -8,6 +8,7 @@ using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
 using Penumbra.String.Classes;
 using Penumbra.UI.ModsTab.Groups;
+using Penumbra.UI.ModsTab.Settings;
 using Penumbra.Util;
 
 namespace Penumbra.Mods.Groups;

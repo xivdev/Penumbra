@@ -33,16 +33,16 @@ public sealed class ItemSelector(ActiveCollections collections, ItemData data, M
                 ConvertCollection(item, currentCollection))
         {
             if (InCurrentMod)
-                Color = ColorId.ResTreeLocalPlayer.Value().ToVector();
+                Color = ColorId.ResTreeLocalPlayer.Vector;
             else if (CollectionMods.Length > 0)
-                Color = ColorId.ResTreeNonNetworked.Value().ToVector();
+                Color = ColorId.ResTreeNonNetworked.Vector;
         }
 
         public CacheItem(EquipItem item, ModCollection currentCollection)
             : this(item, new StringPair(item.Name), Im.Style[ImGuiColor.Text], false, ConvertCollection(item, currentCollection))
         {
             if (CollectionMods.Length > 0)
-                Color = ColorId.ResTreeNonNetworked.Value().ToVector();
+                Color = ColorId.ResTreeNonNetworked.Vector;
         }
 
         private static StringU8[] ConvertCollection(in EquipItem item, ModCollection collection)

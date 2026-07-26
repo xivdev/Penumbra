@@ -111,17 +111,17 @@ public class ModPanelCollectionsTab(CollectionManager manager, ModSelection sele
     private (int Direct, int Inherited) CountUsage(Mod mod)
     {
         _cache.Clear();
-        var undefined      = ColorId.UndefinedMod.Value();
-        var enabled        = ColorId.EnabledMod.Value();
-        var inherited      = ColorId.InheritedMod.Value();
-        var disabled       = ColorId.DisabledMod.Value();
-        var disInherited   = ColorId.InheritedDisabledMod.Value();
+        var undefined      = ColorId.UndefinedMod.Value;
+        var enabled        = ColorId.EnabledMod.Value;
+        var inherited      = ColorId.InheritedMod.Value;
+        var disabled       = ColorId.DisabledMod.Value;
+        var disInherited   = ColorId.InheritedDisabledMod.Value;
         var directCount    = 0;
         var inheritedCount = 0;
         foreach (var collection in manager.Storage)
         {
             var (settings, parent) = collection.GetInheritedSettings(mod.Index);
-            var (color, text) = settings == null
+            var (color, text) = settings is null
                 ? (undefined, ModState.Unconfigured)
                 : settings.Enabled
                     ? (parent == collection ? enabled : inherited, ModState.Enabled)

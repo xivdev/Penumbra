@@ -7,7 +7,6 @@ using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.Enums;
 using Penumbra.Files;
-using Penumbra.GameData.Gui.Debug;
 using Penumbra.Interop.Services;
 using Penumbra.Mods;
 using Penumbra.Mods.Editor;
@@ -38,19 +37,6 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
     public bool                       SortFoldersFirst;
     public SortModeV3                 SortMode = SortModeV3.FoldersFirst;
 
-    /// <summary> Add missing colors to the dictionary if necessary. </summary>
-    private static void AddColors(Configuration config, bool forceSave)
-    {
-        var save = false;
-        foreach (var color in ColorId.Values)
-            save |= config.Colors.TryAdd(color, color.Data().DefaultColor);
-
-        if (save || forceSave)
-            config.Save();
-
-        Colors.SetColors(config);
-    }
-
     public void Migrate(CharacterUtility utility, Configuration config)
     {
         _config = config;
@@ -59,10 +45,7 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
         DeleteMetaTmp();
 
         if (config.Version >= Configuration.Constants.CurrentVersion || !File.Exists(saveService.FileNames.ConfigurationFile))
-        {
-            AddColors(config, false);
             return;
-        }
 
         _data = JObject.Parse(File.ReadAllText(saveService.FileNames.ConfigurationFile));
         Version0To1();
@@ -79,7 +62,35 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
         Version11To12();
         Version12To13();
         Version13To14();
-        AddColors(config, true);
+        Version14To15();
+    }
+
+    private void Version14To15()
+    {
+        if (_config.Version is not 14)
+            return;
+
+        _config.Version           = 15;
+        _config.Ephemeral.Version = 15;
+        if (_data["Colors"]?.ToObject<Dictionary<string, uint>>() is not { } colorsString)
+            return;
+
+        var colors = new Dictionary<ColorId, uint>(colorsString.Count);
+        foreach (var (name, color) in colorsString)
+        {
+            if (ColorId.Parse(name, out var id))
+                colors.Add(id, color);
+        }
+
+        if (colors.Count > 0)
+        {
+            var migrate = new ColorDictionary<ColorId, ColorIdData>(colors, (id, value) => ColorIdData.OldDefault(id) == value);
+            _config.Ui.Colors.Apply(migrate, false);
+            _config.Ui.Save();
+        }
+
+        _config.Save();
+        _config.Ephemeral.Save();
     }
 
     private void Version13To14()

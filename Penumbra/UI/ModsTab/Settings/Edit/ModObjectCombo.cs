@@ -3,7 +3,7 @@ using Penumbra.Mods;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.SubMods;
 
-namespace Penumbra.UI.ModsTab;
+namespace Penumbra.UI.ModsTab.Settings;
 
 internal sealed class ModObjectCache
 {

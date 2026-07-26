@@ -7,7 +7,7 @@ using Penumbra.Mods.Manager.OptionEditor;
 using Penumbra.Mods.SubMods;
 using Penumbra.UI.AdvancedWindow.Meta;
 
-namespace Penumbra.UI.ModsTab.Groups;
+namespace Penumbra.UI.ModsTab.Settings;
 
 public readonly struct ImcModGroupEditDrawer(ModGroupEditDrawer editor, ImcModGroup group) : IModGroupEditDrawer
 {

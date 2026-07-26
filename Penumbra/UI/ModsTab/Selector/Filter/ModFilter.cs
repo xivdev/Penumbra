@@ -41,7 +41,7 @@ public sealed class ModFilter : TokenizedFilter<ModFilterTokenType, ModFileSyste
             return;
 
         using var tt             = Im.Tooltip.Begin();
-        var       highlightColor = ColorId.NewMod.Value().ToVector();
+        var       highlightColor = ColorId.NewMod.Vector;
         Im.Text("Filter mods for those where their full paths or names contain the given strings, split by spaces."u8);
         ImEx.TextMultiColored("Enter "u8).Then("c:[string]"u8, highlightColor).Then(" to filter for mods changing specific items."u8).End();
         ImEx.TextMultiColored("Enter "u8).Then("t:[string]"u8, highlightColor).Then(" to filter for mods set to specific tags."u8).End();

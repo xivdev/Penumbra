@@ -283,9 +283,9 @@ public partial class MaterialEditor
 
     private static void ApplyHighlight(ref ColorTableRow row, ColorId colorId, float time)
     {
-        var level     = (MathF.Sin(time * 2.0f * MathF.PI) + 2.0f) / 3.0f / 255.0f;
-        var baseColor = colorId.Value();
-        var color     = level * new Vector3(baseColor.R, baseColor.G, baseColor.B);
+        var level     = (MathF.Sin(time * 2.0f * MathF.PI) + 2.0f) / 3.0f;
+        var baseColor = colorId.Vector;
+        var color     = level * new Vector3(baseColor.X, baseColor.Y, baseColor.Z);
         var halfColor = (HalfColor)(color * color);
 
         row.DiffuseColor  = halfColor;

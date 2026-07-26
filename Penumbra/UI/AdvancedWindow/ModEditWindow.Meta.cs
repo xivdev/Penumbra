@@ -12,7 +12,7 @@ namespace Penumbra.UI.AdvancedWindow;
 
 public partial class ModEditWindow
 {
-    private const    int                  _numTabs = 10;
+    private const    int                  NumTabs = 10;
     private readonly MetaDrawers          _metaDrawers;
     private          MetaManipulationType _selected = MetaManipulationType.Eqp;
 
@@ -52,7 +52,7 @@ public partial class ModEditWindow
         Im.Cursor.Y += Im.Style.ItemSpacing.Y;
 
         // Reinvent tab-bar to support button padding for border numbers.
-        var buttonSize = new Vector2((Im.ContentRegion.Available.X - (_numTabs - 1) * Im.Style.ItemInnerSpacing.X) / _numTabs,
+        var buttonSize = new Vector2((Im.ContentRegion.Available.X - (NumTabs - 1) * Im.Style.ItemInnerSpacing.X) / NumTabs,
             Im.Style.TextHeight + Im.Style.FramePadding.Y);
         using (ImStyleDouble.FramePadding.PushY(0).PushY(ImStyleDouble.ButtonTextAlign, 0.5f))
         {
@@ -142,13 +142,13 @@ public partial class ModEditWindow
         if (drawer.Count > 0)
         {
             var position = Im.Item.UpperLeftCorner + Im.Style.FramePadding;
-            Im.Window.DrawList.Text(position, ColorId.NewMod.Value().FullAlpha(), $"({drawer.Count})");
+            Im.Window.DrawList.Text(position, ColorId.NewMod.Value.FullAlpha(), $"({drawer.Count})");
         }
 
         if (otherData.TotalCount > 0)
         {
             var position = Im.Item.LowerRightCorner - Im.Style.FramePadding - Im.Font.CalculateSize($"({otherData.TotalCount})");
-            Im.Window.DrawList.Text(position, ColorId.RedundantAssignment.Value().FullAlpha(), $"({otherData.TotalCount})");
+            Im.Window.DrawList.Text(position, ColorId.RedundantAssignment.Value.FullAlpha(), $"({otherData.TotalCount})");
         }
 
         if (Im.Item.Hovered())

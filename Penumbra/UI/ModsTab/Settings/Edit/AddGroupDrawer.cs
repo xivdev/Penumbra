@@ -10,7 +10,7 @@ using Penumbra.Mods.Manager.OptionEditor;
 using Penumbra.UI.AdvancedWindow.Meta;
 using Penumbra.UI.Classes;
 
-namespace Penumbra.UI.ModsTab.Groups;
+namespace Penumbra.UI.ModsTab.Settings;
 
 public class AddGroupDrawer : Luna.IUiService
 {
@@ -32,7 +32,7 @@ public class AddGroupDrawer : Luna.IUiService
 
     public void Draw(Mod mod, float width)
     {
-        using var tree        = Im.Tree.Node("Add Group"u8, TreeNodeFlags.DefaultOpen);
+        using var tree = Im.Tree.Node("Add Group"u8, TreeNodeFlags.DefaultOpen);
         if (tree)
         {
             var buttonWidth = new Vector2((width - Im.Style.ItemInnerSpacing.X) / 2, 0);

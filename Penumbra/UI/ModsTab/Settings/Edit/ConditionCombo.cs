@@ -2,7 +2,7 @@ using ImSharp;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.SubMods;
 
-namespace Penumbra.UI.ModsTab;
+namespace Penumbra.UI.ModsTab.Settings;
 
 internal sealed class ConditionCombo : ModObjectCombo
 {

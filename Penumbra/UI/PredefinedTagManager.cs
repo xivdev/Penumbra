@@ -1,4 +1,4 @@
-﻿using Luna;
+using Luna;
 using Newtonsoft.Json.Linq;
 using Penumbra.Files;
 using Penumbra.Mods;
@@ -52,10 +52,10 @@ public sealed class PredefinedTagManager : PredefinedTagManager<FilenameService,
     }
 
     public override Vector4 AddButtonColor
-        => ColorId.PredefinedTagAdd.Value().ToVector();
+        => ColorId.PredefinedTagAdd.Vector;
 
     public override Vector4 RemoveButtonColor
-        => ColorId.PredefinedTagRemove.Value().ToVector();
+        => ColorId.PredefinedTagRemove.Vector;
 
     public override string ToFilePath(FilenameService fileNames)
         => fileNames.PredefinedTagFile;

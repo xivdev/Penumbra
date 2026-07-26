@@ -53,7 +53,7 @@ public sealed class OptionSelectCombo : FilterComboBase<OptionSelectCombo.Option
             > 8            => ComboFlags.HeightLargest,
             _              => ComboFlags.None,
         };
-        _border.Push(ImStyleBorder.Frame, ColorId.FolderLine.Value());
+        _border.Push(ImStyleBorder.Frame, ColorId.FolderLine.Vector);
     }
 
     protected override void PostDrawCombo(float width)

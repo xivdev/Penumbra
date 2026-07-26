@@ -6,7 +6,7 @@ using Penumbra.Mods.Manager;
 using Penumbra.Mods.Manager.OptionEditor;
 using Penumbra.Services;
 
-namespace Penumbra.UI.ModsTab.Groups;
+namespace Penumbra.UI.ModsTab.Settings;
 
 public sealed class GroupNameCache : BasicCache
 {

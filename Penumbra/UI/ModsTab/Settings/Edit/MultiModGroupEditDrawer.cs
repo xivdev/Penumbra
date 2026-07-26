@@ -1,8 +1,9 @@
 using ImSharp;
 using Luna;
 using Penumbra.Mods.Groups;
+using Penumbra.UI.ModsTab.Groups;
 
-namespace Penumbra.UI.ModsTab.Groups;
+namespace Penumbra.UI.ModsTab.Settings;
 
 public readonly struct MultiModGroupEditDrawer(ModGroupEditDrawer editor, MultiModGroup group) : IModGroupEditDrawer
 {

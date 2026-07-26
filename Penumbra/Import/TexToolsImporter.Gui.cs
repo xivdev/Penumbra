@@ -122,7 +122,7 @@ public partial class TexToolsImporter
             table.NextColumn();
             if (ex is null)
             {
-                using var color = ImGuiColor.Text.Push(ColorId.FolderExpanded.Value());
+                using var color = ImGuiColor.Text.Push(ColorId.FolderExpanded.Vector);
                 if (dir is null)
                     Im.Text("Unknown Directory"u8);
                 else
@@ -130,7 +130,7 @@ public partial class TexToolsImporter
             }
             else
             {
-                using var color = ImGuiColor.Text.Push(ColorId.ConflictingMod.Value());
+                using var color = ImGuiColor.Text.Push(ColorId.ConflictingMod.Vector);
                 Im.Text(ex.Message);
                 Im.Tooltip.OnHover($"{ex}");
             }

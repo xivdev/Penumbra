@@ -94,7 +94,7 @@ public abstract class MetaDrawer<TIdentifier, TEntry>(ModMetaEditor editor, Meta
         out T newValue, T minValue, T maxValue, float speed, bool addDefault) where T : unmanaged, INumber<T>
     {
         newValue = currentValue;
-        var       c     = defaultValue > currentValue ? ColorId.DecreasedMetaValue.Value() : ColorId.IncreasedMetaValue.Value();
+        var       c     = defaultValue > currentValue ? ColorId.DecreasedMetaValue.Vector : ColorId.IncreasedMetaValue.Vector;
         using var color = ImGuiColor.FrameBackground.Push(c, defaultValue != currentValue);
         Im.Item.SetNextWidth(width);
         if (Im.Drag(label, ref newValue, minValue, maxValue, speed))
@@ -115,7 +115,7 @@ public abstract class MetaDrawer<TIdentifier, TEntry>(ModMetaEditor editor, Meta
     protected static bool Checkmark(ReadOnlySpan<byte> label, ReadOnlySpan<byte> tooltip, bool currentValue, bool defaultValue,
         out bool newValue)
     {
-        var       c     = defaultValue ? ColorId.DecreasedMetaValue.Value() : ColorId.IncreasedMetaValue.Value();
+        var       c     = defaultValue ? ColorId.DecreasedMetaValue.Vector : ColorId.IncreasedMetaValue.Vector;
         using var color = ImGuiColor.FrameBackground.Push(c, defaultValue != currentValue);
         newValue = currentValue;
         Im.Checkbox(label, ref newValue);
@@ -130,7 +130,7 @@ public abstract class MetaDrawer<TIdentifier, TEntry>(ModMetaEditor editor, Meta
     protected static bool Checkmark(ReadOnlySpan<byte> label, ReadOnlySpan<char> tooltip, bool currentValue, bool defaultValue,
         out bool newValue)
     {
-        var       c     = defaultValue != currentValue ? ColorId.DecreasedMetaValue.Value() : ColorId.IncreasedMetaValue.Value();
+        var       c     = defaultValue != currentValue ? ColorId.DecreasedMetaValue.Vector : ColorId.IncreasedMetaValue.Vector;
         using var color = ImGuiColor.FrameBackground.Push(c, defaultValue != currentValue);
         newValue = currentValue;
         Im.Checkbox(label, ref newValue);

@@ -70,10 +70,11 @@ public class ResourceTreeViewer(
             foreach (var (index, tree) in _task.Result.Index())
             {
                 var category = Classify(tree);
-                if (!_categoryFilter.HasFlag(category) || !tree.Name.Contains(config.Filters.OnScreenCharacterFilter, StringComparison.OrdinalIgnoreCase))
+                if (!_categoryFilter.HasFlag(category)
+                 || !tree.Name.Contains(config.Filters.OnScreenCharacterFilter, StringComparison.OrdinalIgnoreCase))
                     continue;
 
-                using (ImGuiColor.Text.Push(CategoryColor(category).Value()))
+                using (ImGuiColor.Text.Push(CategoryColor(category).Vector))
                 {
                     var isOpen = Im.Tree.Header($"{(incognito.IncognitoMode ? tree.AnonymizedName : tree.Name)}###{index}",
                         index is 0 ? TreeNodeFlags.DefaultOpen : 0);
@@ -183,7 +184,7 @@ public class ResourceTreeViewer(
             foreach (var category in TreeCategory.Values)
             {
                 using var id = Im.Id.Push((int)category);
-                using var c  = ImGuiColor.CheckMark.Push(CategoryColor(category).Value());
+                using var c  = ImGuiColor.CheckMark.Push(CategoryColor(category).Vector);
                 Im.Checkbox(StringU8.Empty, ref _categoryFilter, category);
                 Im.Tooltip.OnHover(CategoryFilterDescription(category));
                 Im.Line.Same(0.0f, checkSpacing);
@@ -258,14 +259,13 @@ public class ResourceTreeViewer(
         foreach (var (index, resourceNode) in resourceNodes.Index())
         {
             var nodePathHash = unchecked(pathHash + resourceNode.ResourceHandle);
-
-            var visibility = GetNodeVisibility(nodePathHash, resourceNode, parentFilterIconFlag);
+            var visibility   = GetNodeVisibility(nodePathHash, resourceNode, parentFilterIconFlag);
             if (visibility == NodeVisibility.Hidden)
                 continue;
 
             using var mutedColor = ImGuiColor.Text.Push(Im.Style[ImGuiColor.Text].WithAlpha(0.5f), resourceNode.Internal);
 
-            var filterIcon = resourceNode.IconFlag != 0 ? resourceNode.IconFlag : parentFilterIconFlag;
+            var filterIcon = resourceNode.IconFlag is not 0 ? resourceNode.IconFlag : parentFilterIconFlag;
 
             using var id = Im.Id.Push(index);
             table.NextColumn();
@@ -339,7 +339,7 @@ public class ResourceTreeViewer(
                     var       modName = $"[{(hasMod ? mod!.Name : resourceNode.ModName)}]";
                     var       textPos = Im.Cursor.X + Im.Font.CalculateSize(modName).X + Im.Style.ItemInnerSpacing.X;
                     using var group   = Im.Group();
-                    using (ImGuiColor.Text.Push((hasMod ? ColorId.NewMod : ColorId.DisabledMod).Value()))
+                    using (ImGuiColor.Text.Push((hasMod ? ColorId.NewMod : ColorId.DisabledMod).Vector))
                     {
                         Im.Selectable(modName, false, SelectableFlags.AllowOverlap, Im.ContentRegion.Available with { Y = frameHeight });
                     }

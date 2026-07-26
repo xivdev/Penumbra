@@ -7,6 +7,7 @@ using Penumbra.GameData.Structs;
 using Penumbra.Interop.PathResolving;
 using Penumbra.Meta;
 using Penumbra.Mods.Manager;
+using Penumbra.UI.Classes;
 using Penumbra.UI.ManagementTab;
 using IPenumbraApi = Penumbra.Api.Api.IPenumbraApi;
 
@@ -24,6 +25,7 @@ public static class StaticServiceManager
             .AddExistingService(penumbra)
             .AddGenericSingleton(typeof(ManagementLog<>));
 
+        services.AddSingleton(p => new ColorCache<ColorId, ColorIdData>(p.GetRequiredService<UiConfig>().Colors));
         services.AddIServices(typeof(EquipItem).Assembly);
         services.AddIServices(typeof(Penumbra).Assembly);
         services.AddIServices(typeof(IService).Assembly);

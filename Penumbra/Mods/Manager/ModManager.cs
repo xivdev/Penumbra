@@ -155,7 +155,7 @@ public sealed class ModManager : ModStorage, IDisposable, IService
         }
 
         _communicator.ModPathChanged.Invoke(new ModPathChanged.Arguments(ModPathChangeType.Reloaded, mod, mod.ModPath, mod.ModPath));
-        if (metaChange != ModDataChangeType.None)
+        if (metaChange is not ModDataChangeType.None)
             _communicator.ModDataChanged.Invoke(new ModDataChanged.Arguments(metaChange, mod, oldName));
     }
 

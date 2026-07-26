@@ -64,7 +64,7 @@ public sealed class SettingsTab : ITab<TabType>
         DalamudSubstitutionProvider dalamudSubstitutionProvider, FileCompactor compactor, DalamudConfigService dalamudConfig,
         IDataManager gameData, PredefinedTagManager predefinedTagConfig, CrashHandlerService crashService,
         MigrationSectionDrawer migrationDrawer, CollectionAutoSelector autoSelector, AttributeHook attributeHook, PcpService pcpService,
-        IntegrationSettingsRegistry integrationSettings, ModFileSystemDrawer modFileSystemDrawer)
+        IntegrationSettingsRegistry integrationSettings, ModFileSystemDrawer modFileSystemDrawer, ColorCache<ColorId, ColorIdData> cache)
     {
         _pluginInterface             = pluginInterface;
         _config                      = config;
@@ -92,6 +92,7 @@ public sealed class SettingsTab : ITab<TabType>
         _pcpService           = pcpService;
         _integrationSettings  = integrationSettings;
         _modFileSystemDrawer  = modFileSystemDrawer;
+        _cache                = cache;
     }
 
     public void PostTabButton()
@@ -134,20 +135,6 @@ public sealed class SettingsTab : ITab<TabType>
         {
             setter(tmp);
             _config.Save();
-        }
-
-        LunaStyle.DrawAlignedHelpMarkerLabel(label, tooltip);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    private void EphemeralCheckbox(ReadOnlySpan<byte> label, ReadOnlySpan<byte> tooltip, bool current, Action<bool> setter)
-    {
-        using var id  = Im.Id.Push(label);
-        var       tmp = current;
-        if (Im.Checkbox(StringU8.Empty, ref tmp) && tmp != current)
-        {
-            setter(tmp);
-            _config.Ephemeral.Save();
         }
 
         LunaStyle.DrawAlignedHelpMarkerLabel(label, tooltip);
@@ -461,9 +448,13 @@ public sealed class SettingsTab : ITab<TabType>
         Checkbox("Draw Tabs for Option Pages"u8,
             "When this is on, pages set for options in a mod's metadata are drawn as a tab bar. When it is off, pages are drawn successively on the same page using sections of collapsing headers."u8,
             _config.DisplayPages, v => _config.DisplayPages = v);
-        Checkbox("Hide Right Part of Option Group Lines"u8,
-            "When this is on, only the left (and center parts) of the header lines for option groups are drawn, otherwise the line continues to the right of the window."u8,
-            _config.HideRightOptionGroupLine, v => _config.HideRightOptionGroupLine = v);
+        Im.Item.SetNextWidth(UiHelpers.InputTextWidth.X);
+        if (ImEx.InputOnDeactivation.Drag("Vertical Spacing between Option Groups Factor"u8, _config.Ui.ModSettingItemSpacingFactor,
+                out var newFactor, "%.2f"u8, 0, 10, 0.01f))
+            _config.Ui.ModSettingItemSpacingFactor = newFactor;
+        Im.Tooltip.OnHover(
+            "An additional factor applied to your regular ImGui style's item spacing in the vertical direction between the nodes in your mod settings tab.\n\n"u8
+          + "A value of 1 means that the normal item spacing is used."u8);
         DrawSingleSelectRadioMax();
     }
 
@@ -550,7 +541,8 @@ public sealed class SettingsTab : ITab<TabType>
             });
 
         KeySelector.DoubleModifier("Destructive Modifier"u8,
-            "A modifier you need to hold while clicking buttons that perform particularly destructive and generally irrecoverable actions, like deletions."u8, UiHelpers.InputTextWidth.X,
+            "A modifier you need to hold while clicking buttons that perform particularly destructive and generally irrecoverable actions, like deletions."u8,
+            UiHelpers.InputTextWidth.X,
             _config.DeleteModModifier,
             v =>
             {
@@ -812,24 +804,17 @@ public sealed class SettingsTab : ITab<TabType>
 
     #endregion
 
+    private ColorCache<ColorId, ColorIdData> _cache;
+
     /// <summary> Draw the entire Color subsection. </summary>
     private void DrawColorSettings()
     {
-        if (!Im.Tree.Header("Colors"u8))
+        using var header = Im.Tree.HeaderId("Colors"u8);
+        if (!header)
             return;
 
-        foreach (var color in ColorId.Values)
-        {
-            var (defaultColor, name, description) = color.Data();
-            var currentColor = _config.Colors.GetValueOrDefault(color, defaultColor);
-            if (ImEx.ColorPicker(name, description, currentColor, out var newColor, defaultColor))
-            {
-                _config.Colors[color] = newColor.Color;
-                CacheManager.Instance.SetColorsDirty();
-                _config.Save();
-            }
-        }
-
+        if (ColorSettingsDrawer.Draw(Penumbra.Messager, _config.Ui.Colors, _cache))
+            _config.Ui.Save();
         Im.Line.New();
     }
 

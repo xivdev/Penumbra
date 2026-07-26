@@ -361,7 +361,7 @@ public sealed class FileEditor(
         protected override bool DrawItem(in FileRegistry item, int globalIndex, bool selected)
         {
             bool ret;
-            using (ImGuiColor.Text.Push(ColorId.HandledConflictMod.Value(), item.IsOnPlayer))
+            using (ImGuiColor.Text.Push(ColorId.HandledConflictMod.Vector, item.IsOnPlayer))
             {
                 ret = Im.Selectable(item.RelPath.Path.Span, selected);
             }
@@ -377,7 +377,7 @@ public sealed class FileEditor(
                     foreach (var (option, gamePath) in item.SubModUsage)
                     {
                         t.DrawColumn(gamePath.Path.Span);
-                        using var color = ImGuiColor.Text.Push(ColorId.ItemId.Value());
+                        using var color = ImGuiColor.Text.Push(ColorId.ItemId.Vector);
                         t.DrawColumn(option.GetFullName());
                     }
             }
@@ -385,7 +385,7 @@ public sealed class FileEditor(
             if (item.SubModUsage.Count > 0)
             {
                 Im.Line.Same();
-                using var color = ImGuiColor.Text.Push(ColorId.ItemId.Value());
+                using var color = ImGuiColor.Text.Push(ColorId.ItemId.Vector);
                 ImEx.TextRightAligned($"{item.SubModUsage[0].Item2.Path}");
             }
 

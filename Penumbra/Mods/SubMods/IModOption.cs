@@ -11,7 +11,7 @@ public enum ModSettingsLayout : ulong
 {
     None            = 0,
     Disable         = 0x01, // Disable the option or group instead of hiding it when the conditions are not fulfilled.
-    Indent          = 0x02, // Indent the group if it is placed under another option or group.
+    Space           = 0x02, // Add a line of empty space after this group (after all options in the group) or option.
     ParentHeader    = 0x04, // Show the groups name or just its options if it is placed under another option or group.
     Separator       = 0x08, // Add a separator after this option.
     DefaultClosed   = 0x10, // A group should be closed by default.
@@ -59,7 +59,7 @@ public interface IModOption : IModObject, IIndexed
         };
 
     public Vector4 ColorValue
-        => ColorAsInteger is 0 ? Im.Style[ImGuiColor.Text] : Color.Value().ToVector();
+        => ColorAsInteger is 0 ? Im.Style[ImGuiColor.Text] : Color.Vector;
 
     public int ColorAsInteger
         => Color switch
@@ -90,11 +90,11 @@ public interface IModOption : IModObject, IIndexed
 public static class ModSettingsLayoutExtensions
 {
     public const ModSettingsLayout GroupValid = ModSettingsLayout.Disable
-      | ModSettingsLayout.Indent
+      | ModSettingsLayout.Space
       | ModSettingsLayout.ParentHeader
       | ModSettingsLayout.DefaultClosed;
 
-    public const ModSettingsLayout OptionValid = ModSettingsLayout.Disable | ModSettingsLayout.Separator | ModSettingsLayout.HideOptionLabel;
+    public const ModSettingsLayout OptionValid = ModSettingsLayout.Disable | ModSettingsLayout.Separator | ModSettingsLayout.Space| ModSettingsLayout.HideOptionLabel;
 
     extension(ModSettingsLayout layout)
     {
@@ -102,8 +102,8 @@ public static class ModSettingsLayoutExtensions
         {
             if (layout.HasFlag(ModSettingsLayout.Disable))
                 yield return ModSettingsLayout.Disable;
-            if (layout.HasFlag(ModSettingsLayout.Indent))
-                yield return ModSettingsLayout.Indent;
+            if (layout.HasFlag(ModSettingsLayout.Space))
+                yield return ModSettingsLayout.Space;
             if (layout.HasFlag(ModSettingsLayout.ParentHeader))
                 yield return ModSettingsLayout.ParentHeader;
             if (layout.HasFlag(ModSettingsLayout.Separator))

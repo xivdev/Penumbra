@@ -10,6 +10,7 @@ using Penumbra.Mods.Manager;
 using Penumbra.Mods.Settings;
 using Penumbra.Services;
 using Penumbra.UI.ModsTab.Groups;
+using Penumbra.UI.ModsTab.Settings;
 
 namespace Penumbra.UI.ModsTab;
 
@@ -222,11 +223,17 @@ public class ModPanelEditTab(
 
             table.NextColumn();
             Im.Item.SetNextWidth(2 * Im.Style.TextHeight);
-            if (ImEx.InputOnDeactivation.Drag("##page"u8, group.Page, out var newPage, 0, null, 0.02f))
-                modManager.OptionEditor.SetPage(group, newPage);
+            if (ImEx.InputOnDeactivation.Drag("##page"u8, group.Page + 1, out var newPage, 0, null, 0.02f))
+                modManager.OptionEditor.SetPage(group, newPage - 1);
 
-            Im.Tooltip.OnHover(group.Mod.PageNames.TryGetValue(group.Page, out var name) ? name : $"Page {group.Page + 1}");
-
+            if (Im.Item.Hovered())
+            {
+                using var tt = Im.Tooltip.Begin();
+                Im.Text(group.Mod.PageNames.TryGetValue(group.Page, out var name) ? name : $"Page {group.Page + 1}");
+                LunaStyle.DrawSeparator();
+                Im.Text(
+                    "The page this group is to be placed in. If this group has a parent, this setting is ignored.\n\nNote that the number seen here is offset by 1 compared to the number stored in the JSON file."u8);
+            }
 
             table.NextColumn();
             if (ImEx.Icon.Button(LunaStyle.DeleteIcon, "Delete this option group."u8, !active))
@@ -334,8 +341,8 @@ public class ModPanelEditTab(
         Im.Line.SameInner();
         var fileExists = File.Exists(filenames.ModMetaPath(Mod));
         var tt = fileExists
-            ? "Open the metadata json file in the text editor of your choice."u8
-            : "The metadata json file does not exist."u8;
+            ? "Open the metadata JSON file in the text editor of your choice."u8
+            : "The metadata JSON file does not exist."u8;
         using (Im.Id.Push("meta"u8))
         {
             if (ImEx.Icon.Button(LunaStyle.FileExportIcon, tt, !fileExists))

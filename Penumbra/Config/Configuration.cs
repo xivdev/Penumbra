@@ -1,6 +1,5 @@
 using Dalamud.Configuration;
 using Dalamud.Interface.ImGuiNotification;
-using ImSharp;
 using Luna;
 using Luna.Generators;
 using Newtonsoft.Json;
@@ -10,7 +9,6 @@ using Penumbra.Import.Structs;
 using Penumbra.Import.Textures;
 using Penumbra.Interop.Services;
 using Penumbra.Services;
-using Penumbra.UI.Classes;
 using Penumbra.UI.ModsTab;
 using Penumbra.UI.ModsTab.Selector;
 using ErrorEventArgs = Newtonsoft.Json.Serialization.ErrorEventArgs;
@@ -114,7 +112,7 @@ public partial class Configuration : IPluginConfiguration, ISavable, IService
     [ConfigProperty(EventName = "AuxiliaryDeviceModeChanged")]
     private AuxiliaryDeviceMode _auxiliaryDeviceMode = AuxiliaryDeviceMode.Singleton;
 
-    public ChangedItemMode ChangedItemDisplay        { get; set; } = ChangedItemMode.GroupedCollapsed;
+    public ChangedItemMode ChangedItemDisplay { get; set; } = ChangedItemMode.GroupedCollapsed;
 
     public Vector2 MinimumSize = new(Constants.MinimumSizeX, Constants.MinimumSizeY);
 
@@ -128,18 +126,16 @@ public partial class Configuration : IPluginConfiguration, ISavable, IService
     [JsonProperty(Order = int.MaxValue)]
     public ISortMode SortMode = ISortMode.FoldersFirst;
 
-    public bool   OpenFoldersByDefault { get; set; } = false;
-    public int    SingleGroupRadioMax  { get; set; } = 2;
-
-    [ConfigProperty]
-    private bool _hideRightOptionGroupLine = true;
+    public bool OpenFoldersByDefault { get; set; } = false;
+    public int  SingleGroupRadioMax  { get; set; } = 2;
 
     [ConfigProperty]
     private bool _displayPages = true;
-    public string DefaultImportFolder  { get; set; } = string.Empty;
-    public string QuickMoveFolder1     { get; set; } = string.Empty;
-    public string QuickMoveFolder2     { get; set; } = string.Empty;
-    public string QuickMoveFolder3     { get; set; } = string.Empty;
+
+    public string DefaultImportFolder { get; set; } = string.Empty;
+    public string QuickMoveFolder1    { get; set; } = string.Empty;
+    public string QuickMoveFolder2    { get; set; } = string.Empty;
+    public string QuickMoveFolder3    { get; set; } = string.Empty;
 
     public DoubleModifier DeleteModModifier
     {
@@ -172,11 +168,7 @@ public partial class Configuration : IPluginConfiguration, ISavable, IService
     public bool WholePairSelectorAlwaysHighlights { get; set; } = false;
     public bool AllDyeChannels                    { get; set; } = false;
 
-    public bool HdrRenderTargets { get; set; } = true;
-
-    public Dictionary<ColorId, uint> Colors { get; set; }
-        = ColorId.Values.ToDictionary(c => c, c => c.Data().DefaultColor);
-
+    public bool                             HdrRenderTargets         { get; set; } = true;
     public Dictionary<ResourceType, string> PreferredEditorFactories { get; set; } = [];
 
     /// <summary>
@@ -226,10 +218,13 @@ public partial class Configuration : IPluginConfiguration, ISavable, IService
     public void Save()
         => _saveService.QueueSave(this);
 
+    public void DelaySave()
+        => _saveService.DelaySave(this, TimeSpan.FromSeconds(5));
+
     /// <summary> Contains some default values or boundaries for config values. </summary>
     public static class Constants
     {
-        public const int CurrentVersion = 14;
+        public const int CurrentVersion = 15;
         public const int MinimumSizeX   = 900;
         public const int MinimumSizeY   = 675;
     }

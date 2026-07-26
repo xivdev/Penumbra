@@ -2,7 +2,6 @@ using Luna;
 using Penumbra.Mods;
 using Penumbra.Mods.SubMods;
 using Penumbra.Services;
-using TerraFX.Interop.Windows;
 
 namespace Penumbra.Files;
 

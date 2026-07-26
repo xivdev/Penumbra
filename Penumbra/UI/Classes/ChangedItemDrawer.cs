@@ -149,7 +149,7 @@ public class ChangedItemDrawer : IDisposable, IUiService
             return;
 
         Im.Line.Same();
-        using var color = ImGuiColor.Text.Push(ColorId.ItemId.Value());
+        using var color = ImGuiColor.Text.Push(ColorId.ItemId.Vector);
         Im.Cursor.Y += (height - Im.Style.TextHeight) / 2;
         ImEx.TextRightAligned(additionalData, Im.Style.ItemInnerSpacing.X);
     }
@@ -161,7 +161,7 @@ public class ChangedItemDrawer : IDisposable, IUiService
             return;
 
         Im.Line.Same();
-        using var color = ImGuiColor.Text.Push(ColorId.ItemId.Value());
+        using var color = ImGuiColor.Text.Push(ColorId.ItemId.Vector);
         Im.Cursor.Y += (height - Im.Style.TextHeight) / 2;
         ImEx.TextRightAligned(text, Im.Style.ItemInnerSpacing.X);
     }

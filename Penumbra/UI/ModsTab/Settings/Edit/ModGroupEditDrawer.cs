@@ -10,7 +10,12 @@ using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
 using Penumbra.UI.Classes;
 
-namespace Penumbra.UI.ModsTab.Groups;
+namespace Penumbra.UI.ModsTab.Settings;
+
+public interface IModGroupEditDrawer
+{
+    public void Draw();
+}
 
 public sealed class ModGroupEditDrawer(
     ModManager modManager,
@@ -141,7 +146,7 @@ public sealed class ModGroupEditDrawer(
         if (ImEx.InputOnDeactivation.Scalar("##GroupPage"u8, group.Page + 1, out var newPage))
             ModManager.OptionEditor.SetPage(group, newPage - 1);
         Im.Tooltip.OnHover(
-            "The page this group is to be placed in. If this group has a parent, this setting is ignored.\n\nNote that the number seen here is offset by 1 compared to the number stored in the JSON file.");
+            "The page this group is to be placed in. If this group has a parent, this setting is ignored.\n\nNote that the number seen here is offset by 1 compared to the number stored in the JSON file."u8);
         Im.Line.SameInner();
         ImEx.TextFrameAligned(cache.ShowPages ? cache.Pages[group.Page].Name.Utf8 : "(Unused)"u8);
     }

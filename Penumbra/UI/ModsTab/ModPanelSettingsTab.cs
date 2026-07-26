@@ -8,6 +8,7 @@ using Penumbra.Mods.Settings;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
 using Penumbra.UI.ModsTab.Groups;
+using Penumbra.UI.ModsTab.Settings;
 
 namespace Penumbra.UI.ModsTab;
 
@@ -41,13 +42,13 @@ public class ModPanelSettingsTab(
     public void DrawContent()
     {
         using var id    = Im.Id.Push(selection.ModName);
-        var       cache = CacheManager.Instance.GetOrCreateCache(Im.Id.Current, () => new ModSettingsCache(selection, config, communicator));
+        var       cache = CacheManager.Instance.GetOrCreateCache(Im.Id.Current, () => new ModSettingsCache(selection, config, communicator, Im.State.Storage));
 
         _inherited = selection.Collection != collectionManager.Active.Current;
         _temporary = selection.TemporarySettings is not null;
         _locked    = (selection.TemporarySettings?.Lock ?? 0) > 0;
 
-        if (cache.ActivePages > 1)
+        if (cache.VisiblePages.Count > 1 && config.DisplayPages)
         {
             DrawPreamble();
             communicator.PostEnabledDraw.Invoke(new PostEnabledDraw.Arguments(selection.Mod!));
@@ -88,7 +89,7 @@ public class ModPanelSettingsTab(
             return;
 
         using var color =
-            ImGuiColor.Button.Push(Rgba32.TintColor(Im.Style[ImGuiColor.Button], ColorId.TemporaryModSettingsTint.Value().ToVector()));
+            ImGuiColor.Button.Push(Rgba32.TintColor(Im.Style[ImGuiColor.Button], ColorId.TemporaryModSettingsTint.Vector));
         var width = Im.ContentRegion.Available with { Y = 0 };
         if (ImEx.Button($"These settings are temporarily set by {selection.TemporarySettings!.Source}{(_locked ? " and locked." : ".")}",
                 width, _locked))

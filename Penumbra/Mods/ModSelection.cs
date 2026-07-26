@@ -6,6 +6,7 @@ using Penumbra.Communication;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Settings;
 using Penumbra.Services;
+using Penumbra.UI.ModsTab.Settings;
 
 namespace Penumbra.Mods;
 
@@ -131,7 +132,7 @@ public class ModSelection : EventBase<ModSelection.Arguments, ModSelection.Prior
         /// <seealso cref="Penumbra.UI.AdvancedWindow.ModEditWindowFactory"/>
         ModEditWindow = 0,
 
-        /// <seealso cref="UI.ModsTab.Groups.GroupNameCache.OnSelectionChange"/>
+        /// <seealso cref="UI.ModsTab.Settings.GroupNameCache.OnSelectionChange"/>
         GroupNameCache = 0,
     }
 

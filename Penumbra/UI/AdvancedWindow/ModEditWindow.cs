@@ -530,7 +530,7 @@ public sealed partial class ModEditWindow : IndexedWindow, IDisposable
         {
             Im.Line.Same();
             ImEx.TextFramed($"There are {otherSwaps} file swaps configured in other options.", Vector2.Zero,
-                ColorId.RedundantAssignment.Value().Color);
+                ColorId.RedundantAssignment.Value);
         }
 
         using var child = Im.Child.Begin("##swaps"u8, Im.ContentRegion.Available, true);

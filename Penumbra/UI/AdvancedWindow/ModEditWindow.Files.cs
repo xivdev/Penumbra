@@ -116,9 +116,9 @@ public partial class ModEditWindow
     private void DrawSelectable(FileRegistry registry, int i)
     {
         var selected = _selectedFiles.Contains(registry);
-        var color = registry.SubModUsage.Count == 0             ? ColorId.ConflictingMod :
+        var color = registry.SubModUsage.Count is 0             ? ColorId.ConflictingMod :
             registry.CurrentUsage == registry.SubModUsage.Count ? ColorId.NewMod : ColorId.InheritedMod;
-        using (ImGuiColor.Text.Push(color.Value()))
+        using (ImGuiColor.Text.Push(color.Vector))
         {
             if (Im.Selectable(registry.RelPath.Path.Span, selected))
             {

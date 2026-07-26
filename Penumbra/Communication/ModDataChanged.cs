@@ -1,6 +1,7 @@
 using Luna;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
+using Penumbra.UI.ModsTab.Settings;
 
 namespace Penumbra.Communication;
 
@@ -21,7 +22,7 @@ public sealed class ModDataChanged(LunaLogger log) : EventBase<ModDataChanged.Ar
         /// <seealso cref="UI.ModsTab.ModPanelHeader.OnModDataChange"/>
         ModPanelHeader = 0,
 
-        /// <seealso cref="UI.ModsTab.Groups.GroupNameCache.OnModDataChange"/>
+        /// <seealso cref="UI.ModsTab.Settings.GroupNameCache.OnModDataChange"/>
         GroupNameCache = 0,
     }
 

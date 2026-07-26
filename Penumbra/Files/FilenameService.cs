@@ -70,7 +70,7 @@ public sealed class FilenameService(IDalamudPluginInterface pi, LocalModDatabase
 
     /// <summary> Enumerate all outdated local data files. </summary>
     public IEnumerable<string> OldLocalDataFiles
-        => !Directory.Exists(OldLocalDataDirectory) ? [] : Directory.EnumerateFiles("*.json");
+        => !Directory.Exists(OldLocalDataDirectory) ? [] : Directory.EnumerateFiles(OldLocalDataDirectory, "*.json");
 
     /// <summary> Collect all relevant files for penumbra configuration. </summary>
     public override List<IBackupFile> GetBackupFiles()
@@ -78,6 +78,7 @@ public sealed class FilenameService(IDalamudPluginInterface pi, LocalModDatabase
         var list = CollectionFiles.Select(IBackupFile (f) => new DefaultBackupFile(f)).ToList();
         list.Add(database.CreateBackupFile(LocalModDatabase));
         list.Add(new DefaultBackupFile(ConfigurationFile));
+        list.Add(new DefaultBackupFile(UiConfigFile));
         list.Add(new DefaultBackupFile(ActiveCollectionsFile));
         list.Add(new DefaultBackupFile(PredefinedTagFile));
         list.Add(new DefaultBackupFile(FileSystemLockedNodes));

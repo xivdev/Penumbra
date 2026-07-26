@@ -4,7 +4,7 @@ using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.SubMods;
 
-namespace Penumbra.UI.ModsTab;
+namespace Penumbra.UI.ModsTab.Settings;
 
 internal sealed class ParentCombo(ModManager mods) : ModObjectCombo
 {

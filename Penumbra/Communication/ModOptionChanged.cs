@@ -5,6 +5,8 @@ using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Manager.OptionEditor;
 using Penumbra.Mods.SubMods;
+using Penumbra.UI.ModsTab.Groups;
+using Penumbra.UI.ModsTab.Settings;
 
 namespace Penumbra.Communication;
 
@@ -23,13 +25,16 @@ public sealed class ModOptionChanged(LunaLogger log)
         /// <seealso cref="ModCacheManager.OnModOptionChange"/>
         ModCacheManager = 0,
 
+        /// <seealso cref="ModSettingsCache.OnModOptionChanged"/>
+        ModGroupCache = -5,
+
         /// <seealso cref="ModSelection.OnModOptionChange"/>
         ModSelection = 0,
 
         /// <seealso cref="UI.AdvancedWindow.ItemSwapTab.OnModOptionChange"/>
         ItemSwapTab = 0,
 
-        /// <seealso cref="UI.ModsTab.Groups.GroupNameCache.OnModOptionChange"/>
+        /// <seealso cref="UI.ModsTab.Settings.GroupNameCache.OnModOptionChange"/>
         GroupNameCache = 0,
 
         /// <seealso cref="Collections.Manager.CollectionStorage.OnModOptionChange"/>

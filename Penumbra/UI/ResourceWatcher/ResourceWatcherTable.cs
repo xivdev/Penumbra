@@ -343,15 +343,15 @@ internal sealed class ResourceWatcherTable : TableBase<CachedRecord, TableCache<
 
             var (icon, color, tt) = item.Record.LoadState switch
             {
-                LoadState.Success => (FontAwesomeIcon.CheckCircle, ColorId.IncreasedMetaValue.Value(),
+                LoadState.Success => (FontAwesomeIcon.CheckCircle, ColorId.IncreasedMetaValue.Value,
                     new StringU8($"Successfully loaded ({(byte)item.Record.LoadState}).")),
-                LoadState.FailedSubResource => (FontAwesomeIcon.ExclamationCircle, ColorId.DecreasedMetaValue.Value(),
+                LoadState.FailedSubResource => (FontAwesomeIcon.ExclamationCircle, ColorId.DecreasedMetaValue.Value,
                     new StringU8($"Dependencies failed to load ({(byte)item.Record.LoadState}).")),
-                <= LoadState.Constructed => (FontAwesomeIcon.QuestionCircle, ColorId.UndefinedMod.Value(),
+                <= LoadState.Constructed => (FontAwesomeIcon.QuestionCircle, ColorId.UndefinedMod.Value,
                     new StringU8($"Not yet loaded ({(byte)item.Record.LoadState}).")),
-                < LoadState.Success => (FontAwesomeIcon.Clock, ColorId.FolderLine.Value(),
+                < LoadState.Success => (FontAwesomeIcon.Clock, ColorId.FolderLine.Value,
                     new StringU8($"Loading asynchronously ({(byte)item.Record.LoadState}).")),
-                > LoadState.Success => (FontAwesomeIcon.Times, ColorId.DecreasedMetaValue.Value(),
+                > LoadState.Success => (FontAwesomeIcon.Times, ColorId.DecreasedMetaValue.Value,
                     new StringU8($"Failed to load ({(byte)item.Record.LoadState}).")),
             };
             ImEx.Icon.Draw(icon.Icon(), color);

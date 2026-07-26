@@ -76,6 +76,7 @@ public class Penumbra : IDalamudPlugin
             Log.Information(
                 $"Loading Penumbra Version {_validityChecker.Version}, Commit #{_validityChecker.CommitHash} with Waiting For Plugins: {startup}...");
             _services.GetService<BackupService>(); // Initialize early to create backups.
+            _services.GetService<ImSharpDalamudContext>();
             _config              = _services.GetService<Configuration>();
             _characterUtility    = _services.GetService<CharacterUtility>();
             _tempMods            = _services.GetService<TempModManager>();

@@ -45,7 +45,7 @@ public sealed class CollectionSelector(
     {
         Im.Cursor.Y += Im.Style.FramePadding.Y;
         var       cache = CacheManager.Instance.GetOrCreateCache(Im.Id.Current, () => new Cache(filter, collections, communicator));
-        using var color = ImGuiColor.Header.Push(ColorId.SelectedCollection.Value());
+        using var color = ImGuiColor.Header.Push(ColorId.SelectedCollection.Vector);
         foreach (var item in cache)
         {
             Im.Cursor.X += Im.Style.FramePadding.X;

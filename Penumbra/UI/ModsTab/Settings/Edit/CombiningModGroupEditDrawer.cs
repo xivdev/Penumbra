@@ -3,7 +3,7 @@ using Luna;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.SubMods;
 
-namespace Penumbra.UI.ModsTab.Groups;
+namespace Penumbra.UI.ModsTab.Settings;
 
 public readonly struct CombiningModGroupEditDrawer(ModGroupEditDrawer editor, CombiningModGroup group) : IModGroupEditDrawer
 {

@@ -52,8 +52,8 @@ public abstract class PathSelectCombo(IDataManager dataManager) : FilterComboBas
 
     protected override bool DrawItem(in PathData item, int globalIndex, bool selected)
     {
-        var textColor = item.IsOnPlayer ? ColorId.HandledConflictMod.Value() :
-            item.IsGame                 ? ColorId.FolderExpanded.Value() : ColorParameter.Default;
+        var textColor = item.IsOnPlayer ? ColorId.HandledConflictMod.Value :
+            item.IsGame                 ? ColorId.FolderExpanded.Value : ColorParameter.Default;
         bool ret;
         using (ImGuiColor.Text.Push(textColor))
         {

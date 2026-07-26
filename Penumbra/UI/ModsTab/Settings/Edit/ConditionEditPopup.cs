@@ -6,7 +6,7 @@ using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
 using Penumbra.Services;
 
-namespace Penumbra.UI.ModsTab;
+namespace Penumbra.UI.ModsTab.Settings;
 
 public sealed class ConditionEditPopup(ModGroupEditor editor, CommunicatorService communicator) : ObjectEditPopup, IUiService
 {

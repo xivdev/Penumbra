@@ -36,7 +36,7 @@ public partial class DeformerEditor
         if (!child)
             return;
 
-        var metaColor = ColorId.ItemId.Value();
+        var metaColor = ColorId.ItemId.Vector;
         foreach (var (index, deformer) in File.Deformers.Index())
         {
             var name     = deformer.GenderRace.ToName();
@@ -46,7 +46,7 @@ public partial class DeformerEditor
                 continue;
 
             using var id    = Im.Id.Push(index);
-            using var color = ImGuiColor.Text.Push(Im.Style[ImGuiColor.TextDisabled], deformer.RacialDeformer.IsEmpty);
+            using var color = ImGuiColor.Text.Push(ImGuiColor.TextDisabled.Vector, deformer.RacialDeformer.IsEmpty);
             if (Im.Selectable(name, deformer.GenderRace == SelectedRaceCode))
             {
                 SelectedRaceCode = deformer.GenderRace;
@@ -128,7 +128,7 @@ public partial class DeformerEditor
         var ret = false;
         ImEx.TextFrameAligned("Copy the values of the bone "u8);
         Im.Line.NoSpacing();
-        using (ImGuiColor.Text.Push(ColorId.NewMod.Value()))
+        using (ImGuiColor.Text.Push(ColorId.NewMod.Vector))
         {
             ImEx.TextFrameAligned(SelectedBone!);
         }

@@ -44,7 +44,7 @@ public sealed class LocalModDatabase(ServiceManager services) : IDisposable, ISe
     private sealed class DatabaseBackup(LocalModDatabase db, string filePath) : IBackupFile
     {
         public bool Exists
-            => true;
+            => File.Exists(filePath);
 
         public string Path
             => filePath;

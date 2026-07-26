@@ -66,13 +66,13 @@ public sealed class ModFileSystemDrawer : FileSystemDrawer<ModFileSystemCache.Mo
         => new ModFileSystemCache(this);
 
     public override Vector4 CollapsedFolderColor
-        => ColorId.FolderCollapsed.Value().ToVector();
+        => ColorId.FolderCollapsed.Vector;
 
     public override Vector4 ExpandedFolderColor
-        => ColorId.FolderExpanded.Value().ToVector();
+        => ColorId.FolderExpanded.Vector;
 
     public override Vector4 FolderLineColor
-        => ColorId.FolderLine.Value().ToVector();
+        => ColorId.FolderLine.Vector;
 
     public override IEnumerable<ISortMode> ValidSortModes
         => ISortMode.Valid.Values;

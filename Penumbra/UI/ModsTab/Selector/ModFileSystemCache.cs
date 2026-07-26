@@ -139,19 +139,18 @@ public sealed class ModFileSystemCache : FileSystemCache<ModFileSystemCache.ModD
         {
             var modManager = ((ModFileSystemDrawer)cache.Parent).ModManager;
             var tint = (Settings.IsTemporary() ? ColorId.TemporaryModSettingsTint :
-                modManager.IsNew(Node.Value)   ? ColorId.NewModTint : ColorId.NoTint).Value().ToVector();
+                modManager.IsNew(Node.Value)   ? ColorId.NewModTint : ColorId.NoTint).Vector;
             if (Settings is null)
-                return Rgba32.TintColor(ColorId.UndefinedMod.Value().ToVector(), tint);
+                return Rgba32.TintColor(ColorId.UndefinedMod.Vector, tint);
 
             if (!Settings.Enabled)
-                return Rgba32.TintColor((Collection != current ? ColorId.InheritedDisabledMod : ColorId.DisabledMod).Value().ToVector(), tint);
+                return Rgba32.TintColor((Collection != current ? ColorId.InheritedDisabledMod : ColorId.DisabledMod).Vector, tint);
 
             var conflicts = current.Conflicts(Node.Value);
             if (conflicts.Count is 0)
-                return Rgba32.TintColor((Collection != current ? ColorId.InheritedMod : ColorId.EnabledMod).Value().ToVector(), tint);
+                return Rgba32.TintColor((Collection != current ? ColorId.InheritedMod : ColorId.EnabledMod).Vector, tint);
 
-            return Rgba32.TintColor((conflicts.Any(c => !c.Solved) ? ColorId.ConflictingMod : ColorId.HandledConflictMod).Value().ToVector(),
-                tint);
+            return Rgba32.TintColor((conflicts.Any(c => !c.Solved) ? ColorId.ConflictingMod : ColorId.HandledConflictMod).Vector, tint);
         }
 
         protected override void DrawInternal(FileSystemCache<ModData> cache, IFileSystemNode node)
@@ -219,7 +218,7 @@ public sealed class ModFileSystemCache : FileSystemCache<ModFileSystemCache.ModD
                 offset -= Im.Style.ItemInnerSpacing.X;
 
             if (offset > Im.Style.ItemSpacing.X)
-                Im.Window.DrawList.Text(new Vector2(itemPos + offset, line), ColorId.SelectorPriority.Value().Color, PriorityText);
+                Im.Window.DrawList.Text(new Vector2(itemPos + offset, line), ColorId.SelectorPriority.Value, PriorityText);
         }
     }
 

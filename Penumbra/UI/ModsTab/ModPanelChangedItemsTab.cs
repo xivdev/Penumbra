@@ -241,7 +241,7 @@ public sealed class ModPanelChangedItemsTab(
             return;
 
         using var clipper = new Im.ListClipper(cache.Data.Count, _buttonSize.Y);
-        _starColor = ColorId.ChangedItemPreferenceStar.Value();
+        _starColor = ColorId.ChangedItemPreferenceStar.Value;
         var idx = 0;
         if (cache.AnyExpandable)
         {

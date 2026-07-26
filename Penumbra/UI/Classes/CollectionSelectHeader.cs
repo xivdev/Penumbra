@@ -40,7 +40,7 @@ public class CollectionSelectHeader(
             DrawCollectionButton(buttonSize, GetPlayerCollectionInfo(),    3);
             DrawCollectionButton(buttonSize, GetInheritedCollectionInfo(), 4);
 
-            combo.Draw("##collectionSelector"u8, comboWidth, ColorId.SelectedCollection.Value());
+            combo.Draw("##collectionSelector"u8, comboWidth, ColorId.SelectedCollection.Value);
         }
 
         tutorial.OpenTutorial(BasicTutorialSteps.CollectionSelectors);
@@ -54,9 +54,9 @@ public class CollectionSelectHeader(
     {
         var hold = config.IncognitoModifier.IsActive();
         var tint = config.DefaultTemporaryMode
-            ? Rgba32.TintColor(Im.Style[ImGuiColor.Text], ColorId.TemporaryModSettingsTint.Value().ToVector())
-            : Im.Style[ImGuiColor.TextDisabled];
-        var frameBg = Im.Style[ImGuiColor.FrameBackground];
+            ? Rgba32.TintColor(ImGuiColor.Text.Vector, ColorId.TemporaryModSettingsTint.Vector)
+            : ImGuiColor.TextDisabled.Vector;
+        var frameBg = ImGuiColor.FrameBackground.Vector;
 
         using (ImStyleBorder.Frame.Push(tint)
                    .Push(ImGuiColor.ButtonHovered, frameBg, !hold)
@@ -181,7 +181,7 @@ public class CollectionSelectHeader(
             DrawCollectionButton(buttonSize, GetPlayerCollectionInfo(),    3);
             DrawCollectionButton(buttonSize, GetInheritedCollectionInfo(), 4);
 
-            combo.Draw("##collectionSelector"u8, comboWidth, ColorId.SelectedCollection.Value());
+            combo.Draw("##collectionSelector"u8, comboWidth, ColorId.SelectedCollection.Value);
         }
 
         tutorial.OpenTutorial(BasicTutorialSteps.CollectionSelectors);

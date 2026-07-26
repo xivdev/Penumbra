@@ -1,16 +1,16 @@
 using ImSharp;
 using Luna;
 using Penumbra.Mods.Settings;
-using Penumbra.UI.Classes;
 using Penumbra.UI.ModsTab.Groups;
+using Penumbra.UI.ModsTab.Settings;
 
 namespace Penumbra.UI;
 
-public sealed class SingleGroupCombo : FilterComboBase<ModSettingsCache.Option>, IUiService
+public sealed class SingleGroupCombo : FilterComboBase<ModSettingOption>, IUiService
 {
-    private class OptionFilter : Utf8FilterBase<ModSettingsCache.Option>
+    private class OptionFilter : Utf8FilterBase<ModSettingOption>
     {
-        protected override ReadOnlySpan<byte> ToFilterString(in ModSettingsCache.Option item, int globalIndex)
+        protected override ReadOnlySpan<byte> ToFilterString(in ModSettingOption item, int globalIndex)
             => item.Name;
     }
 
@@ -21,14 +21,14 @@ public sealed class SingleGroupCombo : FilterComboBase<ModSettingsCache.Option>,
         DirtyCacheOnClosingPopup = true;
     }
 
-    protected override FilterComboBaseCache<ModSettingsCache.Option> CreateCache()
+    protected override FilterComboBaseCache<ModSettingOption> CreateCache()
         => new Cache(this);
 
-    private readonly WeakReference<ModSettingsCache.ModGroupCache> _group = new(null!);
+    private readonly WeakReference<ModSettingGroup> _group = new(null!);
     private          Setting                                       _currentOption;
     private          Vector4                                       _currentColor;
 
-    public void Draw(ModGroupDrawer parent, ModSettingsCache.ModGroupCache group, Setting currentOption, float width)
+    public void Draw(ModGroupDrawer parent, ModSettingGroup group, Setting currentOption, float width)
     {
         if (!group.IsCombo)
             return;
@@ -39,22 +39,22 @@ public sealed class SingleGroupCombo : FilterComboBase<ModSettingsCache.Option>,
         _currentColor = currentValue.Color;
         _group.SetTarget(group);
         if (base.Draw(StringU8.Empty, currentValue.Name, StringU8.Empty, width, out var newOption))
-            parent.SetModSetting(group.Group, group.Group.Index, Setting.Single(newOption.Data.Index));
+            parent.SetModSetting(group.Group, Setting.Single(newOption.Data.Index));
     }
 
     protected override void PreDrawCombo(float width)
-        => ImGuiColor.Text.Push(_currentColor).Push(ImGuiColor.FrameBackground, ColorId.GroupComboBackground.Value());
+        => ImGuiColor.Text.Push(_currentColor);
 
     protected override void PostDrawCombo(float width)
-        => Im.ColorDisposable.PopUnsafe(2);
+        => Im.ColorDisposable.PopUnsafe();
 
-    protected override IEnumerable<ModSettingsCache.Option> GetItems()
-        => _group.TryGetTarget(out var target) ? target.Options : [];
+    protected override IEnumerable<ModSettingOption> GetItems()
+        => _group.TryGetTarget(out var target) ? target.VisibleChildren.Take(target.NumOptions).Cast<ModSettingOption>() : [];
 
     protected override float ItemHeight
         => Im.Style.TextHeightWithSpacing;
 
-    protected override bool DrawItem(in ModSettingsCache.Option item, int globalIndex, bool selected)
+    protected override bool DrawItem(in ModSettingOption item, int globalIndex, bool selected)
     {
         bool ret;
         using (Im.Disabled(item.Disabled))
@@ -80,10 +80,10 @@ public sealed class SingleGroupCombo : FilterComboBase<ModSettingsCache.Option>,
         return ret;
     }
 
-    protected override bool IsSelected(ModSettingsCache.Option item, int globalIndex)
+    protected override bool IsSelected(ModSettingOption item, int globalIndex)
         => item.Data.Index == _currentOption.AsIndex;
 
-    private sealed class Cache(SingleGroupCombo parent) : FilterComboBaseCache<ModSettingsCache.Option>(parent)
+    private sealed class Cache(SingleGroupCombo parent) : FilterComboBaseCache<ModSettingOption>(parent)
     {
         protected override void ComputeWidth()
         {

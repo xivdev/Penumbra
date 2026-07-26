@@ -5,7 +5,7 @@ using Penumbra.Mods.Manager;
 using Penumbra.Mods.SubMods;
 using Penumbra.UI.Classes;
 
-namespace Penumbra.UI.ModsTab;
+namespace Penumbra.UI.ModsTab.Settings;
 
 public sealed class LayoutEditPopup(ModManager mods) : ObjectEditPopup, IUiService
 {
@@ -30,9 +30,10 @@ public sealed class LayoutEditPopup(ModManager mods) : ObjectEditPopup, IUiServi
             mods.OptionEditor.SetLayout(group, layout);
         Im.Tooltip.OnHover(
             "When this is checked and this group is displayed with a collapsible header, the header is closed by default instead of open by default."u8);
-        if (Im.Checkbox("Indent When Placed Under Parent"u8, ref layout, ModSettingsLayout.Indent))
+        if (Im.Checkbox("Add Spacing"u8, ref layout, ModSettingsLayout.Space))
             mods.OptionEditor.SetLayout(group, layout);
-        Im.Tooltip.OnHover("When this is checked, this group is indented if it is placed under a parent group or option."u8);
+        Im.Tooltip.OnHover(
+            "When this is checked, an empty line is inserted after the group is drawn, regardless of it being expanded or not."u8);
         if (Im.Checkbox("Hide Group Name When Placed Under Parent"u8, ref layout, ModSettingsLayout.ParentHeader))
             mods.OptionEditor.SetLayout(group, layout);
         Im.Tooltip.OnHover(
@@ -56,15 +57,33 @@ public sealed class LayoutEditPopup(ModManager mods) : ObjectEditPopup, IUiServi
         DrawIdentifier(option);
         DrawColorCombo(option);
         var layout = option.Layout;
-        if (Im.Checkbox("Disable When Condition Not Met"u8, ref layout, ModSettingsLayout.Disable))
-            mods.OptionEditor.SetLayout(option, layout);
-        Im.Tooltip.OnHover(
-            "When this is checked, this option is not hidden when its conditions are not met, and instead still displays, but is disabled."u8);
+        if (option is SingleSubMod)
+        {
+            using (Im.Disabled())
+            {
+                Im.Checkbox("Disable When Condition Not Met"u8, true);
+            }
 
-        if (Im.Checkbox("Add Separator"u8, ref layout, ModSettingsLayout.Separator))
+            Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled,
+                "Single select options are always disabled instead of hidden when their conditions are not met."u8);
+
+            if (Im.Checkbox("Add Separator"u8, ref layout, ModSettingsLayout.Separator))
+                mods.OptionEditor.SetLayout(option, layout);
+            Im.Tooltip.OnHover(
+                "When this is checked, a separator line is placed below this option when it is displayed inside a combo."u8);
+        }
+        else
+        {
+            if (Im.Checkbox("Disable When Condition Not Met"u8, ref layout, ModSettingsLayout.Disable))
+                mods.OptionEditor.SetLayout(option, layout);
+            Im.Tooltip.OnHover(
+                "When this is checked, this option is not hidden when its conditions are not met, and instead still displays, but is disabled."u8);
+        }
+
+        if (Im.Checkbox("Add Spacing"u8, ref layout, ModSettingsLayout.Space))
             mods.OptionEditor.SetLayout(option, layout);
         Im.Tooltip.OnHover(
-            "When this is checked, a separator line is placed below this option both when displayed as a checkbox or radio toggle as well as in a combo."u8);
+            "When this is checked, an empty line is inserted after the option and all its children are drawn if this does not happen inside a combo."u8);
 
         if (Im.Checkbox("Hide Option Label (Single Line)"u8, ref layout, ModSettingsLayout.HideOptionLabel))
             mods.OptionEditor.SetLayout(option, layout);
@@ -97,7 +116,7 @@ public sealed class LayoutEditPopup(ModManager mods) : ObjectEditPopup, IUiServi
     private void DrawColorCombo(IModOption option)
     {
         var       name  = ColorNames[option.ColorAsInteger];
-        var       color = option.Color is 0 ? ColorParameter.Default : option.Color.Value();
+        var       color = option.Color is 0 ? ColorParameter.Default : option.Color.Value;
         ImGuiId   popupId;
         Rectangle bb;
         using (ImGuiColor.Text.Push(color))
@@ -123,7 +142,7 @@ public sealed class LayoutEditPopup(ModManager mods) : ObjectEditPopup, IUiServi
         {
             var       tmpName  = ColorNames[i];
             var       tmpValue = IModOption.ConvertColor(i);
-            var       tmpColor = i is 0 ? ColorParameter.Default : tmpValue.Value();
+            var       tmpColor = i is 0 ? ColorParameter.Default : tmpValue.Value;
             using var c        = ImGuiColor.Text.Push(tmpColor);
             if (Im.Selectable(tmpName, tmpValue == option.Color))
                 mods.OptionEditor.SetColor(option, i);
