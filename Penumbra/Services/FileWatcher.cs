@@ -42,7 +42,6 @@ public sealed class FileWatcher : IDisposable, IService
     /// <summary>
     /// Subdirectory under the system temp directory used for extracted archive entries.
     /// </summary>
-
     public FileWatcher(ModImportManager modImportManager, MessageService messageService, Configuration config,
         ArchiveExtractionNotification archiveExtractionNotification)
     {
@@ -376,7 +375,6 @@ public sealed class FileWatcher : IDisposable, IService
             var archiveName = Path.GetFileName(path);
             _archiveExtractionNotification.AddArchive(archiveName, candidates.Count);
 
-            Directory.CreateDirectory(GetTempPath(_config.WatchDirectory));
             archiveDir = Path.Combine(GetTempPath(_config.WatchDirectory), Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(archiveDir);
 
@@ -407,7 +405,7 @@ public sealed class FileWatcher : IDisposable, IService
                 {
                     var extractSw = Stopwatch.StartNew();
                     long bytesWritten;
-                    await using (var input = entry.OpenEntryStream())
+                    await using (var input = await entry.OpenEntryStreamAsync(token))
                     await using (var output = new FileStream(tempPath, FileMode.CreateNew, FileAccess.Write,
                                      FileShare.None, 81920, useAsync: true))
                     {
@@ -497,7 +495,7 @@ public sealed class FileWatcher : IDisposable, IService
             }
         }
 
-        if (archiveDir is not null && allSucceeded)
+        if (allSucceeded)
         {
             if (TryDeleteDirectory(archiveDir))
             {
@@ -524,26 +522,23 @@ public sealed class FileWatcher : IDisposable, IService
 
     private static void WipeTempRoot(string watchDir)
     {
+        var tempPath = GetTempPath(watchDir);
         try
         {
-            if (Directory.Exists(GetTempPath(watchDir)))
+            if (!Directory.Exists(tempPath))
+                return;
+
+            foreach (var entry in Directory.EnumerateFileSystemEntries(tempPath))
             {
-                foreach (var entry in Directory.EnumerateFileSystemEntries(GetTempPath(watchDir)))
-                {
-                    if (Directory.Exists(entry))
-                        TryDeleteDirectory(entry);
-                    else
-                        TryDelete(entry);
-                }
-            }
-            else
-            {
-                Directory.CreateDirectory(GetTempPath(watchDir));
+                if (Directory.Exists(entry))
+                    TryDeleteDirectory(entry);
+                else
+                    TryDelete(entry);
             }
         }
         catch (Exception ex)
         {
-            Penumbra.Log.Warning($"[FileWatcher] Could not prepare temp root '{GetTempPath(watchDir)}': {ex.Message}");
+            Penumbra.Log.Warning($"[FileWatcher] Could not prepare temp root '{tempPath}': {ex.Message}");
         }
     }
 
