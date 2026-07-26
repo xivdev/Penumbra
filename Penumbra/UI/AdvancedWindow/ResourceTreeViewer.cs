@@ -270,6 +270,14 @@ public class ResourceTreeViewer(
             using var id = Im.Id.Push(index);
             table.NextColumn();
             var unfolded = _unfolded.Contains(nodePathHash);
+            if (level is 0 && index is not 0)
+            {
+                using var clip = Im.Drawing.PushClipRect(Rectangle.FromSize(Im.Window.Position, Im.Window.Size));
+                Im.Window.DrawList.Shape.Line(Im.Cursor.ScreenPosition.AddY(-Im.Style.CellPadding.Y),
+                    Im.Cursor.ScreenPosition + new Vector2(Im.Window.Width, -Im.Style.CellPadding.Y),
+                    ImGuiColor.Separator.Get(), Im.Style.GlobalScale);
+            }
+
             using (Im.Indent(level))
             {
                 var hasVisibleChildren = resourceNode.Children.Any(child
