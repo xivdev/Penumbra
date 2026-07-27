@@ -64,6 +64,7 @@ public readonly struct ModSettingDrawNode
     public void Draw(ModGroupDrawer drawer, ModSettingsCache cache)
     {
         DrawIncomingLine(cache);
+        using var id = Im.Id.Push(Id);
         _ = DrawMode switch
         {
             Mode.PageHeader    => DrawPageHeader(cache),

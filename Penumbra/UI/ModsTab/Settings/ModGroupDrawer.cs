@@ -39,7 +39,7 @@ public sealed class ModGroupDrawer(
 
         if (cache.VisiblePages.Count > 1 && config.DisplayPages)
         {
-            Im.Dummy(UiHelpers.DefaultSpace);
+            Im.Dummy(0);
             using var tabBar = Im.TabBar.Begin("##pages"u8, TabBarFlags.FittingPolicyScroll);
             if (!tabBar)
                 return;

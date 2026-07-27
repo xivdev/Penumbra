@@ -56,12 +56,15 @@ public class ModPanelSettingsTab(
         }
         else
         {
+            using var style = ImStyleDouble.CellPadding.PushY(0);
             using var table = Im.Table.Begin("##settings"u8, 1, TableFlags.ScrollY, Im.ContentRegion.Available);
             if (!table)
                 return;
             table.SetupScrollFreeze(0, 1);
             table.NextColumn();
+            style.Pop();
             DrawPreamble();
+            Im.Dummy(0);
             table.NextColumn();
             communicator.PostEnabledDraw.Invoke(new PostEnabledDraw.Arguments(selection.Mod!));
             modGroupDrawer.Draw(cache, selection.Mod!, selection.Settings, selection.TemporarySettings);

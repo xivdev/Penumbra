@@ -343,6 +343,10 @@ public sealed class DebugTab : Window, ITab<TabType>
 
                 if (!active)
                     Im.Tooltip.OnHover($"\nHold {_config.DeleteModModifier} to click.");
+
+                using var tree2 = Im.Tree.Node("Base64 Tester"u8, TreeNodeFlags.DefaultOpen);
+                if (tree2)
+                    Base64Tester.Draw();
             }
         }
 

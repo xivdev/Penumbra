@@ -27,7 +27,7 @@ public struct ColorIdData : IColorData<ColorId>
         var modSelector  = "Mod Selector"u8;
         var metadata     = "Metadata"u8;
         var collections  = "Collections"u8;
-        var resourceTree = "Resource Tree"u8;
+        var resourceTree = "On-Screen"u8;
         var modSettings  = "Mod Settings"u8;
 
         var ret = new ColorData<ColorId>[ColorId.Values.Count];

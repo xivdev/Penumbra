@@ -4,7 +4,6 @@ using Luna;
 using Penumbra.Mods;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.SubMods;
-using Penumbra.UI.Classes;
 
 namespace Penumbra.Files;
 

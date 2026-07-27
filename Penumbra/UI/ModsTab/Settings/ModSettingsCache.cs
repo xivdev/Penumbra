@@ -215,7 +215,7 @@ public sealed class ModSettingsCache : BasicCache
     private int AddOption(List<ModSettingDrawNode> list, List<ModSettingsDrawLine> lines, ModSettingOption option, float parentIndent,
         float parentLineOffset)
     {
-        using var idStack      = Im.Id.Push(option.Data.Index);
+        using var idStack      = Im.Id.Push(option.Data.GroupIndex).Push(option.Data.Index);
         var       id           = Im.Id.Current;
         var       currentIndex = list.Count;
         var       lastIndex    = -1;
