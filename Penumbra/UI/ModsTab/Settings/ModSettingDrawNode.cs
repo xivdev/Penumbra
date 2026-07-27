@@ -105,12 +105,18 @@ public readonly struct ModSettingDrawNode
 
         if (!Collapsible)
         {
-            using var position = ImStyleBorder.Frame.Push(ColorId.GroupLabelBorder.Vector, cache.LineWidth).PushX(ImStyleDouble.ButtonTextAlign, 0);
-            ImEx.TextFramed(Node.Name, LabelWidth, ColorId.GroupLabelBackground.Value, ColorId.GroupLabelText.Value, ColorId.GroupLabelBorder.Value);
+            using var position = ImStyleBorder.Frame.Push(ColorId.GroupLabelBorder.Vector, cache.LineWidth)
+                .PushX(ImStyleDouble.ButtonTextAlign, 0);
+            ImEx.TextFramed(Node.Name, LabelWidth, ColorId.GroupLabelBackground.Value, ColorId.GroupLabelText.Value,
+                ColorId.GroupLabelBorder.Value);
             if (!Node.Description.IsEmpty)
+            {
                 Im.Window.DrawList.Text(AwesomeIcon.Font, AwesomeIcon.Font.Size,
-                    Im.Item.LowerRightCorner - new Vector2(cache.Height - Im.Style.FramePadding.Y, cache.Height),
+                    Im.Item.LowerRightCorner - new Vector2(cache.HelpIconSize + Im.Style.FramePadding.X, cache.Height - Im.Style.FramePadding.Y),
                     ImGuiColor.TextDisabled.Get(), LunaStyle.HelpMarker.Span);
+                Im.Tooltip.OnHover(Node.Description);
+            }
+
             return true;
         }
 

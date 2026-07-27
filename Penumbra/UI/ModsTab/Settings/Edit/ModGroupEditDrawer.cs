@@ -484,7 +484,7 @@ public sealed class ModGroupEditDrawer(
         {
             using var drag = Im.DragDrop.Target();
             if (drag.IsDropping("Condition"u8))
-                modManager.OptionEditor.SetCondition(@object, _dragDropCondition.Condition?.DeepCopy(), false);
+                ModManager.OptionEditor.SetCondition(@object, _dragDropCondition.Condition?.DeepCopy(), false);
         }
     }
 
