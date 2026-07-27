@@ -29,6 +29,15 @@ public sealed class ModFileSystemCache : FileSystemCache<ModFileSystemCache.ModD
         Parent.Communicator.ModDataChanged.Subscribe(OnModDataChange, ModDataChanged.Priority.ModFileSystemCache);
     }
 
+    public override void Update()
+    {
+        if (ColorsDirty)
+            foreach (var node in AllNodes.Values)
+                node.Dirty = true;
+
+        base.Update();
+    }
+
     private void OnModDataChange(in ModDataChanged.Arguments arguments)
     {
         if (arguments.Type.HasFlag(ModDataChangeType.Deletion))

@@ -98,11 +98,11 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
         if (_config.Version is not 13)
             return;
 
+        DebugUtilities.BackupJsonFiles(_config.ModDirectory);
         _config.Version           = 14;
         _config.Ephemeral.Version = 14;
         _config.Save();
         _config.Ephemeral.Save();
-        DebugUtilities.BackupJsonFiles(_config.ModDirectory);
     }
 
     private void Version12To13()

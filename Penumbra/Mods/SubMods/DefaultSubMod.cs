@@ -13,7 +13,7 @@ public class DefaultSubMod(IMod mod) : IModDataContainer
     internal readonly IMod Mod = mod;
 
     int IIndexed.Index
-        => -1;
+        => 0;
 
     void IIndexed.SetIndex(int _)
     { }

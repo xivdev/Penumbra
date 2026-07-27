@@ -814,7 +814,11 @@ public sealed class SettingsTab : ITab<TabType>
             return;
 
         if (ColorSettingsDrawer.Draw(Penumbra.Messager, _config.Ui.Colors, _cache))
+        {
+            CacheManager.Instance.SetColorsDirty();
             _config.Ui.Save();
+        }
+
         Im.Line.New();
     }
 
