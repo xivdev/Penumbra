@@ -98,40 +98,78 @@ public partial class ModCreator(
     /// <summary> Load all option groups for a given mod. </summary>
     public void LoadAllGroups(Mod mod)
     {
-        mod.Groups.Clear();
-        var changes = false;
-        foreach (var file in saveService.FileNames.GetOptionGroupFiles(mod))
+        if (mod.FileVersion <= 3)
         {
-            var group = LoadModGroup(mod, file);
-            if (group != null && mod.Groups.All(g => g.Name != group.Name))
+            mod.Groups.Clear();
+            var changes = false;
+            foreach (var file in saveService.FileNames.GetOptionGroupFiles(mod))
             {
-                changes = changes
-                 || saveService.FileNames.OptionGroupFile(mod.ModPath.FullName, mod.Groups.Count, group.Name, true)
-                 != Path.Combine(file.DirectoryName!, file.Name.ReplaceBadXivSymbols(true));
-                mod.Groups.Add(group);
+                var group = LoadModGroup(mod, file);
+                if (group != null && mod.Groups.All(g => g.Name != group.Name))
+                {
+                    changes = changes
+                     || saveService.FileNames.OptionGroupFile(mod.ModPath.FullName, mod.Groups.Count, group.Name, true)
+                     != Path.Combine(file.DirectoryName!, file.Name.ReplaceBadXivSymbols(true));
+                    mod.Groups.Add(group);
+                }
+                else
+                {
+                    changes = true;
+                }
             }
-            else
+
+            if (changes)
+                saveService.SaveAllOptionGroups(mod, true, Config.ReplaceNonAsciiOnImport);
+        }
+        else
+        {
+            mod.Groups.Clear();
+            var defaultFile = saveService.FileNames.ModMetaPath(mod);
+            var jObject     = JObject.Parse(File.ReadAllText(defaultFile))["Groups"] as JArray ?? [];
+            foreach (var obj in jObject)
             {
-                changes = true;
+                try
+                {
+                    var group = LoadModGroup(mod, obj as JObject ?? []);
+                    if (group is not null && mod.Groups.All(g => g.Name != group.Name))
+                        mod.Groups.Add(group);
+                }
+                catch (Exception e)
+                {
+                    Penumbra.Log.Error($"Could not read mod group:\n{e}");
+                }
             }
         }
-
-        if (changes)
-            saveService.SaveAllOptionGroups(mod, true, Config.ReplaceNonAsciiOnImport);
     }
 
     /// <summary> Load the default option for a given mod.</summary>
     public void LoadDefaultOption(Mod mod)
     {
-        var defaultFile = saveService.FileNames.OptionGroupFile(mod, -1, Config.ReplaceNonAsciiOnImport);
-        try
+        if (mod.FileVersion <= 3)
         {
-            var jObject = File.Exists(defaultFile) ? JObject.Parse(File.ReadAllText(defaultFile)) : new JObject();
-            SubMod.LoadDataContainer(jObject, mod.Default, mod.ModPath);
+            var defaultFile = saveService.FileNames.OptionGroupFile(mod, -1, Config.ReplaceNonAsciiOnImport);
+            try
+            {
+                var jObject = File.Exists(defaultFile) ? JObject.Parse(File.ReadAllText(defaultFile)) : new JObject();
+                SubMod.LoadDataContainer(jObject, mod.Default, mod.ModPath);
+            }
+            catch (Exception e)
+            {
+                Penumbra.Log.Error($"Could not parse default file for {mod.Name}:\n{e}");
+            }
         }
-        catch (Exception e)
+        else
         {
-            Penumbra.Log.Error($"Could not parse default file for {mod.Name}:\n{e}");
+            var defaultFile = saveService.FileNames.ModMetaPath(mod);
+            try
+            {
+                var jObject = JObject.Parse(File.ReadAllText(defaultFile));
+                SubMod.LoadDataContainer(jObject["DefaultData"] as JObject ?? new JObject(), mod.Default, mod.ModPath);
+            }
+            catch (Exception e)
+            {
+                Penumbra.Log.Error($"Could not parse default file for {mod.Name}:\n{e}");
+            }
         }
     }
 
@@ -421,13 +459,7 @@ public partial class ModCreator(
         try
         {
             var json = JObject.Parse(File.ReadAllText(file.FullName));
-            switch (json[nameof(Type)]?.ToObject<GroupType>() ?? GroupType.Single)
-            {
-                case GroupType.Multi:     return MultiModGroup.Load(mod, json);
-                case GroupType.Single:    return SingleModGroup.Load(mod, json);
-                case GroupType.Imc:       return ImcModGroup.Load(mod, json);
-                case GroupType.Combining: return CombiningModGroup.Load(mod, json);
-            }
+            return LoadModGroup(mod, json);
         }
         catch (Exception e)
         {
@@ -436,6 +468,16 @@ public partial class ModCreator(
 
         return null;
     }
+
+    private static IModGroup? LoadModGroup(Mod mod, JObject json)
+        => (json[nameof(Type)]?.ToObject<GroupType>() ?? GroupType.Single) switch
+        {
+            GroupType.Multi     => MultiModGroup.Load(mod, json),
+            GroupType.Single    => SingleModGroup.Load(mod, json),
+            GroupType.Imc       => ImcModGroup.Load(mod, json),
+            GroupType.Combining => CombiningModGroup.Load(mod, json),
+            _                   => null,
+        };
 
     internal static void DeleteDeleteList(IEnumerable<string> deleteList, bool delete)
     {

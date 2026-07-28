@@ -103,6 +103,7 @@ public readonly struct ModMeta(Mod mod) : ISavable
         public ModDataChangeType Apply(ModDataEditor editor, ModCreator creator, Mod mod, string metaFile)
         {
             ModDataChangeType changes = 0;
+            mod.FileVersion = FileVersion ?? 0;
             if (mod.Name != Name)
             {
                 changes  |= ModDataChangeType.Name;
@@ -155,7 +156,7 @@ public readonly struct ModMeta(Mod mod) : ISavable
             }
 
             // TODO: No JObject optimization.
-            if (FileVersion != CurrentFileVersion)
+            if (FileVersion < CurrentFileVersion)
             {
                 if (FileVersion is null)
                     throw new Exception("No mod meta version provided to migrate from.");
@@ -168,6 +169,8 @@ public readonly struct ModMeta(Mod mod) : ISavable
                     editor.SaveService.ImmediateSave(new ModMeta(mod));
                 }
             }
+            else if (FileVersion > 4)
+                throw new Exception("Unsupported mod version.");
 
             // Required features get checked during parsing, in which case the new required features signal invalid.
             if (RequiredFeatures != mod.RequiredFeatures)

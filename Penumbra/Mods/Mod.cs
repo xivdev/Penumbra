@@ -31,6 +31,8 @@ public sealed class Mod : IMod, IFileSystemValue<Mod>
         Priority = ModPriority.MaxValue,
     };
 
+    public uint FileVersion { get; set; }
+
     // Main Data
     public DirectoryInfo ModPath { get; internal set; }
 
