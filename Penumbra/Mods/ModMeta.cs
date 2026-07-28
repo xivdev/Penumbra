@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Dalamud.Interface.ImGuiNotification;
 using ImSharp;
 using Luna;
 using Newtonsoft.Json.Linq;
@@ -17,6 +18,12 @@ public readonly struct ModMeta(Mod mod) : ISavable
 
     public void Save(Stream stream)
     {
+        if (mod.FileVersion is 4)
+        {
+            Penumbra.Messager.NotificationMessage($"Can not save changes to a V4 mod {mod.Identifier}.", NotificationType.Warning);
+            throw new Exception($"Can not save mod meta of a V4 mod {mod.Identifier}.");
+        }
+
         using var j = new Utf8JsonWriter(stream, JsonFunctions.WriterOptions);
         j.WriteStartObject();
 

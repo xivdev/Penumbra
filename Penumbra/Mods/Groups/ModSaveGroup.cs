@@ -1,9 +1,10 @@
+using Dalamud.Interface.ImGuiNotification;
+using Luna;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Penumbra.Files;
 using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
-using Penumbra.Services;
 
 namespace Penumbra.Mods.Groups;
 
@@ -72,6 +73,13 @@ public readonly struct ModSaveGroup : ISavable
 
     public void Save(Stream stream)
     {
+        var mod = _group?.Mod ?? _defaultMod?.Mod as Mod;
+        if (mod?.FileVersion is 4)
+        {
+            Penumbra.Messager.NotificationMessage($"Can not save changes to a V4 mod {mod.Identifier}.", NotificationType.Warning);
+            throw new Exception($"Can not save mod meta of a V4 mod {mod.Identifier}.");
+        }
+
         // TODO: System.Text.Json
         using var w = new StreamWriter(stream);
         using var j = new JsonTextWriter(w);
