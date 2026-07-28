@@ -105,9 +105,9 @@ public readonly record struct MaterialInfo(ObjectIndex ObjectIndex, DrawObjectTy
         return type switch
         {
             DrawObjectType.Character => address.Model,
-            DrawObjectType.Mainhand  => address.AsCharacter->DrawData.Weapon(DrawDataContainer.WeaponSlot.MainHand).DrawObject,
-            DrawObjectType.Offhand   => address.AsCharacter->DrawData.Weapon(DrawDataContainer.WeaponSlot.OffHand).DrawObject,
-            DrawObjectType.Vfx       => address.AsCharacter->DrawData.Weapon(DrawDataContainer.WeaponSlot.System).DrawObject,
+            DrawObjectType.Mainhand  => address.AsCharacter->DrawData.Weapon(DrawDataContainer.WeaponSlot.MainHand).DrawData.DrawObject,
+            DrawObjectType.Offhand   => address.AsCharacter->DrawData.Weapon(DrawDataContainer.WeaponSlot.OffHand).DrawData.DrawObject,
+            DrawObjectType.Vfx       => address.AsCharacter->DrawData.Weapon(DrawDataContainer.WeaponSlot.System).DrawData.DrawObject,
             _                        => Model.Null,
         };
     }
