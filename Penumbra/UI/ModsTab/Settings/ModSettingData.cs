@@ -8,6 +8,7 @@ public record ModSettingDataNode(StringU8 Name, StringU8 Description)
 {
     public bool Visible;
     public bool Disabled;
+    public bool HasHiddenChildren;
 }
 
 public sealed record ModSettingPage : ModSettingDataNode
@@ -44,7 +45,10 @@ public sealed record ModSettingGroup(IModGroup Group, StringU8 Name, StringU8 De
     public readonly List<ModSettingGroup>    GroupChildren   = [];
     public readonly List<ModSettingDataNode> VisibleChildren = [];
     public          float                    NameWidth;
+    public          float                    LabelWidth;
     public          float                    ComboWidth = 100 * Im.Style.GlobalScale;
+    public          float                    LabelExtend;
+    public          int                      Depth;
     public          int                      NumOptions;
     public          bool                     Space;
     public          bool                     IsCombo;

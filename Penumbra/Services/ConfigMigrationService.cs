@@ -72,21 +72,21 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
 
         _config.Version           = 15;
         _config.Ephemeral.Version = 15;
-        if (_data["Colors"]?.ToObject<Dictionary<string, uint>>() is not { } colorsString)
-            return;
-
-        var colors = new Dictionary<ColorId, uint>(colorsString.Count);
-        foreach (var (name, color) in colorsString)
+        if (_data["Colors"]?.ToObject<Dictionary<string, uint>>() is { } colorsString)
         {
-            if (ColorId.Parse(name, out var id))
-                colors.Add(id, color);
-        }
+            var colors = new Dictionary<ColorId, uint>(colorsString.Count);
+            foreach (var (name, color) in colorsString)
+            {
+                if (ColorId.Parse(name, out var id))
+                    colors.Add(id, color);
+            }
 
-        if (colors.Count > 0)
-        {
-            var migrate = new ColorDictionary<ColorId, ColorIdData>(colors, (id, value) => ColorIdData.OldDefault(id) == value);
-            _config.Ui.Colors.Apply(migrate, false);
-            _config.Ui.Save();
+            if (colors.Count > 0)
+            {
+                var migrate = new ColorDictionary<ColorId, ColorIdData>(colors, (id, value) => ColorIdData.OldDefault(id) == value);
+                _config.Ui.Colors.Apply(migrate, false);
+                _config.Ui.Save();
+            }
         }
 
         _config.Save();
@@ -161,7 +161,8 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
         if (_config.Version is not 9)
             return;
 
-        backupService.CreateMigrationBackup("pre_filesystem_update", saveService.FileNames.OldLocalDataFiles.Append(saveService.FileNames.OldFilesystemFile));
+        backupService.CreateMigrationBackup("pre_filesystem_update",
+            saveService.FileNames.OldLocalDataFiles.Append(saveService.FileNames.OldFilesystemFile));
         _config.Version           = 10;
         _config.Ephemeral.Version = 10;
         _config.Save();
@@ -174,7 +175,8 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
         if (_config.Version is not 8)
             return;
 
-        backupService.CreateMigrationBackup("pre_collection_identifiers", saveService.FileNames.OldLocalDataFiles.Append(saveService.FileNames.OldFilesystemFile));
+        backupService.CreateMigrationBackup("pre_collection_identifiers",
+            saveService.FileNames.OldLocalDataFiles.Append(saveService.FileNames.OldFilesystemFile));
         _config.Version           = 9;
         _config.Ephemeral.Version = 9;
         _config.Save();

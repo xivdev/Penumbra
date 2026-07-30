@@ -64,7 +64,7 @@ public sealed class SettingsTab : ITab<TabType>
         DalamudSubstitutionProvider dalamudSubstitutionProvider, FileCompactor compactor, DalamudConfigService dalamudConfig,
         IDataManager gameData, PredefinedTagManager predefinedTagConfig, CrashHandlerService crashService,
         MigrationSectionDrawer migrationDrawer, CollectionAutoSelector autoSelector, AttributeHook attributeHook, PcpService pcpService,
-        IntegrationSettingsRegistry integrationSettings, ModFileSystemDrawer modFileSystemDrawer, ColorCache<ColorId, ColorIdData> cache)
+        IntegrationSettingsRegistry integrationSettings, ModFileSystemDrawer modFileSystemDrawer)
     {
         _pluginInterface             = pluginInterface;
         _config                      = config;
@@ -92,7 +92,6 @@ public sealed class SettingsTab : ITab<TabType>
         _pcpService           = pcpService;
         _integrationSettings  = integrationSettings;
         _modFileSystemDrawer  = modFileSystemDrawer;
-        _cache                = cache;
     }
 
     public void PostTabButton()
@@ -448,13 +447,46 @@ public sealed class SettingsTab : ITab<TabType>
         Checkbox("Draw Tabs for Option Pages"u8,
             "When this is on, pages set for options in a mod's metadata are drawn as a tab bar. When it is off, pages are drawn successively on the same page using sections of collapsing headers."u8,
             _config.DisplayPages, v => _config.DisplayPages = v);
+
         Im.Item.SetNextWidth(UiHelpers.InputTextWidth.X);
-        if (ImEx.InputOnDeactivation.Drag("Vertical Spacing between Option Groups Factor"u8, _config.Ui.ModSettingItemSpacingFactor,
-                out var newFactor, "%.2f"u8, 0, 10, 0.01f))
+        if (ImEx.InputOnDeactivation.Drag("##groupLine"u8, _config.Ui.ModSettingLineScale,
+                out var newLine, "%.2f"u8, 0, 4, 0.005f, SliderFlags.AlwaysClamp))
+            _config.Ui.ModSettingLineScale = newLine;
+        LunaStyle.DrawAlignedHelpMarkerLabel("Group Settings Line Factor"u8,
+            "The thickness of the tree line connecting group settings."u8);
+
+        Im.Item.SetNextWidth(UiHelpers.InputTextWidth.X);
+        if (ImEx.InputOnDeactivation.Drag("##groupBorder"u8, _config.Ui.ModSettingBorderScale,
+                out var newBorder, "%.2f"u8, 1, 4, 0.005f, SliderFlags.AlwaysClamp))
+            _config.Ui.ModSettingBorderScale = newBorder;
+        LunaStyle.DrawAlignedHelpMarkerLabel("Group Settings Border Factor"u8,
+            "The thickness of the border around UI elements connected by the tree line in group settings."u8);
+
+        Im.Item.SetNextWidth(UiHelpers.InputTextWidth.X);
+        if (ImEx.InputOnDeactivation.Drag("##vertSpace"u8, _config.Ui.ModSettingItemSpacingFactor,
+                out var newFactor, "%.2f"u8, 0, 10, 0.01f, SliderFlags.AlwaysClamp))
             _config.Ui.ModSettingItemSpacingFactor = newFactor;
-        Im.Tooltip.OnHover(
+        LunaStyle.DrawAlignedHelpMarkerLabel("Vertical Spacing between Option Groups Factor"u8, 
             "An additional factor applied to your regular ImGui style's item spacing in the vertical direction between the nodes in your mod settings tab.\n\n"u8
           + "A value of 1 means that the normal item spacing is used."u8);
+
+        Im.Item.SetNextWidth(UiHelpers.InputTextWidth.X);
+        if (ImEx.InputOnDeactivation.Drag("##groupAlign"u8, _config.Ui.ModSettingLabelAlignment,
+                out var newAlignment, "%.2f"u8, 0, 1, 0.0005f, SliderFlags.AlwaysClamp))
+            _config.Ui.ModSettingLabelAlignment = newAlignment;
+        LunaStyle.DrawAlignedHelpMarkerLabel("Group Label Text Alignment"u8,
+            "The alignment of the text in group labels. A value of 0 means the text is left-aligned, and a value of 1 means it is right-aligned. "u8
+          + "The caret is always left-aligned, and the tooltip icon is always right-aligned."u8);
+
+        Im.Item.SetNextWidth(UiHelpers.InputTextWidth.X);
+        if (ImEx.InputOnDeactivation.Drag("##groupHomo"u8, _config.Ui.ModSettingMaximumExtendLabelWidth,
+                out var newExtend, "%.0f"u8, -1))
+            _config.Ui.ModSettingMaximumExtendLabelWidth = newExtend;
+        LunaStyle.DrawAlignedHelpMarkerLabel("Maximum Group Label Homogenization"u8,
+            "The maximum width in unscaled pixels that group labels are extended in the settings screen. "u8
+          + "Labels are sized according to the largest group label available, up to this value. "u8
+          + "If a group label requires more space than this, it is an outlier and other labels are not extended to its width."u8);
+
         DrawSingleSelectRadioMax();
     }
 
@@ -804,8 +836,6 @@ public sealed class SettingsTab : ITab<TabType>
 
     #endregion
 
-    private ColorCache<ColorId, ColorIdData> _cache;
-
     /// <summary> Draw the entire Color subsection. </summary>
     private void DrawColorSettings()
     {
@@ -813,7 +843,7 @@ public sealed class SettingsTab : ITab<TabType>
         if (!header)
             return;
 
-        if (ColorSettingsDrawer.Draw(Penumbra.Messager, _config.Ui.Colors, _cache))
+        if (ColorSettingsDrawer.Draw(Penumbra.Messager, _config.Ui.Colors, _config.Ui.ColorCache))
         {
             CacheManager.Instance.SetColorsDirty();
             _config.Ui.Save();

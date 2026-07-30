@@ -84,7 +84,7 @@ public readonly struct ModSettingDrawNode
             ? (ColorId.GroupLabelBorderExpanded.Value, ColorId.GroupLabelTextExpanded.Value, ColorId.GroupLabelBackgroundExpanded.Value)
             : (ColorId.GroupLabelBorderCollapsed.Value, ColorId.GroupLabelTextCollapsed.Value, ColorId.GroupLabelBackgroundCollapsed.Value);
 
-        using var colors = ImStyleBorder.Frame.Push(border, cache.LineWidth)
+        using var colors = ImStyleBorder.Frame.Push(border, cache.BorderWidth)
             .Push(ImGuiColor.Text,   text)
             .Push(ImGuiColor.Header, background);
         Im.Tree.SetNextOpen(Expanded);
@@ -105,14 +105,23 @@ public readonly struct ModSettingDrawNode
 
         if (!Collapsible)
         {
-            using var position = ImStyleBorder.Frame.Push(ColorId.GroupLabelBorder.Vector, cache.LineWidth)
-                .PushX(ImStyleDouble.ButtonTextAlign, 0);
-            ImEx.TextFramed(Node.Name, LabelWidth, ColorId.GroupLabelBackground.Value, ColorId.GroupLabelText.Value,
-                ColorId.GroupLabelBorder.Value);
-            if (!Node.Description.IsEmpty)
+            using var position = ImStyleBorder.Frame.Push(ColorId.GroupLabelBorder.Vector, cache.BorderWidth)
+                .PushX(ImStyleDouble.ButtonTextAlign, cache.TextAlignment);
+            if (Node.Description.IsEmpty)
             {
+                ImEx.TextFramed(Node.Name, LabelWidth, ColorId.GroupLabelBackground.Value, ColorId.GroupLabelText.Value,
+                    ColorId.GroupLabelBorder.Value);
+            }
+            else
+            {
+                var alignment = new Rectangle(Im.Style.FramePadding,
+                    LabelWidth.AddX(-cache.HelpIconSize - Im.Style.ItemInnerSpacing.X) - Im.Style.FramePadding);
+                ImEx.TextFramed(Node.Name, LabelWidth, alignment, ColorId.GroupLabelBackground.Value, ColorId.GroupLabelText.Value,
+                    ColorId.GroupLabelBorder.Value);
+
                 Im.Window.DrawList.Text(AwesomeIcon.Font, AwesomeIcon.Font.Size,
-                    Im.Item.LowerRightCorner - new Vector2(cache.HelpIconSize + Im.Style.FramePadding.X, cache.Height - Im.Style.FramePadding.Y),
+                    Im.Item.LowerRightCorner
+                  - new Vector2(cache.HelpIconSize + Im.Style.FramePadding.X, cache.Height - Im.Style.FramePadding.Y),
                     ImGuiColor.TextDisabled.Get(), LunaStyle.HelpMarker.Span);
                 Im.Tooltip.OnHover(Node.Description);
             }
@@ -122,8 +131,9 @@ public readonly struct ModSettingDrawNode
 
         var button = new CaretButton
         {
-            BorderWidth = cache.LineWidth,
-            TooltipIcon = LunaStyle.HelpMarker,
+            TextAlignment = cache.TextAlignment,
+            BorderWidth   = cache.BorderWidth,
+            TooltipIcon   = LunaStyle.HelpMarker,
             Collapsed = new CaretButton.Colors
             {
                 Background = ColorId.GroupLabelBackgroundCollapsed.Value,
@@ -144,6 +154,13 @@ public readonly struct ModSettingDrawNode
         {
             cache.Storage.SetBool(Id, !Expanded);
             cache.DrawDirty = true;
+        }
+
+        if (Node.HasHiddenChildren && ColorId.HiddenOptionIndicator.Vector.W is not 0)
+        {
+            var start = (Im.Item.UpperLeftCorner + new Vector2(LabelWidth.X / 6f, Im.Style.FrameHeight - cache.BorderWidth / 2)).Round();
+            var end = (start with { X = start.X + LabelWidth.X * 2f / 3f }).Round();
+            Im.Window.DrawList.Shape.Line(start, end, ColorId.HiddenOptionIndicator.Value, cache.BorderWidth);
         }
 
         return true;
@@ -172,7 +189,7 @@ public readonly struct ModSettingDrawNode
         var group = (ModSettingGroup)Node;
         DrawLabel(drawer, cache);
         DrawConnector(cache);
-        using (ImStyleBorder.Frame.Push(ColorId.OptionBorder.Vector, cache.LineWidth))
+        using (ImStyleBorder.Frame.Push(ColorId.OptionBorder.Vector, cache.BorderWidth))
         {
             using var disabled = Im.Disabled(group.Disabled);
             drawer.Combo.Draw(drawer, group, drawer.GetModSetting(group.Group), ComboWidth.X);
@@ -185,7 +202,7 @@ public readonly struct ModSettingDrawNode
     {
         var group = (ModSettingGroup)Node;
         Im.Cursor.X += SecondItemOffset;
-        using (ImStyleBorder.Frame.Push(ColorId.OptionBorder.Vector, cache.LineWidth))
+        using (ImStyleBorder.Frame.Push(ColorId.OptionBorder.Vector, cache.BorderWidth))
         {
             using var disabled = Im.Disabled(group.Disabled || drawer.Locked);
             drawer.Combo.Draw(drawer, group, drawer.GetModSetting(group.Group), ComboWidth.X);
@@ -222,12 +239,19 @@ public readonly struct ModSettingDrawNode
         var       setting = drawer.GetModSetting(option.Data.Group);
         var       value   = setting.HasFlag(option.Data.Index);
 
-        using (ImStyleBorder.Frame.Push(ColorId.OptionBorder.Vector, cache.LineWidth)
+        using (ImStyleBorder.Frame.Push(ColorId.OptionBorder.Vector, cache.BorderWidth)
                    .Push(ImGuiColor.Text, option.Color))
         {
             using var disabled = Im.Disabled(option.Disabled || drawer.Locked);
             if (Im.Checkbox(option.HideLabel ? "##check"u8 : option.Name, value))
                 drawer.SetModSetting(option.Data.Group, setting.SetBit(option.Data.Index, !value));
+        }
+
+        if (option.HasHiddenChildren && ColorId.HiddenOptionIndicator.Vector.W is not 0)
+        {
+            var start = (Im.Item.UpperLeftCorner + new Vector2(Im.Style.FrameHeight / 6f, Im.Style.FrameHeight - cache.BorderWidth / 2)).Round();
+            var end   = (start with { X = start.X + Im.Style.FrameHeight * 2f / 3f }).Round();
+            Im.Window.DrawList.Shape.Line(start, end, ColorId.HiddenOptionIndicator.Value, cache.BorderWidth);
         }
 
         if (!option.Description.IsEmpty)
@@ -243,12 +267,19 @@ public readonly struct ModSettingDrawNode
         var setting = drawer.GetModSetting(option.Data.Group);
         var value   = setting.AsIndex == option.Data.Index;
         Im.Cursor.X += Indent;
-        using (ImStyleBorder.Frame.Push(ColorId.OptionBorder.Vector, cache.LineWidth)
+        using (ImStyleBorder.Frame.Push(ColorId.OptionBorder.Vector, cache.BorderWidth)
                    .Push(ImGuiColor.Text, option.Color))
         {
             using var _ = Im.Disabled(option.Disabled || drawer.Locked);
             if (Im.RadioButton(Node.Name, value))
                 drawer.SetModSetting(option.Data.Group, Setting.Single(option.Data.Index));
+        }
+
+        if (Node.HasHiddenChildren && ColorId.HiddenOptionIndicator.Vector.W is not 0)
+        {
+            var radioCenter = Rectangle.FromSize(Im.Item.UpperLeftCorner, new Vector2(Im.Style.FrameHeight + 1)).Center.Round();
+            var radius = (Im.Style.FrameHeight - cache.BorderWidth / 2) / 2;
+            Im.Window.DrawList.Path.ArcTo(radioCenter, radius, MathF.PI / 4f, 3 * MathF.PI / 4f).FinishStroke(ColorId.HiddenOptionIndicator.Value, ImDrawFlagsPath.None, cache.BorderWidth);
         }
 
         if (!option.Description.IsEmpty)

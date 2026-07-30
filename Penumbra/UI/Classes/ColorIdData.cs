@@ -4,7 +4,7 @@ using static Penumbra.UI.Classes.ColorId;
 
 namespace Penumbra.UI.Classes;
 
-public struct ColorIdData : IColorData<ColorId>
+public readonly struct ColorIdData : IColorData<ColorId>
 {
     private static readonly ColorData<ColorId>[] ColorData = CreateData();
 
@@ -112,9 +112,9 @@ public struct ColorIdData : IColorData<ColorId>
         ret[(int)OptionColor6] = new ColorData<ColorId>(0xFFDB9DB3, "Selectable Color for Mod Option #6"u8, OptionColorTooltip, modSettings);
         ret[(int)OptionColor7] = new ColorData<ColorId>(0xFF6A5CC7, "Selectable Color for Mod Option #7"u8, OptionColorTooltip, modSettings);
         ret[(int)OptionColor8] = new ColorData<ColorId>(0xFF6BB5A6, "Selectable Color for Mod Option #8"u8, OptionColorTooltip, modSettings);
-        ret[(int)OptionTreeLine] = new ColorData<ColorId>(0x80FFF0C0, "Option Group Dependency Tree Line"u8,
+        ret[(int)OptionTreeLine] = new ColorData<ColorId>(ImGuiColor.Separator, "Option Group Dependency Tree Line"u8,
             "The color for the line connecting option groups and nodes in the mod settings panel."u8, modSettings);
-        ret[(int)GroupLabelBackground] = new ColorData<ColorId>(ImGuiColor.FrameBackground, "Option Group Label Background (Non-Interactive)"u8,
+        ret[(int)GroupLabelBackground] = new ColorData<ColorId>(ImGuiColor.TitleBackground, "Option Group Label Background (Non-Interactive)"u8,
             "The color for the background of option group labels when they are not collapsible."u8, modSettings);
         ret[(int)GroupLabelBorder] = new ColorData<ColorId>(OptionTreeLine, "Option Group Label Border (Non-Interactive)"u8,
             "The color for the border around option group labels when they are not collapsible."u8, modSettings);
@@ -134,6 +134,8 @@ public struct ColorIdData : IColorData<ColorId>
             "The color for the text in option group labels when they are currently collapsed."u8, modSettings);
         ret[(int)OptionBorder] = new ColorData<ColorId>(OptionTreeLine, "Option Checkbox/Radio Button/Combo Border"u8,
             "The color of the border around option checkboxes, radio buttons or single select option group combos."u8, modSettings);
+        ret[(int)HiddenOptionIndicator] = new ColorData<ColorId>(0x00FFFFFF, "Hidden Option Indicator"u8,
+            "The color of an indicator line when a group or option has more options or group children than are displayed."u8, modSettings);
 
         foreach (var data in ret)
         {

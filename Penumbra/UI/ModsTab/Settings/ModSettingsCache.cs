@@ -26,9 +26,13 @@ public sealed class ModSettingsCache : BasicCache
     private readonly Dictionary<int, ModSettingPage>      _pages         = [];
 
     public Vector2 ScaledSpacing;
+    public float   WidestLabel;
+    public float   WidestCombo;
     public float   Height;
     public float   HalfHeight;
     public float   LineWidth;
+    public float   BorderWidth;
+    public float   TextAlignment;
     public float   CenterSpacing;
     public float   Indentation;
     public float   CaretTipSpacing;
@@ -100,11 +104,11 @@ public sealed class ModSettingsCache : BasicCache
 
         var id               = Im.Id.Get("Page"u8);
         var currentIndex     = _config.DisplayPages ? -1 : list.Count;
-        var parentLineOffset = _config.DisplayPages ? 0 : CaretTipSpacing;
+        var parentLineOffset = _config.DisplayPages || VisiblePages.Count <= 1 ? 0 : CaretTipSpacing;
         var expanded         = Storage.GetBool(id, true);
 
         // If the user displays pages as headers, add a header line.
-        if (!_config.DisplayPages)
+        if (!_config.DisplayPages && VisiblePages.Count > 1)
             list.Add(new ModSettingDrawNode
             {
                 Id                = id,
@@ -130,8 +134,7 @@ public sealed class ModSettingsCache : BasicCache
     }
 
     private int? AddGroup(List<ModSettingDrawNode> list, List<ModSettingsDrawLine> lines, ModSettingGroup group, int parentIndex,
-        float parentIndent,
-        float parentLineOffset)
+        float parentIndent, float parentLineOffset)
     {
         using var idStack      = Im.Id.Push(group.Group.Index);
         var       id           = Im.Id.Current;
@@ -153,20 +156,18 @@ public sealed class ModSettingsCache : BasicCache
         var skippedHeader         = drawMode is ModSettingDrawNode.Mode.Label && hideHeader;
         if (!skippedHeader)
         {
+            // One less indentation.
+            var labelWidth = Math.Max(group.LabelExtend, WidestLabel) - indent;
             indent                += Indentation;
             currentIndex          =  list.Count;
             parentOfChildrenIndex =  currentIndex.Value;
-            var (labelWidth, comboWidth, secondItemOffset) = drawMode switch
+            (labelWidth, var comboWidth, var secondItemOffset) = drawMode switch
             {
-                ModSettingDrawNode.Mode.Label when group.Collapsible => (group.NameWidth + CaretWidth, 0f,
-                    indent + group.NameWidth + CaretWidth + CenterSpacing),
-                ModSettingDrawNode.Mode.Label => (group.NameWidth, 0f, indent + group.NameWidth + CenterSpacing),
-                ModSettingDrawNode.Mode.CheckboxLabel or ModSettingDrawNode.Mode.ComboLabel when group.Collapsible => (
-                    group.NameWidth + CaretWidth,
-                    group.ComboWidth, indent + group.NameWidth + CaretWidth + CenterSpacing),
-                ModSettingDrawNode.Mode.CheckboxLabel or ModSettingDrawNode.Mode.ComboLabel => (group.NameWidth, group.ComboWidth,
-                    indent + group.NameWidth + CenterSpacing),
-                ModSettingDrawNode.Mode.Checkbox or ModSettingDrawNode.Mode.Combo => (0, group.ComboWidth,
+                ModSettingDrawNode.Mode.Label => (labelWidth, 0f, indent + labelWidth + CenterSpacing),
+                ModSettingDrawNode.Mode.CheckboxLabel or ModSettingDrawNode.Mode.ComboLabel => (labelWidth,
+                    MathF.Max(group.ComboWidth, WidestCombo),
+                    indent + labelWidth + CenterSpacing),
+                ModSettingDrawNode.Mode.Checkbox or ModSettingDrawNode.Mode.Combo => (0, MathF.Max(group.ComboWidth, WidestCombo),
                     currentIndex is 0 ? 0 : list[parentIndex].SecondItemOffset),
                 _ => throw new Exception("Can not happen."),
             };
@@ -254,7 +255,6 @@ public sealed class ModSettingsCache : BasicCache
         if (length <= 0)
             return;
 
-        // We subtract 2 spacings because the cursor is already at a spaced position.
         var startPos = (currentIndex + 1) * withSpacing - ScaledSpacing.Y;
         var line     = new ModSettingsDrawLine(x, startPos, length);
         lines.Add(line);
@@ -284,7 +284,11 @@ public sealed class ModSettingsCache : BasicCache
             return;
 
         var context = new ModSettingContext(mod, _selection.Settings);
+        WidestLabel = 0;
+        WidestCombo = 0;
         UpdateVisibilities(context);
+        if (WidestLabel > _config.Ui.ModSettingMaximumExtendLabelWidth * Im.Style.GlobalScale)
+            WidestLabel = _config.Ui.ModSettingMaximumExtendLabelWidth * Im.Style.GlobalScale;
         DrawDirty = true;
     }
 
@@ -307,7 +311,7 @@ public sealed class ModSettingsCache : BasicCache
             page.VisibleGroups.Clear();
             foreach (var group in page.Groups)
             {
-                if (CheckGroupVisibility(group))
+                if (CheckGroupVisibility(group, 0))
                     page.VisibleGroups.Add(group);
             }
 
@@ -316,12 +320,13 @@ public sealed class ModSettingsCache : BasicCache
         }
     }
 
-    private bool CheckGroupVisibility(ModSettingGroup group)
+    private bool CheckGroupVisibility(ModSettingGroup group, int depth)
     {
         if (!group.Visible)
             return false;
 
         // Set all visible options as visible children.
+        group.Depth = depth;
         group.VisibleChildren.Clear();
         foreach (var option in group.AllOptions.Where(o => o.Visible))
         {
@@ -331,9 +336,11 @@ public sealed class ModSettingsCache : BasicCache
             // Check visibility of child groups in options.
             foreach (var childGroup in option.Children)
             {
-                if (CheckGroupVisibility(childGroup))
+                if (CheckGroupVisibility(childGroup, depth + 2))
                     option.VisibleChildren.Add(childGroup);
             }
+
+            option.HasHiddenChildren = option.VisibleChildren.Count < option.Children.Count;
         }
 
         group.NumOptions = group.VisibleChildren.Count;
@@ -341,7 +348,7 @@ public sealed class ModSettingsCache : BasicCache
         // Recursively check all child groups of the group itself and add visible ones.
         foreach (var childGroup in group.GroupChildren)
         {
-            if (CheckGroupVisibility(childGroup))
+            if (CheckGroupVisibility(childGroup, depth + 1))
                 group.VisibleChildren.Add(childGroup);
         }
 
@@ -354,19 +361,14 @@ public sealed class ModSettingsCache : BasicCache
                 {
                     var option = (ModSettingOption)group.VisibleChildren[0];
                     if (option.Children.Count is 0)
-                    {
                         group.IsSameLineOption = true;
-                        // Whether it is only a checkbox or has a label.
-                        if (option.HideLabel || option.Name.IsEmpty && option.Description.IsEmpty)
-                        { }
-                    }
                 }
 
                 // Multi groups are visible if they have any children at all.
                 group.Visible = group.VisibleChildren.Count > 0;
                 // Multi groups are collapsible if they are not same-line or have additional group children.
                 group.Collapsible = !group.IsSameLineOption || group.VisibleChildren.Count > 1;
-                return group.Visible;
+                break;
             }
             case GroupDrawBehaviour.SingleSelection:
             {
@@ -391,10 +393,19 @@ public sealed class ModSettingsCache : BasicCache
                 group.Collapsible = !group.IsCombo || group.VisibleChildren.Count > group.NumOptions;
                 // A single group is visible if it has at least 2 options or group children.
                 group.Visible = group.NumOptions > 1 || group.VisibleChildren.Count > group.NumOptions;
-                return group.Visible;
+                break;
             }
             default: return false;
         }
+
+        group.LabelWidth  = group.Collapsible ? group.NameWidth + CaretWidth : group.NameWidth;
+        group.LabelExtend = group.LabelWidth + group.Depth * Indentation;
+        if (group.LabelExtend > WidestLabel && !group.HideHeader)
+            WidestLabel = group.LabelExtend;
+        if (group.ComboWidth > WidestCombo)
+            WidestCombo = group.ComboWidth;
+        group.HasHiddenChildren = group.VisibleChildren.Count < group.GroupChildren.Count + group.AllOptions.Count;
+        return group.Visible;
     }
 
     #endregion
@@ -429,7 +440,9 @@ public sealed class ModSettingsCache : BasicCache
         _orderedGroups.Clear();
         ScaledSpacing   =  Im.Style.ItemSpacing;
         ScaledSpacing.Y *= _config.Ui.ModSettingItemSpacingFactor;
-        LineWidth       =  2 * Im.Style.GlobalScale;
+        LineWidth       =  _config.Ui.ModSettingLineScale * Im.Style.GlobalScale;
+        BorderWidth     =  _config.Ui.ModSettingBorderScale * Im.Style.GlobalScale;
+        TextAlignment   =  _config.Ui.ModSettingLabelAlignment;
         CenterSpacing   =  2 * Im.Style.ItemSpacing.X;
         Height          =  Im.Style.FrameHeight;
         Indentation     =  Height + Im.Style.ItemInnerSpacing.X;
