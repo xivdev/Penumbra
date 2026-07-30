@@ -38,6 +38,7 @@ public sealed class ModFileSystemDrawer : FileSystemDrawer<ModFileSystemCache.Mo
         MainContext.AddButton(new ClearTemporarySettingsButton(this),   105);
         MainContext.AddButton(new ClearDefaultImportFolderButton(this), -10);
         MainContext.AddButton(new ClearQuickMoveFoldersButtons(this),   -20);
+        MainContext.AddButton(new GlobalSortModeSelector(this, m => { config.SortMode = m; config.Save();}), -100);
 
         FolderContext.AddButton(new SetDescendantsButton(this, true,  null),  11);
         FolderContext.AddButton(new SetDescendantsButton(this, false, null),  10);

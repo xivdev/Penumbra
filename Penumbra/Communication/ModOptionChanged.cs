@@ -5,7 +5,6 @@ using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Manager.OptionEditor;
 using Penumbra.Mods.SubMods;
-using Penumbra.UI.ModsTab.Groups;
 using Penumbra.UI.ModsTab.Settings;
 
 namespace Penumbra.Communication;

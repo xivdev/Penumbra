@@ -1,7 +1,6 @@
 using ImSharp;
 using Luna;
 using Penumbra.Mods.Groups;
-using Penumbra.UI.ModsTab.Groups;
 
 namespace Penumbra.UI.ModsTab.Settings;
 

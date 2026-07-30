@@ -3,7 +3,6 @@ using ImSharp.ImNodes;
 using Luna;
 using Penumbra.Communication;
 using Penumbra.Services;
-using Penumbra.UI.ModsTab;
 using Penumbra.UI.ModsTab.Settings;
 
 namespace Penumbra.Mods.Groups;

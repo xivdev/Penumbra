@@ -14,3 +14,4 @@ public sealed class ClearTemporarySettingsButton(ModFileSystemDrawer drawer) : B
     public override void OnClick()
         => drawer.CollectionManager.Editor.ClearTemporarySettings(drawer.CollectionManager.Active.Current);
 }
+

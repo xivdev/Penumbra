@@ -7,9 +7,8 @@ using Penumbra.Mods;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.Settings;
 using Penumbra.Services;
-using Penumbra.UI.ModsTab.Settings;
 
-namespace Penumbra.UI.ModsTab.Groups;
+namespace Penumbra.UI.ModsTab.Settings;
 
 public sealed class ModGroupDrawer(
     Configuration config,
@@ -81,10 +80,7 @@ public sealed class ModGroupDrawer(
                     line.Draw(cache);
 
                 foreach (var drawNode in clipper.Iterate(page.Drawing))
-                {
-                    var cursor = Im.Cursor.Position;
                     drawNode.Draw(this, cache);
-                }
             }
 
             Im.Table.NextColumn();
