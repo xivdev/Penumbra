@@ -33,6 +33,7 @@ public sealed class ModSettingsCache : BasicCache
     public float   LineWidth;
     public float   BorderWidth;
     public float   TextAlignment;
+    public float   ComboAlignment;
     public float   CenterSpacing;
     public float   Indentation;
     public float   CaretTipSpacing;
@@ -443,6 +444,7 @@ public sealed class ModSettingsCache : BasicCache
         LineWidth       =  _config.Ui.ModSettingLineScale * Im.Style.GlobalScale;
         BorderWidth     =  _config.Ui.ModSettingBorderScale * Im.Style.GlobalScale;
         TextAlignment   =  _config.Ui.ModSettingLabelAlignment;
+        ComboAlignment  =  _config.Ui.ModSettingComboAlignment;
         CenterSpacing   =  2 * Im.Style.ItemSpacing.X;
         Height          =  Im.Style.FrameHeight;
         Indentation     =  Height + Im.Style.ItemInnerSpacing.X;

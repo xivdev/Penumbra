@@ -192,6 +192,7 @@ public readonly struct ModSettingDrawNode
         using (ImStyleBorder.Frame.Push(ColorId.OptionBorder.Vector, cache.BorderWidth))
         {
             using var disabled = Im.Disabled(group.Disabled);
+            drawer.Combo.PreviewAlignment = new Vector2(cache.ComboAlignment);
             drawer.Combo.Draw(drawer, group, drawer.GetModSetting(group.Group), ComboWidth.X);
         }
 
@@ -205,6 +206,7 @@ public readonly struct ModSettingDrawNode
         using (ImStyleBorder.Frame.Push(ColorId.OptionBorder.Vector, cache.BorderWidth))
         {
             using var disabled = Im.Disabled(group.Disabled || drawer.Locked);
+            drawer.Combo.PreviewAlignment = new Vector2(cache.ComboAlignment);
             drawer.Combo.Draw(drawer, group, drawer.GetModSetting(group.Group), ComboWidth.X);
         }
 

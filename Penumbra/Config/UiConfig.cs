@@ -99,6 +99,9 @@ public sealed partial class UiConfig : ConfigurationFile<FilenameService>, IDisp
     [ConfigProperty]
     private float _modSettingLabelAlignment;
 
+    [ConfigProperty]
+    private float _modSettingComboAlignment;
+
     public void Dispose()
     {
         UI.Classes.Colors.SetCache(null!);

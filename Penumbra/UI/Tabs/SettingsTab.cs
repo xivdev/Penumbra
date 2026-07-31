@@ -479,6 +479,13 @@ public sealed class SettingsTab : ITab<TabType>
           + "The caret is always left-aligned, and the tooltip icon is always right-aligned."u8);
 
         Im.Item.SetNextWidth(UiHelpers.InputTextWidth.X);
+        if (ImEx.InputOnDeactivation.Drag("##comboAlign"u8, _config.Ui.ModSettingComboAlignment,
+                out var newCombo, "%.2f"u8, 0, 1, 0.0005f, SliderFlags.AlwaysClamp))
+            _config.Ui.ModSettingComboAlignment = newCombo;
+        LunaStyle.DrawAlignedHelpMarkerLabel("Setting Combo Preview Text Alignment"u8,
+            "The alignment of the preview text in single select combos. A value of 0 means the text is left-aligned, and a value of 1 means it is right-aligned. "u8);
+
+        Im.Item.SetNextWidth(UiHelpers.InputTextWidth.X);
         if (ImEx.InputOnDeactivation.Drag("##groupHomo"u8, _config.Ui.ModSettingMaximumExtendLabelWidth,
                 out var newExtend, "%.0f"u8, -1))
             _config.Ui.ModSettingMaximumExtendLabelWidth = newExtend;
