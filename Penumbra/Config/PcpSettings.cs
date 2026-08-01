@@ -1,11 +1,26 @@
+using Luna;
+using Luna.Generators;
+using Penumbra.Files;
+
 namespace Penumbra;
 
-public record PcpSettings
+public sealed partial class PcpSettings : ConfigurationFile<FilenameService>
 {
-    public bool   CreateCollection { get; set; } = true;
-    public bool   AssignCollection { get; set; } = true;
-    public bool   AllowIpc         { get; set; } = true;
-    public bool   DisableHandling  { get; set; } = false;
-    public string FolderName       { get; set; } = "PCP";
-    public string PcpExtension     { get; set; } = ".pcp";
+    [ConfigProperty]
+    private bool _createCollection = true;
+
+    [ConfigProperty]
+    private bool _assignCollection = true;
+
+    [ConfigProperty]
+    private bool _allowIpc = true;
+
+    [ConfigProperty]
+    private bool _disableHandling = false;
+
+    [ConfigProperty]
+    private string _folderName = "PCP";
+
+    [ConfigProperty]
+    private string _pcpExtension = ".pcp";
 }

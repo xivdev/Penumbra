@@ -1,5 +1,7 @@
 using Dalamud.Plugin;
+using Dalamud.Plugin.Services;
 using Luna;
+using Microsoft.Extensions.DependencyInjection;
 using Penumbra.Collections;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
@@ -8,6 +10,7 @@ namespace Penumbra.Files;
 
 public sealed class FilenameService(IDalamudPluginInterface pi, LocalModDatabase database) : BaseFilePathProvider(pi)
 {
+    public readonly string GameDataDirectory = pi.GetRequiredService<IDataManager>().GameData.DataPath.FullName;
     public readonly string CollectionDirectory = Path.Combine(pi.ConfigDirectory.FullName, "collections");
     public readonly string LocalModDatabase = Path.Combine(pi.ConfigDirectory.FullName, "mod_data.db");
     public readonly string EphemeralConfigFile = Path.Combine(pi.ConfigDirectory.FullName, "ephemeral_config.json");

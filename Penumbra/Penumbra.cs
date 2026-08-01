@@ -77,16 +77,17 @@ public class Penumbra : IDalamudPlugin
                 $"Loading Penumbra Version {_validityChecker.Version}, Commit #{_validityChecker.CommitHash} with Waiting For Plugins: {startup}...");
             _services.GetService<BackupService>(); // Initialize early to create backups.
             _services.GetService<ImSharpDalamudContext>();
-            _config              = _services.GetService<Configuration>();
-            _characterUtility    = _services.GetService<CharacterUtility>();
-            _tempMods            = _services.GetService<TempModManager>();
-            _residentResources   = _services.GetService<ResidentResourceManager>();
-            _modManager          = _services.GetService<ModManager>();
-            _collectionManager   = _services.GetService<CollectionManager>();
-            _tempCollections     = _services.GetService<TempCollectionManager>();
-            _redrawService       = _services.GetService<RedrawService>();
-            _communicatorService = _services.GetService<CommunicatorService>();
-            _gameData            = _services.GetService<IDataManager>();
+            _config              =  _services.GetService<Configuration>();
+            _config.ModsEnabled  += SetEnabled;
+            _characterUtility    =  _services.GetService<CharacterUtility>();
+            _tempMods            =  _services.GetService<TempModManager>();
+            _residentResources   =  _services.GetService<ResidentResourceManager>();
+            _modManager          =  _services.GetService<ModManager>();
+            _collectionManager   =  _services.GetService<CollectionManager>();
+            _tempCollections     =  _services.GetService<TempCollectionManager>();
+            _redrawService       =  _services.GetService<RedrawService>();
+            _communicatorService =  _services.GetService<CommunicatorService>();
+            _gameData            =  _services.GetService<IDataManager>();
             _collectionManager.Caches.CreateNecessaryCaches();
             _services.GetService<PathResolver>();
 
@@ -185,12 +186,8 @@ public class Penumbra : IDalamudPlugin
         });
     }
 
-    public bool SetEnabled(bool enabled)
+    private void SetEnabled(bool enabled, bool _)
     {
-        if (enabled == _config.EnableMods)
-            return false;
-
-        _config.EnableMods = enabled;
         if (enabled)
         {
             if (_characterUtility.Ready)
@@ -208,10 +205,7 @@ public class Penumbra : IDalamudPlugin
             }
         }
 
-        _config.Save();
         _communicatorService.EnabledChanged.Invoke(new EnabledChanged.Arguments(enabled));
-
-        return true;
     }
 
     public void ForceChangelogOpen()
