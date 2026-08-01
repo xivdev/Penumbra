@@ -139,7 +139,7 @@ public partial class ModCreator(
         if (removeDefaultValues && !Config.KeepDefaultMetaChanges)
             changes |= ModMetaEditor.DeleteDefaultValues(mod, metaFileManager, null);
 
-        if (!changes)
+        if (!changes || mod.FileVersion is 4)
             return;
 
         SaveService.ImmediateSaveSync(mod);
