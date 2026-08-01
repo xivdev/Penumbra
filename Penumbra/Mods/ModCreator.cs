@@ -139,7 +139,7 @@ public partial class ModCreator(
         if (removeDefaultValues && !Config.KeepDefaultMetaChanges)
             changes |= ModMetaEditor.DeleteDefaultValues(mod, metaFileManager, null);
 
-        if (!changes || mod.FileVersion is 4)
+        if (!changes)
             return;
 
         SaveService.ImmediateSaveSync(mod);
@@ -206,7 +206,7 @@ public partial class ModCreator(
     {
         var newModFolderBase = NewOptionDirectory(parentFolder, subFolderName, onlyAscii);
         var newModFolder     = newModFolderBase.FullName.ObtainUniqueFile();
-        return newModFolder.Length == 0 ? null : new DirectoryInfo(newModFolder);
+        return newModFolder.Length is 0 ? null : new DirectoryInfo(newModFolder);
     }
 
     /// <summary> Create the data for a given sub mod from its data and the folder it is based on. </summary>

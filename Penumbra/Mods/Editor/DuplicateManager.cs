@@ -226,10 +226,6 @@ public class DuplicateManager(ModManager modManager, SaveService saveService) : 
                 modManager.Creator.ReloadMod(mod, true, true, out _);
             }
 
-            // No deduplication in V4 possible.
-            if (mod.FileVersion is 4)
-                return;
-
             Clear();
             var files = new ModFileCollection();
             files.UpdateAll(mod, mod.Default);
