@@ -1,6 +1,5 @@
 using Dalamud.Hooking;
-using Dalamud.Plugin.Services;
-using Dalamud.Utility.Signatures;
+using Luna;
 using Penumbra.Api.Enums;
 using Penumbra.GameData;
 using Penumbra.Interop.Structs;
@@ -10,19 +9,17 @@ using TextureResourceHandle = Penumbra.Interop.Structs.TextureResourceHandle;
 
 namespace Penumbra.Interop.Hooks.ResourceLoading;
 
-public unsafe class RsfService : IDisposable, Luna.IRequiredService
+public sealed unsafe class RsfService : IDisposable, IRequiredService
 {
+    private readonly HookManager _hooks;
+
     /// <summary>
     /// We need to be able to obtain the requested LoD level.
     /// This replicates the LoD behavior of a textures OnLoad function.
     /// </summary>
-    private readonly struct LodService
+    private readonly struct LodService(HookManager interop)
     {
-        public LodService(IGameInteropProvider interop)
-            => interop.InitializeFromAttributes(this);
-
-        [Signature(Sigs.LodConfig)]
-        private readonly nint _lodConfig = nint.Zero;
+        private readonly nint _lodConfig = interop.SigScanner.GetStaticAddressFromSig(Sigs.LodConfig);
 
         public byte GetLod(TextureResourceHandle* handle)
         {
@@ -42,18 +39,25 @@ public unsafe class RsfService : IDisposable, Luna.IRequiredService
 
     private readonly LodService _lodService;
 
-    public RsfService(IGameInteropProvider interop)
+    public RsfService(HookManager hooks)
     {
-        interop.InitializeFromAttributes(this);
-        _lodService = new LodService(interop);
-        if (!HookOverrides.Instance.ResourceLoading.CheckFileState)
-            _checkFileStateHook.Enable();
-        if (!HookOverrides.Instance.ResourceLoading.LoadMdlFileExtern)
-            _loadMdlFileExternHook.Enable();
-        if (!HookOverrides.Instance.ResourceLoading.TexResourceHandleOnLoad)
-            _textureOnLoadHook.Enable();
-        if (!HookOverrides.Instance.ResourceLoading.SoundOnLoad)
-            _soundOnLoadHook.Enable();
+        _hooks      = hooks;
+        _lodService = new LodService(_hooks);
+        _checkFileStateHook = _hooks.CreateHook<CheckFileStatePrototype>("CheckFileState", Sigs.CheckFileState, CheckFileStateDetour,
+            !HookOverrides.Instance.ResourceLoading.CheckFileState)!;
+        _loadMdlFileExternHook = _hooks.CreateHook<LoadMdlFileExternPrototype>("LoadMdlFileExtern", Sigs.LoadMdlFileExtern,
+            LoadMdlFileExternDetour, !HookOverrides.Instance.ResourceLoading.LoadMdlFileExtern)!;
+        _textureOnLoadHook = _hooks.CreateHook<TexResourceHandleOnLoadPrototype>("TextureOnLoad", Sigs.TexHandleOnLoad, OnTexLoadDetour,
+            !HookOverrides.Instance.ResourceLoading.TexResourceHandleOnLoad)!;
+        _soundOnLoadHook = _hooks.CreateHook<SoundOnLoadDelegate>("SoundOnLoad", Sigs.SoundOnLoad, OnScdLoadDetour,
+            !HookOverrides.Instance.ResourceLoading.SoundOnLoad)!;
+        _updateCategory = (delegate* unmanaged<TextureResourceHandle*, void>)_hooks.SigScanner.ScanText(Sigs.TexHandleUpdateCategory);
+        _loadScdFileLocal =
+            (delegate* unmanaged<ResourceHandle*, SeFileDescriptor*, byte, byte>)_hooks.SigScanner.ScanText(Sigs.LoadScdFileLocal);
+        _loadTexFileLocal =
+            (delegate* unmanaged<TextureResourceHandle*, int, SeFileDescriptor*, byte, byte>)_hooks.SigScanner.ScanText(Sigs.LoadTexFileLocal);
+        _loadMdlFileLocal = (delegate* unmanaged<ResourceHandle*, nint, byte, byte>)_hooks.SigScanner.ScanText(Sigs.LoadMdlFileLocal);
+        _rsfService       = (nint*)_hooks.SigScanner.GetStaticAddressFromSig(Sigs.RsfServiceAddress);
     }
 
     /// <summary> Add CRC64 if the given file is a model or texture file and has an associated path. </summary>
@@ -70,10 +74,10 @@ public unsafe class RsfService : IDisposable, Luna.IRequiredService
 
     public void Dispose()
     {
-        _checkFileStateHook.Dispose();
-        _loadMdlFileExternHook.Dispose();
-        _textureOnLoadHook.Dispose();
-        _soundOnLoadHook.Dispose();
+        _hooks.DisposeHook("CheckFileState");
+        _hooks.DisposeHook("LoadMdlFileExtern");
+        _hooks.DisposeHook("TextureOnLoad");
+        _hooks.DisposeHook("SoundOnLoad");
     }
 
     /// <summary>
@@ -86,28 +90,14 @@ public unsafe class RsfService : IDisposable, Luna.IRequiredService
         => _customFileCrc;
 
     private delegate nint CheckFileStatePrototype(nint unk1, ulong crc64);
-
-    [Signature(Sigs.CheckFileState, DetourName = nameof(CheckFileStateDetour))]
-    private readonly Hook<CheckFileStatePrototype> _checkFileStateHook = null!;
-
-    private readonly ThreadLocal<bool> _texReturnData = new(() => default);
-    private readonly ThreadLocal<bool> _scdReturnData = new(() => default);
-
-    private delegate void UpdateCategoryDelegate(TextureResourceHandle* resourceHandle);
-
-    [Signature(Sigs.TexHandleUpdateCategory)]
-    private readonly UpdateCategoryDelegate _updateCategory = null!;
-
+    private readonly Task<Hook<CheckFileStatePrototype>> _checkFileStateHook;
+    private readonly ThreadLocal<bool> _texReturnData = new(() => false);
+    private readonly ThreadLocal<bool> _scdReturnData = new(() => false);
+    private readonly delegate*unmanaged<TextureResourceHandle*, void> _updateCategory;
     private delegate byte SoundOnLoadDelegate(ResourceHandle* handle, SeFileDescriptor* descriptor, byte unk);
-
-    [Signature(Sigs.LoadScdFileLocal)]
-    private readonly delegate* unmanaged<ResourceHandle*, SeFileDescriptor*, byte, byte> _loadScdFileLocal = null!;
-
-    [Signature(Sigs.SoundOnLoad, DetourName = nameof(OnScdLoadDetour))]
-    private readonly Hook<SoundOnLoadDelegate> _soundOnLoadHook = null!;
-
-    [Signature(Sigs.RsfServiceAddress, ScanType = ScanType.StaticAddress)]
-    private readonly nint* _rsfService = null;
+    private readonly Task<Hook<SoundOnLoadDelegate>> _soundOnLoadHook;
+    private readonly delegate* unmanaged<ResourceHandle*, SeFileDescriptor*, byte, byte> _loadScdFileLocal;
+    private readonly nint* _rsfService;
 
     private byte OnScdLoadDetour(ResourceHandle* handle, SeFileDescriptor* descriptor, byte unk)
     {
@@ -117,12 +107,12 @@ public unsafe class RsfService : IDisposable, Luna.IRequiredService
             Penumbra.Log.Debug(
                 $"Resource load of {handle->FileName} before FFXIV RSF-service was instantiated, workaround by setting pointer.");
             *_rsfService = 1;
-            ret          = _soundOnLoadHook.Original(handle, descriptor, unk);
+            ret          = _soundOnLoadHook.Result.Original(handle, descriptor, unk);
             *_rsfService = nint.Zero;
         }
         else
         {
-            ret = _soundOnLoadHook.Original(handle, descriptor, unk);
+            ret = _soundOnLoadHook.Result.Original(handle, descriptor, unk);
         }
 
         if (!_scdReturnData.Value)
@@ -154,49 +144,41 @@ public unsafe class RsfService : IDisposable, Luna.IRequiredService
                     return nint.Zero;
             }
 
-        var ret = _checkFileStateHook.Original(ptr, crc64);
+        var ret = _checkFileStateHook.Result.Original(ptr, crc64);
         Penumbra.Log.Excessive($"[CheckFileState] Called on 0x{ptr:X} with CRC {crc64:X16}, returned 0x{ret:X}.");
         return ret;
     }
 
-    private delegate byte LoadTexFileLocalDelegate(TextureResourceHandle* handle, int unk1, SeFileDescriptor* unk2, bool unk3);
+    /// <summary> We use the local functions for our own files in the extern hook. </summary>
+    private readonly delegate*unmanaged<TextureResourceHandle*, int, SeFileDescriptor*, byte, byte> _loadTexFileLocal;
 
     /// <summary> We use the local functions for our own files in the extern hook. </summary>
-    [Signature(Sigs.LoadTexFileLocal)]
-    private readonly LoadTexFileLocalDelegate _loadTexFileLocal = null!;
-
-    private delegate byte LoadMdlFileLocalPrototype(ResourceHandle* handle, nint unk1, bool unk2);
-
-    /// <summary> We use the local functions for our own files in the extern hook. </summary>
-    [Signature(Sigs.LoadMdlFileLocal)]
-    private readonly LoadMdlFileLocalPrototype _loadMdlFileLocal = null!;
+    private readonly delegate*unmanaged<ResourceHandle*, nint, byte, byte> _loadMdlFileLocal;
 
     private delegate byte TexResourceHandleOnLoadPrototype(TextureResourceHandle* handle, SeFileDescriptor* descriptor, byte unk2);
 
-    [Signature(Sigs.TexHandleOnLoad, DetourName = nameof(OnTexLoadDetour))]
-    private readonly Hook<TexResourceHandleOnLoadPrototype> _textureOnLoadHook = null!;
+    private readonly Task<Hook<TexResourceHandleOnLoadPrototype>> _textureOnLoadHook;
 
     private byte OnTexLoadDetour(TextureResourceHandle* handle, SeFileDescriptor* descriptor, byte unk2)
     {
-        var ret = _textureOnLoadHook.Original(handle, descriptor, unk2);
+        var ret = _textureOnLoadHook.Result.Original(handle, descriptor, unk2);
         if (!_texReturnData.Value)
             return ret;
 
         // Function failed on a replaced texture, call local.
         _texReturnData.Value = false;
-        ret                  = _loadTexFileLocal(handle, _lodService.GetLod(handle), descriptor, unk2 != 0);
+        ret                  = _loadTexFileLocal(handle, _lodService.GetLod(handle), descriptor, unk2);
         _updateCategory(handle);
         return ret;
     }
 
-    private delegate byte LoadMdlFileExternPrototype(ResourceHandle* handle, nint unk1, bool unk2, nint unk3);
+    private delegate byte LoadMdlFileExternPrototype(ResourceHandle* handle, nint unk1, byte unk2, nint unk3);
 
-    [Signature(Sigs.LoadMdlFileExtern, DetourName = nameof(LoadMdlFileExternDetour))]
-    private readonly Hook<LoadMdlFileExternPrototype> _loadMdlFileExternHook = null!;
+    private readonly Task<Hook<LoadMdlFileExternPrototype>> _loadMdlFileExternHook;
 
     /// <summary> We hook the extern functions to just return the local one if given the custom flag as last argument. </summary>
-    private byte LoadMdlFileExternDetour(ResourceHandle* resourceHandle, nint unk1, bool unk2, nint ptr)
+    private byte LoadMdlFileExternDetour(ResourceHandle* resourceHandle, nint unk1, byte unk2, nint ptr)
         => ptr.Equals(CustomFileFlag)
-            ? _loadMdlFileLocal.Invoke(resourceHandle, unk1, unk2)
-            : _loadMdlFileExternHook.Original(resourceHandle, unk1, unk2, ptr);
+            ? _loadMdlFileLocal(resourceHandle, unk1, unk2)
+            : _loadMdlFileExternHook.Result.Original(resourceHandle, unk1, unk2, ptr);
 }

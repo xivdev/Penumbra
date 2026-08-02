@@ -1,29 +1,23 @@
-using Dalamud.Plugin.Services;
-using Dalamud.Utility.Signatures;
+using Luna;
 using Penumbra.GameData;
 
 namespace Penumbra.Interop.Services;
 
-public unsafe class ResidentResourceManager : Luna.IService
+public unsafe class ResidentResourceManager(HookManager interop) : IService
 {
     // A static pointer to the resident resource manager address.
-    [Signature(Sigs.ResidentResourceManager, ScanType = ScanType.StaticAddress)]
-    private readonly Structs.ResidentResourceManager** _residentResourceManagerAddress = null;
+    private readonly Structs.ResidentResourceManager** _residentResourceManagerAddress =
+        (Structs.ResidentResourceManager**)interop.SigScanner.GetStaticAddressFromSig(Sigs.ResidentResourceManager);
 
     // Some attach and physics files are stored in the resident resource manager, and we need to manually trigger a reload of them to get them to apply.
-    public delegate void* ResidentResourceDelegate(void* residentResourceManager);
+    public readonly delegate* unmanaged<Structs.ResidentResourceManager*, void*> LoadPlayerResources =
+        (delegate*unmanaged<Structs.ResidentResourceManager*, void*>)interop.SigScanner.ScanText(Sigs.LoadPlayerResources);
 
-    [Signature(Sigs.LoadPlayerResources)]
-    public readonly ResidentResourceDelegate LoadPlayerResources = null!;
-
-    [Signature(Sigs.UnloadPlayerResources)]
-    public readonly ResidentResourceDelegate UnloadPlayerResources = null!;
+    public readonly delegate* unmanaged<Structs.ResidentResourceManager*, void*> UnloadPlayerResources =
+        (delegate*unmanaged<Structs.ResidentResourceManager*, void*>)interop.SigScanner.ScanText(Sigs.UnloadPlayerResources);
 
     public Structs.ResidentResourceManager* Address
         => *_residentResourceManagerAddress;
-
-    public ResidentResourceManager(IGameInteropProvider interop)
-        => interop.InitializeFromAttributes(this);
 
     // Reload certain player resources by force.
     public void Reload()
@@ -32,7 +26,7 @@ public unsafe class ResidentResourceManager : Luna.IService
             return;
 
         Penumbra.Log.Debug("Reload of resident resources triggered.");
-        UnloadPlayerResources.Invoke(Address);
-        LoadPlayerResources.Invoke(Address);
+        UnloadPlayerResources(Address);
+        LoadPlayerResources(Address);
     }
 }

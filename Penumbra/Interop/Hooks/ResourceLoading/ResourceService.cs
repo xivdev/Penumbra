@@ -1,7 +1,6 @@
 using Dalamud.Hooking;
-using Dalamud.Plugin.Services;
-using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
+using Luna;
 using Penumbra.Api.Enums;
 using Penumbra.GameData;
 using Penumbra.Interop.SafeHandles;
@@ -12,32 +11,26 @@ using CSResourceHandle = FFXIVClientStructs.FFXIV.Client.System.Resource.Handle.
 
 namespace Penumbra.Interop.Hooks.ResourceLoading;
 
-public unsafe class ResourceService : IDisposable, Luna.IRequiredService
+public sealed unsafe class ResourceService : IDisposable, IRequiredService
 {
-    private readonly ResourceManagerService _resourceManager;
-
+    private readonly HookManager               _hooks;
+    private readonly ResourceManagerService    _resourceManager;
     private readonly ThreadLocal<Utf8GamePath> _currentGetResourcePath = new(() => Utf8GamePath.Empty);
 
-    public ResourceService(ResourceManagerService resourceManager, IGameInteropProvider interop)
+    public ResourceService(ResourceManagerService resourceManager, HookManager hooks)
     {
         _resourceManager = resourceManager;
-        interop.InitializeFromAttributes(this);
-        _incRefHook = interop.HookFromAddress<ResourceHandlePrototype>(
-            (nint)CSResourceHandle.MemberFunctionPointers.IncRef,
-            ResourceHandleIncRefDetour);
-        _decRefHook = interop.HookFromAddress<ResourceHandleDecRefPrototype>(
-            (nint)CSResourceHandle.MemberFunctionPointers.DecRef,
-            ResourceHandleDecRefDetour);
-        if (!HookOverrides.Instance.ResourceLoading.GetResourceSync)
-            _getResourceSyncHook.Enable();
-        if (!HookOverrides.Instance.ResourceLoading.GetResourceAsync)
-            _getResourceAsyncHook.Enable();
-        if (!HookOverrides.Instance.ResourceLoading.UpdateResourceState)
-            _updateResourceStateHook.Enable();
-        if (!HookOverrides.Instance.ResourceLoading.IncRef)
-            _incRefHook.Enable();
-        if (!HookOverrides.Instance.ResourceLoading.DecRef)
-            _decRefHook.Enable();
+        _hooks           = hooks;
+        _incRefHook = _hooks.CreateHook<ResourceHandlePrototype>("ResourceHandle.IncRef", (nint)CSResourceHandle.MemberFunctionPointers.IncRef,
+            ResourceHandleIncRefDetour, !HookOverrides.Instance.ResourceLoading.IncRef)!;
+        _decRefHook = _hooks.CreateHook<ResourceHandleDecRefPrototype>("ResourceHandle.DecRef",
+            (nint)CSResourceHandle.MemberFunctionPointers.DecRef, ResourceHandleDecRefDetour, !HookOverrides.Instance.ResourceLoading.DecRef)!;
+        _getResourceSyncHook = _hooks.CreateHook<GetResourceSyncPrototype>("GetResourceSync", Sigs.GetResourceSync, GetResourceSyncDetour,
+            !HookOverrides.Instance.ResourceLoading.GetResourceSync)!;
+        _getResourceAsyncHook = _hooks.CreateHook<GetResourceAsyncPrototype>("GetResourceAsync", Sigs.GetResourceAsync, GetResourceAsyncDetour,
+            !HookOverrides.Instance.ResourceLoading.GetResourceAsync)!;
+        _updateResourceStateHook = _hooks.CreateHook<UpdateResourceStatePrototype>("UpdateResourceState", Sigs.UpdateResourceState,
+            UpdateResourceStateDetour, !HookOverrides.Instance.ResourceLoading.UpdateResourceState)!;
     }
 
     public ResourceHandle* GetResource(ResourceCategory category, ResourceType type, CiByteString path)
@@ -52,11 +45,11 @@ public unsafe class ResourceService : IDisposable, Luna.IRequiredService
 
     public void Dispose()
     {
-        _getResourceSyncHook.Dispose();
-        _getResourceAsyncHook.Dispose();
-        _updateResourceStateHook.Dispose();
-        _incRefHook.Dispose();
-        _decRefHook.Dispose();
+        _hooks.DisposeHook("ResourceHandle.IncRef");
+        _hooks.DisposeHook("ResourceHandle.DecRef");
+        _hooks.DisposeHook("GetResourceSync");
+        _hooks.DisposeHook("GetResourceAsync");
+        _hooks.DisposeHook("UpdateResourceState");
         _currentGetResourcePath.Dispose();
     }
 
@@ -84,11 +77,8 @@ public unsafe class ResourceService : IDisposable, Luna.IRequiredService
         ResourceType* pResourceType, int* pResourceHash, byte* pPath, GetResourceParameters* pGetResParams, byte hasHandleLock, byte* file,
         uint line);
 
-    [Signature(Sigs.GetResourceSync, DetourName = nameof(GetResourceSyncDetour))]
-    private readonly Hook<GetResourceSyncPrototype> _getResourceSyncHook = null!;
-
-    [Signature(Sigs.GetResourceAsync, DetourName = nameof(GetResourceAsyncDetour))]
-    private readonly Hook<GetResourceAsyncPrototype> _getResourceAsyncHook = null!;
+    private readonly Task<Hook<GetResourceSyncPrototype>>  _getResourceSyncHook;
+    private readonly Task<Hook<GetResourceAsyncPrototype>> _getResourceAsyncHook;
 
     private ResourceHandle* GetResourceSyncDetour(ResourceManager* resourceManager, ResourceCategory* categoryId, ResourceType* resourceType,
         int* resourceHash, byte* path, GetResourceParameters* pGetResParams, byte* file, uint line)
@@ -103,20 +93,24 @@ public unsafe class ResourceService : IDisposable, Luna.IRequiredService
     /// Both work basically the same, so we can reduce the main work to one function used by both hooks.
     /// </summary>
     private ResourceHandle* GetResourceHandler(bool isSync, ResourceManager* resourceManager, ResourceCategory* categoryId,
-        ResourceType* resourceType, int* resourceHash, byte* path, GetResourceParameters* pGetResParams, byte hasHandleLock, byte* file, uint line)
+        ResourceType* resourceType, int* resourceHash, byte* path, GetResourceParameters* pGetResParams, byte hasHandleLock, byte* file,
+        uint line)
     {
         if (!Utf8GamePath.FromPointer(path, MetaDataComputation.CiCrc32, out var gamePath))
         {
             Penumbra.Log.Error("[ResourceService] Could not create GamePath from resource path.");
             return isSync
-                ? _getResourceSyncHook.Original(resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, file, line)
-                : _getResourceAsyncHook.Original(resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, hasHandleLock, file,
+                ? _getResourceSyncHook.Result.Original(resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, file, line)
+                : _getResourceAsyncHook.Result.Original(resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams,
+                    hasHandleLock,
+                    file,
                     line);
         }
 
         if (gamePath.IsEmpty)
         {
-            Penumbra.Log.Error($"[ResourceService] Empty resource path requested with category {*categoryId}, type {*resourceType}, hash {*resourceHash}.");
+            Penumbra.Log.Error(
+                $"[ResourceService] Empty resource path requested with category {*categoryId}, type {*resourceType}, hash {*resourceHash}.");
             return null;
         }
 
@@ -127,7 +121,8 @@ public unsafe class ResourceService : IDisposable, Luna.IRequiredService
         if (returnValue != null)
             return returnValue;
 
-        return GetOriginalResource(isSync, *categoryId, *resourceType, *resourceHash, gamePath.Path, original, pGetResParams, hasHandleLock, file,
+        return GetOriginalResource(isSync, *categoryId, *resourceType, *resourceHash, gamePath.Path, original, pGetResParams, hasHandleLock,
+            file,
             line);
     }
 
@@ -140,9 +135,9 @@ public unsafe class ResourceService : IDisposable, Luna.IRequiredService
         {
             _currentGetResourcePath.Value = original;
             return sync
-                ? _getResourceSyncHook.OriginalDisposeSafe(_resourceManager.ResourceManager, &categoryId, &type, &hash, path.Path,
+                ? _getResourceSyncHook.Result.OriginalDisposeSafe(_resourceManager.ResourceManager, &categoryId, &type, &hash, path.Path,
                     resourceParameters, file, line)
-                : _getResourceAsyncHook.OriginalDisposeSafe(_resourceManager.ResourceManager, &categoryId, &type, &hash, path.Path,
+                : _getResourceAsyncHook.Result.OriginalDisposeSafe(_resourceManager.ResourceManager, &categoryId, &type, &hash, path.Path,
                     resourceParameters, hasHandleLock, file, line);
         }
         finally
@@ -182,17 +177,15 @@ public unsafe class ResourceService : IDisposable, Luna.IRequiredService
     /// </summary>
     public event ResourceStateUpdatedDelegate? ResourceStateUpdated;
 
-    private delegate uint UpdateResourceStatePrototype(ResourceHandle* handle, byte offFileThread);
-
-    [Signature(Sigs.UpdateResourceState, DetourName = nameof(UpdateResourceStateDetour))]
-    private readonly Hook<UpdateResourceStatePrototype> _updateResourceStateHook = null!;
+    private delegate uint                                     UpdateResourceStatePrototype(ResourceHandle* handle, byte offFileThread);
+    private readonly Task<Hook<UpdateResourceStatePrototype>> _updateResourceStateHook;
 
     private uint UpdateResourceStateDetour(ResourceHandle* handle, byte offFileThread)
     {
         var previousState = (handle->UnkState, handle->LoadState);
         var syncOriginal  = _currentGetResourcePath.IsValueCreated ? _currentGetResourcePath.Value : Utf8GamePath.Empty;
         ResourceStateUpdating?.Invoke(handle, syncOriginal);
-        var ret = _updateResourceStateHook.OriginalDisposeSafe(handle, offFileThread);
+        var ret = _updateResourceStateHook.Result.OriginalDisposeSafe(handle, offFileThread);
         ResourceStateUpdated?.Invoke(handle, syncOriginal, previousState, ref ret);
         return ret;
     }
@@ -216,15 +209,15 @@ public unsafe class ResourceService : IDisposable, Luna.IRequiredService
     /// Call the game function that increases the reference counter of a resource handle.
     /// </summary>
     public nint IncRef(ResourceHandle* handle)
-        => _incRefHook.OriginalDisposeSafe(handle);
+        => _incRefHook.Result.OriginalDisposeSafe(handle);
 
-    private readonly Hook<ResourceHandlePrototype> _incRefHook;
+    private readonly Task<Hook<ResourceHandlePrototype>> _incRefHook;
 
     private nint ResourceHandleIncRefDetour(ResourceHandle* handle)
     {
         nint? ret = null;
         ResourceHandleIncRef?.Invoke(handle, ref ret);
-        return ret ?? _incRefHook.OriginalDisposeSafe(handle);
+        return ret ?? _incRefHook.Result.OriginalDisposeSafe(handle);
     }
 
     #endregion
@@ -246,16 +239,16 @@ public unsafe class ResourceService : IDisposable, Luna.IRequiredService
     /// Call the original game function that decreases the reference counter of a resource handle.
     /// </summary>
     public byte DecRef(ResourceHandle* handle)
-        => _decRefHook.OriginalDisposeSafe(handle);
+        => _decRefHook.Result.OriginalDisposeSafe(handle);
 
-    private delegate byte                                ResourceHandleDecRefPrototype(ResourceHandle* handle);
-    private readonly Hook<ResourceHandleDecRefPrototype> _decRefHook;
+    private delegate byte                                      ResourceHandleDecRefPrototype(ResourceHandle* handle);
+    private readonly Task<Hook<ResourceHandleDecRefPrototype>> _decRefHook;
 
     private byte ResourceHandleDecRefDetour(ResourceHandle* handle)
     {
         byte? ret = null;
         ResourceHandleDecRef?.Invoke(handle, ref ret);
-        return ret ?? _decRefHook.OriginalDisposeSafe(handle);
+        return ret ?? _decRefHook.Result.OriginalDisposeSafe(handle);
     }
 
     #endregion

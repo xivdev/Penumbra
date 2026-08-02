@@ -13,7 +13,7 @@ using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManage
 
 namespace Penumbra.Meta;
 
-public class MetaFileManager : Luna.IService
+public class MetaFileManager : IService
 {
     internal readonly Configuration           Config;
     internal readonly CharacterUtility        CharacterUtility;
@@ -32,7 +32,7 @@ public class MetaFileManager : Luna.IService
 
     public MetaFileManager(CharacterUtility characterUtility, ResidentResourceManager residentResources, IDataManager gameData,
         ActiveCollectionData activeCollections, Configuration config, ValidityChecker validityChecker, ObjectIdentification identifier,
-        FileCompactor compactor, IGameInteropProvider interop, AtchManager atchManager)
+        FileCompactor compactor, HookManager interop, AtchManager atchManager)
     {
         CharacterUtility    = characterUtility;
         ResidentResources   = residentResources;
@@ -46,7 +46,6 @@ public class MetaFileManager : Luna.IService
         ImcChecker          = new ImcChecker(this);
         XivFileAllocator    = new XivFileAllocator(interop);
         XivDefaultAllocator = new XivDefaultAllocator();
-        interop.InitializeFromAttributes(this);
     }
 
     public void WriteAllTexToolsMeta(Mod mod)

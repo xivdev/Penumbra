@@ -1,23 +1,12 @@
 using Dalamud.Plugin.Services;
-using Dalamud.Utility.Signatures;
 using Penumbra.GameData;
 
 namespace Penumbra.Interop;
 
-public sealed unsafe class CharacterBaseVTables : Luna.IService
+public sealed unsafe class CharacterBaseVTables(ISigScanner sigScanner) : Luna.IService
 {
-    [Signature(Sigs.HumanVTable, ScanType = ScanType.StaticAddress)]
-    public readonly nint* HumanVTable = null!;
-
-    [Signature(Sigs.WeaponVTable, ScanType = ScanType.StaticAddress)]
-    public readonly nint* WeaponVTable = null!;
-
-    [Signature(Sigs.DemiHumanVTable, ScanType = ScanType.StaticAddress)]
-    public readonly nint* DemiHumanVTable = null!;
-
-    [Signature(Sigs.MonsterVTable, ScanType = ScanType.StaticAddress)]
-    public readonly nint* MonsterVTable = null!;
-
-    public CharacterBaseVTables(IGameInteropProvider interop)
-        => interop.InitializeFromAttributes(this);
+    public readonly nint* HumanVTable     = (nint*)sigScanner.GetStaticAddressFromSig(Sigs.HumanVTable);
+    public readonly nint* WeaponVTable    = (nint*)sigScanner.GetStaticAddressFromSig(Sigs.WeaponVTable);
+    public readonly nint* DemiHumanVTable = (nint*)sigScanner.GetStaticAddressFromSig(Sigs.DemiHumanVTable);
+    public readonly nint* MonsterVTable   = (nint*)sigScanner.GetStaticAddressFromSig(Sigs.MonsterVTable);
 }
