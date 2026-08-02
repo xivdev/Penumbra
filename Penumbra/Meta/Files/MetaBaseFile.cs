@@ -1,6 +1,7 @@
 using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Memory;
+using Luna;
 using Penumbra.GameData;
 using Penumbra.Interop.Structs;
 using Penumbra.String.Functions;
@@ -40,20 +41,17 @@ public sealed class MarshalAllocator : IFileAllocator
     }
 }
 
-public sealed unsafe class XivFileAllocator : IFileAllocator, Luna.IService
+public sealed unsafe class XivFileAllocator(HookManager provider) : IFileAllocator, IService
 {
     /// <summary>
     /// Allocate in the games space for file storage.
     /// We only need this if using any meta file.
     /// </summary>
-    [Signature(Sigs.GetFileSpace)]
-    private readonly nint _getFileSpaceAddress = nint.Zero;
-
-    public XivFileAllocator(IGameInteropProvider provider)
-        => provider.InitializeFromAttributes(this);
+    private readonly delegate* unmanaged<IMemorySpace*> _getFileSpaceAddress =
+        (delegate* unmanaged < IMemorySpace*>)provider.SigScanner.ScanText(Sigs.GetFileSpace);
 
     public IMemorySpace* GetFileSpace()
-        => ((delegate* unmanaged<IMemorySpace*>)_getFileSpaceAddress)();
+        => _getFileSpaceAddress();
 
     public T* Allocate<T>(int length, int alignment = 1) where T : unmanaged
     {
@@ -64,14 +62,13 @@ public sealed unsafe class XivFileAllocator : IFileAllocator, Luna.IService
 
     public void Release<T>(ref T* pointer, int length) where T : unmanaged
     {
-        
         IMemorySpace.Free(pointer, (ulong)(length * sizeof(T)));
         Penumbra.Log.Verbose($"Freeing {length * sizeof(T)} bytes from 0x{(nint)pointer:X} via FFXIV File Allocator.");
         pointer = null;
     }
 }
 
-public sealed unsafe class XivDefaultAllocator : IFileAllocator, Luna.IService
+public sealed unsafe class XivDefaultAllocator : IFileAllocator, IService
 {
     public T* Allocate<T>(int length, int alignment = 1) where T : unmanaged
     {
@@ -82,7 +79,6 @@ public sealed unsafe class XivDefaultAllocator : IFileAllocator, Luna.IService
 
     public void Release<T>(ref T* pointer, int length) where T : unmanaged
     {
-
         IMemorySpace.Free(pointer, (ulong)(length * sizeof(T)));
         Penumbra.Log.Verbose($"Freeing {length * sizeof(T)} bytes from 0x{(nint)pointer:X} via FFXIV Default Allocator.");
         pointer = null;

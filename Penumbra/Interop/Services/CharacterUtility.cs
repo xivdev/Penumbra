@@ -1,5 +1,4 @@
 using Dalamud.Plugin.Services;
-using Dalamud.Utility.Signatures;
 using ImSharp;
 using Penumbra.Communication;
 using Penumbra.GameData;
@@ -12,17 +11,12 @@ public unsafe class CharacterUtility : IDisposable, Luna.IRequiredService
     public record struct InternalIndex(int Value);
 
     /// <summary> A static pointer to the CharacterUtility address. </summary>
-    [Signature(Sigs.CharacterUtility, ScanType = ScanType.StaticAddress)]
-    private readonly CharacterUtilityData** _characterUtilityAddress = null;
+    private readonly CharacterUtilityData** _characterUtilityAddress;
 
-    /// <summary> Only required for migration anymore. </summary>
-    public delegate void LoadResources(CharacterUtilityData* address);
-
-    [Signature(Sigs.LoadCharacterResources)]
-    public readonly LoadResources LoadCharacterResourcesFunc = null!;
+    public readonly delegate* unmanaged<CharacterUtilityData*, void> LoadCharacterResourcesFunc;
 
     public void LoadCharacterResources()
-        => LoadCharacterResourcesFunc.Invoke(Address);
+        => LoadCharacterResourcesFunc(Address);
 
     public CharacterUtilityData* Address
         => *_characterUtilityAddress;
@@ -57,10 +51,11 @@ public unsafe class CharacterUtility : IDisposable, Luna.IRequiredService
 
     private readonly IFramework _framework;
 
-    public CharacterUtility(IFramework framework, IGameInteropProvider interop, CharacterUtilityFinished finished)
+    public CharacterUtility(IFramework framework, ISigScanner sigScanner, IGameInteropProvider interop, CharacterUtilityFinished finished)
     {
-        LoadingFinished = finished;
-        interop.InitializeFromAttributes(this);
+        _characterUtilityAddress   = (CharacterUtilityData**)sigScanner.GetStaticAddressFromSig(Sigs.CharacterUtility);
+        LoadCharacterResourcesFunc = (delegate* unmanaged <CharacterUtilityData*, void>)sigScanner.ScanText(Sigs.LoadCharacterResources);
+        LoadingFinished            = finished;
         _lists = Enumerable.Range(0, RelevantIndices.Length)
             .Select(idx => new MetaList(new InternalIndex(idx)))
             .ToArray();

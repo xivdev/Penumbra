@@ -31,12 +31,12 @@ public unsafe class SchedulerResourceManagementService : IService, IDisposable
     public IReadOnlyDictionary<CiByteString, uint> ActionTmbs
         => _actionTmbs;
 
-    public SchedulerResourceManagementService(IGameInteropProvider interop, CommunicatorService communicator, IDataManager dataManager)
+    public SchedulerResourceManagementService(HookManager interop, CommunicatorService communicator, IDataManager dataManager)
     {
         _communicator = communicator;
         _actionTmbs   = CreateActionTmbs(dataManager);
         _communicator.ResolvedFileChanged.Subscribe(OnResolvedFileChange, ResolvedFileChanged.Priority.SchedulerResourceManagementService);
-        interop.InitializeFromAttributes(this);
+        Address = (SchedulerResourceManagement**)interop.SigScanner.GetStaticAddressFromSig(Sigs.SchedulerResourceManagementInstance);
     }
 
     private void OnResolvedFileChange(in ResolvedFileChanged.Arguments arguments)
@@ -69,8 +69,7 @@ public unsafe class SchedulerResourceManagementService : IService, IDisposable
             Penumbra.Log.Verbose($"Action TMB {gamePath} encountered with no corresponding row ID.");
     }
 
-    [Signature(Sigs.SchedulerResourceManagementInstance, ScanType = ScanType.StaticAddress)]
-    public readonly SchedulerResourceManagement** Address = null;
+    public readonly SchedulerResourceManagement** Address;
 
     public SchedulerResourceManagement* Scheduler
         => *Address;
@@ -84,6 +83,7 @@ public unsafe class SchedulerResourceManagementService : IService, IDisposable
     private static FrozenDictionary<CiByteString, uint> CreateActionTmbs(IDataManager dataManager)
     {
         var sheet = dataManager.GetExcelSheet<ActionTimeline>();
-        return sheet.Where(row => !row.Key.IsEmpty).DistinctBy(row => row.Key).ToFrozenDictionary(row => new CiByteString(row.Key, MetaDataComputation.All).Clone(), row => row.RowId);
+        return sheet.Where(row => !row.Key.IsEmpty).DistinctBy(row => row.Key)
+            .ToFrozenDictionary(row => new CiByteString(row.Key, MetaDataComputation.All).Clone(), row => row.RowId);
     }
 }

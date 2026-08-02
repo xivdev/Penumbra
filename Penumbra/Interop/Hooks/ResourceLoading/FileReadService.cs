@@ -1,19 +1,21 @@
 using Dalamud.Hooking;
-using Dalamud.Plugin.Services;
-using Dalamud.Utility.Signatures;
+using Luna;
 using Penumbra.GameData;
 using Penumbra.Interop.Structs;
 
 namespace Penumbra.Interop.Hooks.ResourceLoading;
 
-public unsafe class FileReadService : IDisposable, Luna.IRequiredService
+public sealed unsafe class FileReadService : IDisposable, IRequiredService
 {
-    public FileReadService(ResourceManagerService resourceManager, IGameInteropProvider interop)
+    private readonly HookManager _hooks;
+
+    public FileReadService(ResourceManagerService resourceManager, HookManager hooks)
     {
         _resourceManager = resourceManager;
-        interop.InitializeFromAttributes(this);
-        if (!HookOverrides.Instance.ResourceLoading.ReadSqPack)
-            _readSqPackHook.Enable();
+        _hooks           = hooks;
+        _readSqPackHook = hooks.CreateHook<ReadSqPackPrototype>("ReadSqPack", Sigs.ReadSqPack, ReadSqPackDetour,
+            !HookOverrides.Instance.ResourceLoading.ReadSqPack)!;
+        _readFile = (delegate* unmanaged<nint, SeFileDescriptor*, int, byte, byte>)hooks.SigScanner.ScanText(Sigs.ReadFile);
     }
 
     /// <summary> Invoked when a file is supposed to be read from SqPack. </summary>
@@ -37,22 +39,19 @@ public unsafe class FileReadService : IDisposable, Luna.IRequiredService
     /// <param name="isSync">Whether the file needs to be loaded synchronously.</param>
     /// <returns>Unknown, not directly success/failure.</returns>
     public byte ReadFile(SeFileDescriptor* fileDescriptor, int priority, bool isSync)
-        => _readFile.Invoke(GetResourceManager(), fileDescriptor, priority, isSync);
+        => _readFile(GetResourceManager(), fileDescriptor, priority, isSync ? (byte)1 : (byte)0);
 
     public byte ReadDefaultSqPack(SeFileDescriptor* fileDescriptor, int priority, bool isSync)
-        => _readSqPackHook.Original(GetResourceManager(), fileDescriptor, priority, isSync);
+        => _readSqPackHook.Result.Original(GetResourceManager(), fileDescriptor, priority, isSync);
 
     public void Dispose()
-    {
-        _readSqPackHook.Dispose();
-    }
+        => _hooks.DisposeHook("ReadSqPack");
 
     private readonly ResourceManagerService _resourceManager;
 
     private delegate byte ReadSqPackPrototype(nint resourceManager, SeFileDescriptor* pFileDesc, int priority, bool isSync);
 
-    [Signature(Sigs.ReadSqPack, DetourName = nameof(ReadSqPackDetour))]
-    private readonly Hook<ReadSqPackPrototype> _readSqPackHook = null!;
+    private readonly Task<Hook<ReadSqPackPrototype>> _readSqPackHook;
 
     private byte ReadSqPackDetour(nint resourceManager, SeFileDescriptor* fileDescriptor, int priority, bool isSync)
     {
@@ -60,16 +59,11 @@ public unsafe class FileReadService : IDisposable, Luna.IRequiredService
         _lastFileThreadResourceManager.Value = resourceManager;
         ReadSqPack?.Invoke(fileDescriptor, ref priority, ref isSync, ref ret);
         _lastFileThreadResourceManager.Value = nint.Zero;
-        return ret ?? _readSqPackHook.Original(resourceManager, fileDescriptor, priority, isSync);
+        return ret ?? _readSqPackHook.Result.Original(resourceManager, fileDescriptor, priority, isSync);
     }
 
-
-    private delegate byte ReadFileDelegate(nint resourceManager, SeFileDescriptor* fileDescriptor, int priority,
-        bool isSync);
-
     /// We need to use the ReadFile function to load local, uncompressed files instead of loading them from the SqPacks.
-    [Signature(Sigs.ReadFile)]
-    private readonly ReadFileDelegate _readFile = null!;
+    private readonly delegate* unmanaged<nint, SeFileDescriptor*, int, byte, byte> _readFile;
 
     private readonly ThreadLocal<nint> _lastFileThreadResourceManager = new(true);
 
