@@ -6,7 +6,7 @@ namespace Penumbra.Mods.Manager;
 
 public class ModExportManager : IDisposable, Luna.IService
 {
-    private readonly Configuration       _config;
+    private readonly IoConfig            _config;
     private readonly CommunicatorService _communicator;
     private readonly ModManager          _modManager;
     private readonly FileWatcher         _fileWatcher;
@@ -16,52 +16,32 @@ public class ModExportManager : IDisposable, Luna.IService
     public DirectoryInfo ExportDirectory
         => _exportDirectory ?? _modManager.BasePath;
 
-    public ModExportManager(Configuration config, CommunicatorService communicator, ModManager modManager, FileWatcher fileWatcher)
+    public ModExportManager(IoConfig config, CommunicatorService communicator, ModManager modManager, FileWatcher fileWatcher)
     {
-        _config       = config;
-        _communicator = communicator;
-        _modManager   = modManager;
-        _fileWatcher  = fileWatcher;
-        UpdateExportDirectory(_config.ExportDirectory, false);
+        _config                        =  config;
+        _communicator                  =  communicator;
+        _modManager                    =  modManager;
+        _fileWatcher                   =  fileWatcher;
+        _config.ExportDirectoryChanged += OnExportDirectoryChanged;
+        OnExportDirectoryChanged(_config.ExportDirectory, _config.ExportDirectory);
         _communicator.ModPathChanged.Subscribe(OnModPathChange, ModPathChanged.Priority.ModExportManager);
     }
 
-    /// <inheritdoc cref="UpdateExportDirectory(string, bool)"/>
-    public void UpdateExportDirectory(string newDirectory)
-        => UpdateExportDirectory(newDirectory, true);
-
-    public Task CreateAsync(Mod mod)
-    {
-        var backup = new ModBackup(this, mod);
-        return backup.CreateAsync();
-    }
-
-    public void IgnoreExportedFile(string fullPath)
-    {
-        if (_config.PreventExportLoopback)
-            _fileWatcher.IgnoreFile(fullPath);
-    }
-
     /// <summary>
-    /// Update the export directory to a new directory. Can also reset it to null with empty input.
-    /// If the directory is changed, all existing backups will be moved to the new one.
+    ///   Update the export directory to a new directory. Can also reset it to null with empty input.
+    ///   If the directory is changed, all existing backups will be moved to the new one.
     /// </summary>
-    /// <param name="newDirectory">The new directory name.</param>
-    /// <param name="change">Can be used to stop saving for the initial setting</param>
-    private void UpdateExportDirectory(string newDirectory, bool change)
+    /// <param name="newPath"> The new directory name. </param>
+    /// <param name="oldPath"> The old directory name. </param>
+    private void OnExportDirectoryChanged(string newPath, string oldPath)
     {
-        if (newDirectory.Length == 0)
+        if (string.IsNullOrEmpty(newPath))
         {
-            if (_exportDirectory == null)
-                return;
-
-            _exportDirectory        = null;
-            _config.ExportDirectory = string.Empty;
-            _config.Save();
+            _exportDirectory = null;
             return;
         }
 
-        var dir = new DirectoryInfo(newDirectory);
+        var dir = new DirectoryInfo(newPath);
         if (dir.FullName.Equals(_exportDirectory?.FullName, StringComparison.OrdinalIgnoreCase))
             return;
 
@@ -76,21 +56,29 @@ public class ModExportManager : IDisposable, Luna.IService
                 return;
             }
 
-        if (change)
+        _exportDirectory = dir;
+        if (newPath != oldPath)
             foreach (var mod in _modManager)
                 new ModBackup(this, mod).Move(dir.FullName);
+    }
 
-        _exportDirectory = dir;
+    public Task CreateAsync(Mod mod)
+    {
+        var backup = new ModBackup(this, mod);
+        return backup.CreateAsync();
+    }
 
-        if (!change)
-            return;
-
-        _config.ExportDirectory = dir.FullName;
-        _config.Save();
+    public void IgnoreExportedFile(string fullPath)
+    {
+        if (_config.PreventExportLoopback)
+            _fileWatcher.IgnoreFile(fullPath);
     }
 
     public void Dispose()
-        => _communicator.ModPathChanged.Unsubscribe(OnModPathChange);
+    {
+        _config.ExportDirectoryChanged -= OnExportDirectoryChanged;
+        _communicator.ModPathChanged.Unsubscribe(OnModPathChange);
+    }
 
     /// <summary> Automatically migrate the backup file to the new name if any exists. </summary>
     private void OnModPathChange(in ModPathChanged.Arguments arguments)

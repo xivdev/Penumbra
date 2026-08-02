@@ -10,8 +10,8 @@ namespace Penumbra.Services;
 
 public sealed class FileWatcher : IDisposable, IService
 {
-    private readonly ConcurrentSet<string>              _pending = new(StringComparer.OrdinalIgnoreCase);
-    private readonly ConcurrentDictionary<string, long> _ignored = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentSet<string>              _pending           = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, long> _ignored           = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, long> _extractedArchives = new(StringComparer.OrdinalIgnoreCase);
     private readonly ModImportManager                   _modImportManager;
     private readonly MessageService                     _messageService;
@@ -31,10 +31,21 @@ public sealed class FileWatcher : IDisposable, IService
     private const long IgnoreTimeToLive = 60000L;
 
     private static readonly HashSet<string> ModExtensions =
-        new(StringComparer.OrdinalIgnoreCase) { ".pmp", ".pcp", ".ttmp", ".ttmp2" };
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            ".pmp",
+            ".pcp",
+            ".ttmp",
+            ".ttmp2",
+        };
 
     private static readonly HashSet<string> ContainerExtensions =
-        new(StringComparer.OrdinalIgnoreCase) { ".zip", ".rar", ".7z" };
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            ".zip",
+            ".rar",
+            ".7z",
+        };
 
     private static string GetTempPath(string basePath)
         => Path.Combine(basePath, "Penumbra-FileWatcher");
@@ -45,30 +56,35 @@ public sealed class FileWatcher : IDisposable, IService
     public FileWatcher(ModImportManager modImportManager, MessageService messageService, Configuration config,
         ArchiveExtractionNotification archiveExtractionNotification)
     {
-        _modImportManager             = modImportManager;
-        _messageService               = messageService;
-        _config                       = config;
+        _modImportManager              = modImportManager;
+        _messageService                = messageService;
+        _config                        = config;
         _archiveExtractionNotification = archiveExtractionNotification;
 
-        WipeTempRoot(_config.WatchDirectory);
+        _config.Io.DirectoryWatchChanged   += OnDirectoryWatchChanged;
+        _config.Io.ContainerPeekingChanged += OnContainerPeekingChanged;
+        _config.Io.WatchDirectoryChanged   += OnWatchDirectoryChanged;
+        WipeTempRoot(_config.Io.WatchDirectory);
 
-        if (_config.EnableDirectoryWatch)
+        if (_config.Io.EnableDirectoryWatch)
         {
-            SetupFileWatcher(_config.WatchDirectory);
+            SetupFileWatcher(_config.Io.WatchDirectory);
             SetupConsumerTask();
         }
     }
 
-    public void Toggle(bool value)
+    private void OnContainerPeekingChanged(bool newValue, bool _)
     {
-        if (_config.EnableDirectoryWatch == value)
-            return;
+        // Re-create the FSW so its filter list reflects the new state.
+        if (_config.Io.EnableDirectoryWatch && _fsw is not null)
+            SetupFileWatcher(_config.Io.WatchDirectory);
+    }
 
-        _config.EnableDirectoryWatch = value;
-        _config.Save();
-        if (value)
+    private void OnDirectoryWatchChanged(bool newValue, bool _)
+    {
+        if (newValue)
         {
-            SetupFileWatcher(_config.WatchDirectory);
+            SetupFileWatcher(_config.Io.WatchDirectory);
             SetupConsumerTask();
         }
         else
@@ -78,22 +94,9 @@ public sealed class FileWatcher : IDisposable, IService
         }
     }
 
-    public void ToggleContainerPeeking(bool value)
-    {
-        if (_config.EnableContainerPeeking == value)
-            return;
-
-        _config.EnableContainerPeeking = value;
-        _config.Save();
-
-        // Re-create the FSW so its filter list reflects the new state.
-        if (_config.EnableDirectoryWatch && _fsw is not null)
-            SetupFileWatcher(_config.WatchDirectory);
-    }
-
     public void IgnoreFile(string fullPath)
     {
-        if (_config.EnableDirectoryWatch)
+        if (_config.Io.EnableDirectoryWatch)
             _ignored[fullPath] = Environment.TickCount64 + IgnoreTimeToLive;
     }
 
@@ -107,6 +110,7 @@ public sealed class FileWatcher : IDisposable, IService
             if (TryDeleteDirectory(dir))
                 _extractedArchives.TryRemove(dir, out _);
         }
+
         Penumbra.Log.Verbose("[FileWatcher] Manual cleanup of extracted archives requested.");
     }
 
@@ -135,7 +139,7 @@ public sealed class FileWatcher : IDisposable, IService
         _fsw.Filters.Add("*.ttmp");
         _fsw.Filters.Add("*.ttmp2");
 
-        if (_config.EnableContainerPeeking)
+        if (_config.Io.EnableContainerPeeking)
         {
             _fsw.Filters.Add("*.zip");
             _fsw.Filters.Add("*.rar");
@@ -144,7 +148,7 @@ public sealed class FileWatcher : IDisposable, IService
 
         _fsw.Created += OnPath;
         _fsw.Renamed += OnPath;
-        UpdateDirectory(directory);
+        OnWatchDirectoryChanged(directory, string.Empty);
     }
 
     private void EndConsumerTask()
@@ -167,14 +171,8 @@ public sealed class FileWatcher : IDisposable, IService
             _cts.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default).Unwrap();
     }
 
-    public void UpdateDirectory(string newPath)
+    private void OnWatchDirectoryChanged(string newPath, string oldPath)
     {
-        if (_config.WatchDirectory != newPath)
-        {
-            _config.WatchDirectory = newPath;
-            _config.Save();
-        }
-
         if (_fsw is null)
             return;
 
@@ -224,7 +222,7 @@ public sealed class FileWatcher : IDisposable, IService
                 var ext = Path.GetExtension(path);
                 if (ContainerExtensions.Contains(ext))
                 {
-                    if (_config.EnableContainerPeeking)
+                    if (_config.Io.EnableContainerPeeking)
                         await ProcessContainerAsync(path, token).ConfigureAwait(false);
                     // else: peeking was toggled off after the event was queued; drop silently.
                 }
@@ -267,7 +265,7 @@ public sealed class FileWatcher : IDisposable, IService
         if (!await WaitForStableAsync(path, token).ConfigureAwait(false))
             return true;
 
-        if (!_config.EnableAutomaticModImport && _pendingNotifications >= MaxPendingNotifications)
+        if (!_config.Io.EnableAutomaticModImport && _pendingNotifications >= MaxPendingNotifications)
             return false;
 
         Penumbra.Log.Verbose($"[FileWatcher] Triggering import for '{path}'.");
@@ -282,8 +280,8 @@ public sealed class FileWatcher : IDisposable, IService
     private static async Task<bool> WaitForStableAsync(string path, CancellationToken token)
     {
         const int maxTries = 40;
-        long lastLen       = -1;
-        var sw             = Stopwatch.StartNew();
+        long      lastLen  = -1;
+        var       sw       = Stopwatch.StartNew();
 
         for (var i = 0; i < maxTries && !token.IsCancellationRequested; i++)
         {
@@ -323,8 +321,10 @@ public sealed class FileWatcher : IDisposable, IService
 
     private Task<ModImportResult[]> TriggerImport(string path)
     {
-        if (_config.EnableAutomaticModImport)
+        if (_config.Io.EnableAutomaticModImport)
+        {
             return _modImportManager.AddUnpack(path);
+        }
         else
         {
             var tcs = new TaskCompletionSource<ModImportResult[]>();
@@ -345,9 +345,9 @@ public sealed class FileWatcher : IDisposable, IService
         if (!await WaitForStableAsync(path, token).ConfigureAwait(false))
             return;
 
-        var ext            = Path.GetExtension(path);
-        string? archiveDir = null;
-        var extractedNow   = new List<string>();
+        var     ext          = Path.GetExtension(path);
+        string? archiveDir   = null;
+        var     extractedNow = new List<string>();
 
         try
         {
@@ -356,14 +356,15 @@ public sealed class FileWatcher : IDisposable, IService
             using var archive = OpenArchive(path, ext);
             if (archive is null)
                 return;
+
             Penumbra.Log.Verbose(
                 $"[FileWatcher] Opened container '{path}' in {openSw.ElapsedMilliseconds}ms.");
 
             var enumSw = Stopwatch.StartNew();
             var candidates = archive.Entries
                 .Where(e => !e.IsDirectory
-                         && e.Key is { Length: > 0 } key
-                         && ModExtensions.Contains(Path.GetExtension(key)))
+                 && e.Key is { Length: > 0 } key
+                 && ModExtensions.Contains(Path.GetExtension(key)))
                 .ToList();
             Penumbra.Log.Verbose(
                 $"[FileWatcher] Enumerated entries of '{path}' in {enumSw.ElapsedMilliseconds}ms; {candidates.Count} mod entries found.");
@@ -375,7 +376,7 @@ public sealed class FileWatcher : IDisposable, IService
             var archiveName = Path.GetFileName(path);
             _archiveExtractionNotification.AddArchive(archiveName, candidates.Count);
 
-            archiveDir = Path.Combine(GetTempPath(_config.WatchDirectory), Guid.NewGuid().ToString("N"));
+            archiveDir = Path.Combine(GetTempPath(_config.Io.WatchDirectory), Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(archiveDir);
 
             foreach (var entry in candidates)
@@ -403,11 +404,11 @@ public sealed class FileWatcher : IDisposable, IService
 
                 try
                 {
-                    var extractSw = Stopwatch.StartNew();
+                    var  extractSw = Stopwatch.StartNew();
                     long bytesWritten;
                     await using (var input = await entry.OpenEntryStreamAsync(token))
                     await using (var output = new FileStream(tempPath, FileMode.CreateNew, FileAccess.Write,
-                                     FileShare.None, 81920, useAsync: true))
+                                     FileShare.None, 81920, true))
                     {
                         await input.CopyToAsync(output, 81920, token).ConfigureAwait(false);
                         bytesWritten = output.Position;
@@ -517,7 +518,7 @@ public sealed class FileWatcher : IDisposable, IService
             ".zip" => ZipArchive.OpenArchive(path),
             ".rar" => RarArchive.OpenArchive(path),
             ".7z"  => SevenZipArchive.OpenArchive(path),
-            _ => null,
+            _      => null,
         };
 
     private static void WipeTempRoot(string watchDir)
@@ -561,7 +562,7 @@ public sealed class FileWatcher : IDisposable, IService
         try
         {
             if (Directory.Exists(path))
-                Directory.Delete(path, recursive: true);
+                Directory.Delete(path, true);
             return true;
         }
         catch
@@ -573,13 +574,16 @@ public sealed class FileWatcher : IDisposable, IService
 
     public void Dispose()
     {
+        _config.Io.DirectoryWatchChanged   -= OnDirectoryWatchChanged;
+        _config.Io.ContainerPeekingChanged -= OnContainerPeekingChanged;
+        _config.Io.WatchDirectoryChanged   -= OnWatchDirectoryChanged;
         EndConsumerTask();
         EndFileWatcher();
         // Cleanup of extracted files is intentionally skipped here. WipeTempRoot() on the next
         // construction handles leftovers without blocking shutdown.
     }
 
-    public sealed class FileWatcherDrawer(Configuration config, FileWatcher fileWatcher) : IUiService
+    public sealed class FileWatcherDrawer(IoConfig config, FileWatcher fileWatcher) : IUiService
     {
         public void Draw()
         {
@@ -651,8 +655,14 @@ public sealed class FileWatcher : IDisposable, IService
 
         private static int TryCountFiles(string dir)
         {
-            try { return Directory.Exists(dir) ? Directory.EnumerateFiles(dir).Count() : 0; }
-            catch { return 0; }
+            try
+            {
+                return Directory.Exists(dir) ? Directory.EnumerateFiles(dir).Count() : 0;
+            }
+            catch
+            {
+                return 0;
+            }
         }
     }
 }

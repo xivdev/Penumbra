@@ -13,7 +13,7 @@ public sealed class MainSettings(
     TutorialService tutorial,
     MainConfig config,
     FileDialogService fileDialog,
-    ModManager modManager)
+    ModManager modManager) : IUiService
 {
     private const int RootDirectoryMaxLength = 64;
 
@@ -23,7 +23,7 @@ public sealed class MainSettings(
     private string _lastCloudSyncTestedPath = string.Empty;
     private bool   _lastCloudSyncTestResult;
 
-    public void Draw()
+    public void DrawHeader()
     {
         DrawEnabledBox();
         Im.Line.New();
@@ -33,6 +33,25 @@ public sealed class MainSettings(
         DrawDirectoryButtons();
         Im.Line.New();
         Im.Line.New();
+    }
+
+    public void DrawGeneralSettings()
+    {
+        KeySelector.DoubleModifier("Destructive Modifier"u8,
+            "A modifier you need to hold while clicking buttons that perform particularly destructive and generally irrecoverable actions, like deletions."u8,
+            UiHelpers.InputTextWidth.X, config.DestructiveModifier, v => config.DestructiveModifier = v);
+        KeySelector.DoubleModifier("Misclick Modifier"u8,
+            "A modifier you need to hold while clicking buttons that should not be toggled by accident, but are generally easily revertible, like the Incognito or Temporary Settings Mode toggles.."u8,
+            UiHelpers.InputTextWidth.X, config.MisclickModifier, v => config.MisclickModifier = v);
+        if (SettingsTab.Checkbox("Print Chat Command Success Messages to Chat"u8,
+                "Chat Commands usually print messages on failure but also on success to confirm your action. You can disable this here."u8,
+                config.PrintSuccessfulCommandsToChat))
+            config.PrintSuccessfulCommandsToChat ^= true;
+
+        if (SettingsTab.Checkbox("Use Temporary Settings Per Default"u8,
+                "When you make any changes to your collection, apply them as temporary changes first and require a click to 'turn permanent' if you want to keep them.\n\nThis can also be changed directly in the Mods tab."u8,
+                config.DefaultTemporaryMode))
+            config.DefaultTemporaryMode ^= true;
     }
 
 

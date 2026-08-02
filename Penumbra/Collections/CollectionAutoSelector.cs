@@ -7,13 +7,13 @@ namespace Penumbra.Collections;
 
 public sealed class CollectionAutoSelector : Luna.IService, IDisposable
 {
-    private readonly Configuration      _config;
+    private readonly BehaviorConfig     _config;
     private readonly ActiveCollections  _collections;
     private readonly IClientState       _clientState;
     private readonly CollectionResolver _resolver;
     private readonly ObjectManager      _objects;
 
-    public CollectionAutoSelector(Configuration config, ActiveCollections collections, IClientState clientState, CollectionResolver resolver,
+    public CollectionAutoSelector(BehaviorConfig config, ActiveCollections collections, IClientState clientState, CollectionResolver resolver,
         ObjectManager objects)
     {
         _config      = config;
@@ -22,20 +22,20 @@ public sealed class CollectionAutoSelector : Luna.IService, IDisposable
         _resolver    = resolver;
         _objects     = objects;
 
+        _config.AutoSelectCollectionChanged += OnAutoSelectCollectionChanged;
         if (_config.AutoSelectCollection)
             Attach();
     }
 
-    public bool Disposed { get; private set; }
-
-    public void SetAutomaticSelection(bool value)
+    private void OnAutoSelectCollectionChanged(bool newValue, bool oldValue)
     {
-        _config.AutoSelectCollection = value;
-        if (value)
+        if (newValue)
             Attach();
         else
             Detach();
     }
+
+    public bool Disposed { get; private set; }
 
     private void Attach()
     {
@@ -60,7 +60,7 @@ public sealed class CollectionAutoSelector : Luna.IService, IDisposable
         var collection = _resolver.PlayerCollection();
         if (collection.Identity.Id == Guid.Empty)
         {
-            Penumbra.Log.Debug($"Not setting current collection because character has no mods assigned.");
+            Penumbra.Log.Debug("Not setting current collection because character has no mods assigned.");
         }
         else
         {
@@ -75,7 +75,8 @@ public sealed class CollectionAutoSelector : Luna.IService, IDisposable
         if (Disposed)
             return;
 
-        Disposed = true;
+        _config.AutoSelectCollectionChanged -= OnAutoSelectCollectionChanged;
+        Disposed                            =  true;
         Detach();
     }
 }

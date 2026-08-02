@@ -27,7 +27,7 @@ public sealed partial class AdvancedConfig(SaveService saveService, MessageServi
     private bool _debugMode = false;
 #endif
 
-    [ConfigProperty]
+    [ConfigProperty(EventName = "UseCrashHandlerChanged")]
     private bool? _useCrashHandler = null;
 
     [ConfigProperty]
@@ -48,7 +48,7 @@ public sealed partial class AdvancedConfig(SaveService saveService, MessageServi
     [ConfigProperty]
     private bool _useFileSystemCompression = true;
 
-    [ConfigProperty]
+    [ConfigProperty(EventName = "HttpApiChanged")]
     private bool _enableHttpApi = true;
 
     [ConfigProperty]

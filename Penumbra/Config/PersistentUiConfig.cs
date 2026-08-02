@@ -55,9 +55,6 @@ public sealed partial class PersistentUiConfig : ConfigurationFile<FilenameServi
     private RenameField _showRename = RenameField.BothDataPrio;
 
     [ConfigProperty]
-    private bool _printSuccessfulCommandsToChat = true;
-
-    [ConfigProperty]
     private ChangedItemMode _changedItemDisplay = ChangedItemMode.GroupedCollapsed;
 
     [ConfigProperty]

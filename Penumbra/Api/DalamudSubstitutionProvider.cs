@@ -17,28 +17,26 @@ public class DalamudSubstitutionProvider : IDisposable, Luna.IApiService
     private readonly Configuration                _config;
     private readonly CommunicatorService          _communicator;
 
-    public bool Enabled
-        => _config.UseDalamudUiTextureRedirection;
-
     public DalamudSubstitutionProvider(ITextureSubstitutionProvider substitution, ActiveCollectionData activeCollectionData,
         Configuration config, CommunicatorService communicator, IUiBuilder ui, CollectionCacheManager caches)
     {
-        _substitution         = substitution;
-        _uiBuilder            = ui;
-        _caches               = caches;
-        _activeCollectionData = activeCollectionData;
-        _config               = config;
-        _communicator         = communicator;
-        if (Enabled)
+        _substitution                               =  substitution;
+        _uiBuilder                                  =  ui;
+        _caches                                     =  caches;
+        _activeCollectionData                       =  activeCollectionData;
+        _config                                     =  config;
+        _communicator                               =  communicator;
+        _config.Behavior.DalamudSubstitutionChanged += OnDalamudSubstitutionChanged;
+        if (_config.Behavior.UseDalamudUiTextureRedirection)
             Subscribe();
     }
 
-    public void Set(bool value)
+    private void OnDalamudSubstitutionChanged(bool newValue, bool oldValue)
     {
-        if (value)
-            Enable();
+        if (newValue)
+            Subscribe();
         else
-            Disable();
+            Unsubscribe();
     }
 
     public void ResetSubstitutions(IEnumerable<Utf8GamePath> paths)
@@ -59,28 +57,11 @@ public class DalamudSubstitutionProvider : IDisposable, Luna.IApiService
         }
     }
 
-    public void Enable()
-    {
-        if (Enabled)
-            return;
-
-        _config.UseDalamudUiTextureRedirection = true;
-        _config.Save();
-        Subscribe();
-    }
-
-    public void Disable()
-    {
-        if (!Enabled)
-            return;
-
-        Unsubscribe();
-        _config.UseDalamudUiTextureRedirection = false;
-        _config.Save();
-    }
-
     public void Dispose()
-        => Unsubscribe();
+    {
+        _config.Behavior.DalamudSubstitutionChanged -= OnDalamudSubstitutionChanged;
+        Unsubscribe();
+    }
 
     private void OnCollectionChange(in CollectionChange.Arguments arguments)
     {
@@ -122,11 +103,11 @@ public class DalamudSubstitutionProvider : IDisposable, Luna.IApiService
     private void Substitute(string path, ref string? replacementPath)
     {
         // Do not replace when not enabled.
-        if (!_config.EnableMods)
+        if (!_config.Main.EnableMods)
             return;
 
         // Let other plugins prioritize replacement paths.
-        if (replacementPath != null)
+        if (replacementPath is not null)
             return;
 
         // Only replace interface textures.

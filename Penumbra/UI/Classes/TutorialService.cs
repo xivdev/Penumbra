@@ -53,8 +53,7 @@ public class TutorialService(EphemeralConfig config) : Luna.IUiService
           + "The folder should be an empty folder no other applications write to."u8)
         .Register("Initial Setup, Step 2: Enable Mods"u8, "Do not forget to enable your mods in case they are not."u8)
         .Deprecated()
-        .Register("General Settings"u8, "Look through all of these settings before starting, they might help you a lot!\n\n"u8
-          + "If you do not know what some of these do yet, return to this later!"u8)
+        .Deprecated()
         .Register("Initial Setup, Step 3: Collections"u8, "Collections are lists of settings for your installed mods.\n\n"u8
           + "This is our next stop!\n\n"u8
           + "Go here after setting up your root folder to continue the tutorial!"u8)

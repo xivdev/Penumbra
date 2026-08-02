@@ -7,9 +7,9 @@ using Penumbra.Api.Enums;
 
 namespace Penumbra.Api;
 
-public class HttpApi : IDisposable, Luna.IApiService
+public sealed class HttpApi : IDisposable, Luna.IApiService
 {
-    private partial class Controller : WebApiController
+    private sealed partial class Controller : WebApiController
     {
         // @formatter:off
         [Route( HttpVerbs.Get,  "/moddirectory"  )] public partial string GetModDirectory();
@@ -26,20 +26,23 @@ public class HttpApi : IDisposable, Luna.IApiService
 
     public const string Prefix = "http://localhost:42069/";
 
-    private readonly IPenumbraApi _api;
-    private readonly IFramework   _framework;
-    private          WebServer?   _server;
+    private readonly AdvancedConfig _config;
+    private readonly IPenumbraApi   _api;
+    private readonly IFramework     _framework;
+    private          WebServer?     _server;
 
-    public HttpApi(Configuration config, IPenumbraApi api, IFramework framework)
+    public HttpApi(AdvancedConfig config, IPenumbraApi api, IFramework framework)
     {
-        _api       = api;
-        _framework = framework;
-        if (config.EnableHttpApi)
+        _config                =  config;
+        _api                   =  api;
+        _framework             =  framework;
+        _config.HttpApiChanged += OnHttpApiChanged;
+        if (_config.EnableHttpApi)
             CreateWebServer();
     }
 
     public bool Enabled
-        => _server != null;
+        => _server is not null;
 
     public void CreateWebServer()
     {
@@ -62,7 +65,18 @@ public class HttpApi : IDisposable, Luna.IApiService
     }
 
     public void Dispose()
-        => ShutdownWebServer();
+    {
+        _config.HttpApiChanged -= OnHttpApiChanged;
+        ShutdownWebServer();
+    }
+
+    private void OnHttpApiChanged(bool newValue, bool oldValue)
+    {
+        if (newValue)
+            CreateWebServer();
+        else
+            ShutdownWebServer();
+    }
 
     private partial class Controller(IPenumbraApi api, IFramework framework)
     {
@@ -195,7 +209,7 @@ public class HttpApi : IDisposable, Luna.IApiService
         {
             public SetModSettingsData()
                 : this(null, string.Empty, string.Empty, null, null, null, null)
-            {}
+            { }
         }
     }
 }

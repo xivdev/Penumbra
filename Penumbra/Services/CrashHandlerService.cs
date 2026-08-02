@@ -22,32 +22,37 @@ public sealed class CrashHandlerService : IDisposable, Luna.IService
     private readonly CommunicatorService _communicator;
     private readonly ActorManager        _actors;
     private readonly ResourceLoader      _resourceLoader;
-    private readonly Configuration       _config;
+    private readonly AdvancedConfig      _config;
     private readonly ValidityChecker     _validityChecker;
 
     private string _tempExecutableDirectory = string.Empty;
 
     public CrashHandlerService(FilenameService files, CommunicatorService communicator, ActorManager actors, ResourceLoader resourceLoader,
-        Configuration config, ValidityChecker validityChecker)
+        AdvancedConfig config, ValidityChecker validityChecker)
     {
-        _files           = files;
-        _communicator    = communicator;
-        _actors          = actors;
-        _resourceLoader  = resourceLoader;
-        _config          = config;
-        _validityChecker = validityChecker;
+        _files                         =  files;
+        _communicator                  =  communicator;
+        _actors                        =  actors;
+        _resourceLoader                =  resourceLoader;
+        _config                        =  config;
+        _validityChecker               =  validityChecker;
+        _config.UseCrashHandlerChanged += OnUseCrashHandlerChanged;
 
-        if (!(_config.UseCrashHandler ?? false))
-            return;
+        if (_config.UseCrashHandler is true)
+            Enable();
+    }
 
-        OpenEventWriter();
-        LaunchCrashHandler();
-        if (_eventWriter is not null)
-            Subscribe();
+    private void OnUseCrashHandlerChanged(bool? arg1, bool? arg2)
+    {
+        if (arg1 is true && arg2 is not true)
+            Enable();
+        if (arg1 is false && arg2 is not false)
+            Disable();
     }
 
     public void Dispose()
     {
+        _config.UseCrashHandlerChanged -= OnUseCrashHandlerChanged;
         CloseEventWriter();
         _eventWriter?.Dispose();
         if (_child is not null)
@@ -85,11 +90,6 @@ public sealed class CrashHandlerService : IDisposable, Luna.IService
 
     public void Enable()
     {
-        if (_config.UseCrashHandler ?? false)
-            return;
-
-        _config.UseCrashHandler = true;
-        _config.Save();
         OpenEventWriter();
         LaunchCrashHandler();
         if (_eventWriter != null)
@@ -98,11 +98,6 @@ public sealed class CrashHandlerService : IDisposable, Luna.IService
 
     public void Disable()
     {
-        if (!(_config.UseCrashHandler ?? false))
-            return;
-
-        _config.UseCrashHandler = false;
-        _config.Save();
         CloseEventWriter();
         CloseCrashHandler();
         Unsubscribe();
@@ -151,7 +146,7 @@ public sealed class CrashHandlerService : IDisposable, Luna.IService
         {
             CloseCrashHandler();
             CopiedExe = CopyExecutables();
-            var info = new ProcessStartInfo()
+            var info = new ProcessStartInfo
             {
                 CreateNoWindow = true,
                 FileName       = CopiedExe,
@@ -191,7 +186,7 @@ public sealed class CrashHandlerService : IDisposable, Luna.IService
 
             var       logFile = _files.LogFileName;
             using var s       = File.Open(logFile, FileMode.Create);
-            using var jw      = new Utf8JsonWriter(s, new JsonWriterOptions() { Indented = true });
+            using var jw      = new Utf8JsonWriter(s, new JsonWriterOptions { Indented = true });
             jObj.WriteTo(jw);
             Penumbra.Log.Information($"Dumped crash handler memory to {logFile}.");
             return jObj;
