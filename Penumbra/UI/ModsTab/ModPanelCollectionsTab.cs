@@ -35,17 +35,28 @@ public class ModPanelCollectionsTab(CollectionManager manager, ModSelection sele
             case 0:  Im.Text("This mod is entirely unused."u8, Colors.RegexWarningBorder); break;
             default: Im.Text($"This Mod is directly configured in {direct} collections."); break;
         }
+
         if (inherited > 0)
             Im.Text($"It is also implicitly used in {inherited} {(inherited == 1 ? "collection" : "collections")} through inheritance.");
 
-        Im.Line.New();
-        Im.Separator();
-        Im.Line.New();
+        if (ImEx.Button("Inherit in All Collections"u8, default, StringU8.Empty, !LunaStyle.Modifier.Destructive))
+            foreach (var collection in manager.Storage)
+                manager.Editor.SetModInheritance(collection, selection.Mod!, true);
+        LunaStyle.Modifier.Destructive.Tooltip("inherit");
+
+        Im.Line.Same();
+        if (ImEx.Button("Disable in All Collections"u8, default, StringU8.Empty, !LunaStyle.Modifier.Destructive))
+            foreach (var collection in manager.Storage)
+                manager.Editor.SetModState(collection, selection.Mod!, false);
+        LunaStyle.Modifier.Destructive.Tooltip("disable");
+
+
+        LunaStyle.DrawSeparator();
         using var table = Im.Table.Begin("##modCollections"u8, 3, TableFlags.SizingFixedFit | TableFlags.RowBackground);
         if (!table)
             return;
 
-        var size           = Im.Font.CalculateSize(ToText(ModState.Unconfigured)).X + 20 * Im.Style.GlobalScale;
+        var size           = Im.Font.CalculateSize(ModState.Unconfigured.StringU8).X + 20 * Im.Style.GlobalScale;
         var collectionSize = 200 * Im.Style.GlobalScale;
         table.SetupColumn("Collection"u8,     TableColumnFlags.WidthFixed, collectionSize);
         table.SetupColumn("State"u8,          TableColumnFlags.WidthFixed, size);
@@ -58,7 +69,7 @@ public class ModPanelCollectionsTab(CollectionManager manager, ModSelection sele
             table.DrawColumn(collection.Identity.Name);
 
             table.NextColumn();
-            Im.Text(ToText(state), color);
+            Im.Text(state.StringU8, color);
 
             using (var context = Im.Popup.BeginContextItem("Context"u8))
             {
@@ -98,15 +109,6 @@ public class ModPanelCollectionsTab(CollectionManager manager, ModSelection sele
             id.Pop();
         }
     }
-
-    private static ReadOnlySpan<byte> ToText(ModState state)
-        => state switch
-        {
-            ModState.Unconfigured => "Unconfigured"u8,
-            ModState.Enabled      => "Enabled"u8,
-            ModState.Disabled     => "Disabled"u8,
-            _                     => "Unknown"u8,
-        };
 
     private (int Direct, int Inherited) CountUsage(Mod mod)
     {
