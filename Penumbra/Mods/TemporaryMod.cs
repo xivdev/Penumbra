@@ -56,7 +56,7 @@ public class TemporaryMod : IMod
         Default.Manipulations = manips;
     }
 
-    public static void SaveTempCollection(Configuration config, SaveService saveService, ModManager modManager, ModCollection collection,
+    public static void SaveTempCollection(IoConfig config, SaveService saveService, ModManager modManager, ModCollection collection,
         string? character = null)
     {
         DirectoryInfo? dir = null;

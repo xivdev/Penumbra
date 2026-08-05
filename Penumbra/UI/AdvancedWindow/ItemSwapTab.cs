@@ -63,7 +63,7 @@ public enum BetweenSlotTypes
 
 public class ItemSwapTab : IDisposable, ITab
 {
-    private readonly Configuration       _config;
+    private readonly IoConfig            _config;
     private readonly CommunicatorService _communicator;
     private readonly CollectionManager   _collectionManager;
     private readonly ModManager          _modManager;
@@ -71,7 +71,7 @@ public class ItemSwapTab : IDisposable, ITab
 
     public ItemSwapTab(CommunicatorService communicator, ItemData itemService, CollectionManager collectionManager,
         ModManager modManager, ModSelection selection, ObjectIdentification identifier, MetaFileManager metaFileManager,
-        Configuration config)
+        IoConfig config)
     {
         _communicator      = communicator;
         _collectionManager = collectionManager;
@@ -352,7 +352,7 @@ public class ItemSwapTab : IDisposable, ITab
             optionFolderName =
                 ModCreator.NewSubFolderName(new DirectoryInfo(Path.Combine(_mod.ModPath.FullName, _selectedGroup?.Name ?? _newGroupName)),
                     _newOptionName, _config.ReplaceNonAsciiOnImport);
-            if (optionFolderName?.Exists == true)
+            if (optionFolderName?.Exists is true)
                 throw new Exception($"The folder {optionFolderName.FullName} for the option already exists.");
 
             if (optionFolderName is not null)

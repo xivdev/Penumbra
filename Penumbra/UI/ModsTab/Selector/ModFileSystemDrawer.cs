@@ -19,9 +19,9 @@ public sealed class ModFileSystemDrawer : FileSystemDrawer<ModFileSystemCache.Mo
     public readonly TutorialService     Tutorial;
     public readonly CommunicatorService Communicator;
 
-    public ModFileSystemDrawer(Services.MessageService messager, ModFileSystem fileSystem, ModManager modManager,
-        CollectionManager collectionManager, Configuration config,
-        ModImportManager modImport, FileDialogService fileService, TutorialService tutorial, CommunicatorService communicator)
+    public ModFileSystemDrawer(Services.PenumbraMessager messager, ModFileSystem fileSystem, ModManager modManager,
+        CollectionManager collectionManager, Configuration config, ModImportManager modImport, FileDialogService fileService,
+        TutorialService tutorial, CommunicatorService communicator)
         : base(messager, fileSystem, new ModFilter(modManager, collectionManager.Active, config))
     {
         ModManager        = modManager;
@@ -31,14 +31,15 @@ public sealed class ModFileSystemDrawer : FileSystemDrawer<ModFileSystemCache.Mo
         FileService       = fileService;
         Tutorial          = tutorial;
         Communicator      = communicator;
-        SortMode          = Config.SortMode;
+        SortMode          = Config.Ui.SortMode;
 
-        Config.ShowRenameChanged += SetRenameFields;
+        Config.Ui.ShowRenameChanged += SetRenameFields;
+        Config.Ui.SortModeChanged   += ChangeSortMode;
 
-        MainContext.AddButton(new ClearTemporarySettingsButton(this),   105);
-        MainContext.AddButton(new ClearDefaultImportFolderButton(this), -10);
-        MainContext.AddButton(new ClearQuickMoveFoldersButtons(this),   -20);
-        MainContext.AddButton(new GlobalSortModeSelector(this, m => { config.SortMode = m; config.Save();}), -100);
+        MainContext.AddButton(new ClearTemporarySettingsButton(this),                        105);
+        MainContext.AddButton(new ClearDefaultImportFolderButton(this),                      -10);
+        MainContext.AddButton(new ClearQuickMoveFoldersButtons(this),                        -20);
+        MainContext.AddButton(new GlobalSortModeSelector(this, m => config.Ui.SortMode = m), -100);
 
         FolderContext.AddButton(new SetDescendantsButton(this, true,  null),  11);
         FolderContext.AddButton(new SetDescendantsButton(this, false, null),  10);
@@ -52,7 +53,7 @@ public sealed class ModFileSystemDrawer : FileSystemDrawer<ModFileSystemCache.Mo
         DataContext.AddButton(new ToggleFavoriteButton(this),          10);
         DataContext.AddButton(new TemporaryButtons(this),              20);
         DataContext.AddButton(new MoveToQuickMoveFoldersButtons(this), -100);
-        SetRenameFields(Config.ShowRename, default);
+        SetRenameFields(Config.Ui.ShowRename, default);
 
         Footer.Buttons.AddButton(new AddNewModButton(this),       1000);
         Footer.Buttons.AddButton(new ImportModButton(this),       900);
@@ -87,7 +88,7 @@ public sealed class ModFileSystemDrawer : FileSystemDrawer<ModFileSystemCache.Mo
             return l.Value;
         });
 
-        if (Config.DefaultTemporaryMode)
+        if (Config.Main.DefaultTemporaryMode)
         {
             var collection = CollectionManager.Active.Current;
             foreach (var mod in folder.GetDescendants().OfType<IFileSystemData<Mod>>())
@@ -114,7 +115,10 @@ public sealed class ModFileSystemDrawer : FileSystemDrawer<ModFileSystemCache.Mo
     }
 
     public void Dispose()
-        => Config.ShowRenameChanged -= SetRenameFields;
+    {
+        Config.Ui.SortModeChanged   -= ChangeSortMode;
+        Config.Ui.ShowRenameChanged -= SetRenameFields;
+    }
 
     private void SetRenameFields(RenameField newField, RenameField _)
     {
@@ -134,4 +138,7 @@ public sealed class ModFileSystemDrawer : FileSystemDrawer<ModFileSystemCache.Mo
                 break;
         }
     }
+
+    private void ChangeSortMode(ISortMode newSortMode, ISortMode _)
+        => SortMode = newSortMode;
 }

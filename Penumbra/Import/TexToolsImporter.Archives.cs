@@ -42,7 +42,7 @@ public partial class TexToolsImporter
         };
         Penumbra.Log.Information($"    -> Importing {archive.Type} Archive.");
 
-        _currentModDirectory = ModCreator.CreateModFolder(_baseDirectory, Path.GetRandomFileName(), _config.ReplaceNonAsciiOnImport, true);
+        _currentModDirectory = ModCreator.CreateModFolder(_baseDirectory, Path.GetRandomFileName(), _config.Io.ReplaceNonAsciiOnImport, true);
 
         State           = ImporterState.ExtractingModFiles;
         _currentFileIdx = 0;
@@ -70,7 +70,7 @@ public partial class TexToolsImporter
                 using var t   = new StreamReader(s);
                 using var j   = new JsonTextReader(t);
                 var       obj = JObject.Load(j);
-                name = obj[nameof(Mod.Name)]?.Value<string>()?.ReplaceBadXivSymbols(_config.ReplaceNonAsciiOnImport) ?? string.Empty;
+                name = obj[nameof(Mod.Name)]?.Value<string>()?.ReplaceBadXivSymbols(_config.Io.ReplaceNonAsciiOnImport) ?? string.Empty;
                 if (name.Length is 0)
                     throw new Exception("Invalid mod archive: mod meta has no name.");
 
@@ -98,13 +98,13 @@ public partial class TexToolsImporter
             {
                 if (leadDir)
                 {
-                    _currentModDirectory = ModCreator.CreateModFolder(_baseDirectory, baseName, _config.ReplaceNonAsciiOnImport, false);
+                    _currentModDirectory = ModCreator.CreateModFolder(_baseDirectory, baseName, _config.Io.ReplaceNonAsciiOnImport, false);
                     Directory.Move(Path.CombineSafely(oldName, baseName), _currentModDirectory.FullName);
                     Directory.Delete(oldName);
                 }
                 else
                 {
-                    _currentModDirectory = ModCreator.CreateModFolder(_baseDirectory, name, _config.ReplaceNonAsciiOnImport, false);
+                    _currentModDirectory = ModCreator.CreateModFolder(_baseDirectory, name, _config.Io.ReplaceNonAsciiOnImport, false);
                     Directory.Move(oldName, _currentModDirectory.FullName);
                 }
             }

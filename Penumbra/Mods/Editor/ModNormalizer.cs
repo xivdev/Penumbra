@@ -39,7 +39,7 @@ public class ModNormalizer(ModManager modManager, Configuration config, SaveServ
 
     public void NormalizeUi(DirectoryInfo modDirectory)
     {
-        if (!config.AutoReduplicateUiOnImport)
+        if (!config.Advanced.AutoReduplicateUiOnImport)
             return;
 
         if (modManager.Creator.LoadMod(modDirectory, false, false) is not { } mod)
@@ -71,8 +71,8 @@ public class ModNormalizer(ModManager modManager, Configuration config, SaveServ
                 containers[container] = mod.ModPath.FullName;
             else
             {
-                var groupDir  = ModCreator.NewOptionDirectory(mod.ModPath, container.Group.Name, config.ReplaceNonAsciiOnImport);
-                var optionDir = ModCreator.NewOptionDirectory(groupDir,    container.GetDirectoryName(),  config.ReplaceNonAsciiOnImport);
+                var groupDir  = ModCreator.NewOptionDirectory(mod.ModPath, container.Group.Name, config.Io.ReplaceNonAsciiOnImport);
+                var optionDir = ModCreator.NewOptionDirectory(groupDir,    container.GetDirectoryName(),  config.Io.ReplaceNonAsciiOnImport);
                 containers[container] = optionDir.FullName;
             }
         }
@@ -262,7 +262,7 @@ public class ModNormalizer(ModManager modManager, Configuration config, SaveServ
             // Normalize all other options.
             foreach (var (groupIdx, group) in Mod.Groups.Index())
             {
-                var groupDir = ModCreator.CreateModFolder(directory, group.Name, config.ReplaceNonAsciiOnImport, true);
+                var groupDir = ModCreator.CreateModFolder(directory, group.Name, config.Io.ReplaceNonAsciiOnImport, true);
                 _redirections[groupIdx + 1].EnsureCapacity(group.DataContainers.Count);
                 for (var i = _redirections[groupIdx + 1].Count; i < group.DataContainers.Count; ++i)
                     _redirections[groupIdx + 1].Add([]);
@@ -282,7 +282,7 @@ public class ModNormalizer(ModManager modManager, Configuration config, SaveServ
         void HandleSubMod(DirectoryInfo groupDir, IModDataContainer option, Dictionary<Utf8GamePath, FullPath> newDict)
         {
             var name      = option.GetDirectoryName();
-            var optionDir = ModCreator.CreateModFolder(groupDir, name, config.ReplaceNonAsciiOnImport, true);
+            var optionDir = ModCreator.CreateModFolder(groupDir, name, config.Io.ReplaceNonAsciiOnImport, true);
 
             newDict.Clear();
             newDict.EnsureCapacity(option.Files.Count);

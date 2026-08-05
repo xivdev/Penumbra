@@ -13,22 +13,22 @@ public sealed class ModFileSystemSaver(
     : FileSystemSaver<SaveService, FilenameService>(log, fileSystem, saveService)
 {
     protected override string LockedFile(FilenameService provider)
-        => provider.FileSystemLockedNodes;
+        => provider.FileSystem.LockedNodes;
 
     protected override string ExpandedFile(FilenameService provider)
-        => provider.FileSystemExpandedFolders;
+        => provider.FileSystem.ExpandedFolders;
 
     protected override string EmptyFoldersMigrationFile(FilenameService provider)
-        => provider.FileSystemEmptyFoldersMigration;
+        => provider.FileSystem.EmptyFoldersMigration;
 
     protected override string SelectionFile(FilenameService provider)
-        => provider.FileSystemSelectedNodes;
+        => provider.FileSystem.SelectedNodes;
 
     protected override string OrganizationFile(FilenameService provider)
-        => provider.FileSystemOrganization;
+        => provider.FileSystem.Organization;
 
     protected override string MigrationFile(FilenameService provider)
-        => provider.OldFilesystemFile;
+        => provider.Migration.FileSystem;
 
     protected override bool GetValueFromIdentifier(ReadOnlySpan<char> identifier, [NotNullWhen(true)] out IFileSystemValue? value)
     {

@@ -10,10 +10,6 @@ public class MigrationSectionDrawer(MigrationManager migrationManager, Configura
 
     public void Draw()
     {
-        using var header = Im.Tree.HeaderId("Migration"u8);
-        if (!header)
-            return;
-
         _buttonSize = UiHelpers.InputTextWidth;
         DrawSettings();
         Im.Separator();
@@ -29,12 +25,8 @@ public class MigrationSectionDrawer(MigrationManager migrationManager, Configura
 
     private void DrawSettings()
     {
-        var value = config.MigrateImportedModelsToV6;
-        if (Im.Checkbox("Automatically Migrate V5 Models to V6 on Import"u8, ref value))
-        {
-            config.MigrateImportedModelsToV6 = value;
-            config.Save();
-        }
+        if (Im.Checkbox("Automatically Migrate V5 Models to V6 on Import"u8, config.Io.MigrateImportedModelsToV6))
+            config.Io.MigrateImportedModelsToV6 ^= true;
 
         Im.Tooltip.OnHover("This increments the version marker and restructures the bone table to the new version."u8);
 
@@ -58,7 +50,7 @@ public class MigrationSectionDrawer(MigrationManager migrationManager, Configura
     private void DrawMdlMigration()
     {
         if (ImEx.Button("Migrate Model Files From V5 to V6"u8, _buttonSize, StringU8.Empty, migrationManager.IsRunning))
-            migrationManager.MigrateMdlDirectory(config.ModDirectory, _createBackups);
+            migrationManager.MigrateMdlDirectory(config.Main.ModDirectory, _createBackups);
 
         Im.Line.SameInner();
         DrawCancelButton(MigrationManager.TaskType.MdlMigration, "Cancel the migration. This does not revert already finished migrations."u8);
@@ -69,7 +61,7 @@ public class MigrationSectionDrawer(MigrationManager migrationManager, Configura
     private void DrawMtrlMigration()
     {
         if (ImEx.Button("Migrate Material Files to Dawntrail"u8, _buttonSize, StringU8.Empty, migrationManager.IsRunning))
-            migrationManager.MigrateMtrlDirectory(config.ModDirectory, _createBackups);
+            migrationManager.MigrateMtrlDirectory(config.Main.ModDirectory, _createBackups);
 
         Im.Line.SameInner();
         DrawCancelButton(MigrationManager.TaskType.MtrlMigration, MigrationTooltip);
@@ -84,7 +76,7 @@ public class MigrationSectionDrawer(MigrationManager migrationManager, Configura
     private void DrawMdlCleanup()
     {
         if (ImEx.Button("Delete Existing Model Backup Files"u8, _buttonSize, StringU8.Empty, migrationManager.IsRunning))
-            migrationManager.CleanMdlBackups(config.ModDirectory);
+            migrationManager.CleanMdlBackups(config.Main.ModDirectory);
 
         Im.Line.SameInner();
         DrawCancelButton(MigrationManager.TaskType.MdlCleanup, CleanupTooltip);
@@ -95,7 +87,7 @@ public class MigrationSectionDrawer(MigrationManager migrationManager, Configura
     private void DrawMtrlCleanup()
     {
         if (ImEx.Button("Delete Existing Material Backup Files"u8, _buttonSize, StringU8.Empty, migrationManager.IsRunning))
-            migrationManager.CleanMtrlBackups(config.ModDirectory);
+            migrationManager.CleanMtrlBackups(config.Main.ModDirectory);
 
         Im.Line.SameInner();
         DrawCancelButton(MigrationManager.TaskType.MtrlCleanup, CleanupTooltip);
@@ -109,7 +101,7 @@ public class MigrationSectionDrawer(MigrationManager migrationManager, Configura
     private void DrawMdlRestore()
     {
         if (ImEx.Button("Restore Model Backups"u8, _buttonSize, StringU8.Empty, migrationManager.IsRunning))
-            migrationManager.RestoreMdlBackups(config.ModDirectory);
+            migrationManager.RestoreMdlBackups(config.Main.ModDirectory);
 
         Im.Line.SameInner();
         DrawCancelButton(MigrationManager.TaskType.MdlRestoration, RestorationTooltip);
@@ -120,7 +112,7 @@ public class MigrationSectionDrawer(MigrationManager migrationManager, Configura
     private void DrawMtrlRestore()
     {
         if (ImEx.Button("Restore Material Backups"u8, _buttonSize, StringU8.Empty, migrationManager.IsRunning))
-            migrationManager.RestoreMtrlBackups(config.ModDirectory);
+            migrationManager.RestoreMtrlBackups(config.Main.ModDirectory);
 
         Im.Line.SameInner();
         DrawCancelButton(MigrationManager.TaskType.MtrlRestoration, RestorationTooltip);

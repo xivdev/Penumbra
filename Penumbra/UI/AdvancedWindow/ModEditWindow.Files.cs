@@ -291,13 +291,13 @@ public partial class ModEditWindow
 
 
         Im.Line.Same();
-        var active = _config.DeleteModModifier.IsActive();
+        var active = LunaStyle.Modifier.Destructive.Active;
         var tt =
             "Delete all selected files entirely from your filesystem, but not their file associations in the mod.\n!!!This can not be reverted!!!";
         if (_selectedFiles.Count is 0)
             tt += "\n\nNo files selected.";
         else if (!active)
-            tt += $"\n\nHold {_config.DeleteModModifier} to delete.";
+            tt += $"\n\nHold {LunaStyle.Modifier.Destructive} to delete.";
 
         if (ImEx.Button("Delete Selected Files"u8, Vector2.Zero, tt, _selectedFiles.Count is 0 || !active))
             _editor.FileEditor.DeleteFiles(_editor.Mod!, _editor.Option!, _editor.Files.Available.Where(_selectedFiles.Contains));

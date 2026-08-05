@@ -13,11 +13,10 @@ public sealed class ReservedFilesTable(
     ModManager mods,
     TextureManager textures,
     UiNavigator navigator,
-    Configuration config,
     ReservedFiles reservedFiles,
     ManagementLog<ReservedFiles> log)
     : TableBase<ReservedFileCacheObject, ScannerTabCache<ReservedFileCacheObject, ReservedFileRedirection>>(new StringU8("##fft"u8),
-        new ActionColumn(reservedFiles, config),
+        new ActionColumn(reservedFiles),
         new GamePathColumn<ReservedFileCacheObject, ReservedFileRedirection> { Label = new StringU8("Game Path"u8) },
         new StateColumn { Label                                                      = new StringU8("State"u8) },
         new TargetColumn<ReservedFileCacheObject, ReservedFileRedirection> { Label   = new StringU8("Target File"u8) },
@@ -32,7 +31,7 @@ public sealed class ReservedFilesTable(
     {
         cache.DrawScanButtons();
 
-        var active = config.IncognitoModifier.IsActive();
+        var active = LunaStyle.Modifier.Misclick.Active;
         if (ImEx.Button("Remove All Simple Redirections"u8, default, !active))
             reservedFiles.RemoveRedundant(cache, false);
 
@@ -49,10 +48,10 @@ public sealed class ReservedFilesTable(
             Im.Text("\nTHIS IS NOT REVERTIBLE."u8, Colors.RegexWarningBorder);
 
             if (!active)
-                Im.Text($"\nHold {config.IncognitoModifier} while clicking.");
+                Im.Text($"\nHold {LunaStyle.Modifier.Misclick} while clicking.");
         }
 
-        active = config.DeleteModModifier.IsActive();
+        active = LunaStyle.Modifier.Destructive.Active;
         Im.Line.Same();
         using (ImGuiColor.Text.Push(Colors.RegexWarningBorder))
         {
@@ -73,7 +72,7 @@ public sealed class ReservedFilesTable(
                 Colors.RegexWarningBorder);
 
             if (!active)
-                Im.Text($"\nHold {config.DeleteModModifier} while clicking.");
+                Im.Text($"\nHold {LunaStyle.Modifier.Destructive} while clicking.");
         }
     }
 
@@ -90,13 +89,11 @@ public sealed class ReservedFilesTable(
     private sealed class ActionColumn : BasicColumn<ReservedFileCacheObject>
     {
         private readonly ReservedFiles _service;
-        private readonly Configuration       _config;
-        private          int                 _deleteIndex = -1;
+        private          int           _deleteIndex = -1;
 
-        public ActionColumn(ReservedFiles service, Configuration config)
+        public ActionColumn(ReservedFiles service)
         {
             _service =  service;
-            _config  =  config;
             Flags    |= TableColumnFlags.NoSort | TableColumnFlags.NoResize;
         }
 
@@ -111,7 +108,7 @@ public sealed class ReservedFilesTable(
 
         public override void DrawColumn(in ReservedFileCacheObject item, int globalIndex)
         {
-            var disabled = !_config.DeleteModModifier.IsActive();
+            var disabled = !LunaStyle.Modifier.Destructive.Active;
             if (ImEx.Icon.Button(LunaStyle.DeleteIcon,
                     item.ScannedObject.FileSwap
                         ? "Remove this file swap."u8
@@ -123,7 +120,7 @@ public sealed class ReservedFilesTable(
             }
 
             if (disabled)
-                Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"\nHold {_config.DeleteModModifier} while clicking to remove.");
+                Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"\nHold {LunaStyle.Modifier.Destructive} while clicking to remove.");
         }
 
         public override float ComputeWidth(IEnumerable<ReservedFileCacheObject> _)

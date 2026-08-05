@@ -1,10 +1,10 @@
 using Luna;
 using Penumbra.Api.Enums;
-using MessageService = Penumbra.Services.MessageService;
+using Penumbra.Services;
 
 namespace Penumbra.UI.Tabs;
 
-public sealed class MessagesTab(MessageService messages) : ITab<TabType>
+public sealed class MessagesTab(PenumbraMessager messages) : ITab<TabType>
 {
     public ReadOnlySpan<byte> Label
         => "Messages"u8;

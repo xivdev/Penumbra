@@ -7,10 +7,6 @@ public sealed class BehaviorSettings(BehaviorConfig config) : IUiService
 {
     public void Draw()
     {
-        using var header = Im.Tree.HeaderId("Penumbra Behavior"u8);
-        if (!header)
-            return;
-
         DrawGeneralBehavior();
         DrawCollectionAssociation();
     }
@@ -30,6 +26,8 @@ public sealed class BehaviorSettings(BehaviorConfig config) : IUiService
                 "Use the collection assigned to your interface for other plugins requesting UI-textures and icons through Dalamud."u8,
                 config.UseDalamudUiTextureRedirection))
             config.UseDalamudUiTextureRedirection ^= true;
+
+        LunaStyle.DrawSeparator();
     }
 
     private void DrawCollectionAssociation()

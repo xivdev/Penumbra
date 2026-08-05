@@ -12,7 +12,7 @@ public sealed partial class IndividualCollections
 {
     public record struct IndividualAssignment(string DisplayName, IReadOnlyList<ActorIdentifier> Identifiers, ModCollection Collection);
 
-    private readonly Configuration                              _config;
+    private readonly BehaviorConfig                             _config;
     private readonly ActorManager                               _actors;
     private readonly Dictionary<ActorIdentifier, ModCollection> _individuals = [];
     private readonly List<IndividualAssignment>                 _assignments = [];
@@ -23,7 +23,7 @@ public sealed partial class IndividualCollections
     public IReadOnlyList<IndividualAssignment> Assignments
         => _assignments;
 
-    public IndividualCollections(ActorManager actors, Configuration config, bool temporary)
+    public IndividualCollections(ActorManager actors, BehaviorConfig config, bool temporary)
     {
         _config  =  config;
         _actors  =  actors;
@@ -200,7 +200,7 @@ public sealed partial class IndividualCollections
         if (displayIndex < 0 || displayIndex >= _assignments.Count)
             return false;
 
-        var (name, identifiers, _) = _assignments[displayIndex];
+        var (_, identifiers, _) = _assignments[displayIndex];
         _assignments.RemoveAt(displayIndex);
         lock (_individuals)
         {

@@ -1,10 +1,10 @@
+using System.Text.Json;
 using Luna;
-using Newtonsoft.Json.Linq;
 using Penumbra.Files;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
+using Penumbra.Services;
 using Penumbra.UI.Classes;
-using MessageService = Penumbra.Services.MessageService;
 
 namespace Penumbra.UI;
 
@@ -12,7 +12,7 @@ public sealed class PredefinedTagManager : PredefinedTagManager<FilenameService,
 {
     private readonly ModManager _modManager;
 
-    public PredefinedTagManager(ModManager modManager, SaveService saveService, MessageService messager)
+    public PredefinedTagManager(ModManager modManager, SaveService saveService, PenumbraMessager messager)
         : base(saveService, messager)
     {
         _modManager = modManager;
@@ -28,17 +28,17 @@ public sealed class PredefinedTagManager : PredefinedTagManager<FilenameService,
     public override string ObjectName
         => "mod";
 
-    protected override bool HandleVersionMigration(string logName, JObject data, int version)
+    protected override bool HandleVersionMigration(string logName, in JsonElement data, int version)
     {
         if (version is 1)
         {
-            if (data["Tags"] is not JObject tags)
+            if (!data.TryReadObject("Tags"u8, out var tags))
                 return true;
 
-            foreach (var (tag, _) in tags)
+            foreach (var property in tags.EnumerateObject())
             {
-                if (!PredefinedTags.AddUnique(tag))
-                    Messager.NotificationMessage($"Duplicate tag {tag} found in predefined tags, ignoring.");
+                if (!PredefinedTags.AddUnique(property.Name))
+                    Messager.NotificationMessage($"Duplicate tag {property.Name} found in predefined tags, ignoring.");
             }
 
             Messager.Log.Debug($"Migrated {logName} from Version 1 to 2.");

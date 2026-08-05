@@ -111,7 +111,7 @@ public class ResourceTreeFactory(
             ResolveUiData(tree);
             ResolveModData(tree);
         }
-        FilterFullPaths(tree, (flags & Flags.RedactExternalPaths) != 0 ? config.ModDirectory : null);
+        FilterFullPaths(tree, (flags & Flags.RedactExternalPaths) is not 0 ? config.Main.ModDirectory : null);
         Cleanup(tree);
 
         return tree;

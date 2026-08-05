@@ -97,13 +97,13 @@ public sealed class ModsApi : IPenumbraApiMods, IApiService, IDisposable
             return ApiHelpers.Return(PenumbraApiEc.InvalidArgument, args);
 
         _modManager.AddMod(dir, true);
-        if (_config.MigrateImportedModelsToV6)
+        if (_config.Io.MigrateImportedModelsToV6)
         {
             _migrationManager.MigrateMdlDirectory(dir.FullName, false);
             _migrationManager.Await();
         }
 
-        if (_config.UseFileSystemCompression)
+        if (_config.Advanced.UseFileSystemCompression)
             new FileCompactor(_log).StartMassCompact(dir.EnumerateFiles("*.*", SearchOption.AllDirectories),
                 CompressionAlgorithm.Xpress8K, false);
 

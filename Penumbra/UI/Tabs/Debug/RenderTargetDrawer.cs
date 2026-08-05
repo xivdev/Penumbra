@@ -33,7 +33,7 @@ public class RenderTargetDrawer(RenderTargetHdrEnabler renderTargetHdrEnabler, D
             Im.Text($"{(dalamudConfig.GetDalamudConfig(DalamudConfigService.WaitingForPluginsOption, out bool w) ? w.ToString() : "Unknown")}");
             Im.Text($"{renderTargetHdrEnabler.FirstLaunchWaitForPluginsState?.ToString() ?? "Unknown"}");
 
-            Im.Text($"{config.HdrRenderTargets}");
+            Im.Text($"{config.Advanced.HdrRenderTargets}");
             Im.Text($"{renderTargetHdrEnabler.FirstLaunchHdrState}");
 
             Im.Text($"{HookOverrides.Instance.PostProcessing.RenderTargetManagerInitialize}");

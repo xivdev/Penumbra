@@ -19,9 +19,9 @@ public static class ModSerialization
 
         Penumbra.Log.Information($"Migrating mod {mod.Name} from {mod.LoadedVersion} to {CurrentFileVersion}, deleting group files...");
         mod.LoadedVersion = 4;
-        foreach (var file in files.FileNames.GetOptionGroupFiles(mod))
+        foreach (var file in files.FileNames.Migration.GetOptionGroupFiles(mod))
             files.DeleteWithBackup(file.FullName);
-        files.DeleteWithBackup(files.FileNames.OptionGroupFile(mod, -1, false));
+        files.DeleteWithBackup(files.FileNames.Migration.OptionGroupFile(mod, -1, false));
         WriteMod(j, mod);
     }
 

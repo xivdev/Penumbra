@@ -41,7 +41,7 @@ public class ActiveCollections : ISavable, IDisposable, IService
         Current       = storage.DefaultNamed;
         Default       = storage.DefaultNamed;
         Interface     = storage.DefaultNamed;
-        Individuals   = new IndividualCollections(actors, config, false);
+        Individuals   = new IndividualCollections(actors, config.Behavior, false);
         _communicator.CollectionChange.Subscribe(OnCollectionChange, CollectionChange.Priority.ActiveCollections);
         LoadCollections();
         UpdateCurrentCollectionInUse();
@@ -318,7 +318,7 @@ public class ActiveCollections : ISavable, IDisposable, IService
         if (!_storage.ByName(defaultName, out var defaultCollection))
         {
             Penumbra.Messager.NotificationMessage(
-                $"Last choice of {"Base Collection"} {defaultName} is not available, reset to {ModCollection.Empty.Identity.Name}.",
+                $"Last choice of Base Collection {defaultName} is not available, reset to {ModCollection.Empty.Identity.Name}.",
                 NotificationType.Warning);
             Default       = ModCollection.Empty;
             configChanged = true;
@@ -362,7 +362,7 @@ public class ActiveCollections : ISavable, IDisposable, IService
         foreach (var (type, name, _) in CollectionTypeExtensions.Special)
         {
             var typeName = jObject[type.ToString()]?.ToObject<string>();
-            if (typeName != null)
+            if (typeName is not null)
             {
                 if (!_storage.ByName(typeName, out var typeCollection))
                 {
@@ -393,7 +393,7 @@ public class ActiveCollections : ISavable, IDisposable, IService
         if (!_storage.ById(defaultId, out var defaultCollection))
         {
             Penumbra.Messager.NotificationMessage(
-                $"Last choice of {"Base Collection"} {defaultId} is not available, reset to {ModCollection.Empty.Identity.Name}.",
+                $"Last choice of Base Collection {defaultId} is not available, reset to {ModCollection.Empty.Identity.Name}.",
                 NotificationType.Warning);
             Default       = ModCollection.Empty;
             configChanged = true;
@@ -408,7 +408,7 @@ public class ActiveCollections : ISavable, IDisposable, IService
         if (!_storage.ById(interfaceId, out var interfaceCollection))
         {
             Penumbra.Messager.NotificationMessage(
-                $"Last choice of {"Interface Collection"} {interfaceId} is not available, reset to {ModCollection.Empty.Identity.Name}.",
+                $"Last choice of Interface Collection {interfaceId} is not available, reset to {ModCollection.Empty.Identity.Name}.",
                 NotificationType.Warning);
             Interface     = ModCollection.Empty;
             configChanged = true;
@@ -515,28 +515,28 @@ public class ActiveCollections : ISavable, IDisposable, IService
     public string RedundancyCheck(CollectionType type, ActorIdentifier id)
     {
         var checkAssignment = ByType(type, id);
-        if (checkAssignment == null)
+        if (checkAssignment is null)
             return string.Empty;
 
         switch (type)
         {
             case CollectionType.Yourself:
                 var yourself = ByType(CollectionType.Yourself);
-                if (yourself == null)
+                if (yourself is null)
                     return string.Empty;
 
                 var racial = false;
                 foreach (var race in SubRace.Values.Skip(1))
                 {
                     var m = ByType(CollectionTypeExtensions.FromParts(race, Gender.Male, false));
-                    if (m != null && m != yourself)
+                    if (m is not null && m != yourself)
                         return string.Empty;
 
                     var f = ByType(CollectionTypeExtensions.FromParts(race, Gender.Female, false));
-                    if (f != null && f != yourself)
+                    if (f is not null && f != yourself)
                         return string.Empty;
 
-                    racial |= m != null || f != null;
+                    racial |= m is not null || f is not null;
                 }
 
                 var racialString = racial ? " and Racial Assignments" : string.Empty;

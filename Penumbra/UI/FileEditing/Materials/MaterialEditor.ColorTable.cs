@@ -593,7 +593,7 @@ public partial class MaterialEditor
         ref var dye = ref dyeTable[rowIdx];
 
         Im.Item.SetNextWidth(scalarSize);
-        ret |= CtDragScalar("Dye Channel"u8, default, dye.Channel + 1, "%d"u8, 1, StainService.GetUiChannelCount(_config), 0.1f,
+        ret |= CtDragScalar("Dye Channel"u8, default, dye.Channel + 1, "%d"u8, 1, StainService.GetUiChannelCount(_config.Editing), 0.1f,
             value => dyeTable[rowIdx].Channel = (byte)(Math.Clamp(value, 1, StainService.ChannelCount) - 1));
         Im.Line.Same(subColWidth);
         Im.Item.SetNextWidth(scalarSize);

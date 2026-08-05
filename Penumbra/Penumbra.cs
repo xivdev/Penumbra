@@ -25,7 +25,6 @@ using Penumbra.UI.MainWindow;
 using ChangedItemClick = Penumbra.Communication.ChangedItemClick;
 using ChangedItemHover = Penumbra.Communication.ChangedItemHover;
 using DynamisIpc = Luna.DynamisIpc;
-using MessageService = Penumbra.Services.MessageService;
 using MouseButton = Penumbra.Api.Enums.MouseButton;
 using Notification = Luna.Notification;
 using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManager;
@@ -35,7 +34,7 @@ namespace Penumbra;
 public class Penumbra : IDalamudPlugin
 {
     public static readonly MainLogger     Log = new("Penumbra");
-    public static          MessageService Messager { get; private set; } = null!;
+    public static          PenumbraMessager Messager { get; private set; } = null!;
     public static          DynamisIpc     Dynamis  { get; private set; } = null!;
 
     private readonly ValidityChecker         _validityChecker     = null!;
@@ -64,9 +63,11 @@ public class Penumbra : IDalamudPlugin
             _services              = StaticServiceManager.CreateProvider(this, pluginInterface, Log);
             // Invoke the IPC Penumbra.Launching method before any hooks or other services are created.
             _services.GetService<IpcLaunchingProvider>();
-            Messager         = _services.GetService<MessageService>();
+            Messager         = _services.GetService<PenumbraMessager>();
             Dynamis          = _services.GetService<DynamisIpc>();
             _validityChecker = _services.GetService<ValidityChecker>();
+            _services.GetService<BackupService>(); // Initialize early to create backups.
+            _services.GetService<ConfigMigrationService>().MigrateOldConfigStyle();
             _services.EnsureRequiredServices();
 
             var startup = _services.GetService<DalamudConfigService>()
@@ -75,19 +76,18 @@ public class Penumbra : IDalamudPlugin
                 : "Unknown";
             Log.Information(
                 $"Loading Penumbra Version {_validityChecker.Version}, Commit #{_validityChecker.CommitHash} with Waiting For Plugins: {startup}...");
-            _services.GetService<BackupService>(); // Initialize early to create backups.
             _services.GetService<ImSharpDalamudContext>();
-            _config              =  _services.GetService<Configuration>();
-            _config.ModsEnabled  += SetEnabled;
-            _characterUtility    =  _services.GetService<CharacterUtility>();
-            _tempMods            =  _services.GetService<TempModManager>();
-            _residentResources   =  _services.GetService<ResidentResourceManager>();
-            _modManager          =  _services.GetService<ModManager>();
-            _collectionManager   =  _services.GetService<CollectionManager>();
-            _tempCollections     =  _services.GetService<TempCollectionManager>();
-            _redrawService       =  _services.GetService<RedrawService>();
-            _communicatorService =  _services.GetService<CommunicatorService>();
-            _gameData            =  _services.GetService<IDataManager>();
+            _config                  =  _services.GetService<Configuration>();
+            _config.Main.ModsEnabled += SetEnabled;
+            _characterUtility        =  _services.GetService<CharacterUtility>();
+            _tempMods                =  _services.GetService<TempModManager>();
+            _residentResources       =  _services.GetService<ResidentResourceManager>();
+            _modManager              =  _services.GetService<ModManager>();
+            _collectionManager       =  _services.GetService<CollectionManager>();
+            _tempCollections         =  _services.GetService<TempCollectionManager>();
+            _redrawService           =  _services.GetService<RedrawService>();
+            _communicatorService     =  _services.GetService<CommunicatorService>();
+            _gameData                =  _services.GetService<IDataManager>();
             _collectionManager.Caches.CreateNecessaryCaches();
             _services.GetService<PathResolver>();
 
@@ -151,7 +151,7 @@ public class Penumbra : IDalamudPlugin
                 if (!_disposed)
                 {
                     _windowSystem = system;
-                    if (_config is { OpenWindowAtStart: true, Ephemeral.AdvancedEditingOpenForModPaths.Count: > 0 })
+                    if (_config is { Ui.OpenWindowAtStart: true, Ephemeral.AdvancedEditingOpenForModPaths.Count: > 0 })
                     {
                         var mods              = _services.GetService<ModManager>();
                         var editWindowFactory = _services.GetService<ModEditWindowFactory>();
@@ -258,39 +258,39 @@ public class Penumbra : IDalamudPlugin
     public string GatherSupportInformation()
     {
         var sb          = new StringBuilder(10240);
-        var exists      = _config.ModDirectory.Length > 0 && Directory.Exists(_config.ModDirectory);
-        var cloudSynced = exists && CloudApi.IsCloudSynced(_config.ModDirectory);
+        var exists      = _config.Main.ModDirectory.Length > 0 && Directory.Exists(_config.Main.ModDirectory);
+        var cloudSynced = exists && CloudApi.IsCloudSynced(_config.Main.ModDirectory);
         var hdrEnabler  = _services.GetService<RenderTargetHdrEnabler>();
         var pi          = _services.GetService<IDalamudPluginInterface>();
-        var drive       = exists ? new DriveInfo(new DirectoryInfo(_config.ModDirectory).Root.FullName) : null;
+        var drive       = exists ? new DriveInfo(new DirectoryInfo(_config.Main.ModDirectory).Root.FullName) : null;
         sb.AppendLine("**Settings**");
         sb.Append($"> **`Plugin Version:              `** {_validityChecker.Version}\n");
         sb.Append($"> **`Commit Hash:                 `** {_validityChecker.CommitHash}\n");
         sb.Append($"> **`Load Reason:                 `** {pi.Reason} at {pi.LoadTimeUTC:g} ({pi.LoadTimeDelta:g})\n");
-        sb.Append($"> **`Enable Mods:                 `** {_config.EnableMods}\n");
-        sb.Append($"> **`Enable HTTP API:             `** {_config.EnableHttpApi}\n");
+        sb.Append($"> **`Enable Mods:                 `** {_config.Main.EnableMods}\n");
+        sb.Append($"> **`Enable HTTP API:             `** {_config.Advanced.EnableHttpApi}\n");
         sb.Append($"> **`Operating System:            `** {(Dalamud.Utility.Util.IsWine() ? "Mac/Linux (Wine)" : "Windows")}\n");
         if (Dalamud.Utility.Util.IsWine())
             sb.Append($"> **`Locale Environment Variables:`** {CollectLocaleEnvironmentVariables()}\n");
         sb.Append(
-            $"> **`Root Directory:              `** `{_config.ModDirectory}`, {(exists ? "Exists" : "Not Existing")}{(cloudSynced ? ", Cloud-Synced" : "")}\n");
+            $"> **`Root Directory:              `** `{_config.Main.ModDirectory}`, {(exists ? "Exists" : "Not Existing")}{(cloudSynced ? ", Cloud-Synced" : "")}\n");
         sb.Append(
             $"> **`Free Drive Space:            `** {(drive != null ? FormattingFunctions.HumanReadableSize(drive.AvailableFreeSpace) : "Unknown")}\n");
         sb.Append($"> **`Game Data Files:             `** {(_gameData.HasModifiedGameDataFiles ? "Modified" : "Pristine")}\n");
-        sb.Append($"> **`Auto-Deduplication:          `** {_config.AutoDeduplicateOnImport}\n");
-        sb.Append($"> **`Auto-UI-Reduplication:       `** {_config.AutoReduplicateUiOnImport}\n");
-        sb.Append($"> **`Debug Mode:                  `** {_config.DebugMode}\n");
+        sb.Append($"> **`Auto-Deduplication:          `** {_config.Advanced.AutoDeduplicateOnImport}\n");
+        sb.Append($"> **`Auto-UI-Reduplication:       `** {_config.Advanced.AutoReduplicateUiOnImport}\n");
+        sb.Append($"> **`Debug Mode:                  `** {_config.Advanced.DebugMode}\n");
         sb.Append($"> **`Penumbra Reloads:            `** {hdrEnabler.PenumbraReloadCount}\n");
         sb.Append(
-            $"> **`HDR Enabled (from Start):    `** {_config.HdrRenderTargets} ({hdrEnabler is { FirstLaunchHdrState: true, FirstLaunchHdrHookOverrideState: true }}){(hdrEnabler.HdrEnabledSuccess ? ", Detour Called" : ", **NEVER CALLED**")}\n");
-        sb.Append($"> **`Custom Shapes Enabled:       `** {_config.EnableCustomShapes}\n");
+            $"> **`HDR Enabled (from Start):    `** {_config.Advanced.HdrRenderTargets} ({hdrEnabler is { FirstLaunchHdrState: true, FirstLaunchHdrHookOverrideState: true }}){(hdrEnabler.HdrEnabledSuccess ? ", Detour Called" : ", **NEVER CALLED**")}\n");
+        sb.Append($"> **`Custom Shapes Enabled:       `** {_config.Advanced.EnableCustomShapes}\n");
         sb.Append($"> **`Hook Overrides:              `** {HookOverrides.Instance.IsCustomLoaded}\n");
         sb.Append(
             $"> **`Synchronous Load (Dalamud):  `** {(_services.GetService<DalamudConfigService>().GetDalamudConfig(DalamudConfigService.WaitingForPluginsOption, out bool v) ? v.ToString() : "Unknown")} (first Start: {hdrEnabler.FirstLaunchWaitForPluginsState?.ToString() ?? "Unknown"})\n");
         sb.Append(
             $"> **`Logging:                     `** Log: {_config.Filters.ResourceLoggerWriteToLog}, Watcher: {_config.Filters.ResourceLoggerEnabled} ({_config.Filters.ResourceLoggerMaxEntries})\n");
         sb.Append(
-            $"> **`Use Ownership:               `** {_config.UseOwnerNameForCharacterCollection} (Hostiles: {_config.UseOwnerForHostiles})\n");
+            $"> **`Use Ownership:               `** {_config.Behavior.UseOwnerNameForCharacterCollection} (Hostiles: {_config.Behavior.UseOwnerForHostiles})\n");
         GatherRelevantPlugins(sb);
         sb.AppendLine("**Mods**");
         sb.Append($"> **`Installed Mods:              `** {_modManager.Count}\n");

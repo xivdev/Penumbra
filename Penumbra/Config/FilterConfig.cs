@@ -1,52 +1,18 @@
 using System.Text.Json;
 using Luna;
 using Luna.Generators;
-using Newtonsoft.Json.Linq;
 using Penumbra.Enums;
 using Penumbra.Files;
+using Penumbra.Services;
 using Penumbra.UI.Classes;
 using Penumbra.UI.ModsTab.Selector;
 using Penumbra.UI.ResourceWatcher;
-using MessageService = Penumbra.Services.MessageService;
 
 namespace Penumbra;
 
-public sealed partial class FilterConfig : ConfigurationFile<FilenameService>
+public sealed partial class FilterConfig : ConfigurationFile<FilenameService>, IDisposable
 {
-    public override int CurrentVersion
-        => 1;
-
-    public FilterConfig(SaveService saveService, MessageService messager)
-        : base(saveService, messager, TimeSpan.FromMinutes(5))
-    {
-        Load();
-    }
-
-    protected override void AddData(Utf8JsonWriter j)
-    {
-        WriteModsTab(j);
-        WriteCollectionsTab(j);
-        WriteChangedItemsTab(j);
-        WriteEffectiveChangesTab(j);
-        WriteOnScreenTab(j);
-        WriteResourceManagerTab(j);
-        WriteResourceWatcherTab(j);
-    }
-
-    protected override void LoadData(JObject j)
-    {
-        LoadModsTab(j);
-        LoadCollectionsTab(j);
-        LoadChangedItemsTab(j);
-        LoadEffectiveChangesTab(j);
-        LoadOnScreenTab(j);
-        LoadResourceManagerTab(j);
-        LoadResourceWatcherTab(j);
-    }
-
-    public override string ToFilePath(FilenameService fileNames)
-        => fileNames.FilterFile;
-
+    private readonly UiConfig _uiConfig;
 
     #region Mods Tab
 
@@ -67,18 +33,14 @@ public sealed partial class FilterConfig : ConfigurationFile<FilenameService>
         tmp.WriteUnsignedIfNot("ChangedItemTypeFilter"u8, ModChangedItemTypeFilter, ChangedItemFlagExtensions.DefaultFlags);
     }
 
-    private void LoadModsTab(JObject j)
+    private void LoadModsTab(in JsonElement j)
     {
-        if (j["Mods"] is not JObject mods)
+        if (!j.TryReadObject("Mods"u8, out var mods))
             return;
 
-        _modTypeFilter = mods["TypeFilter"]?.Value<uint>() is { } modTypeFilter
-            ? (ModTypeFilter)modTypeFilter
-            : ModTypeFilterExtensions.UnfilteredStateMods;
-        _modFilter = mods["ModFilter"]?.Value<string>() ?? string.Empty;
-        _modChangedItemTypeFilter = mods["ChangedItemTypeFilter"]?.Value<uint>() is { } changedItemFilter
-            ? (ChangedItemIconFlag)changedItemFilter
-            : ChangedItemFlagExtensions.DefaultFlags;
+        _modTypeFilter            = mods.EnumOrDefault("TypeFilter"u8, ModTypeFilterExtensions.UnfilteredStateMods);
+        _modFilter                = mods.PropertyOrDefault("ModFilter"u8, string.Empty);
+        _modChangedItemTypeFilter = mods.EnumOrDefault("ChangedItemTypeFilter"u8, ChangedItemFlagExtensions.DefaultFlags);
     }
 
     #endregion
@@ -94,10 +56,12 @@ public sealed partial class FilterConfig : ConfigurationFile<FilenameService>
         tmp.WriteNonEmptyString("CollectionFilter"u8, CollectionFilter);
     }
 
-    private void LoadCollectionsTab(JObject j)
+    private void LoadCollectionsTab(in JsonElement j)
     {
-        if (j["Collections"] is JObject collections)
-            _collectionFilter = collections["CollectionFilter"]?.Value<string>() ?? string.Empty;
+        if (!j.TryReadObject("Collections"u8, out var collections))
+            return;
+
+        _collectionFilter = collections.PropertyOrDefault("CollectionFilter"u8, string.Empty);
     }
 
     #endregion
@@ -122,16 +86,15 @@ public sealed partial class FilterConfig : ConfigurationFile<FilenameService>
         tmp.WriteUnsignedIfNot("TypeFilter"u8, ChangedItemTypeFilter, ChangedItemFlagExtensions.DefaultFlags);
     }
 
-    private void LoadChangedItemsTab(JObject j)
+    private void LoadChangedItemsTab(in JsonElement j)
     {
-        if (j["ChangedItems"] is not JObject changedItems)
+        if (!j.TryReadObject("ChangedItems"u8, out var changedItems))
             return;
 
-        _changedItemItemFilter = changedItems["ItemFilter"]?.Value<string>() ?? string.Empty;
-        _changedItemModFilter  = changedItems["ModFilter"]?.Value<string>() ?? string.Empty;
-        _changedItemTypeFilter = changedItems["TypeFilter"]?.Value<uint>() is { } typeFilter
-            ? (ChangedItemIconFlag)typeFilter
-            : ChangedItemFlagExtensions.DefaultFlags;
+        _changedItemItemFilter = changedItems.PropertyOrDefault("ItemFilter"u8, string.Empty);
+        _changedItemModFilter  = changedItems.PropertyOrDefault("ModFilter"u8,  string.Empty);
+        _changedItemTypeFilter =
+            (ChangedItemIconFlag)changedItems.PropertyOrDefault("TypeFilter"u8, (uint)ChangedItemFlagExtensions.DefaultFlags);
     }
 
     #endregion
@@ -151,13 +114,13 @@ public sealed partial class FilterConfig : ConfigurationFile<FilenameService>
         tmp.WriteNonEmptyString("FilePathFilter"u8, EffectiveChangesFilePathFilter);
     }
 
-    private void LoadEffectiveChangesTab(JObject j)
+    private void LoadEffectiveChangesTab(in JsonElement j)
     {
-        if (j["EffectiveChanges"] is not JObject effectiveChanges)
+        if (!j.TryReadObject("EffectiveChanges"u8, out var effectiveChanges))
             return;
 
-        _effectiveChangesGamePathFilter = effectiveChanges["GamePathFilter"]?.Value<string>() ?? string.Empty;
-        _effectiveChangesFilePathFilter = effectiveChanges["FilePathFilter"]?.Value<string>() ?? string.Empty;
+        _effectiveChangesGamePathFilter = effectiveChanges.PropertyOrDefault("GamePathFilter"u8, string.Empty);
+        _effectiveChangesFilePathFilter = effectiveChanges.PropertyOrDefault("FilePathFilter"u8, string.Empty);
     }
 
     #endregion
@@ -188,16 +151,14 @@ public sealed partial class FilterConfig : ConfigurationFile<FilenameService>
         tmp.WriteUnsignedIfNot("TypeFilter"u8, OnScreenTypeFilter, ChangedItemFlagExtensions.DefaultFlags);
     }
 
-    private void LoadOnScreenTab(JObject j)
+    private void LoadOnScreenTab(in JsonElement j)
     {
-        if (j["OnScreen"] is not JObject onScreen)
+        if (!j.TryReadObject("OnScreen"u8, out var onScreen))
             return;
 
-        _onScreenCharacterFilter = onScreen["CharacterFilter"]?.Value<string>() ?? string.Empty;
-        _onScreenItemFilter      = onScreen["ItemFilter"]?.Value<string>() ?? string.Empty;
-        _onScreenTypeFilter = onScreen["TypeFilter"]?.Value<uint>() is { } typeFilter
-            ? (ChangedItemIconFlag)typeFilter
-            : ChangedItemFlagExtensions.DefaultFlags;
+        _onScreenCharacterFilter = onScreen.PropertyOrDefault("CharacterFilter"u8, string.Empty);
+        _onScreenItemFilter      = onScreen.PropertyOrDefault("ItemFilter"u8,      string.Empty);
+        _onScreenTypeFilter      = onScreen.EnumOrDefault("TypeFilter"u8, ChangedItemFlagExtensions.DefaultFlags);
     }
 
     #endregion
@@ -213,15 +174,17 @@ public sealed partial class FilterConfig : ConfigurationFile<FilenameService>
         tmp.WriteNonEmptyString("PathFilter"u8, ResourceManagerFilter);
     }
 
-    private void LoadResourceManagerTab(JObject j)
+    private void LoadResourceManagerTab(in JsonElement j)
     {
-        if (j["ResourceManager"] is JObject resourceManager)
-            _resourceManagerFilter = resourceManager["PathFilter"]?.Value<string>() ?? string.Empty;
+        if (!j.TryReadObject("ResourceManager"u8, out var resourceManager))
+            return;
+
+        _resourceManagerFilter = resourceManager.PropertyOrDefault("PathFilter"u8, string.Empty);
     }
 
     #endregion
 
-    #region
+    #region Resource Logger
 
     [ConfigProperty]
     private bool _resourceLoggerEnabled;
@@ -283,10 +246,10 @@ public sealed partial class FilterConfig : ConfigurationFile<FilenameService>
     private void WriteResourceWatcherTab(Utf8JsonWriter j)
     {
         using var tmp = j.TemporaryObject("ResourceWatcher"u8);
-        tmp.WriteBoolIf("Enabled"u8,    ResourceLoggerEnabled,    false);
-        tmp.WriteBoolIf("WriteToLog"u8, ResourceLoggerWriteToLog, false);
-        tmp.WriteSignedIfNot("MaxEntries"u8, ResourceLoggerMaxEntries, 500);
-        tmp.WriteBoolIf("StoreOnlyMatching"u8, ResourceLoggerStoreOnlyMatching, true);
+        tmp.WriteIfNot("Enabled"u8,           ResourceLoggerEnabled,           false);
+        tmp.WriteIfNot("WriteToLog"u8,        ResourceLoggerWriteToLog,        false);
+        tmp.WriteIfNot("MaxEntries"u8,        ResourceLoggerMaxEntries,        500);
+        tmp.WriteIfNot("StoreOnlyMatching"u8, ResourceLoggerStoreOnlyMatching, true);
         tmp.WriteNonEmptyString("LogFilter"u8,          ResourceLoggerLogFilter);
         tmp.WriteNonEmptyString("PathFilter"u8,         ResourceLoggerPathFilter);
         tmp.WriteNonEmptyString("CollectionFilter"u8,   ResourceLoggerCollectionFilter);
@@ -304,46 +267,89 @@ public sealed partial class FilterConfig : ConfigurationFile<FilenameService>
         tmp.WriteUnsignedIfNot("LoadStateFilter"u8, ResourceLoggerLoadStateFilter, LoadStateExtensions.All);
     }
 
-
-    private void LoadResourceWatcherTab(JObject j)
+    private void LoadResourceWatcherTab(in JsonElement j)
     {
-        if (j["ResourceWatcher"] is not JObject resourceWatcher)
+        if (!j.TryReadObject("ResourceWatcher"u8, out var resourceWatcher))
             return;
 
-        _resourceLoggerEnabled           = resourceWatcher["Enabled"]?.Value<bool>() ?? false;
-        _resourceLoggerMaxEntries        = resourceWatcher["MaxEntries"]?.Value<int>() ?? 500;
-        _resourceLoggerStoreOnlyMatching = resourceWatcher["StoreOnlyMatching"]?.Value<bool>() ?? true;
-        _resourceLoggerWriteToLog        = resourceWatcher["WriteToLog"]?.Value<bool>() ?? false;
+        _resourceLoggerEnabled           = resourceWatcher.PropertyOrDefault("Enabled"u8,           false);
+        _resourceLoggerMaxEntries        = resourceWatcher.PropertyOrDefault("MaxEntries"u8,        500);
+        _resourceLoggerStoreOnlyMatching = resourceWatcher.PropertyOrDefault("StoreOnlyMatching"u8, true);
+        _resourceLoggerWriteToLog        = resourceWatcher.PropertyOrDefault("WriteToLog"u8,        false);
 
-        _resourceLoggerLogFilter          = resourceWatcher["LogFilter"]?.Value<string>() ?? string.Empty;
-        _resourceLoggerPathFilter         = resourceWatcher["PathFilter"]?.Value<string>() ?? string.Empty;
-        _resourceLoggerCollectionFilter   = resourceWatcher["CollectionFilter"]?.Value<string>() ?? string.Empty;
-        _resourceLoggerObjectFilter       = resourceWatcher["ObjectFilter"]?.Value<string>() ?? string.Empty;
-        _resourceLoggerOriginalPathFilter = resourceWatcher["OriginalPathFilter"]?.Value<string>() ?? string.Empty;
-        _resourceLoggerResourceFilter     = resourceWatcher["ResourceFilter"]?.Value<string>() ?? string.Empty;
-        _resourceLoggerCrcFilter          = resourceWatcher["CrcFilter"]?.Value<string>() ?? string.Empty;
-        _resourceLoggerRefFilter          = resourceWatcher["RefFilter"]?.Value<string>() ?? string.Empty;
-        _resourceLoggerThreadFilter       = resourceWatcher["ThreadFilter"]?.Value<string>() ?? string.Empty;
+        _resourceLoggerLogFilter          = resourceWatcher.PropertyOrDefault("LogFilter"u8,          string.Empty);
+        _resourceLoggerPathFilter         = resourceWatcher.PropertyOrDefault("PathFilter"u8,         string.Empty);
+        _resourceLoggerCollectionFilter   = resourceWatcher.PropertyOrDefault("CollectionFilter"u8,   string.Empty);
+        _resourceLoggerObjectFilter       = resourceWatcher.PropertyOrDefault("ObjectFilter"u8,       string.Empty);
+        _resourceLoggerOriginalPathFilter = resourceWatcher.PropertyOrDefault("OriginalPathFilter"u8, string.Empty);
+        _resourceLoggerResourceFilter     = resourceWatcher.PropertyOrDefault("ResourceFilter"u8,     string.Empty);
+        _resourceLoggerCrcFilter          = resourceWatcher.PropertyOrDefault("CrcFilter"u8,          string.Empty);
+        _resourceLoggerRefFilter          = resourceWatcher.PropertyOrDefault("RefFilter"u8,          string.Empty);
+        _resourceLoggerThreadFilter       = resourceWatcher.PropertyOrDefault("ThreadFilter"u8,       string.Empty);
 
-        _resourceLoggerRecordFilter = resourceWatcher["RecordFilter"]?.Value<uint>() is { } recordFilter
-            ? (RecordType)recordFilter
-            : RecordTypeExtensions.All;
-        _resourceLoggerCustomFilter = resourceWatcher["CustomFilter"]?.Value<uint>() is { } customFilter
-            ? (BoolEnum)customFilter
-            : BoolEnumExtensions.All;
-        _resourceLoggerSyncFilter = resourceWatcher["SyncFilter"]?.Value<uint>() is { } syncFilter
-            ? (BoolEnum)syncFilter
-            : BoolEnumExtensions.All;
-        _resourceLoggerCategoryFilter = resourceWatcher["CategoryFilter"]?.Value<uint>() is { } categoryFilter
-            ? (ResourceCategoryFlag)categoryFilter
-            : ResourceExtensions.AllResourceCategories;
-        _resourceLoggerTypeFilter = resourceWatcher["TypeFilter"]?.Value<ulong>() is { } typeFilter
-            ? (ResourceTypeFlag)typeFilter
-            : ResourceExtensions.AllResourceTypes;
-        _resourceLoggerLoadStateFilter = resourceWatcher["LoadStateFilter"]?.Value<uint>() is { } loadStateFilter
-            ? (LoadStateFlag)loadStateFilter
-            : LoadStateExtensions.All;
+        _resourceLoggerRecordFilter    = resourceWatcher.EnumOrDefault("RecordFilter"u8,    RecordTypeExtensions.All);
+        _resourceLoggerCustomFilter    = resourceWatcher.EnumOrDefault("CustomFilter"u8,    BoolEnumExtensions.All);
+        _resourceLoggerSyncFilter      = resourceWatcher.EnumOrDefault("SyncFilter"u8,      BoolEnumExtensions.All);
+        _resourceLoggerCategoryFilter  = resourceWatcher.EnumOrDefault("CategoryFilter"u8,  ResourceExtensions.AllResourceCategories);
+        _resourceLoggerTypeFilter      = resourceWatcher.EnumOrDefault("TypeFilter"u8,      ResourceExtensions.AllResourceTypes);
+        _resourceLoggerLoadStateFilter = resourceWatcher.EnumOrDefault("LoadStateFilter"u8, LoadStateExtensions.All);
     }
 
     #endregion
+
+    public override int CurrentVersion
+        => 100;
+
+    public FilterConfig(SaveService saveService, PenumbraMessager messager, UiConfig uiConfig)
+        : base(saveService, messager, TimeSpan.FromMinutes(5))
+    {
+        _uiConfig                               =  uiConfig;
+        _uiConfig.HideChangedItemFiltersChanged += OnHideChangedItemFiltersChange;
+        Load();
+        OnHideChangedItemFiltersChange(_uiConfig.HideChangedItemFilters, true);
+    }
+
+    private void OnHideChangedItemFiltersChange(bool newValue, bool _)
+    {
+        if (!newValue)
+            return;
+
+        ChangedItemTypeFilter    = ChangedItemFlagExtensions.AllFlags;
+        ModChangedItemTypeFilter = ChangedItemFlagExtensions.AllFlags;
+    }
+
+    protected override void AddData(Utf8JsonWriter j)
+    {
+        WriteModsTab(j);
+        WriteCollectionsTab(j);
+        WriteChangedItemsTab(j);
+        WriteEffectiveChangesTab(j);
+        WriteOnScreenTab(j);
+        WriteResourceManagerTab(j);
+        WriteResourceWatcherTab(j);
+    }
+
+    protected override void LoadData(in JsonElement j)
+    {
+        LoadModsTab(j);
+        LoadCollectionsTab(j);
+        LoadChangedItemsTab(j);
+        LoadEffectiveChangesTab(j);
+        LoadOnScreenTab(j);
+        LoadResourceManagerTab(j);
+        LoadResourceWatcherTab(j);
+    }
+
+    public void MigrationLoad(in JsonElement j)
+    {
+        LoadedVersion   = j.PropertyOrDefault("Version"u8,   -1);
+        LoadedTimestamp = j.PropertyOrDefault("Timestamp"u8, DateTimeOffset.UnixEpoch);
+        LoadData(j);
+    }
+
+    public override string ToFilePath(FilenameService fileNames)
+        => fileNames.Config.Filters;
+
+    public void Dispose()
+        => _uiConfig.HideChangedItemFiltersChanged -= OnHideChangedItemFiltersChange;
 }

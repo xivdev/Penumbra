@@ -169,7 +169,7 @@ public class ChangedItemDrawer : IDisposable, IUiService
     /// <summary> Draw a header line with the different icon types to filter them. </summary>
     public void DrawTypeFilter(bool global)
     {
-        if (_config.HideChangedItemFilters)
+        if (_config.Ui.HideChangedItemFilters)
             return;
 
         var typeFilter = global ? _config.Filters.ChangedItemTypeFilter : _config.Filters.ModChangedItemTypeFilter;

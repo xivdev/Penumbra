@@ -73,7 +73,7 @@ public static class GroupDeserialization
 
     public static void ReadDefaultContainerFile(SaveService saveService, ModDeserialization.Context context)
     {
-        var file = saveService.FileNames.OptionGroupFile(context.Mod, -1, false);
+        var file = saveService.FileNames.Migration.OptionGroupFile(context.Mod, -1, false);
         if (!File.Exists(file))
         {
             context.Mod.Default.Files.Clear();

@@ -10,7 +10,7 @@ using Penumbra.String.Classes;
 namespace Penumbra.UI.ManagementTab;
 
 public sealed class ReservedFileNotification(
-    Services.MessageService service,
+    Services.PenumbraMessager service,
     UiNavigator navigator)
     : AmassingNotification<(string Path, string Mod)>(service), IService
 {

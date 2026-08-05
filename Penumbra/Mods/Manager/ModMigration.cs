@@ -37,8 +37,8 @@ public static partial class ModMigration
         if (fileVersion > 1)
             return false;
 
-        if (!saveService.FileNames.GetOptionGroupFiles(mod).All(g => GroupRegex().IsMatch(g.Name)))
-            foreach (var (index, group) in saveService.FileNames.GetOptionGroupFiles(mod).Index().ToArray())
+        if (!saveService.FileNames.Migration.GetOptionGroupFiles(mod).All(g => GroupRegex().IsMatch(g.Name)))
+            foreach (var (index, group) in saveService.FileNames.Migration.GetOptionGroupFiles(mod).Index().ToArray())
             {
                 var newName = GroupStartRegex().Replace(group.Name, $"group_{index + 1:D3}_");
                 try

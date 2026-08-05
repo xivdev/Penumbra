@@ -46,14 +46,14 @@ public unsafe class RenderTargetHdrEnabler : Luna.IService, IDisposable
                 interop.HookFromAddress<RenderTargetManagerInitializeFunc>(initializeAddress, RenderTargetManagerInitializeDetour);
             _createTexture2D = interop.HookFromAddress<CreateTexture2DFunc>(createAddress, CreateTexture2DDetour);
 
-            if (HdrModeSupported && config.HdrRenderTargets && !HookOverrides.Instance.PostProcessing.RenderTargetManagerInitialize)
+            if (HdrModeSupported && config.Advanced.HdrRenderTargets && !HookOverrides.Instance.PostProcessing.RenderTargetManagerInitialize)
                 _renderTargetManagerInitialize.Enable();
         }
 
         _share = pi.GetOrCreateData("Penumbra.RenderTargetHDR.V1", () =>
         {
             bool? waitForPlugins = dalamudConfig.GetDalamudConfig(DalamudConfigService.WaitingForPluginsOption, out bool s) ? s : null;
-            return new Tuple<bool?, bool, bool, int[], bool[]>(waitForPlugins, config.HdrRenderTargets,
+            return new Tuple<bool?, bool, bool, int[], bool[]>(waitForPlugins, config.Advanced.HdrRenderTargets,
                 !HookOverrides.Instance.PostProcessing.RenderTargetManagerInitialize, [0], [false]);
         });
         ++_share.Item4[0];
@@ -101,7 +101,7 @@ public unsafe class RenderTargetHdrEnabler : Luna.IService, IDisposable
         _createTexture2D!.Enable();
         _share.Item5[0]       = true;
         _textureIndices.Value = new TextureIndices(0, 0);
-        _textures.Value       = _config.DebugMode ? [] : null;
+        _textures.Value       = _config.Advanced.DebugMode ? [] : null;
         try
         {
             return _renderTargetManagerInitialize!.Original(@this);

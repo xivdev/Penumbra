@@ -226,10 +226,10 @@ public sealed class ModMerger : IDisposable, IConstructedService
         var (option, optionCreated) = _groupEditor.FindOrAddOption(group!, optionName, SaveType.None);
         if (optionCreated)
             _createdOptions.Add(option!);
-        var dir = ModCreator.NewOptionDirectory(MergeToMod!.ModPath, groupName, _config.ReplaceNonAsciiOnImport);
+        var dir = ModCreator.NewOptionDirectory(MergeToMod!.ModPath, groupName, _config.Io.ReplaceNonAsciiOnImport);
         if (!dir.Exists)
             _createdDirectories.Add(dir.FullName);
-        dir = ModCreator.NewOptionDirectory(dir, optionName, _config.ReplaceNonAsciiOnImport);
+        dir = ModCreator.NewOptionDirectory(dir, optionName, _config.Io.ReplaceNonAsciiOnImport);
         if (!dir.Exists)
             _createdDirectories.Add(dir.FullName);
         CopyFiles(dir);

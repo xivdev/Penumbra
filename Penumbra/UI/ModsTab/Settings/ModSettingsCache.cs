@@ -13,7 +13,7 @@ namespace Penumbra.UI.ModsTab.Settings;
 public sealed class ModSettingsCache : BasicCache
 {
     private readonly        ModSelection        _selection;
-    private readonly        Configuration       _config;
+    private readonly        UiConfig            _config;
     private readonly        CommunicatorService _communicator;
     private readonly unsafe Im.Native.Storage*  _storage;
 
@@ -43,7 +43,7 @@ public sealed class ModSettingsCache : BasicCache
     public bool    DisplayDirty = true;
     public bool    DrawDirty    = true;
 
-    public unsafe ModSettingsCache(ModSelection selection, Configuration config, CommunicatorService communicator, Im.StateStorage storage)
+    public unsafe ModSettingsCache(ModSelection selection, UiConfig config, CommunicatorService communicator, Im.StateStorage storage)
     {
         _selection    = selection;
         _config       = config;
@@ -288,8 +288,8 @@ public sealed class ModSettingsCache : BasicCache
         WidestLabel = 0;
         WidestCombo = 0;
         UpdateVisibilities(context);
-        if (WidestLabel > _config.Ui.ModSettingMaximumExtendLabelWidth * Im.Style.GlobalScale)
-            WidestLabel = _config.Ui.ModSettingMaximumExtendLabelWidth * Im.Style.GlobalScale;
+        if (WidestLabel > _config.ModSettingMaximumExtendLabelWidth * Im.Style.GlobalScale)
+            WidestLabel = _config.ModSettingMaximumExtendLabelWidth * Im.Style.GlobalScale;
         DrawDirty = true;
     }
 
@@ -440,11 +440,11 @@ public sealed class ModSettingsCache : BasicCache
         _pages.Clear();
         _orderedGroups.Clear();
         ScaledSpacing   =  Im.Style.ItemSpacing;
-        ScaledSpacing.Y *= _config.Ui.ModSettingItemSpacingFactor;
-        LineWidth       =  _config.Ui.ModSettingLineScale * Im.Style.GlobalScale;
-        BorderWidth     =  _config.Ui.ModSettingBorderScale * Im.Style.GlobalScale;
-        TextAlignment   =  _config.Ui.ModSettingLabelAlignment;
-        ComboAlignment  =  _config.Ui.ModSettingComboAlignment;
+        ScaledSpacing.Y *= _config.ModSettingItemSpacingFactor;
+        LineWidth       =  _config.ModSettingLineScale * Im.Style.GlobalScale;
+        BorderWidth     =  _config.ModSettingBorderScale * Im.Style.GlobalScale;
+        TextAlignment   =  _config.ModSettingLabelAlignment;
+        ComboAlignment  =  _config.ModSettingComboAlignment;
         CenterSpacing   =  2 * Im.Style.ItemSpacing.X;
         Height          =  Im.Style.FrameHeight;
         Indentation     =  Height + Im.Style.ItemInnerSpacing.X;

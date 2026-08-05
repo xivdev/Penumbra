@@ -74,37 +74,66 @@ public class PenumbraChangelog : IUiService
     private static void Add1_7_0_0(Changelog log)
         => log.NextVersion("Version 1.7.0.0"u8)
             .RegisterImportant("When updating to this version, all installed mods will migrate to a new meta version."u8)
-            .RegisterEntry("This version gets rid of the group- and default option JSON files and instead stores all this information in the meta.json again."u8, 1)
-            .RegisterEntry("The old files should be moved to backups, there should also be a permanent archive with all JSONs from your mods be created beforehand in case of any errors."u8, 1)
+            .RegisterEntry(
+                "This version gets rid of the group- and default option JSON files and instead stores all this information in the meta.json again."u8,
+                1)
+            .RegisterEntry(
+                "The old files should be moved to backups, there should also be a permanent archive with all JSONs from your mods be created beforehand in case of any errors."u8,
+                1)
             .RegisterHighlight("All mods will be supplied stable GUID identifiers, and every option group and option will also get a GUID."u8)
-            .RegisterEntry("While the mod GUID is currently unused, when mod creators establish stable identifiers for their mods, they could be use to verify dependencies or similar later on."u8, 1)
+            .RegisterEntry(
+                "While the mod GUID is currently unused, when mod creators establish stable identifiers for their mods, they could be use to verify dependencies or similar later on."u8,
+                1)
             .RegisterEntry("The option GUIDs are already used within a single mod for several new features."u8, 1)
             .RegisterHighlight("Mod Creators have several new very versatile options:"u8)
-            .RegisterEntry("Option Groups now respect the numerical 'Page' entry from TexTools imports (and it can of course be set in Penumbra, too)."u8, 1)
-            .RegisterEntry("If there is more than one page with actual visible options, pages are displayed as sub-tabs in the Settings tab."u8, 2)
-            .RegisterEntry("By default, Pages are named 'Page #', but you can assign custom names to the numerical values in Group Editing."u8, 2)
+            .RegisterEntry(
+                "Option Groups now respect the numerical 'Page' entry from TexTools imports (and it can of course be set in Penumbra, too)."u8,
+                1)
+            .RegisterEntry("If there is more than one page with actual visible options, pages are displayed as sub-tabs in the Settings tab."u8,
+                2)
+            .RegisterEntry("By default, Pages are named 'Page #', but you can assign custom names to the numerical values in Group Editing."u8,
+                2)
             .RegisterEntry("You can choose whether pages are displayed as tabs or via collapsing headers in the settings."u8, 2)
-            .RegisterEntry("Option Groups can now be parented to other Groups or Options, causing them to be displayed right below said Group or Option."u8, 1)
-            .RegisterEntry("There are several layout options when using parenting - you can choose to indent the group or not, and you can choose whether to show the group header or not."u8, 2)
-            .RegisterEntry("All Group Headers with options or other groups parented to them can now be collapsed - and groups can be set to be collapsed by default."u8, 1)
+            .RegisterEntry(
+                "Option Groups can now be parented to other Groups or Options, causing them to be displayed right below said Group or Option."u8,
+                1)
+            .RegisterEntry(
+                "There are several layout options when using parenting - you can choose to indent the group or not, and you can choose whether to show the group header or not."u8,
+                2)
+            .RegisterEntry(
+                "All Group Headers with options or other groups parented to them can now be collapsed - and groups can be set to be collapsed by default."u8,
+                1)
             .RegisterHighlight("Entire Groups and single Options can have arbitrary conditions on settings within this mod assigned."u8, 1)
-            .RegisterEntry("If conditions are not fulfilled, the Option or Group will not apply (regardless of its settings), and will either not display at all, or display as disabled, depending on settings."u8, 2)
-            .RegisterEntry("Additionally, Options can have one of 8 (user-, not creator-defined) colors assigned, and can be set to add a separator line after them."u8, 1)
-            .RegisterHighlight("To support all these new options, the Settings tab UI has been changed considerably. I would like some feedback on how to improve the display here."u8)
-            .RegisterEntry("One consequence is that, barring parenting or pages, groups are now always displayed in the correct order, not first filtered for their display type."u8, 1)
-            .RegisterHighlight("Hostile NPCs like those spawned by quests are no longer considered by Ownership settings unless a separate setting is enabled."u8)
-            .RegisterHighlight("The file watcher for auto import of mods can now be set to peek into archives, recognize mod archives inside those archives, and install the packed mods (thanks Stoia and Ny!)."u8)
+            .RegisterEntry(
+                "If conditions are not fulfilled, the Option or Group will not apply (regardless of its settings), and will either not display at all, or display as disabled, depending on settings."u8,
+                2)
+            .RegisterEntry(
+                "Additionally, Options can have one of 8 (user-, not creator-defined) colors assigned, and can be set to add a separator line after them."u8,
+                1)
+            .RegisterHighlight(
+                "To support all these new options, the Settings tab UI has been changed considerably. I would like some feedback on how to improve the display here."u8)
+            .RegisterEntry(
+                "One consequence is that, barring parenting or pages, groups are now always displayed in the correct order, not first filtered for their display type."u8,
+                1)
+            .RegisterHighlight(
+                "Hostile NPCs like those spawned by quests are no longer considered by Ownership settings unless a separate setting is enabled."u8)
+            .RegisterHighlight(
+                "The file watcher for auto import of mods can now be set to peek into archives, recognize mod archives inside those archives, and install the packed mods (thanks Stoia and Ny!)."u8)
             .RegisterEntry("The Enable/Disable/Inherit All Descendants context menu buttons now have misclick prevention."u8)
             .RegisterEntry("The popup to edit option descriptions is now resizable."u8)
-            .RegisterHighlight("Configurable colors in Penumbra can now be set to reference other colors (like ImGui or Dalamud colors, or other Penumbra colors). Some colors do this in their default options."u8)
-            .RegisterEntry("Color configuration should be migrated and anything that was left on the old default values should be migrated to new defaults, and into a different file."u8, 1)
+            .RegisterHighlight(
+                "Configurable colors in Penumbra can now be set to reference other colors (like ImGui or Dalamud colors, or other Penumbra colors). Some colors do this in their default options."u8)
+            .RegisterEntry(
+                "Color configuration should be migrated and anything that was left on the old default values should be migrated to new defaults, and into a different file."u8,
+                1)
             .RegisterEntry("The On-Screen tab now has separator lines after top-level entry groups, i.e. approximately per slot."u8)
             .RegisterEntry("Added several plugins, and all plugins that call specific IPC functions, to the support info blob."u8)
             .RegisterEntry("The advanced editing model tab now uses 0-based indexing instead of 1-based, by popular demand."u8)
             .RegisterEntry("Limited the number of concurrent mod installation notifications when using the file system watcher to 3."u8)
             .RegisterEntry("Moved several deserialization and serialization functions to System.Text.JSON for considerable speed increases."u8)
             .RegisterEntry("Use a new recovery strategy for syntactically broken JSON files in several situations (Thanks Ny!)"u8)
-            .RegisterEntry("The 'Failed to Load Resource' log warning will no longer trigger on the deliberately failing path used by EasyEyes."u8)
+            .RegisterEntry(
+                "The 'Failed to Load Resource' log warning will no longer trigger on the deliberately failing path used by EasyEyes."u8)
             .RegisterEntry("Added safeguards against some import vulnerabilities concerning out-of-folder files."u8)
             .RegisterEntry("Fixed an issue with temporary settings breaking when options are changed."u8)
             .RegisterEntry("Fixed several issues with the automatic backup functionality."u8)
@@ -115,21 +144,26 @@ public class PenumbraChangelog : IUiService
             .RegisterEntry("Fixed an issue with the folder tree lines in the mod selector."u8)
             .RegisterEntry("Fixed an issue with unclamped values when editing color tables."u8)
             .RegisterEntry("Fixed an issue with the Move to Quick Folder button selection."u8)
-            .RegisterHighlight("Added a management tab for broken mods that can not correctly load. (1.6.1.9)"u8 )
-            .RegisterEntry("Fixed an issue with folder separators within mod archives. (1.6.1.9)"u8 )
-            .RegisterEntry("Specific animations will now correctly associate to characters. (1.6.1.7)"u8 )
-            .RegisterEntry("Folders and mods can now be renamed when only capitalization changes. (1.6.1.6)"u8 )
-            .RegisterEntry("Mods will not accidentally import more than once in quick succession. (1.6.1.6)"u8 )
-            .RegisterEntry("Backup files are now excluded from PMP exports. (1.6.1.6)"u8 );
+            .RegisterHighlight("Added a management tab for broken mods that can not correctly load. (1.6.1.9)"u8)
+            .RegisterEntry("Fixed an issue with folder separators within mod archives. (1.6.1.9)"u8)
+            .RegisterEntry("Specific animations will now correctly associate to characters. (1.6.1.7)"u8)
+            .RegisterEntry("Folders and mods can now be renamed when only capitalization changes. (1.6.1.6)"u8)
+            .RegisterEntry("Mods will not accidentally import more than once in quick succession. (1.6.1.6)"u8)
+            .RegisterEntry("Backup files are now excluded from PMP exports. (1.6.1.6)"u8);
 
     private static void Add1_6_1_0(Changelog log)
         => log.NextVersion("Version 1.6.1.0"u8)
             .RegisterHighlight("Penumbra has been updated for game version 7.50 and Dalamud API 15."u8)
             .RegisterEntry("The HDR launch option had to be disabled until a way to make it work more robustly can be found."u8, 1)
             .RegisterHighlight("Added some new features to the mod filesystem:"u8)
-            .RegisterEntry("You can now add separator lines to your mod filesystem. You can edit these lines by right-clicking them to choose their color, whether they are sorted among folders or files, and how they are sorted."u8, 1)
-            .RegisterEntry("The context menu for folders in the mod filesystem has been slightly edited. Using the 'Edit Folder' sub menu you can now specify individual colors and sort-modes for specific folders only."u8, 1)
-            .RegisterEntry("Added a default-off setting to show all four theoretically supported dye channels in advanced material editing. The two additional channels will only be useful in the material editor itself for the time being, but there might be support implemented for them in Glamourer at a later time (Thanks Ny!)."u8)
+            .RegisterEntry(
+                "You can now add separator lines to your mod filesystem. You can edit these lines by right-clicking them to choose their color, whether they are sorted among folders or files, and how they are sorted."u8,
+                1)
+            .RegisterEntry(
+                "The context menu for folders in the mod filesystem has been slightly edited. Using the 'Edit Folder' sub menu you can now specify individual colors and sort-modes for specific folders only."u8,
+                1)
+            .RegisterEntry(
+                "Added a default-off setting to show all four theoretically supported dye channels in advanced material editing. The two additional channels will only be useful in the material editor itself for the time being, but there might be support implemented for them in Glamourer at a later time (Thanks Ny!)."u8)
             .RegisterEntry("Importing archives now replaces invalid symbols with underscores instead of removing them."u8)
             .RegisterEntry("Made the new meta edit tabs more obviously tabs."u8)
             .RegisterEntry("Fixed some inverted caret icons."u8)
@@ -1294,20 +1328,11 @@ public class PenumbraChangelog : IUiService
         => log.NextVersion(""u8);
 
     private (int, ChangeLogDisplayType) ConfigData()
-        => (_config.Ephemeral.LastSeenVersion, _config.ChangeLogDisplayType);
+        => (_config.Ephemeral.LastSeenVersion, _config.Main.ChangeLogDisplayType);
 
     private void Save(int version, ChangeLogDisplayType type)
     {
-        if (_config.Ephemeral.LastSeenVersion != version)
-        {
-            _config.Ephemeral.LastSeenVersion = version;
-            _config.Ephemeral.Save();
-        }
-
-        if (_config.ChangeLogDisplayType != type)
-        {
-            _config.ChangeLogDisplayType = type;
-            _config.Save();
-        }
+        _config.Ephemeral.LastSeenVersion = version;
+        _config.Main.ChangeLogDisplayType = type;
     }
 }

@@ -26,14 +26,15 @@ public sealed unsafe class AttributeHook : EventBase<AttributeHook.Arguments, At
     }
 
     private readonly CollectionResolver _resolver;
-    private readonly Configuration      _config;
+    private readonly AdvancedConfig     _config;
 
-    public AttributeHook(LunaLogger log, HookManager hooks, Configuration config, CollectionResolver resolver)
+    public AttributeHook(LunaLogger log, HookManager hooks, AdvancedConfig config, CollectionResolver resolver)
         : base("Update Model Attributes", log)
     {
-        _config   = config;
-        _resolver = resolver;
-        _task     = hooks.CreateHook<Delegate>(Name, Sigs.UpdateAttributes, Detour, config.EnableCustomShapes);
+        _config                    =  config;
+        _resolver                  =  resolver;
+        _task                      =  hooks.CreateHook<Delegate>(Name, Sigs.UpdateAttributes, Detour, config.EnableCustomShapes);
+        config.CustomShapesChanged += OnCustomShapesChange;
     }
 
     private readonly Task<Hook<Delegate>?> _task;
@@ -42,24 +43,10 @@ public sealed unsafe class AttributeHook : EventBase<AttributeHook.Arguments, At
         => _task.Result?.Address ?? nint.Zero;
 
     public void Enable()
-        => SetState(true);
+        => _task.Result?.Enable();
 
     public void Disable()
-        => SetState(false);
-
-    public void SetState(bool enabled)
-    {
-        if (_config.EnableCustomShapes == enabled)
-            return;
-
-        _config.EnableCustomShapes = enabled;
-        _config.Save();
-        if (enabled)
-            _task.Result?.Enable();
-        else
-            _task.Result?.Disable();
-    }
-
+        => _task.Result?.Disable();
 
     public Task Awaiter
         => _task;
@@ -82,5 +69,16 @@ public sealed unsafe class AttributeHook : EventBase<AttributeHook.Arguments, At
     public readonly record struct Arguments(Actor Character, Model Human, ModCollection Collection);
 
     protected override void Dispose(bool disposing)
-        => _task.Result?.Dispose();
+    {
+        _config.CustomShapesChanged -= OnCustomShapesChange;
+        _task.Result?.Dispose();
+    }
+
+    private void OnCustomShapesChange(bool newValue, bool _)
+    {
+        if (newValue)
+            Enable();
+        else
+            Disable();
+    }
 }

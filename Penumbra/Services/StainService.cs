@@ -236,7 +236,7 @@ public class StainService : IService
         selection[3] = StainCombo4.CurrentSelection.Id;
     }
 
-    public static int GetUiChannelCount(Configuration configuration)
+    public static int GetUiChannelCount(EditingConfig configuration)
         => configuration.AllDyeChannels ? ChannelCount : VanillaChannelCount;
     
     /// <summary> Loads a STM file. Opportunistically attempts to re-use the file already read by the game, with Lumina fallback. </summary>

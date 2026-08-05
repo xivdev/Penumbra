@@ -7,7 +7,7 @@ public sealed class CollectionFilter : TextFilterBase<CollectionSelector.Entry>,
 {
     public CollectionFilter(Configuration config)
     {
-        if (config.RememberCollectionFilters)
+        if (config.Ui.RememberCollectionFilters)
             Set(config.Filters.CollectionFilter);
         FilterChanged += () => config.Filters.CollectionFilter = Text;
     }

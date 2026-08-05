@@ -5,7 +5,13 @@ using Penumbra.Mods.Manager;
 
 namespace Penumbra.UI.ManagementTab;
 
-public sealed class TextureOptimizationTab(ModManager mods, TextureManager textures, UiNavigator navigator, Configuration config, TextureOptimization optimization, ManagementLog<TextureOptimization> log)
+public sealed class TextureOptimizationTab(
+    ModManager mods,
+    TextureManager textures,
+    UiNavigator navigator,
+    EditingConfig config,
+    TextureOptimization optimization,
+    ManagementLog<TextureOptimization> log)
     : ITab<ManagementTabType>
 {
     private readonly TextureOptimizationTable _table = new(mods, textures, optimization, navigator, config, log);

@@ -482,7 +482,7 @@ public static class EquipmentSwap
         }
 
         var mtrl = FileSwap.CreateSwap(manager, ResourceType.Mtrl, redirections, pathFrom, pathTo);
-        if (manager.Config.IncludeShpkInSwap)
+        if (manager.Config.Io.IncludeShpkInSwap)
         {
             var shpk = CreateShader(manager, redirections, ref mtrl.AsMtrl()!.ShaderPackage.Name, ref mtrl.DataWasChanged);
             mtrl.ChildSwaps.Add(shpk);

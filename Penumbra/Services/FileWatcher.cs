@@ -14,7 +14,7 @@ public sealed class FileWatcher : IDisposable, IService
     private readonly ConcurrentDictionary<string, long> _ignored           = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, long> _extractedArchives = new(StringComparer.OrdinalIgnoreCase);
     private readonly ModImportManager                   _modImportManager;
-    private readonly MessageService                     _messageService;
+    private readonly PenumbraMessager                     _messageService;
     private readonly Configuration                      _config;
     private readonly ArchiveExtractionNotification      _archiveExtractionNotification;
 
@@ -53,7 +53,7 @@ public sealed class FileWatcher : IDisposable, IService
     /// <summary>
     /// Subdirectory under the system temp directory used for extracted archive entries.
     /// </summary>
-    public FileWatcher(ModImportManager modImportManager, MessageService messageService, Configuration config,
+    public FileWatcher(ModImportManager modImportManager, PenumbraMessager messageService, Configuration config,
         ArchiveExtractionNotification archiveExtractionNotification)
     {
         _modImportManager              = modImportManager;

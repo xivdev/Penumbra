@@ -38,9 +38,8 @@ public sealed class MoveToQuickMoveFoldersButtons(ModFileSystemDrawer drawer) : 
         var       currentPath = data.FullPath;
         using var id          = new Im.IdDisposable();
 
-        MoveDataEntry(data, currentName, currentPath, drawer.Config.QuickMoveFolder1, id);
-        MoveDataEntry(data, currentName, currentPath, drawer.Config.QuickMoveFolder2, id);
-        MoveDataEntry(data, currentName, currentPath, drawer.Config.QuickMoveFolder3, id);
+        for (var i = 0; i < UiConfig.NumQuickMoveFolders; ++i)
+            MoveDataEntry(data, currentName, currentPath, drawer.Config.Ui.QuickMoveFolder(i), id);
         return false;
     }
 }

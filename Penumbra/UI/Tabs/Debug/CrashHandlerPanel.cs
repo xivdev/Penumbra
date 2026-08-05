@@ -41,7 +41,7 @@ public class CrashHandlerPanel(CrashHandlerService service, Configuration config
             return;
 
         table.DrawColumn("Enabled"u8);
-        table.DrawColumn($"{config.UseCrashHandler}");
+        table.DrawColumn($"{config.Advanced.UseCrashHandler}");
         table.DrawColumn("Copied Executable Path"u8);
         table.DrawColumn(service.CopiedExe);
         table.DrawColumn("Original Executable Path"u8);

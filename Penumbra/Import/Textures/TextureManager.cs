@@ -41,7 +41,7 @@ public sealed class TextureManager(
         if (_auxDevice.Valid)
         {
             _auxDevice.Dispose();
-            configuration.AuxiliaryDeviceModeChanged -= OnAuxiliaryDeviceModeChanged;
+            configuration.Advanced.AuxiliaryDeviceModeChanged -= OnAuxiliaryDeviceModeChanged;
         }
     }
 
@@ -510,13 +510,13 @@ public sealed class TextureManager(
         if (_auxDevice.Valid && newMode is not AuxiliaryDeviceMode.Singleton)
         {
             _auxDevice.Dispose();
-            configuration.AuxiliaryDeviceModeChanged -= OnAuxiliaryDeviceModeChanged;
+            configuration.Advanced.AuxiliaryDeviceModeChanged -= OnAuxiliaryDeviceModeChanged;
         }
     }
 
     private unsafe ComPtr<ID3D11Device> GetAuxiliaryDevice()
     {
-        switch (configuration.AuxiliaryDeviceMode)
+        switch (configuration.Advanced.AuxiliaryDeviceMode)
         {
             case AuxiliaryDeviceMode.Transient:
                 var clone = new ComPtr<ID3D11Device>();
@@ -525,7 +525,7 @@ public sealed class TextureManager(
             case AuxiliaryDeviceMode.Singleton:
                 if (!_auxDevice.Valid)
                 {
-                    configuration.AuxiliaryDeviceModeChanged += OnAuxiliaryDeviceModeChanged;
+                    configuration.Advanced.AuxiliaryDeviceModeChanged += OnAuxiliaryDeviceModeChanged;
                     CloneDevice((ID3D11Device*)uiBuilder.DeviceHandle, _auxDevice.GetAddressOf());
                 }
 
@@ -536,7 +536,7 @@ public sealed class TextureManager(
     }
 
     private unsafe bool CanUseAuxiliaryDeviceImmediately()
-        => configuration.AuxiliaryDeviceMode is not AuxiliaryDeviceMode.Borrowed
+        => configuration.Advanced.AuxiliaryDeviceMode is not AuxiliaryDeviceMode.Borrowed
          || framework.IsInFrameworkUpdateThread && Im.Context.Pointer->WithinFrameScope;
 
     private static unsafe void CloneDevice(ID3D11Device* device, ID3D11Device** clone)

@@ -100,7 +100,7 @@ public static class ModDeserialization
             return;
 
         GroupDeserialization.ReadDefaultContainerFile(files, context);
-        foreach (var groupFile in files.FileNames.GetOptionGroupFiles(context.Mod))
+        foreach (var groupFile in files.FileNames.Migration.GetOptionGroupFiles(context.Mod))
         {
             if (GroupDeserialization.ReadGroupFile(files, context, groupFile) is { } group)
                 context.Mod.AddGroup(group, groupFile.FullName);

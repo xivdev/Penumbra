@@ -1,6 +1,5 @@
 using Luna;
 using Penumbra.Communication;
-using Penumbra.Files;
 using Penumbra.GameData.Data;
 using Penumbra.Mods.Manager.OptionEditor;
 using Penumbra.Services;
@@ -10,33 +9,32 @@ namespace Penumbra.Mods.Manager;
 
 public class ModCacheManager : IDisposable, IRequiredService
 {
-    private readonly Configuration        _config;
+    private readonly UiConfig             _config;
     private readonly CommunicatorService  _communicator;
     private readonly ObjectIdentification _identifier;
     private readonly ModStorage           _modManager;
-    private readonly SaveService          _saveService;
     private          bool                 _updatingItems;
 
-    public ModCacheManager(CommunicatorService communicator, ObjectIdentification identifier, ModStorage modStorage, Configuration config,
-        SaveService saveService)
+    public ModCacheManager(CommunicatorService communicator, ObjectIdentification identifier, ModStorage modStorage, UiConfig config)
     {
         _communicator = communicator;
         _identifier   = identifier;
         _modManager   = modStorage;
         _config       = config;
-        _saveService  = saveService;
 
         _communicator.ModOptionChanged.Subscribe(OnModOptionChange, ModOptionChanged.Priority.ModCacheManager);
         _communicator.ModPathChanged.Subscribe(OnModPathChange, ModPathChanged.Priority.ModCacheManager);
         _communicator.ModDataChanged.Subscribe(OnModDataChange, ModDataChanged.Priority.ModCacheManager);
         _communicator.ModDiscoveryFinished.Subscribe(OnModDiscoveryFinished, ModDiscoveryFinished.Priority.ModCacheManager);
-        
+
         identifier.Awaiter.ContinueWith(_ => OnIdentifierCreation(), TaskScheduler.Default);
         OnModDiscoveryFinished();
+        _config.HideMachinistOffhandChanged += OnHideMachinistOffhandChange;
     }
 
     public void Dispose()
     {
+        _config.HideMachinistOffhandChanged -= OnHideMachinistOffhandChange;
         _communicator.ModOptionChanged.Unsubscribe(OnModOptionChange);
         _communicator.ModPathChanged.Unsubscribe(OnModPathChange);
         _communicator.ModDataChanged.Unsubscribe(OnModDataChange);
@@ -140,6 +138,22 @@ public class ModCacheManager : IDisposable, IRequiredService
 
         mod.LowerChangedItemsString = string.Join("\0", mod.ChangedItems.Keys.Select(k => k.ToLowerInvariant()));
         ++mod.LastChangedItemsUpdate;
+    }
+
+    private void OnHideMachinistOffhandChange(bool newValue, bool _)
+    {
+        if (_updatingItems)
+            return;
+
+        if (newValue)
+            Parallel.ForEach(_modManager, m =>
+            {
+                m.ChangedItems.RemoveMachinistOffhands();
+                m.LowerChangedItemsString = string.Join("\0", m.ChangedItems.Keys.Select(k => k.ToLowerInvariant()));
+                ++m.LastChangedItemsUpdate;
+            });
+        else
+            OnModDiscoveryFinished();
     }
 
     private static void UpdateCounts(Mod mod)

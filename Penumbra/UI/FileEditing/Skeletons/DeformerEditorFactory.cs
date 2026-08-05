@@ -4,9 +4,7 @@ using Penumbra.GameData.Files;
 
 namespace Penumbra.UI.FileEditing.Skeletons;
 
-public sealed class DeformerEditorFactory(
-    IDataManager gameData,
-    Configuration configuration) : BaseFileEditorFactory(gameData), Luna.IUiService
+public sealed class DeformerEditorFactory(IDataManager gameData) : BaseFileEditorFactory(gameData), Luna.IUiService
 {
     public override string Identifier
         => typeof(DeformerEditor).FullName!;
@@ -22,5 +20,5 @@ public sealed class DeformerEditorFactory(
 
     public override IFileEditor CreateForData(ReadOnlySpan<byte> data, string path, bool writable, string? gamePath,
         FileEditingContext? context)
-        => new DeformerEditor(configuration, new PbdFile(data), path);
+        => new DeformerEditor(new PbdFile(data), path);
 }

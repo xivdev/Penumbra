@@ -1,14 +1,15 @@
 using System.Text.Json;
 using Luna;
 using Luna.Generators;
-using Newtonsoft.Json.Linq;
 using Penumbra.Files;
+using Penumbra.Services;
 
 namespace Penumbra;
 
-public sealed partial class BehaviorConfig(SaveService saveService, MessageService messager)
-    : ConfigurationFile<FilenameService>(saveService, messager)
+public sealed partial class BehaviorConfig : ConfigurationFile<FilenameService>
 {
+    #region Mod Application
+
     [ConfigProperty(EventName = "AutoSelectCollectionChanged")]
     private bool _autoSelectCollection = false;
 
@@ -20,6 +21,10 @@ public sealed partial class BehaviorConfig(SaveService saveService, MessageServi
 
     [ConfigProperty]
     private bool _useNoModsInInspect = false;
+
+    #endregion
+
+    #region Collection Association
 
     [ConfigProperty]
     private bool _useCharacterCollectionInMainWindow = true;
@@ -39,12 +44,19 @@ public sealed partial class BehaviorConfig(SaveService saveService, MessageServi
     [ConfigProperty]
     private bool _useOwnerForHostiles = false;
 
+    /// <inheritdoc/>
+    public BehaviorConfig(SaveService saveService, PenumbraMessager messager)
+        : base(saveService, messager)
+        => Load();
+
+    #endregion
+
     public override int CurrentVersion
         => 100;
 
     protected override void AddData(Utf8JsonWriter j)
     {
-        using (var tempObject = j.TemporaryObject("Mod Application"u8))
+        using (var tempObject = j.TemporaryObject("ModApplication"u8))
         {
             tempObject.WriteIfNot("AutoSelectCollection"u8,           AutoSelectCollection,           false);
             tempObject.WriteIfNot("ShowModsInLobby"u8,                ShowModsInLobby,                true);
@@ -52,7 +64,7 @@ public sealed partial class BehaviorConfig(SaveService saveService, MessageServi
             tempObject.WriteIfNot("UseNoModsInInspect"u8,             UseNoModsInInspect,             false);
         }
 
-        using (var tempObject = j.TemporaryObject("Collection Association"u8))
+        using (var tempObject = j.TemporaryObject("CollectionAssociation"u8))
         {
             tempObject.WriteIfNot("UseCharacterCollectionInMainWindow"u8, UseCharacterCollectionInMainWindow, true);
             tempObject.WriteIfNot("UseCharacterCollectionsInCards"u8,     UseCharacterCollectionsInCards,     true);
@@ -63,11 +75,29 @@ public sealed partial class BehaviorConfig(SaveService saveService, MessageServi
         }
     }
 
-    protected override void LoadData(JObject j)
+    protected override void LoadData(in JsonElement j)
     {
-        throw new NotImplementedException();
+        if (j.TryReadObject("ModApplication"u8, out var mod))
+        {
+            AutoSelectCollection           = mod.PropertyOrDefault("AutoSelectCollection"u8,           AutoSelectCollection);
+            ShowModsInLobby                = mod.PropertyOrDefault("ShowModsInLobby"u8,                ShowModsInLobby);
+            UseDalamudUiTextureRedirection = mod.PropertyOrDefault("UseDalamudUiTextureRedirection"u8, UseDalamudUiTextureRedirection);
+            UseNoModsInInspect             = mod.PropertyOrDefault("UseNoModsInInspect"u8,             UseNoModsInInspect);
+        }
+
+        if (j.TryReadObject("CollectionAssociation"u8, out var coll))
+        {
+            UseCharacterCollectionInMainWindow =
+                mod.PropertyOrDefault("UseCharacterCollectionInMainWindow"u8, UseCharacterCollectionInMainWindow);
+            UseCharacterCollectionsInCards  = mod.PropertyOrDefault("UseCharacterCollectionsInCards"u8,  UseCharacterCollectionsInCards);
+            UseCharacterCollectionInInspect = mod.PropertyOrDefault("UseCharacterCollectionInInspect"u8, UseCharacterCollectionInInspect);
+            UseCharacterCollectionInTryOn   = mod.PropertyOrDefault("UseCharacterCollectionInTryOn"u8,   UseCharacterCollectionInTryOn);
+            UseOwnerNameForCharacterCollection =
+                mod.PropertyOrDefault("UseOwnerNameForCharacterCollection"u8, UseOwnerNameForCharacterCollection);
+            UseOwnerForHostiles = mod.PropertyOrDefault("UseOwnerForHostiles"u8, UseOwnerForHostiles);
+        }
     }
 
     public override string ToFilePath(FilenameService fileNames)
-        => throw new NotImplementedException();
+        => fileNames.Config.Behavior;
 }

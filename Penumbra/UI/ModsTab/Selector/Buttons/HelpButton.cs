@@ -62,7 +62,7 @@ public sealed class HelpButton(ModFileSystemDrawer drawer) : BaseIconButton<Awes
         Im.BulletText("Middle-click a mod to disable it if it is enabled or enable it if it is disabled."u8);
         indent.Indent();
         Im.BulletText(
-            $"Holding {drawer.Config.DeleteModModifier.ForcedModifier(new DoubleModifier(ModifierHotkey.Control, ModifierHotkey.Shift))} while middle-clicking lets it inherit, discarding settings.");
+            $"Holding {LunaStyle.Modifier.Destructive.Modifier.ForcedModifier(new DoubleModifier(ModifierHotkey.Control, ModifierHotkey.Shift))} while middle-clicking lets it inherit, discarding settings.");
         indent.Unindent();
         Im.BulletText("Right-click a mod to enter its sort order, which is its name by default, possibly with a duplicate number."u8);
         indent.Indent();

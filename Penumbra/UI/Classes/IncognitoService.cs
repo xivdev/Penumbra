@@ -10,7 +10,7 @@ public class IncognitoService(TutorialService tutorial, Configuration config) : 
 
     public void DrawToggle(float width)
     {
-        var hold  = config.IncognitoModifier.IsActive();
+        var hold  = LunaStyle.Modifier.Misclick.Active;
         using (ImStyleBorder.Frame.Push(ColorId.FolderExpanded.Vector))
         {
             var       tt    = IncognitoMode ? "Toggle incognito mode off."u8 : "Toggle incognito mode on."u8;
@@ -23,7 +23,7 @@ public class IncognitoService(TutorialService tutorial, Configuration config) : 
         }
 
         if (!hold)
-            Im.Tooltip.OnHover($"\nHold {config.IncognitoModifier} while clicking to toggle.", HoveredFlags.AllowWhenDisabled, true);
+            Im.Tooltip.OnHover($"\nHold {LunaStyle.Modifier.Misclick} while clicking to toggle.", HoveredFlags.AllowWhenDisabled, true);
 
         tutorial.OpenTutorial(BasicTutorialSteps.Incognito);
     }

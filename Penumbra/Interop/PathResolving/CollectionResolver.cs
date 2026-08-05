@@ -23,7 +23,7 @@ public sealed unsafe class CollectionResolver(
     IGameGui gameGui,
     ActorManager actors,
     CutsceneService cutscenes,
-    Configuration config,
+    BehaviorConfig config,
     CollectionManager collectionManager,
     TempCollectionManager tempCollections,
     DrawObjectState drawObjectState,

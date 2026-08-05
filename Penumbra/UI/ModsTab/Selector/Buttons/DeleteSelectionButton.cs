@@ -22,12 +22,12 @@ public sealed class DeleteSelectionButton(ModFileSystemDrawer drawer) : BaseIcon
 
         Im.Text(anySelected ? "Delete the currently selected mods entirely from your drive\nThis can not be undone."u8 : "No mods selected."u8);
         if (!modifier)
-            Im.Text($"Hold {drawer.Config.DeleteModModifier} while clicking to delete the mods.");
+            Im.Text($"Hold {LunaStyle.Modifier.Destructive} while clicking to delete the mods.");
     }
 
     /// <inheritdoc/>
     public override bool Enabled
-        => drawer.Config.DeleteModModifier.IsActive() && drawer.FileSystem.Selection.DataNodes.Count > 0;
+        => LunaStyle.Modifier.Destructive.Active && drawer.FileSystem.Selection.DataNodes.Count > 0;
 
     /// <inheritdoc/>
     public override void OnClick()

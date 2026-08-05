@@ -8,11 +8,12 @@ namespace Penumbra.Mods.Manager;
 
 public sealed class ModFileSystem : BaseFileSystem, IDisposable, IRequiredService
 {
-    private readonly Configuration       _config;
+    private readonly IoConfig            _config;
     private readonly CommunicatorService _communicator;
     private readonly ModFileSystemSaver  _saver;
 
-    public ModFileSystem(Configuration config, CommunicatorService communicator, SaveService saveService, LunaLogger log, ModStorage modStorage, LocalModDatabase database)
+    public ModFileSystem(IoConfig config, CommunicatorService communicator, SaveService saveService, LunaLogger log, ModStorage modStorage,
+        LocalModDatabase database)
         : base("ModFileSystem", log, true)
     {
         _config       = config;

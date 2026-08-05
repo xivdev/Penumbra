@@ -9,7 +9,7 @@ using Penumbra.Mods;
 
 namespace Penumbra.UI.ManagementTab;
 
-public sealed class FailedModNotification(Services.MessageService service, UiNavigator navigator)
+public sealed class FailedModNotification(Services.PenumbraMessager service, UiNavigator navigator)
     : AmassingNotification<(string Mod, Exception Error)>(service), IService
 {
     public void Add(Mod mod, Exception ex)

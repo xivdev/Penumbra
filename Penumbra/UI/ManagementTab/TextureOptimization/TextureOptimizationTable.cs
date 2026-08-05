@@ -16,7 +16,7 @@ public sealed class TextureOptimizationTable(
     TextureManager textures,
     TextureOptimization optimization,
     UiNavigator navigator,
-    Configuration config,
+    EditingConfig config,
     ManagementLog<TextureOptimization> log)
     : TableBase<TextureOptimizationCacheObject, TextureOptimizationTable.Cache>(new StringU8("##tot"u8),
         new ActionColumn(config, textures, optimization),
@@ -30,23 +30,30 @@ public sealed class TextureOptimizationTable(
         new SolidColorColumn { Label                                               = new StringU8("Color"u8) }
     )
 {
-    
-
     protected override void PreDraw(in Cache cache)
     {
         Im.Item.SetNextWidthScaled(100);
-        ImEx.LogarithmicInput("Ignore Textures Below This Size"u8, FormattingFunctions.HumanReadableSize(config.TextureOptimization.LowerSizeLimit), ref config.TextureOptimization.LowerSizeLimit);
+        if (ImEx.LogarithmicInput("Ignore Textures Below This Size"u8, FormattingFunctions.HumanReadableSize(config.LowerTextureSizeLimit),
+                config.LowerTextureSizeLimit, out var newLowerLimit))
+            config.LowerTextureSizeLimit = newLowerLimit;
         Im.Item.SetNextWidthScaled(100);
-        ImEx.LogarithmicInput("Ignore Textures With Smaller Dimensions"u8, ref config.TextureOptimization.SmallDimensionLimit);
+        if (ImEx.LogarithmicInput("Ignore Textures With Smaller Dimensions"u8, config.SmallTextureDimensionLimit, out var newSmallLimit, 0))
+            config.SmallTextureDimensionLimit = newSmallLimit;
         Im.Item.SetNextWidthScaled(100);
-        ImEx.LogarithmicInput("Show Textures With Larger Dimensions, Even If Compressed"u8, ref config.TextureOptimization.LargeDimensionLimit);
+        if (ImEx.LogarithmicInput("Show Textures With Larger Dimensions, Even If Compressed"u8, config.LargeTextureDimensionLimit,
+                out var newLargeLimit, 0))
+            config.LargeTextureDimensionLimit = newLargeLimit;
         cache.DrawScanButtons();
         LunaStyle.DrawSeparator();
-        Im.Checkbox("Create Backups Before Destructive Operations"u8, ref config.TextureOptimization.CreateBackups);
-        Im.Tooltip.OnHover("When this is enabled, before any texture is overwritten, it will be moved to its path with a '.bak' appended, overwriting previously existing backup files of the same name."u8);
+        if (Im.Checkbox("Create Backups Before Destructive Operations"u8, config.CreateTextureBackups))
+            config.CreateTextureBackups ^= true;
+        Im.Tooltip.OnHover(
+            "When this is enabled, before any texture is overwritten, it will be moved to its path with a '.bak' appended, overwriting previously existing backup files of the same name."u8);
         Im.Item.SetNextWidthScaled(100);
-        ImEx.LogarithmicInput("Texture Dimension Restriction"u8, ref config.TextureOptimization.TextureDimensionLimit, 4);
-        Im.Tooltip.OnHover("This is the upper limit for texture dimensions in both directions when using automatic resizing. The texture size will be halved in both dimensions until both directions are less than this or equal to it."u8);
+        if (ImEx.LogarithmicInput("Texture Dimension Restriction"u8, config.TextureDimensionLimit, out var newDimensionLimit, 4))
+            config.TextureDimensionLimit = newDimensionLimit;
+        Im.Tooltip.OnHover(
+            "This is the upper limit for texture dimensions in both directions when using automatic resizing. The texture size will be halved in both dimensions until both directions are less than this or equal to it."u8);
     }
 
     /// <remarks> Implemented in the cache due to use of scanner. </remarks>>
@@ -56,9 +63,9 @@ public sealed class TextureOptimizationTable(
     protected override Cache CreateCache()
         => new(this, config, mods, log);
 
-    public sealed class Cache(TextureOptimizationTable parent, Configuration config, ModManager mods, ManagementLog<TextureOptimization> log)
+    public sealed class Cache(TextureOptimizationTable parent, EditingConfig config, ModManager mods, ManagementLog<TextureOptimization> log)
         : ScannerTabCache<TextureOptimizationCacheObject, OptimizableTexture>(parent,
-            new TextureOptimizationScanner(mods, config.TextureOptimization, log))
+            new TextureOptimizationScanner(mods, config, log))
     {
         protected override TextureOptimizationCacheObject Convert(OptimizableTexture obj)
             => new(obj);
@@ -66,13 +73,13 @@ public sealed class TextureOptimizationTable(
 
     private sealed class ActionColumn : BasicColumn<TextureOptimizationCacheObject>
     {
-        private const    int                      NumButtons = 3;
-        private readonly TextureManager           _textures;
-        private readonly Configuration            _config;
-        private readonly TextureOptimization      _optimization;
-        private          int                      _deleteIndex = -1;
+        private const    int                 NumButtons = 3;
+        private readonly TextureManager      _textures;
+        private readonly EditingConfig       _config;
+        private readonly TextureOptimization _optimization;
+        private          int                 _deleteIndex = -1;
 
-        public ActionColumn(Configuration config, TextureManager textures, TextureOptimization optimization)
+        public ActionColumn(EditingConfig config, TextureManager textures, TextureOptimization optimization)
         {
             _config       =  config;
             _textures     =  textures;
@@ -109,12 +116,12 @@ public sealed class TextureOptimizationTable(
         private void DrawSolidColorButton(in TextureOptimizationCacheObject item, int globalIndex)
         {
             Mod? mod    = null;
-            var  active = _config.IncognitoModifier.IsActive();
+            var  active = LunaStyle.Modifier.Misclick.Active;
             var  color  = item.ScannedObject.SolidColor.Color!.Value;
             Im.Line.SameInner();
             if (ImEx.Icon.Button(LunaStyle.DyeIcon, StringU8.Empty, !active) && item.ScannedObject.Mod.TryGetTarget(out mod))
             {
-                _optimization.ReplaceWithSolidColor(item.ScannedObject.FilePath, mod, color, _config.TextureOptimization.CreateBackups);
+                _optimization.ReplaceWithSolidColor(item.ScannedObject.FilePath, mod, color, _config.CreateTextureBackups);
                 _deleteIndex = globalIndex;
             }
 
@@ -126,21 +133,21 @@ public sealed class TextureOptimizationTable(
                 else
                     Im.Text($"Replace this file with a 1x1 texture of color {color}.");
                 if (!active)
-                    Im.Text($"\nHold {_config.IncognitoModifier} to replace.");
+                    Im.Text($"\nHold {LunaStyle.Modifier.Misclick} to replace.");
             }
         }
 
         private void DrawCompressionButton(in TextureOptimizationCacheObject item, int globalIndex)
         {
             Mod? mod       = null;
-            var  active    = _config.DeleteModModifier.IsActive();
+            var  active    = LunaStyle.Modifier.Destructive.Active;
             var  otherTask = item.ResizeTask is not null && !item.ResizeTask.IsCompleted;
             Im.Line.SameInner();
             if (item.CompressionTask is null)
             {
                 if (ImEx.Icon.Button(LunaStyle.CompressIcon, StringU8.Empty, !active || otherTask)
                  && item.ScannedObject.Mod.TryGetTarget(out mod))
-                    item.CompressionTask = _optimization.Compress(item.ScannedObject.FilePath, mod, _config.TextureOptimization.CreateBackups);
+                    item.CompressionTask = _optimization.Compress(item.ScannedObject.FilePath, mod, _config.CreateTextureBackups);
 
                 if (Im.Item.Hovered(HoveredFlags.AllowWhenDisabled))
                 {
@@ -148,7 +155,7 @@ public sealed class TextureOptimizationTable(
                     var       usage = _optimization.GetTargetFormat(item.ScannedObject.FilePath, mod);
                     Im.Text($"Compress this texture using block compression {usage}.");
                     if (!active)
-                        Im.Text($"\nHold {_config.DeleteModModifier} to compress.");
+                        Im.Text($"\nHold {LunaStyle.Modifier.Destructive} to compress.");
                     if (otherTask)
                         Im.Text("\nWait until the resizing task is finished."u8);
                 }
@@ -157,7 +164,7 @@ public sealed class TextureOptimizationTable(
             {
                 if (ImEx.Icon.Button(LunaStyle.ErrorIcon, StringU8.Empty, textColor: Colors.RegexWarningBorder, disabled: !active || otherTask)
                  && item.ScannedObject.Mod.TryGetTarget(out mod))
-                    item.CompressionTask = _optimization.Compress(item.ScannedObject.FilePath, mod, _config.TextureOptimization.CreateBackups);
+                    item.CompressionTask = _optimization.Compress(item.ScannedObject.FilePath, mod, _config.CreateTextureBackups);
 
                 if (Im.Item.Hovered(HoveredFlags.AllowWhenDisabled))
                 {
@@ -171,7 +178,7 @@ public sealed class TextureOptimizationTable(
                     }
 
                     if (!active)
-                        Im.Text($"\nHold {_config.DeleteModModifier} to retry.");
+                        Im.Text($"\nHold {LunaStyle.Modifier.Destructive} to retry.");
                     if (otherTask)
                         Im.Text("\nWait until the resizing task is finished."u8);
                 }
@@ -192,7 +199,7 @@ public sealed class TextureOptimizationTable(
         private void DrawRestrictDimensionsButton(in TextureOptimizationCacheObject item, int globalIndex)
         {
             Mod? mod       = null;
-            var  active    = _config.DeleteModModifier.IsActive();
+            var  active    = LunaStyle.Modifier.Destructive.Active;
             var  otherTask = item.CompressionTask is not null && !item.CompressionTask.IsCompleted;
             Im.Line.SameInner();
             if (item.ResizeTask is null)
@@ -204,8 +211,8 @@ public sealed class TextureOptimizationTable(
                         ? _optimization.GetTargetFormat(item.ScannedObject.FilePath, mod)
                         : CombinedTexture
                             .TextureSaveType.AsIs;
-                    item.ResizeTask = _optimization.RestrictDimensions(item.ScannedObject.FilePath, _config.TextureOptimization.TextureDimensionLimit,
-                        _config.TextureOptimization.TextureDimensionLimit, _config.TextureOptimization.CreateBackups, targetFormat);
+                    item.ResizeTask = _optimization.RestrictDimensions(item.ScannedObject.FilePath, _config.TextureDimensionLimit,
+                        _config.TextureDimensionLimit, _config.CreateTextureBackups, targetFormat);
                 }
 
                 if (Im.Item.Hovered(HoveredFlags.AllowWhenDisabled))
@@ -221,7 +228,7 @@ public sealed class TextureOptimizationTable(
                         Im.Text($"\nThis will also compress the texture to {targetFormat}.");
 
                     if (!active)
-                        Im.Text($"\nHold {_config.DeleteModModifier} to resize.");
+                        Im.Text($"\nHold {LunaStyle.Modifier.Destructive} to resize.");
                 }
             }
             else if (item.ResizeTask.IsFaulted)
@@ -233,8 +240,8 @@ public sealed class TextureOptimizationTable(
                         ? _optimization.GetTargetFormat(item.ScannedObject.FilePath, mod)
                         : CombinedTexture
                             .TextureSaveType.AsIs;
-                    item.ResizeTask = _optimization.RestrictDimensions(item.ScannedObject.FilePath, _config.TextureOptimization.TextureDimensionLimit,
-                        _config.TextureOptimization.TextureDimensionLimit, _config.TextureOptimization.CreateBackups, targetFormat);
+                    item.ResizeTask = _optimization.RestrictDimensions(item.ScannedObject.FilePath, _config.TextureDimensionLimit,
+                        _config.TextureDimensionLimit, _config.CreateTextureBackups, targetFormat);
                 }
 
                 if (Im.Item.Hovered(HoveredFlags.AllowWhenDisabled))
@@ -255,7 +262,7 @@ public sealed class TextureOptimizationTable(
                     }
 
                     if (!active)
-                        Im.Text($"\nHold {_config.DeleteModModifier} to retry.");
+                        Im.Text($"\nHold {LunaStyle.Modifier.Destructive} to retry.");
                 }
             }
             else if (item.ResizeTask.IsCompletedSuccessfully)
@@ -283,7 +290,7 @@ public sealed class TextureOptimizationTable(
             {
                 if (!item.ScannedObject.Format.IsCompressed())
                     DrawCompressionButton(item, globalIndex);
-                if (item.ScannedObject.Width > _config.TextureOptimization.TextureDimensionLimit || item.ScannedObject.Height > _config.TextureOptimization.TextureDimensionLimit)
+                if (item.ScannedObject.Width > _config.TextureDimensionLimit || item.ScannedObject.Height > _config.TextureDimensionLimit)
                     DrawRestrictDimensionsButton(item, globalIndex);
             }
         }

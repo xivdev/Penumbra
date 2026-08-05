@@ -4,7 +4,7 @@ using Penumbra.Services;
 
 namespace Penumbra.UI.ManagementTab;
 
-public sealed class CleanupTab(CleanupService cleanup, FileWatcher fileWatcher, Configuration config) : ITab<ManagementTabType>
+public sealed class CleanupTab(CleanupService cleanup, FileWatcher fileWatcher) : ITab<ManagementTabType>
 {
     public ReadOnlySpan<byte> Label
         => "General Cleanup"u8;
@@ -18,7 +18,7 @@ public sealed class CleanupTab(CleanupService cleanup, FileWatcher fileWatcher, 
         if (!child)
             return;
 
-        var enabled = config.DeleteModModifier.IsActive();
+        var enabled = LunaStyle.Modifier.Destructive.Active;
         if (cleanup.Progress is not 0.0 and not 1.0)
         {
             Im.ProgressBar((float)cleanup.Progress, ImEx.ScaledVectorX(200, Im.Style.FrameHeight),
@@ -37,27 +37,27 @@ public sealed class CleanupTab(CleanupService cleanup, FileWatcher fileWatcher, 
                 !enabled || cleanup.IsRunning))
             cleanup.CleanUnusedLocalData();
         if (!enabled)
-            Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"Hold {config.DeleteModModifier} while clicking to delete entries.");
+            Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"Hold {LunaStyle.Modifier.Destructive} while clicking to delete entries.");
 
         if (ImEx.Button("Clear Backup Files"u8, default,
                 "Delete all backups of .json configuration files in your configuration folder and all backups of mod group files in your mod directory, as well as the management log file."u8,
                 !enabled || cleanup.IsRunning))
             cleanup.CleanBackupFiles();
         if (!enabled)
-            Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"Hold {config.DeleteModModifier} while clicking to delete files.");
+            Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"Hold {LunaStyle.Modifier.Destructive} while clicking to delete files.");
 
         if (ImEx.Button("Clear All Unused Settings"u8, default,
                 "Remove all mod settings in all of your collections that do not correspond to currently installed mods."u8,
                 !enabled || cleanup.IsRunning))
             cleanup.CleanupAllUnusedSettings();
         if (!enabled)
-            Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"Hold {config.DeleteModModifier} while clicking to remove settings.");
+            Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"Hold {LunaStyle.Modifier.Destructive} while clicking to remove settings.");
 
         if (ImEx.Button("Clear Extracted Archive Files"u8, default,
                 "Delete all temporary files extracted from archives by the File Watcher. Extracted files that have not yet been imported will be lost."u8,
                 !enabled || cleanup.IsRunning))
             fileWatcher.CleanExtracted();
         if (!enabled)
-            Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"Hold {config.DeleteModModifier} while clicking to delete files.");
+            Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"Hold {LunaStyle.Modifier.Destructive} while clicking to delete files.");
     }
 }

@@ -1,30 +1,22 @@
-using Dalamud.Interface.ImGuiNotification;
+using System.Text.Json;
 using Luna;
 using Luna.Generators;
-using Newtonsoft.Json;
 using Penumbra.Files;
+using Penumbra.Services;
 using Penumbra.UI;
 using Penumbra.UI.ManagementTab;
 using Penumbra.UI.ModsTab;
 using Penumbra.UI.Tabs;
-using ErrorEventArgs = Newtonsoft.Json.Serialization.ErrorEventArgs;
 using TabType = Penumbra.Api.Enums.TabType;
 
 namespace Penumbra;
 
-public sealed partial class EphemeralConfig : ISavable, IService
+public sealed partial class EphemeralConfig : ConfigurationFile<FilenameService>
 {
-    [JsonIgnore]
-    private readonly SaveService _saveService;
+    #region Selection
 
-    private bool _init;
-
-    public int                 Version             { get; set; } = Configuration.Constants.CurrentVersion;
-    public int                 LastSeenVersion     { get; set; } = PenumbraChangelog.LastChangelogVersion;
-    public bool                DebugSeparateWindow { get; set; } = false;
-    public int                 TutorialStep        { get; set; } = 0;
-    public CollectionPanelMode CollectionPanel     { get; set; } = CollectionPanelMode.SimpleAssignment;
-    public TabType             SelectedTab         { get; set; } = TabType.Settings;
+    [ConfigProperty]
+    private TabType _selectedTab = TabType.Settings;
 
     [ConfigProperty]
     private ManagementTabType _selectedManagementTab = ManagementTabType.UnusedMods;
@@ -32,68 +24,113 @@ public sealed partial class EphemeralConfig : ISavable, IService
     [ConfigProperty]
     private ModPanelTab _selectedModPanelTab = ModPanelTab.Settings;
 
-    public HashSet<string> AdvancedEditingOpenForModPaths { get; set; } = [];
-    public bool            ForceRedrawOnFileChange        { get; set; } = false;
-    public bool            IncognitoMode                  { get; set; } = false;
+    [ConfigProperty]
+    private CollectionPanelMode _collectionPanel = CollectionPanelMode.SimpleAssignment;
 
-    /// <summary>
-    /// Load the current configuration.
-    /// Includes adding new colors and migrating from old versions.
-    /// </summary>
-    public EphemeralConfig(SaveService saveService)
-    {
-        _saveService = saveService;
-        Load();
-    }
+    [ConfigProperty]
+    private HashSet<string> _advancedEditingOpenForModPaths = [];
 
-    private void Load()
+    #endregion
+
+    #region State
+
+    [ConfigProperty]
+    private int _lastSeenVersion = PenumbraChangelog.LastChangelogVersion;
+
+    [ConfigProperty]
+    private int _tutorialStep = 0;
+
+    [ConfigProperty]
+    private bool _debugSeparateWindow = false;
+
+    [ConfigProperty]
+    private bool _incognitoMode = false;
+
+    [ConfigProperty]
+    private bool _forceRedrawOnFileChange = false;
+
+    #endregion State
+
+    #region Ui
+
+    [ConfigProperty]
+    private TwoPanelWidth _collectionsTabScale = new(0.25f, ScalingMode.Percentage);
+
+    [ConfigProperty]
+    private TwoPanelWidth _modTabScale = new(0.3f, ScalingMode.Percentage);
+
+    /// <inheritdoc/>
+    public EphemeralConfig(SaveService save, PenumbraMessager messages)
+        : base(save, messages)
+        => Load();
+
+    #endregion
+
+    public override int CurrentVersion
+        => 100;
+
+    protected override void AddData(Utf8JsonWriter j)
     {
-        static void HandleDeserializationError(object? sender, ErrorEventArgs errorArgs)
+        j.WriteStartObject("State"u8);
+        j.WriteNumber("LastSeenVersion"u8, LastSeenVersion);
+        j.WriteIfNot("TutorialStep"u8,            TutorialStep,            0);
+        j.WriteIfNot("DebugSeparateWindow"u8,     DebugSeparateWindow,     false);
+        j.WriteIfNot("IncognitoMode"u8,           IncognitoMode,           false);
+        j.WriteIfNot("ForceRedrawOnFileChange"u8, ForceRedrawOnFileChange, false);
+        j.WriteEndObject();
+
+        using (var tmp = j.TemporaryObject("Ui"u8))
         {
-            Penumbra.Log.Error(
-                $"Error parsing ephemeral Configuration at {errorArgs.ErrorContext.Path}, using default or migrating:\n{errorArgs.ErrorContext.Error}");
-            errorArgs.ErrorContext.Handled = true;
+            if (tmp.MarkUsed(CollectionsTabScale.Mode is not ScalingMode.Percentage || CollectionsTabScale.Width is not 0.25f))
+                CollectionsTabScale.WriteJson(j, "CollectionsTabScale"u8);
+            if (tmp.MarkUsed(ModTabScale.Mode is not ScalingMode.Percentage || ModTabScale.Width is not 0.3f))
+                ModTabScale.WriteJson(j, "ModTabScale"u8);
         }
 
-        if (!File.Exists(_saveService.FileNames.EphemeralConfigFile))
-            return;
-
-        try
+        using (var tmp = j.TemporaryObject("Selection"u8))
         {
-            var text = File.ReadAllText(_saveService.FileNames.EphemeralConfigFile);
-            _init = true;
-            JsonConvert.PopulateObject(text, this, new JsonSerializerSettings
+            tmp.WriteEnumIfNot("Tab"u8,             SelectedTab,           TabType.Settings);
+            tmp.WriteEnumIfNot("ManagementTab"u8,   SelectedManagementTab, ManagementTabType.UnusedMods);
+            tmp.WriteEnumIfNot("ModPanelTab"u8,     SelectedModPanelTab,   ModPanelTab.Settings);
+            tmp.WriteEnumIfNot("CollectionPanel"u8, CollectionPanel,       CollectionPanelMode.SimpleAssignment);
+            if (tmp.MarkUsed(AdvancedEditingOpenForModPaths.Count > 0))
             {
-                Error = HandleDeserializationError,
-            });
+                j.WriteStartArray("AdvancedEditingOpen"u8);
+                foreach (var path in AdvancedEditingOpenForModPaths)
+                    j.WriteStringValue(path);
+                j.WriteEndArray();
+            }
         }
-        catch (Exception ex)
+    }
+
+    protected override void LoadData(in JsonElement j)
+    {
+        if (j.TryReadObject("State"u8, out var state))
         {
-            Penumbra.Messager.NotificationMessage(ex,
-                "Error reading ephemeral Configuration, reverting to default.",
-                "Error reading ephemeral Configuration", NotificationType.Error);
+            LastSeenVersion         = state.PropertyOrDefault("LastSeenVersion"u8,         LastSeenVersion);
+            TutorialStep            = state.PropertyOrDefault("TutorialStep"u8,            TutorialStep);
+            DebugSeparateWindow     = state.PropertyOrDefault("DebugSeparateWindow"u8,     DebugSeparateWindow);
+            IncognitoMode           = state.PropertyOrDefault("IncognitoMode"u8,           IncognitoMode);
+            ForceRedrawOnFileChange = state.PropertyOrDefault("ForceRedrawOnFileChange"u8, ForceRedrawOnFileChange);
         }
 
-        _init = false;
+        if (j.TryReadObject("Ui"u8, out var ui))
+        {
+            CollectionsTabScale = TwoPanelWidth.ReadJson(ui, "CollectionsTabScale"u8, CollectionsTabScale);
+            ModTabScale         = TwoPanelWidth.ReadJson(ui, "ModTabScale"u8,         ModTabScale);
+        }
+
+        if (j.TryReadObject("Selection"u8, out var selection))
+        {
+            SelectedTab           = selection.EnumOrDefault("Tab"u8,             SelectedTab);
+            SelectedManagementTab = selection.EnumOrDefault("ManagementTab"u8,   SelectedManagementTab);
+            SelectedModPanelTab   = selection.EnumOrDefault("ModPanelTab"u8,     SelectedModPanelTab);
+            CollectionPanel       = selection.EnumOrDefault("CollectionPanel"u8, CollectionPanel);
+            if (selection.TryReadObject("AdvancedEditingOpen"u8, out var advanced))
+                AdvancedEditingOpenForModPaths = advanced.Deserialize<HashSet<string>>() ?? AdvancedEditingOpenForModPaths;
+        }
     }
 
-    /// <summary> Save the current configuration. </summary>
-    public void Save()
-    {
-        if (!_init)
-            _saveService.DelaySave(this, TimeSpan.FromSeconds(5));
-    }
-
-
-    public string ToFilePath(FilenameService fileNames)
-        => fileNames.EphemeralConfigFile;
-
-    public void Save(Stream stream)
-    {
-        using var writer  = new StreamWriter(stream, leaveOpen: true);
-        using var jWriter = new JsonTextWriter(writer);
-        jWriter.Formatting = Formatting.Indented;
-        var serializer = new JsonSerializer { Formatting = Formatting.Indented };
-        serializer.Serialize(jWriter, this);
-    }
+    public override string ToFilePath(FilenameService fileNames)
+        => fileNames.Config.Ephemeral;
 }

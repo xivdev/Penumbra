@@ -79,7 +79,7 @@ public sealed class LocalModDatabase(ServiceManager services) : IDisposable, ISe
 
     public void Migrate()
     {
-        var oldPath = services.GetService<FilenameService>().OldLocalDataDirectory;
+        var oldPath = services.GetService<FilenameService>().Migration.LocalDataDirectory;
         if (!Directory.Exists(oldPath))
             return;
 

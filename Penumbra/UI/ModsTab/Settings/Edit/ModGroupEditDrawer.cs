@@ -19,7 +19,6 @@ public interface IModGroupEditDrawer
 
 public sealed class ModGroupEditDrawer(
     ModManager modManager,
-    Configuration config,
     DescriptionEditPopup descriptionPopup,
     LayoutEditPopup layoutPopup,
     ConditionEditPopup conditionPopup,
@@ -46,7 +45,6 @@ public sealed class ModGroupEditDrawer(
     private float   _groupNameWidth;
     private float   _optionNameWidth;
     private float   _spacing;
-    private bool    _deleteEnabled;
 
     private string?    _currentGroupName;
     private IModGroup? _currentGroupEdited;
@@ -132,12 +130,12 @@ public sealed class ModGroupEditDrawer(
 
     private void DrawGroupDelete(IModGroup group)
     {
-        if (ImEx.Icon.Button(LunaStyle.DeleteIcon, !_deleteEnabled))
+        if (ImEx.Icon.Button(LunaStyle.DeleteIcon, !LunaStyle.Modifier.Destructive))
             ActionQueue.Enqueue(() => ModManager.OptionEditor.DeleteModGroup(group));
 
         Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, "Delete this option group."u8);
-        if (!_deleteEnabled)
-            Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"Hold {config.DeleteModModifier} while clicking to delete.");
+        if (!LunaStyle.Modifier.Destructive)
+            Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"Hold {LunaStyle.Modifier.Destructive} while clicking to delete.");
     }
 
     private void DrawGroupPriority(IModGroup group)
@@ -295,14 +293,14 @@ public sealed class ModGroupEditDrawer(
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal void DrawOptionDelete(IModOption option)
     {
-        if (ImEx.Icon.Button(LunaStyle.DeleteIcon, !_deleteEnabled))
+        if (ImEx.Icon.Button(LunaStyle.DeleteIcon, !LunaStyle.Modifier.Destructive))
             ActionQueue.Enqueue(() => ModManager.OptionEditor.DeleteOption(option));
 
-        if (_deleteEnabled)
+        if (LunaStyle.Modifier.Destructive)
             Im.Tooltip.OnHover("Delete this option."u8);
         else
             Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled,
-                $"Delete this option.\nHold {config.DeleteModModifier} while clicking to delete.");
+                $"Delete this option.\nHold {LunaStyle.Modifier.Destructive} while clicking to delete.");
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -499,6 +497,5 @@ public sealed class ModGroupEditDrawer(
         _spacing            = Im.Style.ItemInnerSpacing.X;
         OptionIdxSelectable = Im.Font.CalculateSize("Option #88."u8);
         _optionNameWidth    = totalWidth - OptionIdxSelectable.X - 4 * _buttonSize.X - 5 * _spacing;
-        _deleteEnabled      = config.DeleteModModifier.IsActive();
     }
 }

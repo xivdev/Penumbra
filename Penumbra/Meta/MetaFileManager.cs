@@ -58,14 +58,14 @@ public class MetaFileManager : IService
                 if (group is not ITexToolsGroup texToolsGroup)
                     continue;
 
-                var dir = ModCreator.NewOptionDirectory(mod.ModPath, group.Name, Config.ReplaceNonAsciiOnImport);
+                var dir = ModCreator.NewOptionDirectory(mod.ModPath, group.Name, Config.Io.ReplaceNonAsciiOnImport);
                 if (!dir.Exists)
                     dir.Create();
 
 
                 foreach (var option in texToolsGroup.OptionData)
                 {
-                    var optionDir = ModCreator.NewOptionDirectory(dir, option.Name, Config.ReplaceNonAsciiOnImport);
+                    var optionDir = ModCreator.NewOptionDirectory(dir, option.Name, Config.Io.ReplaceNonAsciiOnImport);
                     if (!optionDir.Exists)
                         optionDir.Create();
 
@@ -81,7 +81,7 @@ public class MetaFileManager : IService
 
     public void ApplyDefaultFiles(ModCollection? collection)
     {
-        if (ActiveCollections.Default != collection || !CharacterUtility.Ready || !Config.EnableMods)
+        if (ActiveCollections.Default != collection || !CharacterUtility.Ready || !Config.Main.EnableMods)
             return;
 
         ResidentResources.Reload();

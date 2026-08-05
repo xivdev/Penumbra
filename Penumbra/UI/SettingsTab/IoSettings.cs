@@ -5,15 +5,11 @@ using Penumbra.UI.Classes;
 
 namespace Penumbra.UI;
 
-public sealed class IoSettings(IoConfig config, MainConfig main, FileDialogService fileDialog, PcpSettings pcp, PcpService pcpService)
+public sealed class IoSettings(IoConfig config, MainConfig main, FileDialogService fileDialog, PcpService pcpService)
     : IUiService
 {
     public void Draw()
     {
-        using var header = Im.Tree.HeaderId("Mod Import/Export"u8);
-        if (!header)
-            return;
-
         DrawImportSettings();
         DrawWatcherSettings();
         DrawExportSettings();
@@ -43,6 +39,7 @@ public sealed class IoSettings(IoConfig config, MainConfig main, FileDialogServi
                 "If your Automatic Import Directory is the same as your Default Mod Export Directory, prevents mods and character packs you export from being reimported or showing a query popup."u8,
                 config.PreventExportLoopback))
             config.PreventExportLoopback ^= true;
+        LunaStyle.DrawSeparator();
     }
 
     private void DrawImportSettings()
@@ -71,6 +68,7 @@ public sealed class IoSettings(IoConfig config, MainConfig main, FileDialogServi
                 "Makes report notifications automatically disappear after a few seconds if all the mods were successfully imported.\nReports that contain errors will still have to be manually dismissed."u8,
                 config.AutoDismissModImportSuccessReports))
             config.AutoDismissModImportSuccessReports ^= true;
+        LunaStyle.DrawSeparator();
     }
 
     private void DrawExportSettings()
@@ -81,6 +79,7 @@ public sealed class IoSettings(IoConfig config, MainConfig main, FileDialogServi
 
         DrawDefaultModAuthor();
         DrawDefaultModExportPath();
+        LunaStyle.DrawSeparator();
     }
 
     private void DrawPcpSettings()
@@ -91,8 +90,8 @@ public sealed class IoSettings(IoConfig config, MainConfig main, FileDialogServi
 
         if (SettingsTab.Checkbox("Handle PCP Files"u8,
                 "When encountering specific mods, usually but not necessarily denoted by a .pcp file ending, Penumbra will automatically try to create an associated collection and assign it to a specific character for this mod package. This can turn this behaviour off if unwanted."u8,
-                !pcp.DisableHandling))
-            pcp.DisableHandling ^= true;
+                !config.DisablePcpHandling))
+            config.DisablePcpHandling ^= true;
 
         var active = LunaStyle.Modifier.Destructive.Active;
         Im.Line.Same();
@@ -108,20 +107,21 @@ public sealed class IoSettings(IoConfig config, MainConfig main, FileDialogServi
 
         if (SettingsTab.Checkbox("Allow Other Plugins Access to PCP Handling"u8,
                 "When creating or importing PCP files, other plugins can add and interpret their own data to the character.json file."u8,
-                pcp.AllowIpc))
-            pcp.AllowIpc ^= true;
+                config.PcpAllowIpc))
+            config.PcpAllowIpc ^= true;
 
         if (SettingsTab.Checkbox("Create PCP Collections"u8,
                 "When importing PCP files, create the associated collection."u8,
-                pcp.CreateCollection))
-            pcp.CreateCollection ^= true;
+                config.PcpCreateCollection))
+            config.PcpCreateCollection ^= true;
 
         if (SettingsTab.Checkbox("Assign PCP Collections"u8,
                 "When importing PCP files and creating the associated collection, assign it to the associated character."u8,
-                pcp.AssignCollection))
-            pcp.AssignCollection ^= true;
+                config.PcpAssignCollection))
+            config.PcpAssignCollection ^= true;
         DrawPcpFolder();
         DrawPcpExtension();
+        LunaStyle.DrawSeparator();
     }
 
     /// <summary> Draw input for the default folder to sort put newly imported mods into. </summary>
@@ -238,8 +238,8 @@ public sealed class IoSettings(IoConfig config, MainConfig main, FileDialogServi
     private void DrawPcpFolder()
     {
         Im.Item.SetNextWidth(UiHelpers.InputTextWidth.X);
-        if (ImEx.InputOnDeactivation.Text("##pcpFolder"u8, pcp.FolderName, out string newFolder))
-            pcp.FolderName = newFolder;
+        if (ImEx.InputOnDeactivation.Text("##pcpFolder"u8, config.PcpFolderName, out string newFolder))
+            config.PcpFolderName = newFolder;
 
         LunaStyle.DrawAlignedHelpMarkerLabel("Default PCP Organizational Folder"u8,
             "The folder any penumbra character packs are moved to on import.\nLeave blank to import into Root."u8);
@@ -248,13 +248,13 @@ public sealed class IoSettings(IoConfig config, MainConfig main, FileDialogServi
     private void DrawPcpExtension()
     {
         Im.Item.SetNextWidth(UiHelpers.InputTextWidth.X);
-        if (ImEx.InputOnDeactivation.Text("##pcpExtension"u8, pcp.PcpExtension, out string newExtension))
-            pcp.PcpExtension = newExtension;
+        if (ImEx.InputOnDeactivation.Text("##pcpExtension"u8, config.PcpExtension, out string newExtension))
+            config.PcpExtension = newExtension;
 
         Im.Line.SameInner();
         if (ImEx.Button("Reset##pcpExtension"u8, Vector2.Zero, "Reset the extension to its default value of \".pcp\"."u8,
-                pcp.PcpExtension is ".pcp"))
-            pcp.PcpExtension = ".pcp";
+                config.PcpExtension is ".pcp"))
+            config.PcpExtension = ".pcp";
 
         LunaStyle.DrawAlignedHelpMarkerLabel("PCP Extension"u8,
             "The extension used when exporting PCP files. Should generally be either \".pcp\" or \".pmp\"."u8);

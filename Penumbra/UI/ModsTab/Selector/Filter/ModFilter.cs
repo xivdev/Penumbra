@@ -19,7 +19,7 @@ public sealed class ModFilter : TokenizedFilter<ModFilterTokenType, ModFileSyste
     {
         _modManager  = modManager;
         _collections = collections;
-        if (config.RememberModFilters)
+        if (config.Ui.RememberModFilters)
         {
             _stateFilter = config.Filters.ModTypeFilter;
             Set(config.Filters.ModFilter);

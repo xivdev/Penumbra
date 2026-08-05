@@ -234,7 +234,7 @@ public sealed class ModPanelChangedItemsTab(
             .Push(ImGuiColor.ButtonHovered, Rgba32.Transparent);
 
         var state = Im.State.Storage;
-        cache.Update(_mod, drawer, config.Filters.ModChangedItemTypeFilter, config.ChangedItemDisplay);
+        cache.Update(_mod, drawer, config.Filters.ModChangedItemTypeFilter, config.Ui.ChangedItemDisplay);
         using var table = Im.Table.Begin("##changedItems"u8, cache.AnyExpandable ? 2 : 1, TableFlags.RowBackground | TableFlags.ScrollY,
             Im.ContentRegion.Available);
         if (!table)

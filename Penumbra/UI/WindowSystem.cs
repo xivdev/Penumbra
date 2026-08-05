@@ -39,9 +39,9 @@ public class PenumbraWindowSystem : IDisposable, IUiService
         _uiBuilder.OpenConfigUi          += Window.OpenSettings;
         _uiBuilder.Draw                  += _fileDialog.Draw;
         _uiBuilder.Draw                  += _textureArraySlicer.Tick;
-        _uiBuilder.DisableGposeUiHide    =  !config.HideUiInGPose;
-        _uiBuilder.DisableCutsceneUiHide =  !config.HideUiInCutscenes;
-        _uiBuilder.DisableUserUiHide     =  !config.HideUiWhenUiHidden;
+        _uiBuilder.DisableGposeUiHide    =  !config.Ui.HideUiInGPose;
+        _uiBuilder.DisableCutsceneUiHide =  !config.Ui.HideUiInCutscenes;
+        _uiBuilder.DisableUserUiHide     =  !config.Ui.HideUiWhenUiHidden;
     }
 
     public void ForceChangelogOpen()

@@ -1,22 +1,25 @@
-using Dalamud.Plugin;
-using Dalamud.Plugin.Services;
 using ImSharp;
 using Luna;
-using Penumbra.Api;
 using Penumbra.Api.Enums;
-using Penumbra.Collections;
-using Penumbra.Interop.Hooks.PostProcessing;
-using Penumbra.Interop.Services;
-using Penumbra.Mods.Manager;
-using Penumbra.Services;
 using Penumbra.UI.Classes;
 using Penumbra.UI.Integration;
-using Penumbra.UI.ModsTab;
-using Penumbra.UI.ModsTab.Selector;
 
 namespace Penumbra.UI;
 
-public sealed class SettingsTab : ITab<TabType>
+public sealed class SettingsTab(
+    MainSettings main,
+    BehaviorSettings behavior,
+    UiSettings ui,
+    IoSettings io,
+    EditingSettings editing,
+    AdvancedSettings advanced,
+    Configuration config,
+    TutorialService tutorial,
+    PredefinedTagManager predefinedTagManager,
+    MigrationSectionDrawer migrationDrawer,
+    IntegrationSettingsRegistry integrationSettings,
+    Penumbra penumbra)
+    : ITab<TabType>
 {
     public TabType Identifier
         => TabType.Settings;
@@ -24,50 +27,11 @@ public sealed class SettingsTab : ITab<TabType>
     public ReadOnlySpan<byte> Label
         => "Settings"u8;
 
-    private readonly Configuration               _config;
-    private readonly TutorialService             _tutorial;
-    private readonly Penumbra                    _penumbra;
-    private readonly FileDialogService           _fileDialog;
-    private readonly ModManager                  _modManager;
-    private readonly FileWatcher                 _fileWatcher;
-    private readonly ModExportManager            _modExportManager;
-    private readonly IDalamudPluginInterface     _pluginInterface;
-    private readonly PredefinedTagManager        _predefinedTagManager;
-    private readonly MigrationSectionDrawer      _migrationDrawer;
-    private readonly PcpService                  _pcpService;
-    private readonly IntegrationSettingsRegistry _integrationSettings;
-    private readonly ModFileSystemDrawer         _modFileSystemDrawer;
-
-
-    public SettingsTab(IDalamudPluginInterface pluginInterface, Configuration config, FontReloader fontReloader, TutorialService tutorial,
-        Penumbra penumbra, FileDialogService fileDialog, ModManager modManager, CharacterUtility characterUtility,
-        ResidentResourceManager residentResources, ModExportManager modExportManager,
-        FileWatcher fileWatcher, HttpApi httpApi,
-        DalamudSubstitutionProvider dalamudSubstitutionProvider, FileCompactor compactor, DalamudConfigService dalamudConfig,
-        IDataManager gameData, PredefinedTagManager predefinedTagConfig, CrashHandlerService crashService,
-        MigrationSectionDrawer migrationDrawer, CollectionAutoSelector autoSelector, AttributeHook attributeHook, PcpService pcpService,
-        IntegrationSettingsRegistry integrationSettings, ModFileSystemDrawer modFileSystemDrawer)
-    {
-        _pluginInterface      = pluginInterface;
-        _config               = config;
-        _tutorial             = tutorial;
-        _penumbra             = penumbra;
-        _fileDialog           = fileDialog;
-        _modManager           = modManager;
-        _modExportManager     = modExportManager;
-        _fileWatcher          = fileWatcher;
-        _predefinedTagManager = predefinedTagConfig;
-        _migrationDrawer      = migrationDrawer;
-        _pcpService           = pcpService;
-        _integrationSettings  = integrationSettings;
-        _modFileSystemDrawer  = modFileSystemDrawer;
-    }
-
     public void PostTabButton()
     {
-        _tutorial.OpenTutorial(BasicTutorialSteps.Fin);
-        _tutorial.OpenTutorial(BasicTutorialSteps.Faq1);
-        _tutorial.OpenTutorial(BasicTutorialSteps.Faq2);
+        tutorial.OpenTutorial(BasicTutorialSteps.Fin);
+        tutorial.OpenTutorial(BasicTutorialSteps.Faq1);
+        tutorial.OpenTutorial(BasicTutorialSteps.Faq2);
     }
 
     public void DrawContent()
@@ -76,12 +40,72 @@ public sealed class SettingsTab : ITab<TabType>
         if (!child)
             return;
 
-        DrawGeneralSettings();
-        _migrationDrawer.Draw();
-        DrawColorSettings();
-        DrawPredefinedTagsSection();
-        DrawAdvancedSettings();
-        _integrationSettings.Draw();
+        main.DrawHeader();
+
+        using (var header = Im.Tree.HeaderId("General"u8))
+        {
+            if (header)
+            {
+                main.DrawGeneralSettings();
+                Im.Line.Spacing();
+            }
+        }
+
+        using (var header = Im.Tree.HeaderId("Penumbra Behavior"u8))
+        {
+            if (header)
+            {
+                behavior.Draw();
+                Im.Line.Spacing();
+            }
+        }
+
+        using (var header = Im.Tree.HeaderId("User Interface"u8))
+        {
+            if (header)
+            {
+                ui.Draw();
+                DrawColorSettings();
+                DrawPredefinedTagsSection();
+                Im.Line.Spacing();
+            }
+        }
+
+
+        using (var header = Im.Tree.HeaderId("Mod Import/Export"u8))
+        {
+            if (header)
+            {
+                io.Draw();
+                using (var node = Im.Tree.Node("Mod Migration"u8))
+                {
+                    if (node)
+                        migrationDrawer.Draw();
+                }
+
+                Im.Line.Spacing();
+            }
+        }
+
+        using (var header = Im.Tree.HeaderId("File Editing"u8))
+        {
+            if (header)
+            {
+                editing.Draw();
+                Im.Line.Spacing();
+            }
+        }
+
+        using (var header = Im.Tree.HeaderId("Advanced"u8))
+        {
+            if (header)
+            {
+                advanced.Draw();
+                Im.Line.Spacing();
+            }
+        }
+
+        integrationSettings.Draw();
         DrawSupportButtons();
     }
 
@@ -97,17 +121,15 @@ public sealed class SettingsTab : ITab<TabType>
     /// <summary> Draw the entire Color subsection. </summary>
     private void DrawColorSettings()
     {
-        using var header = Im.Tree.HeaderId("Colors"u8);
+        using var header = Im.Tree.Node("Colors"u8);
         if (!header)
             return;
 
-        if (ColorSettingsDrawer.Draw(Penumbra.Messager, _config.Ui.Colors, _config.Ui.ColorCache))
-        {
-            CacheManager.Instance.SetColorsDirty();
-            _config.Ui.Save();
-        }
+        if (!ColorSettingsDrawer.Draw(Penumbra.Messager, config.Ui.Colors, config.Ui.ColorCache))
+            return;
 
-        Im.Line.New();
+        CacheManager.Instance.SetColorsDirty();
+        config.Ui.Save();
     }
 
     /// <summary> Draw the support button group on the right-hand side of the window. </summary>
@@ -120,7 +142,7 @@ public sealed class SettingsTab : ITab<TabType>
             xPos -= Im.Style.ScrollbarSize + Im.Style.FramePadding.X;
 
         Im.Cursor.Position = new Vector2(xPos, Im.Style.FrameHeightWithSpacing);
-        UiHelpers.DrawSupportButton(_penumbra);
+        UiHelpers.DrawSupportButton(penumbra);
 
         Im.Cursor.Position = new Vector2(xPos, 0);
         SupportButton.Discord(Penumbra.Messager, width);
@@ -131,13 +153,13 @@ public sealed class SettingsTab : ITab<TabType>
         Im.Cursor.Position = new Vector2(xPos, 3 * Im.Style.FrameHeightWithSpacing);
         if (Im.Button("Restart Tutorial"u8, new Vector2(width, 0)))
         {
-            _config.Ephemeral.TutorialStep = 0;
-            _config.Ephemeral.Save();
+            config.Ephemeral.TutorialStep = 0;
+            config.Ephemeral.Save();
         }
 
         Im.Cursor.Position = new Vector2(xPos, 4 * Im.Style.FrameHeightWithSpacing);
         if (Im.Button("Show Changelogs"u8, new Vector2(width, 0)))
-            _penumbra.ForceChangelogOpen();
+            penumbra.ForceChangelogOpen();
 
         Im.Cursor.Position = new Vector2(xPos, 5 * Im.Style.FrameHeightWithSpacing);
         SupportButton.KoFiPatreon(Penumbra.Messager, new Vector2(width, 0));
@@ -145,14 +167,15 @@ public sealed class SettingsTab : ITab<TabType>
 
     private void DrawPredefinedTagsSection()
     {
-        if (!Im.Tree.Header("Tags"u8))
+        using var node = Im.Tree.Node("Tagging"u8, TreeNodeFlags.DefaultOpen);
+        if (!node)
             return;
 
         var tagIdx = TagButtons.Draw("Predefined Tags: "u8,
-            "Predefined tags that can be added or removed from mods with a single click."u8, _predefinedTagManager,
+            "Predefined tags that can be added or removed from mods with a single click."u8, predefinedTagManager,
             out var editedTag);
 
         if (tagIdx >= 0)
-            _predefinedTagManager.ChangeSharedTag(tagIdx, editedTag);
+            predefinedTagManager.ChangeSharedTag(tagIdx, editedTag);
     }
 }

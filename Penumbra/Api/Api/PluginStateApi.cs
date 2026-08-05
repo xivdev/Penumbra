@@ -9,10 +9,10 @@ namespace Penumbra.Api.Api;
 
 public class PluginStateApi : IPenumbraApiPluginState, IApiService, IDisposable
 {
-    private readonly Configuration       _config;
+    private readonly MainConfig          _config;
     private readonly CommunicatorService _communicator;
 
-    public PluginStateApi(Configuration config, CommunicatorService communicator)
+    public PluginStateApi(MainConfig config, CommunicatorService communicator)
     {
         _config       = config;
         _communicator = communicator;

@@ -8,15 +8,15 @@ namespace Penumbra.UI.ModsTab;
 
 public sealed class ModTab : TwoPanelLayout, ITab<TabType>
 {
-    private readonly UiConfig _uiConfig;
+    private readonly EphemeralConfig _config;
 
     public override ReadOnlySpan<byte> Label
         => "Mods"u8;
 
     public ModTab(ModFileSystemDrawer drawer, ModPanel panel, CollectionSelectHeader collectionHeader, RedrawFooter redrawFooter,
-        UiConfig uiConfig)
+        EphemeralConfig config)
     {
-        _uiConfig   = uiConfig;
+        _config     = config;
         LeftHeader  = drawer.Header;
         LeftFooter  = drawer.Footer;
         LeftPanel   = drawer;
@@ -26,13 +26,13 @@ public sealed class ModTab : TwoPanelLayout, ITab<TabType>
     }
 
     public void DrawContent()
-        => Draw(_uiConfig.ModTabScale);
+        => Draw(_config.ModTabScale);
 
     public TabType Identifier
         => TabType.Mods;
 
     protected override void SetWidth(float width, ScalingMode mode)
-        => _uiConfig.ModTabScale = new TwoPanelWidth(width, mode);
+        => _config.ModTabScale = new TwoPanelWidth(width, mode);
 
     protected override float MinimumWidth
         => LeftFooter.MinimumWidth;

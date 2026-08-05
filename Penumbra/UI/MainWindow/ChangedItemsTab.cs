@@ -40,7 +40,7 @@ public sealed class ChangedItemsTab(
         {
             _drawer       = drawer;
             _filterConfig = config.Filters;
-            if (!config.RememberChangedItemFilters)
+            if (!config.Ui.RememberChangedItemFilters)
                 ClearOnStart();
             _filterConfig.ChangedItemTypeFilterChanged += OnChangedItemTypeFilterChanged;
         }

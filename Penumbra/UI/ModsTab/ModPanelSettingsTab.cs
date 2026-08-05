@@ -41,13 +41,13 @@ public class ModPanelSettingsTab(
     public void DrawContent()
     {
         using var id    = Im.Id.Push(selection.ModName);
-        var       cache = CacheManager.Instance.GetOrCreateCache(Im.Id.Current, () => new ModSettingsCache(selection, config, communicator, Im.State.Storage));
+        var       cache = CacheManager.Instance.GetOrCreateCache(Im.Id.Current, () => new ModSettingsCache(selection, config.Ui, communicator, Im.State.Storage));
 
         _inherited = selection.Collection != collectionManager.Active.Current;
         _temporary = selection.TemporarySettings is not null;
         _locked    = (selection.TemporarySettings?.Lock ?? 0) > 0;
 
-        if (cache.VisiblePages.Count > 1 && config.DisplayPages)
+        if (cache.VisiblePages.Count > 1 && config.Ui.DisplayPages)
         {
             DrawPreamble();
             communicator.PostEnabledDraw.Invoke(new PostEnabledDraw.Arguments(selection.Mod!));
@@ -135,7 +135,7 @@ public class ModPanelSettingsTab(
             return;
 
         modManager.SetKnown(selection.Mod!);
-        if (_temporary || config.DefaultTemporaryMode)
+        if (_temporary || config.Main.DefaultTemporaryMode)
         {
             var temporarySettings = selection.TemporarySettings ?? new TemporaryModSettings(selection.Mod!, selection.Settings);
             temporarySettings.ForceInherit = false;
@@ -170,7 +170,7 @@ public class ModPanelSettingsTab(
         {
             if (_currentPriority != settings.Priority.Value)
             {
-                if (_temporary || config.DefaultTemporaryMode)
+                if (_temporary || config.Main.DefaultTemporaryMode)
                 {
                     var temporarySettings = selection.TemporarySettings ?? new TemporaryModSettings(selection.Mod!, selection.Settings);
                     temporarySettings.ForceInherit = false;
@@ -205,7 +205,7 @@ public class ModPanelSettingsTab(
             ? buttonSize + Im.Font.CalculateSize("Inherit Settings"u8).X + Im.Style.FramePadding.X * 4 + Im.Style.ItemSpacing.X
             : buttonSize + Im.Style.FramePadding.X * 2;
         Im.Line.Same(Im.Window.Width - offset - scroll);
-        var enabled = config.DeleteModModifier.IsActive();
+        var enabled = LunaStyle.Modifier.Destructive.Active;
         if (drawInherited)
         {
             var inherit = (enabled, _locked) switch
@@ -214,7 +214,7 @@ public class ModPanelSettingsTab(
                     "Remove current settings from this collection so that it can inherit them.\n"u8
                   + "If no inherited collection has settings for this mod, it will be disabled."u8),
                 (false, false) => ImEx.Button("Inherit Settings"u8, default,
-                    $"Remove current settings from this collection so that it can inherit them.\nHold {config.DeleteModModifier} to inherit.",
+                    $"Remove current settings from this collection so that it can inherit them.\nHold {LunaStyle.Modifier.Destructive} to inherit.",
                     true),
                 (_, true) => ImEx.Button("Inherit Settings"u8, default,
                     "Remove current settings from this collection so that it can inherit them.\nThe settings are currently locked and can not be changed."u8,
@@ -222,7 +222,7 @@ public class ModPanelSettingsTab(
             };
             if (inherit)
             {
-                if (_temporary || config.DefaultTemporaryMode)
+                if (_temporary || config.Main.DefaultTemporaryMode)
                 {
                     var temporarySettings = selection.TemporarySettings ?? new TemporaryModSettings(selection.Mod!, selection.Settings);
                     temporarySettings.ForceInherit = true;
@@ -244,7 +244,7 @@ public class ModPanelSettingsTab(
                 ? ImEx.Button("Turn Permanent"u8, new Vector2(buttonSize, 0),
                     "Overwrite the actual settings for this mod in this collection with the current temporary settings."u8)
                 : ImEx.Button("Turn Permanent"u8, new Vector2(buttonSize, 0),
-                    $"Overwrite the actual settings for this mod in this collection with the current temporary settings.\nHold {config.DeleteModModifier} to overwrite.",
+                    $"Overwrite the actual settings for this mod in this collection with the current temporary settings.\nHold {LunaStyle.Modifier.Destructive} to overwrite.",
                     true);
             if (overwrite)
             {

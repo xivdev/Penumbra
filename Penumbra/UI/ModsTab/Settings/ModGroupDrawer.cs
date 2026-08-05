@@ -36,7 +36,7 @@ public sealed class ModGroupDrawer(
         _temporary    = tempSettings is not null;
         Locked        = (tempSettings?.Lock ?? 0) > 0;
 
-        if (cache.VisiblePages.Count > 1 && config.DisplayPages)
+        if (cache.VisiblePages.Count > 1 && config.Ui.DisplayPages)
         {
             Im.Dummy(0);
             using var tabBar = Im.TabBar.Begin("##pages"u8, TabBarFlags.FittingPolicyScroll);
@@ -104,7 +104,7 @@ public sealed class ModGroupDrawer(
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     internal void SetModSetting(IModGroup group, Setting setting)
     {
-        if (_temporary || config.DefaultTemporaryMode)
+        if (_temporary || config.Main.DefaultTemporaryMode)
         {
             _tempSettings                        ??= new TemporaryModSettings(group.Mod, _context.Settings);
             _tempSettings!.ForceInherit          =   false;

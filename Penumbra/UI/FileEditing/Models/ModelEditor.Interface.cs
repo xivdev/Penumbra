@@ -383,7 +383,7 @@ public partial class ModelEditor
         // Need to have at least one material.
         if (materials.Length > 1)
         {
-            var modifierActive = _config.DeleteModModifier.IsActive();
+            var modifierActive = LunaStyle.Modifier.Destructive.Active;
             if (ImEx.Icon.Button(LunaStyle.DeleteIcon,
                     "Delete this material.\nAny meshes targeting this material will be updated to use material #1."u8, !modifierActive))
             {
@@ -392,7 +392,7 @@ public partial class ModelEditor
             }
 
             if (!modifierActive)
-                Im.Tooltip.OnHover($"\nHold {_config.DeleteModModifier} to delete.");
+                Im.Tooltip.OnHover($"\nHold {LunaStyle.Modifier.Destructive} to delete.");
         }
 
         table.NextColumn();

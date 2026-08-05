@@ -610,7 +610,6 @@ public sealed partial class ModEditWindow : IndexedWindow, IDisposable
         _communicator      = communicator;
         _dragDropManager   = dragDropManager;
         _parent            = parent;
-        _fileDialog        = fileDialog;
         _metaDrawers       = metaDrawers;
         _overviewTable     = new OverviewTable(_editor);
         _optionSelect      = new OptionSelectCombo(editor, this);

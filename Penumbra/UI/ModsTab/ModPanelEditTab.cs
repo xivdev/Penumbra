@@ -18,10 +18,9 @@ public class ModPanelEditTab(
     ModFileSystem fileSystem,
     ModSelection selection,
     CommunicatorService communicator,
-    Services.MessageService messager,
+    Services.PenumbraMessager messager,
     FilenameService filenames,
     ModExportManager modExportManager,
-    Configuration config,
     PredefinedTagManager predefinedTagManager,
     ModGroupEditDrawer groupEditDrawer,
     DescriptionEditPopup descriptionPopup,
@@ -180,7 +179,7 @@ public class ModPanelEditTab(
         table.SetupColumn("##actions"u8,         TableColumnFlags.WidthFixed, Im.Style.FrameHeight);
         table.HeaderRow();
 
-        var        active   = config.DeleteModModifier.IsActive();
+        var        active   = LunaStyle.Modifier.Destructive.Active;
         using var  clip     = new Im.ListClipper(mod.Groups.Count, Im.Style.FrameHeightWithSpacing);
         IModGroup? deletion = null;
         foreach (var i in clip)
@@ -239,7 +238,7 @@ public class ModPanelEditTab(
                 deletion = group;
 
             if (!active)
-                Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"Hold {config.DeleteModModifier} to delete.");
+                Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"Hold {LunaStyle.Modifier.Destructive} to delete.");
         }
 
         if (deletion is not null)
@@ -283,14 +282,14 @@ public class ModPanelEditTab(
 
         Im.Line.Same();
         if (ImEx.Button("Delete Export"u8, buttonSize, backup.Exists
-                ? $"Delete existing mod export \"{backup.Name}\" (hold {config.DeleteModModifier} while clicking)."
-                : $"Exported mod \"{backup.Name}\" does not exist.", !backup.Exists || !config.DeleteModModifier.IsActive()))
+                ? $"Delete existing mod export \"{backup.Name}\" (hold {LunaStyle.Modifier.Destructive} while clicking)."
+                : $"Exported mod \"{backup.Name}\" does not exist.", !backup.Exists || !LunaStyle.Modifier.Destructive.Active))
             backup.Delete();
 
         Im.Line.Same();
         if (ImEx.Button("Restore From Export"u8, buttonSize, backup.Exists
-                ? $"Restore mod from exported file \"{backup.Name}\" (hold {config.DeleteModModifier} while clicking)."
-                : $"Exported mod \"{backup.Name}\" does not exist.", !backup.Exists || !config.DeleteModModifier.IsActive()))
+                ? $"Restore mod from exported file \"{backup.Name}\" (hold {LunaStyle.Modifier.Destructive} while clicking)."
+                : $"Exported mod \"{backup.Name}\" does not exist.", !backup.Exists || !LunaStyle.Modifier.Destructive.Active))
             backup.Restore(modManager);
         if (backup.Exists)
         {
@@ -365,10 +364,10 @@ public class ModPanelEditTab(
         Im.Tooltip.OnHover($"Click to copy timestamp: {Mod.ImportDate}");
 
         Im.Line.SameInner();
-        var canRefresh = config.DeleteModModifier.IsActive();
+        var canRefresh = LunaStyle.Modifier.Destructive.Active;
         if (ImEx.Icon.Button(LunaStyle.RefreshIcon, canRefresh
                     ? "Reset the import date to the current date and time."u8
-                    : $"Reset the import date to the current date and time.\nHold {config.DeleteModModifier} while clicking to refresh.",
+                    : $"Reset the import date to the current date and time.\nHold {LunaStyle.Modifier.Destructive} while clicking to refresh.",
                 !canRefresh))
             modManager.DataEditor.ChangeModImportDate(Mod, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
 
@@ -386,10 +385,10 @@ public class ModPanelEditTab(
         Im.Tooltip.OnHover($"Click to copy timestamp: {Mod.LastConfigEdit}");
 
         Im.Line.SameInner();
-        var canRefresh = config.IncognitoModifier.IsActive();
+        var canRefresh = LunaStyle.Modifier.Misclick.Active;
         if (ImEx.Icon.Button(LunaStyle.RefreshIcon, canRefresh
                     ? "Reset the last config edit date to the current date and time."u8
-                    : $"Reset the last config edit date to the current date and time.\nHold {config.IncognitoModifier} while clicking to refresh.",
+                    : $"Reset the last config edit date to the current date and time.\nHold {LunaStyle.Modifier.Misclick} while clicking to refresh.",
                 !canRefresh))
             modManager.DataEditor.ChangeLastConfigEdit(Mod, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
 

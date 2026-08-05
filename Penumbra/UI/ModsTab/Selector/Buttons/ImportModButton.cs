@@ -22,10 +22,10 @@ public sealed class ImportModButton(ModFileSystemDrawer drawer) : BaseIconButton
     /// <inheritdoc/>
     public override void OnClick()
     {
-        var modPath = drawer.Config.DefaultModImportPath.Length > 0
-            ? drawer.Config.DefaultModImportPath
-            : drawer.Config.ModDirectory.Length > 0
-                ? drawer.Config.ModDirectory
+        var modPath = drawer.Config.Io.DefaultModImportPath.Length > 0
+            ? drawer.Config.Io.DefaultModImportPath
+            : drawer.Config.Main.ModDirectory.Length > 0
+                ? drawer.Config.Main.ModDirectory
                 : null;
 
         drawer.FileService.OpenFilePicker("Import Mod Pack",
@@ -36,7 +36,7 @@ public sealed class ImportModButton(ModFileSystemDrawer drawer) : BaseIconButton
                     return;
 
                 drawer.ModImport.AddUnpack(f);
-            }, 0, modPath, drawer.Config.AlwaysOpenDefaultImport);
+            }, 0, modPath, drawer.Config.Io.AlwaysOpenDefaultImport);
     }
 
     /// <inheritdoc/>

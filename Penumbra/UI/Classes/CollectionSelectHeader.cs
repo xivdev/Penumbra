@@ -52,8 +52,8 @@ public class CollectionSelectHeader(
 
     private void DrawTemporaryCheckbox()
     {
-        var hold = config.IncognitoModifier.IsActive();
-        var tint = config.DefaultTemporaryMode
+        var hold = LunaStyle.Modifier.Misclick.Active;
+        var tint = config.Main.DefaultTemporaryMode
             ? Rgba32.TintColor(ImGuiColor.Text.Vector, ColorId.TemporaryModSettingsTint.Vector)
             : ImGuiColor.TextDisabled.Vector;
         var frameBg = ImGuiColor.FrameBackground.Vector;
@@ -63,16 +63,13 @@ public class CollectionSelectHeader(
                    .Push(ImGuiColor.ButtonActive,  frameBg, !hold))
         {
             if (ImEx.Icon.Button(Icon, buttonColor: frameBg, textColor: tint) && hold)
-            {
-                config.DefaultTemporaryMode = !config.DefaultTemporaryMode;
-                config.Save();
-            }
+                config.Main.DefaultTemporaryMode ^= true;
         }
 
         Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled,
-            "Toggle the temporary settings mode, where all changes you do create temporary settings first and need to be made permanent if desired."u8, true);
-        if (!hold)
-            Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"\nHold {config.IncognitoModifier} while clicking to toggle.", true);
+            "Toggle the temporary settings mode, where all changes you do create temporary settings first and need to be made permanent if desired."u8,
+            true);
+        LunaStyle.Modifier.Misclick.TooltipLineBreak("toggle"u8);
     }
 
     private enum CollectionState

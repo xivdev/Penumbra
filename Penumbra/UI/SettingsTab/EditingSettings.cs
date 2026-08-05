@@ -7,10 +7,6 @@ public sealed class EditingSettings(EditingConfig config) : IUiService
 {
     public void Draw()
     {
-        using var header = Im.Tree.HeaderId("File Editing"u8);
-        if (!header)
-            return;
-
         DrawGeneralEditing();
         DrawMaterialEditing();
     }
@@ -25,6 +21,7 @@ public sealed class EditingSettings(EditingConfig config) : IUiService
                 "Determines the default pinning behavior when opening a new Advanced Editing window.\n\nPinned: The editing window will stay on the mod it was on at the time of opening/pinning.\nUnpinned: When changing your selected mod in the main window, the editing window will follow the selection, unless a pinned window exists for the new selected mod."u8,
                 config.DefaultEditWindowModPinned))
             config.DefaultEditWindowModPinned ^= true;
+        LunaStyle.DrawSeparator();
     }
 
 

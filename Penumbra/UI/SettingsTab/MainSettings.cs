@@ -52,6 +52,8 @@ public sealed class MainSettings(
                 "When you make any changes to your collection, apply them as temporary changes first and require a click to 'turn permanent' if you want to keep them.\n\nThis can also be changed directly in the Mods tab."u8,
                 config.DefaultTemporaryMode))
             config.DefaultTemporaryMode ^= true;
+
+        Im.Line.Spacing();
     }
 
 

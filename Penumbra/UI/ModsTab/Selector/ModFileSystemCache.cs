@@ -183,7 +183,7 @@ public sealed class ModFileSystemCache : FileSystemCache<ModFileSystemCache.ModD
 
             modManager.SetKnown(Node.Value);
             var (setting, collection) = collectionManager.Active.Current.GetActualSettings(Node.Value.Index);
-            if (config.DeleteModModifier.ForcedModifier(new DoubleModifier(ModifierHotkey.Control, ModifierHotkey.Shift)).IsActive())
+            if (LunaStyle.Modifier.Destructive.Modifier.ForcedModifier(new DoubleModifier(ModifierHotkey.Control, ModifierHotkey.Shift)).IsActive())
             {
                 // Delete temporary settings if they exist, regardless of mode, or set to inheriting if none exist.
                 if (collectionManager.Active.Current.GetTempSettings(Node.Value.Index) is not null)
@@ -193,7 +193,7 @@ public sealed class ModFileSystemCache : FileSystemCache<ModFileSystemCache.ModD
             }
             else
             {
-                if (config.DefaultTemporaryMode)
+                if (config.Main.DefaultTemporaryMode)
                 {
                     var settings = new TemporaryModSettings(Node.Value, setting) { ForceInherit = false };
                     settings.Enabled = !settings.Enabled;
@@ -215,7 +215,7 @@ public sealed class ModFileSystemCache : FileSystemCache<ModFileSystemCache.ModD
                 return;
 
             var config = ((ModFileSystemDrawer)cache.Parent).Config;
-            if (config.HidePrioritiesInSelector)
+            if (config.Ui.HidePrioritiesInSelector)
                 return;
 
             var line           = Im.Item.UpperLeftCorner.Y;

@@ -112,7 +112,7 @@ public partial class TexToolsImporter : IDisposable
             {
                 var directory = VerifyVersionAndImport(file);
                 ExtractedMods.Add(new ModImportResult(file, directory, null));
-                if (_config.AutoDeduplicateOnImport)
+                if (_config.Advanced.AutoDeduplicateOnImport)
                 {
                     State = ImporterState.DeduplicatingFiles;
                     _duplicates.DeduplicateMod(directory);

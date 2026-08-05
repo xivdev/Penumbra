@@ -24,10 +24,6 @@ public sealed class AdvancedSettings(
     /// <summary> Draw all advanced settings. </summary>
     public void Draw()
     {
-        using var header = Im.Tree.HeaderId("Advanced"u8);
-        if (!header)
-            return;
-
         if (SettingsTab.Checkbox("Enable Penumbra Crash Logging (Experimental)"u8,
                 "Enables Penumbra to launch a secondary process that records some game activity which may or may not help diagnosing Penumbra-related game crashes."u8,
                 config.UseCrashHandler ?? false))
@@ -60,7 +56,7 @@ public sealed class AdvancedSettings(
         Im.Separator();
         DrawReloadResourceButton();
         DrawReloadFontsButton();
-        Im.Line.New();
+        Im.Line.Spacing();
     }
 
     private void DrawCompressionBox()

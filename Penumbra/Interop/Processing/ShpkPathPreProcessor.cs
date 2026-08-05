@@ -15,7 +15,7 @@ namespace Penumbra.Interop.Processing;
 /// <summary>
 /// Path pre-processor for shader packages that reverts redirects to known invalid files, as bad ShPks can crash the game.
 /// </summary>
-public sealed class ShpkPathPreProcessor(ResourceManagerService resourceManager, MessageService messager, ModManager modManager)
+public sealed class ShpkPathPreProcessor(ResourceManagerService resourceManager, PenumbraMessager messager, ModManager modManager)
     : IPathPreProcessor
 {
     public ResourceType Type

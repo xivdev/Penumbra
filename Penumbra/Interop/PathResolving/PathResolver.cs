@@ -10,7 +10,7 @@ namespace Penumbra.Interop.PathResolving;
 
 public class PathResolver : IDisposable, Luna.IService
 {
-    private readonly Configuration     _config;
+    private readonly MainConfig        _config;
     private readonly CollectionManager _collectionManager;
     private readonly ResourceLoader    _loader;
 
@@ -21,7 +21,7 @@ public class PathResolver : IDisposable, Luna.IService
     private readonly CollectionResolver        _collectionResolver;
     private readonly GamePathPreProcessService _preprocessor;
 
-    public PathResolver(Configuration config, CollectionManager collectionManager, ResourceLoader loader,
+    public PathResolver(MainConfig config, CollectionManager collectionManager, ResourceLoader loader,
         SubfileHelper subfileHelper, PathState pathState, MetaState metaState, CollectionResolver collectionResolver, GameState gameState,
         GamePathPreProcessService preprocessor)
     {

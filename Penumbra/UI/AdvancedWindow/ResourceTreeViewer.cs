@@ -66,7 +66,7 @@ public class ResourceTreeViewer(
         }
         else if (_task.IsCompletedSuccessfully)
         {
-            var debugMode = config.DebugMode;
+            var debugMode = config.Advanced.DebugMode;
             foreach (var (index, tree) in _task.Result.Index())
             {
                 var category = Classify(tree);
@@ -108,9 +108,9 @@ public class ResourceTreeViewer(
                 if (ImEx.Button("Export To..."u8,
                         "Note that this recomputes the current data of the actor if it still exists, and does not use the cached data."u8))
                     fileDialog.OpenSavePicker("Export PCP...",
-                        $"Penumbra Mod Packs{{.pcp,.pmp}},{config.PcpSettings.PcpExtension},Any File{{.*}}",
+                        $"Penumbra Mod Packs{{.pcp,.pmp}},{config.Io.PcpExtension},Any File{{.*}}",
                         PcpService.ModName(tree.Name, _note, DateTime.Now),
-                        config.PcpSettings.PcpExtension,
+                        config.Io.PcpExtension,
                         (selected, path) =>
                         {
                             if (!selected)
@@ -126,7 +126,7 @@ public class ResourceTreeViewer(
                                     Penumbra.Messager.NotificationMessage(text, NotificationType.Error, false);
                             });
                             _note = string.Empty;
-                        }, config.ExportDirectory, false);
+                        }, config.Io.ExportDirectory, false);
                 Im.Line.SameInner();
                 Im.Item.SetNextWidth(Im.ContentRegion.Available.X);
                 Im.Input.Text("##note"u8, ref _note, "Export note..."u8);
@@ -253,7 +253,7 @@ public class ResourceTreeViewer(
     private void DrawNodes(in Im.TableDisposable table, IEnumerable<ResourceNode> resourceNodes, int level, nint pathHash,
         ChangedItemIconFlag parentFilterIconFlag)
     {
-        var debugMode   = config.DebugMode;
+        var debugMode   = config.Advanced.DebugMode;
         var frameHeight = Im.Style.FrameHeight;
 
         foreach (var (index, resourceNode) in resourceNodes.Index())

@@ -145,7 +145,7 @@ public sealed class EffectiveTab(
     {
         public GamePathFilter(Configuration config)
         {
-            if (config.RememberEffectiveChangesFilters)
+            if (config.Ui.RememberEffectiveChangesFilters)
                 Set(config.Filters.EffectiveChangesGamePathFilter);
             FilterChanged += () => config.Filters.EffectiveChangesGamePathFilter = Text;
         }
@@ -158,7 +158,7 @@ public sealed class EffectiveTab(
     {
         public FullPathFilter(Configuration config)
         {
-            if (config.RememberEffectiveChangesFilters)
+            if (config.Ui.RememberEffectiveChangesFilters)
                 Set(config.Filters.EffectiveChangesFilePathFilter);
             FilterChanged += () => config.Filters.EffectiveChangesFilePathFilter = Text;
         }
