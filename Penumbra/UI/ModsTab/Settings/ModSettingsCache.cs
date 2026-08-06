@@ -301,7 +301,7 @@ public sealed class ModSettingsCache : BasicCache
             IModObject obj = node is ModSettingGroup c ? c.Group : ((ModSettingOption)node).Data;
             AnyConditions |= obj.Condition is not null;
             var condition = obj.Condition is null || obj.Condition.Evaluate(context);
-            node.Visible  = condition || obj.Layout.HasFlag(ModSettingsLayout.Disable) || obj is SingleSubMod;
+            node.Visible  = condition || !obj.Layout.HasFlag(ModSettingsLayout.Hide) || obj is SingleSubMod;
             node.Disabled = node.Visible && (!condition || obj is SingleModGroup { IsOption: false });
         }
 

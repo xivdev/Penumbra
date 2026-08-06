@@ -22,10 +22,10 @@ public sealed class LayoutEditPopup(ModManager mods) : ObjectEditPopup, IUiServi
         DrawIdentifier(group);
         _parentCombo.Draw("Parent Setting"u8, group, ImEx.GuidInputWidth + Im.Style.ItemInnerSpacing.X + Im.Style.FrameHeight);
         var layout = group.Layout;
-        if (Im.Checkbox("Disable When Condition Not Met"u8, ref layout, ModSettingsLayout.Disable))
+        if (Im.Checkbox("Hide When Condition Not Met"u8, ref layout, ModSettingsLayout.Hide))
             mods.OptionEditor.SetLayout(group, layout);
         Im.Tooltip.OnHover(
-            "When this is checked, this group is not hidden when its conditions are not met, and instead still displays, but is disabled."u8);
+            "When this is checked, this group is not just disabled when its conditions are not met, but fully hidden instead."u8);
         if (Im.Checkbox("Collapsed By Default"u8, ref layout, ModSettingsLayout.DefaultClosed))
             mods.OptionEditor.SetLayout(group, layout);
         Im.Tooltip.OnHover(
@@ -74,10 +74,10 @@ public sealed class LayoutEditPopup(ModManager mods) : ObjectEditPopup, IUiServi
         }
         else
         {
-            if (Im.Checkbox("Disable When Condition Not Met"u8, ref layout, ModSettingsLayout.Disable))
+            if (Im.Checkbox("Hide When Condition Not Met"u8, ref layout, ModSettingsLayout.Hide))
                 mods.OptionEditor.SetLayout(option, layout);
             Im.Tooltip.OnHover(
-                "When this is checked, this option is not hidden when its conditions are not met, and instead still displays, but is disabled."u8);
+                "When this is checked, this option is not just disabled when its conditions are not met, but fully hidden instead."u8);
         }
 
         if (Im.Checkbox("Add Spacing"u8, ref layout, ModSettingsLayout.Space))

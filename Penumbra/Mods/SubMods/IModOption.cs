@@ -10,7 +10,7 @@ namespace Penumbra.Mods.SubMods;
 public enum ModSettingsLayout : ulong
 {
     None            = 0,
-    Disable         = 0x01, // Disable the option or group instead of hiding it when the conditions are not fulfilled.
+    Hide            = 0x01, // Hide the option or group instead of disabling it when the conditions are not fulfilled.
     Space           = 0x02, // Add a line of empty space after this group (after all options in the group) or option.
     ParentHeader    = 0x04, // Show the groups name or just its options if it is placed under another option or group.
     Separator       = 0x08, // Add a separator after this option.
@@ -89,19 +89,19 @@ public interface IModOption : IModObject, IIndexed
 
 public static class ModSettingsLayoutExtensions
 {
-    public const ModSettingsLayout GroupValid = ModSettingsLayout.Disable
+    public const ModSettingsLayout GroupValid = ModSettingsLayout.Hide
       | ModSettingsLayout.Space
       | ModSettingsLayout.ParentHeader
       | ModSettingsLayout.DefaultClosed;
 
-    public const ModSettingsLayout OptionValid = ModSettingsLayout.Disable | ModSettingsLayout.Separator | ModSettingsLayout.Space| ModSettingsLayout.HideOptionLabel;
+    public const ModSettingsLayout OptionValid = ModSettingsLayout.Hide | ModSettingsLayout.Separator | ModSettingsLayout.Space| ModSettingsLayout.HideOptionLabel;
 
     extension(ModSettingsLayout layout)
     {
         public IEnumerable<ModSettingsLayout> Iterate()
         {
-            if (layout.HasFlag(ModSettingsLayout.Disable))
-                yield return ModSettingsLayout.Disable;
+            if (layout.HasFlag(ModSettingsLayout.Hide))
+                yield return ModSettingsLayout.Hide;
             if (layout.HasFlag(ModSettingsLayout.Space))
                 yield return ModSettingsLayout.Space;
             if (layout.HasFlag(ModSettingsLayout.ParentHeader))
@@ -115,11 +115,13 @@ public static class ModSettingsLayoutExtensions
         }
 
         public ModSettingsLayout Reduce(IModObject @object)
-            => @object switch
+        {
+            return @object switch
             {
                 IModGroup  => layout & GroupValid,
                 IModOption => layout & OptionValid,
                 _          => 0,
             };
+        }
     }
 }
