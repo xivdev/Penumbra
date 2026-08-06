@@ -562,8 +562,7 @@ public static class MetaDeserialization
     }
 
     private static void AddSingleManipulation(IModDataContainer? container, Utf8JsonObjectLimit objectReader, ref Utf8JsonReader reader,
-        MetaDictionary ret,
-        MetaManipulationType type)
+        MetaDictionary ret, MetaManipulationType type)
     {
         while (objectReader.Read(ref reader))
         {

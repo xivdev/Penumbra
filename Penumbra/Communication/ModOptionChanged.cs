@@ -18,6 +18,9 @@ public sealed class ModOptionChanged(LunaLogger log)
         /// <seealso cref="ModSettingsApi.OnModOptionEdited"/>
         Api = int.MinValue,
 
+        /// <seealso cref="Mods.Settings.SettingPresetManager.OnModOptionChange"/>
+        SettingPresetManager = -500,
+
         /// <seealso cref="Collections.Cache.CollectionCacheManager.OnModOptionChange"/>
         CollectionCacheManager = -100,
 
@@ -50,7 +53,7 @@ public sealed class ModOptionChanged(LunaLogger log)
     /// <param name="Option"> The changed option inside the group or null if it does not concern a specific option. </param>
     /// <param name="Container"> The changed data container inside the group or null if it does not concern a specific data container. </param>
     /// <param name="Id"> The GUID of the changed object if available, empty otherwise. For <see cref="ModOptionChangeType.GroupIdentifierChanged"/> and <see cref="ModOptionChangeType.OptionIdentifierChanged"/>, the replaced GUID. </param>
-    /// <param name="DeletedIndex"> The index of the group or option moved or deleted from. </param>
+    /// <param name="OldName"> The name prior to the change in case of renames. </param>
     public readonly record struct Arguments(
         ModOptionChangeType Type,
         Mod Mod,
@@ -58,5 +61,6 @@ public sealed class ModOptionChanged(LunaLogger log)
         IModOption? Option,
         IModDataContainer? Container,
         Guid Id,
-        int DeletedIndex);
+        int DeletedIndex, 
+        string? OldName);
 }

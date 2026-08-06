@@ -19,7 +19,9 @@ public readonly record struct ModSettingContext(Mod Mod, ModSettings Settings, I
             if (reader.TokenType is not JsonTokenType.PropertyName)
                 return null;
 
-            if (!reader.GuidProperty("Setting"u8, out guid))
+            if (reader.GuidProperty("Setting"u8, out var g))
+                guid = g;
+            else
                 reader.Skip();
         }
 

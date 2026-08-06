@@ -69,6 +69,7 @@ public sealed class FilenameService(IDalamudPluginInterface pi, LocalModDatabase
     public readonly string          LocalModDatabase      = Path.Combine(pi.ConfigDirectory.FullName, "mod_data.db");
     public readonly string          ActiveCollectionsFile = Path.Combine(pi.ConfigDirectory.FullName, "active_collections.json");
     public readonly string          PredefinedTagFile     = Path.Combine(pi.ConfigDirectory.FullName, "predefined_tags.json");
+    public readonly string          SettingPresetFile     = Path.Combine(pi.ConfigDirectory.FullName, "setting_presets.json");
     public readonly string          ManagementLog         = Path.Combine(pi.ConfigDirectory.FullName, "management.log");
     public readonly string          CrashHandlerExe       = Path.Combine(pi.AssemblyLocation.DirectoryName!, "Penumbra.CrashHandler.exe");
     public readonly string          LogFileName           = Path.Combine(pi.ConfigDirectory.Parent!.Parent!.FullName, "Penumbra.log");
