@@ -1,3 +1,4 @@
+using ImSharp;
 using Luna;
 using Penumbra.Api.Enums;
 using Penumbra.Api.Preset;
@@ -14,7 +15,7 @@ public class PresetApi(ApiHelpers helpers, CollectionManager collections, ModMan
         int key)
     {
         var args = ApiHelpers.Args("CollectionId", collectionId, "ModDirectory", mod.Identifier, "ModName", mod.Name, "Mode", mode, "Key", key);
-        var needsCollection = mode.HasFlag(PresetQueryMode.GetDefault) || mode.HasFlag(PresetQueryMode.IgnoreSettings);
+        var needsCollection = !mode.CheckAny(PresetQueryMode.GetDefault | PresetQueryMode.IgnoreSettings);
         var collection = ModCollection.Empty;
         if (needsCollection)
             if (!collections.Storage.ById(collectionId, out collection))
@@ -93,15 +94,26 @@ public class PresetApi(ApiHelpers helpers, CollectionManager collections, ModMan
         // - use the own or inherited setting configuration of the collection or null settings if not configured nor inherited, if we ignore temporary.
         // - use the actual temporary settings if those are not set to inherited, or null if they are, or the own settings, or null if they are not configured, if we ignore inheritance
         // - use the actual settings (which may be null) if we ignore nothing.
-        var relevantSettings = mode.HasFlag(PresetQueryMode.GetDefault) || mode.HasFlag(PresetQueryMode.IgnoreSettings)
-            ? null
-            : mode.HasFlag(PresetQueryMode.IgnoreTemporary)
-                ? mode.HasFlag(PresetQueryMode.IgnoreInheritance)
-                    ? collection.GetOwnSettings(mod.Index)
-                    : collection.GetInheritedSettings(mod.Index).Settings
-                : mode.HasFlag(PresetQueryMode.IgnoreInheritance)
-                    ? collection.GetTempSettings(mod.Index) is { } s ? s.ForceInherit ? null : s : collection.GetOwnSettings(mod.Index)
-                    : collection.GetActualSettings(mod.Index).Settings;
+        var relevantSettings = ModSettings.Empty;
+        if (!mode.CheckAny(PresetQueryMode.GetDefault | PresetQueryMode.IgnoreSettings))
+        {
+            if (mode.HasFlag(PresetQueryMode.IgnoreTemporary))
+            {
+                if (mode.HasFlag(PresetQueryMode.IgnoreInheritance))
+                    relevantSettings = collection.GetOwnSettings(mod.Index);
+                else
+                    relevantSettings = collection.GetInheritedSettings(mod.Index).Settings;
+            }
+            else
+            {
+                if (mode.HasFlag(PresetQueryMode.IgnoreInheritance))
+                    relevantSettings = collection.GetTempSettings(mod.Index) is { } s
+                        ? s.ForceInherit ? null : s
+                        : collection.GetOwnSettings(mod.Index);
+                else
+                    relevantSettings = collection.GetActualSettings(mod.Index).Settings;
+            }
+        }
 
         var preset = SettingPresetData.FromMod(mod, relevantSettings);
         if (mode.HasFlag(PresetQueryMode.IgnoreDisabled))
