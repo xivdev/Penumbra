@@ -143,6 +143,11 @@ public sealed class IpcProviders : IDisposable, IApiService, IRequiredService
             IpcSubscribers.CloseMainWindow.Provider(pi, api.Ui),
             IpcSubscribers.RegisterSettingsSection.Provider(pi, api.Ui),
             IpcSubscribers.UnregisterSettingsSection.Provider(pi, api.Ui),
+
+            IpcSubscribers.GetPreset.Provider(pi, api.Presets),
+            IpcSubscribers.GetPresetPlayer.Provider(pi, api.Presets),
+            IpcSubscribers.ApplyPreset.Provider(pi, api.Presets),
+            IpcSubscribers.ApplyPresetPlayer.Provider(pi, api.Presets),
         ];
         if (_characterUtility.Ready)
             _initializedProvider.Invoke();

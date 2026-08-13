@@ -213,8 +213,7 @@ public class TemporaryApi(
             return ApiHelpers.Return(PenumbraApiEc.ModMissing, args);
 
         if (!collectionManager.Editor.CanSetTemporarySettings(collection, mod, key))
-            if (collection.GetTempSettings(mod.Index) is { Lock: > 0 } oldSettings && oldSettings.Lock != key)
-                return ApiHelpers.Return(PenumbraApiEc.TemporarySettingDisallowed, args);
+            return ApiHelpers.Return(PenumbraApiEc.TemporarySettingDisallowed, args);
 
         var newSettings = new TemporaryModSettings
         {
