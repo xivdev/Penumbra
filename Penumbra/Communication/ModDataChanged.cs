@@ -1,7 +1,6 @@
 using Luna;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
-using Penumbra.UI.ModsTab.Settings;
 
 namespace Penumbra.Communication;
 

@@ -1,5 +1,6 @@
 using Luna;
 using Luna.Generators;
+using Penumbra.Api.Preset;
 using Penumbra.Files;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Structs;
@@ -73,6 +74,7 @@ public sealed class Mod : IMod, IFileSystemValue<Mod>
 
 
     // Local Data
+    public List<SettingPreset>   Presets               { get; internal set; } = [];
     public DataPath              Path                  { get; }               = new();
     public long                  ImportDate            { get; internal set; } = DateTimeOffset.UnixEpoch.ToUnixTimeMilliseconds();
     public long                  LastConfigEdit        { get; internal set; } = DateTimeOffset.UnixEpoch.ToUnixTimeMilliseconds();
@@ -121,9 +123,11 @@ public sealed class Mod : IMod, IFileSystemValue<Mod>
         {
             if (group.Layout is not 0 || group.ParentSetting is not null || group.Condition is not null)
                 flags |= FeatureFlags.Layout;
-            foreach(var option in group.Options)
+            foreach (var option in group.Options)
+            {
                 if (option.ColorAsInteger is not 0 || option.Layout is not 0 || option.Condition is not null)
                     flags |= FeatureFlags.Layout;
+            }
         }
 
         return flags;

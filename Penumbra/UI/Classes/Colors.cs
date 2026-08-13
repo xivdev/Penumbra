@@ -56,6 +56,7 @@ public enum ColorId
     GroupLabelTextCollapsed,
     OptionBorder,
     HiddenOptionIndicator,
+    ModSpecificPreset,
 }
 
 public static class Colors

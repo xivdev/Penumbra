@@ -1,6 +1,7 @@
 using System.Text.Json;
 using LiteDB;
 using Luna;
+using Penumbra.Api.Preset;
 using Penumbra.Files;
 using Penumbra.GameData.Structs;
 
@@ -8,64 +9,40 @@ namespace Penumbra.Mods.Manager;
 
 public sealed class LocalModDatabase(ServiceManager services) : IDisposable, IService
 {
-    private readonly Lock                   _lock = new();
-    private          LiteDatabase?          _database;
-    private          ILiteCollection<Data>? _collection;
+    private readonly Lock                         _lock = new();
+    private          LiteDatabase?                _database;
+    private          ILiteCollection<ModData>?    _collection;
+    private          ILiteCollection<PresetData>? _presets;
 
     public string FilePath
-    {
-        get => field ??= services.GetService<FilenameService>().LocalModDatabase;
-    }
+        => field ??= services.GetService<FilenameService>().LocalModDatabase;
 
-    [MemberNotNull(nameof(_collection))]
-    private ILiteCollection<Data> Check([CallerMemberName] string callerName = "")
+    [MemberNotNull(nameof(_presets), nameof(_collection))]
+    private (ILiteCollection<ModData> Data, ILiteCollection<PresetData> Presets) Check([CallerMemberName] string callerName = "")
     {
         lock (_lock)
         {
             Log(callerName);
-            if (_collection is { } collection)
-                return collection;
+            if (_collection is { } collection && _presets is { } presets)
+                return (collection, presets);
 
             _database = new LiteDatabase(
                 $"Filename={FilePath};Connection=Shared;Timeout=00:00:02");
             _database.Mapper.EmptyStringToNull   = false;
             _database.Mapper.IncludeFields       = true;
             _database.Mapper.SerializeNullValues = false;
-            _collection                          = _database.GetCollection<Data>("LocalModData");
+            _collection                          = _database.GetCollection<ModData>("LocalModData");
+            _presets                             = _database.GetCollection<PresetData>("PresetData");
             _collection.EnsureIndex(x => x.Id, true);
+            _presets.EnsureIndex(x => x.Id, true);
+            _presets.EnsureIndex(x => x.Mod);
         }
 
-        return _collection;
+        return (_collection, _presets);
     }
 
     public IBackupFile CreateBackupFile(string filePath)
         => new DatabaseBackup(this, filePath);
-
-    private sealed class DatabaseBackup(LocalModDatabase db, string filePath) : IBackupFile
-    {
-        public bool Exists
-            => File.Exists(filePath);
-
-        public string Path
-            => filePath;
-
-        public bool Equals(Stream other)
-        {
-            lock (db._lock)
-            {
-                using var currentData = File.Open(Path, FileMode.Open, FileAccess.Read, FileShare.Read);
-                return IBackupFile.Equals(currentData, other);
-            }
-        }
-            
-        public void   CreateEntry(ZipArchive archive, string rootDirectory)
-        {
-            lock (db._lock)
-            {
-                archive.CreateEntryFromFile(filePath, System.IO.Path.GetRelativePath(rootDirectory, filePath), CompressionLevel.Optimal);
-            }
-        }
-    }
 
     public void Close()
     {
@@ -74,6 +51,170 @@ public sealed class LocalModDatabase(ServiceManager services) : IDisposable, ISe
             _database?.Dispose();
             _database   = null;
             _collection = null;
+            _presets    = null;
+        }
+    }
+
+    public bool Delete(string id)
+    {
+        lock (_lock)
+        {
+            Check();
+            return _presets.Delete(id) | _collection.Delete(id);
+        }
+    }
+
+    public TransactionDisposable Transaction()
+    {
+        lock (_lock)
+        {
+            Check();
+            return new TransactionDisposable(this);
+        }
+    }
+
+    public void UpsertFullPreset(string modIdentifier, SettingPreset preset)
+    {
+        lock (_lock)
+        {
+            Check().Presets.Upsert(new PresetData(preset, modIdentifier));
+        }
+    }
+
+    internal void UpsertPresetProperty(string modIdentifier, SettingPreset preset,
+        System.Linq.Expressions.Expression<Func<PresetData, PresetData>> expression)
+    {
+        lock (_lock)
+        {
+            if (Check().Presets.UpdateMany(expression, p => p.Id == preset.Identifier) is not 1)
+                _presets.Insert(new PresetData(preset, modIdentifier));
+        }
+    }
+
+    internal void DeletePreset(Guid identifier)
+    {
+        lock (_lock)
+        {
+            Check().Presets.Delete(identifier);
+        }
+    }
+
+    public void UpsertFullMod(Mod mod)
+    {
+        lock (_lock)
+        {
+            Check().Data.Upsert(new ModData(mod));
+        }
+    }
+
+    internal void UpsertModProperty(Mod mod, System.Linq.Expressions.Expression<Func<ModData, ModData>> expression)
+    {
+        lock (_lock)
+        {
+            if (Check().Data.UpdateMany(expression, p => p.Id == mod.Identifier) is not 1)
+                _collection.Insert(new ModData(mod));
+        }
+    }
+
+    public void Move(string oldId, string newId)
+    {
+        lock (_lock)
+        {
+            Check();
+            if (_collection.FindById(oldId) is { } data)
+            {
+                _collection.Delete(oldId);
+                _collection.Upsert(new ModData(data, newId));
+            }
+
+            _presets.UpdateMany(_ => new PresetData { Mod = newId }, p => p.Mod == oldId);
+        }
+    }
+
+    public ModDataChangeType AddData(Mod mod)
+    {
+        lock (_lock)
+        {
+            var ret = ModDataChangeType.None;
+            Check();
+            try
+            {
+                if (_collection.FindById(mod.Identifier) is { } data)
+                {
+                    ret |= data.ApplyToMod(mod);
+                }
+                else
+                {
+                    _collection.Upsert(new ModData(mod));
+                    Penumbra.Log.Debug($"Added new local mod data data for {mod.Identifier}.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Penumbra.Log.Debug($"Failure to read local mod data for {mod.Identifier}:\n{ex}");
+            }
+
+            try
+            {
+                mod.Presets.Clear();
+                mod.Presets.AddRange(_presets.Find(m => m.Mod == mod.Identifier).Select(p => p.ToPreset()));
+            }
+            catch (Exception ex)
+            {
+                Penumbra.Log.Debug($"Failure to read mod setting presets for {mod.Identifier}:\n{ex}");
+            }
+
+            return ret;
+        }
+    }
+
+    public List<SettingPreset> GetGenericPresets()
+    {
+        var list = new List<SettingPreset>();
+        lock (_lock)
+        {
+            list.AddRange(Check().Presets.Find(m => m.Mod.Length == 0).Select(p => p.ToPreset()));
+            return list;
+        }
+    }
+
+    public void Dispose()
+        => Close();
+
+    public HashSet<string> GetIds()
+    {
+        lock (_lock)
+        {
+            var set = Check().Data.FindAll().Select(c => c.Id).ToHashSet();
+            return set;
+        }
+    }
+
+    public int Count
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return Check().Data.Count();
+            }
+        }
+    }
+
+    public ref struct TransactionDisposable(LocalModDatabase db)
+    {
+        private bool _enabled = db._database!.BeginTrans();
+
+        public void Dispose()
+        {
+            if (!_enabled)
+                return;
+
+            lock (db._lock)
+            {
+                db.Log();
+                _enabled = !db._database!.Commit();
+            }
         }
     }
 
@@ -93,7 +234,7 @@ public sealed class LocalModDatabase(ServiceManager services) : IDisposable, ISe
                     var data   = JsonFunctions.ReadUtf8Bytes(file, out _);
                     var reader = new Utf8JsonReader(data.Span, JsonFunctions.ReaderOptions);
 
-                    var modData = new Data(id);
+                    var modData = new ModData(id);
 
                     while (reader.Read())
                     {
@@ -180,7 +321,70 @@ public sealed class LocalModDatabase(ServiceManager services) : IDisposable, ISe
         }
     }
 
-    private sealed class Data()
+    internal struct PresetData()
+    {
+        [BsonId]
+        public Guid Id = Guid.Empty;
+
+        public string        Mod  = string.Empty;
+        public string        Name = string.Empty;
+        public long          LastEdit;
+        public long          LastApplication;
+        public int?          Priority;
+        public short         Version;
+        public ModState      State;
+        public SettingData[] Settings = [];
+
+        public readonly struct SettingData(in ModObjectIdentifier group, in GroupSettingData data)
+        {
+            public readonly ModObjectIdentifier Group = group;
+
+            public readonly (ModObjectIdentifier Option, OptionState State)[] Options =
+                data.Options.Select(kvp => (kvp.Key, (OptionState)kvp.Value)).ToArray();
+
+            public readonly bool DisableAllUnknown = data.DisableAllUnknown;
+        }
+
+        public SettingPreset ToPreset()
+        {
+            var data = SettingPresetData.Create();
+            data.Version                        = Version;
+            (data._hasPriority, data._priority) = Priority.HasValue ? (true, Priority.Value) : (false, 0);
+            data._state                         = (byte)State;
+            foreach (var group in Settings)
+            {
+                var groupData = GroupSettingData.Create();
+                groupData.DisableAllUnknown = group.DisableAllUnknown;
+                foreach (var (option, state) in group.Options)
+                    groupData.Options.TryAdd(option, (byte)state);
+                data.Settings.TryAdd(group.Group, groupData);
+            }
+
+            var ret = new SettingPreset(Id, data)
+            {
+                Name            = Name,
+                LastEdit        = DateTimeOffset.FromUnixTimeMilliseconds(LastEdit),
+                LastApplication = DateTimeOffset.FromUnixTimeMilliseconds(LastApplication),
+            };
+            return ret;
+        }
+
+        public PresetData(SettingPreset preset, string mod = "")
+            : this()
+        {
+            Id              = preset.Identifier;
+            Version         = preset.Data.Version;
+            Mod             = mod;
+            LastEdit        = preset.LastEdit.ToUnixTimeMilliseconds();
+            LastApplication = preset.LastApplication.ToUnixTimeMilliseconds();
+            Name            = preset.Name;
+            Priority        = preset.Data.Priority;
+            State           = preset.Data.State;
+            Settings        = preset.Data.Settings.Select(kvp => new SettingData(kvp.Key, kvp.Value)).ToArray();
+        }
+    }
+
+    internal struct ModData()
     {
         [BsonId]
         public string Id { get; private set; } = string.Empty;
@@ -194,19 +398,17 @@ public sealed class LocalModDatabase(ServiceManager services) : IDisposable, ISe
         public string          Folder                = string.Empty;
         public string?         SortOrderName;
 
-        public Data(string id)
+        public ModData(string id)
             : this()
-        {
-            Id = id;
-        }
+            => Id = id;
 
-        public Data(Mod mod)
+        public ModData(Mod mod)
             : this(mod.Identifier)
         {
             Update(mod);
         }
 
-        public Data(Data old, string newId)
+        public ModData(ModData old, string newId)
             : this(newId)
         {
             ImportDate            = old.ImportDate;
@@ -219,7 +421,7 @@ public sealed class LocalModDatabase(ServiceManager services) : IDisposable, ISe
             SortOrderName         = old.SortOrderName;
         }
 
-        public Data Update(Mod mod)
+        public ModData Update(Mod mod)
         {
             if (!string.Equals(mod.Identifier, Id, StringComparison.OrdinalIgnoreCase))
                 throw new Exception($"Updating mod database data for {Id} with {mod.Identifier}.");
@@ -286,199 +488,28 @@ public sealed class LocalModDatabase(ServiceManager services) : IDisposable, ISe
         }
     }
 
-    public bool Delete(string id)
+    private sealed class DatabaseBackup(LocalModDatabase db, string filePath) : IBackupFile
     {
-        lock (_lock)
+        public bool Exists
+            => File.Exists(filePath);
+
+        public string Path
+            => filePath;
+
+        public bool Equals(Stream other)
         {
-            return Check().Delete(id);
-        }
-    }
-
-    public TransactionDisposable Transaction()
-    {
-        lock (_lock)
-        {
-            Check();
-            return new TransactionDisposable(this);
-        }
-    }
-
-    public void Upsert(Mod mod)
-    {
-        lock (_lock)
-        {
-            var data = Check().FindById(mod.Identifier)?.Update(mod) ?? new Data(mod);
-            _collection.Upsert(data);
-        }
-    }
-
-    public void Move(string oldId, string newId)
-    {
-        lock (_lock)
-        {
-            if (Check().FindById(oldId) is not { } data)
-                return;
-
-            _collection.Delete(oldId);
-            _collection.Upsert(new Data(data, newId));
-        }
-    }
-
-    public void UpsertImportDate(Mod mod)
-    {
-        lock (_lock)
-        {
-            if (GetOrCreateData(mod, out var data))
-                return;
-
-            data.ImportDate = mod.ImportDate;
-            _collection.Upsert(data);
-        }
-    }
-
-    public void UpsertLastConfigEdit(Mod mod)
-    {
-        lock (_lock)
-        {
-            if (GetOrCreateData(mod, out var data))
-                return;
-
-            data.LastConfigEdit = mod.LastConfigEdit;
-            _collection.Upsert(data);
-        }
-    }
-
-    public void UpsertFavorite(Mod mod)
-    {
-        lock (_lock)
-        {
-            if (GetOrCreateData(mod, out var data))
-                return;
-
-            data.Favorite = mod.Favorite;
-            _collection.Upsert(data);
-        }
-    }
-
-    public void UpsertNote(Mod mod)
-    {
-        lock (_lock)
-        {
-            if (GetOrCreateData(mod, out var data))
-                return;
-
-            data.Note = mod.Note;
-            _collection.Upsert(data);
-        }
-    }
-
-    public void UpsertPath(Mod mod)
-    {
-        lock (_lock)
-        {
-            if (GetOrCreateData(mod, out var data))
-                return;
-
-            data.Folder        = mod.Path.Folder;
-            data.SortOrderName = mod.Path.SortName;
-            _collection.Upsert(data);
-        }
-    }
-
-    public void UpsertChangedItems(Mod mod)
-    {
-        lock (_lock)
-        {
-            if (GetOrCreateData(mod, out var data))
-                return;
-
-            data.PreferredChangedItems = mod.PreferredChangedItems.Select(i => i.Id).ToHashSet();
-            _collection.Upsert(data);
-        }
-    }
-
-    public void UpsertTags(Mod mod)
-    {
-        lock (_lock)
-        {
-            if (GetOrCreateData(mod, out var data))
-                return;
-
-            data.LocalTags = mod.LocalTags.ToHashSet();
-            _collection.Upsert(data);
-        }
-    }
-
-    [MemberNotNull(nameof(_collection))]
-    private bool GetOrCreateData(Mod mod, out Data data)
-    {
-        if (Check().FindById(mod.Identifier) is { } d)
-        {
-            data = d;
-            return false;
-        }
-
-        data = new Data(mod);
-        return true;
-    }
-
-    public ModDataChangeType AddData(Mod mod)
-    {
-        lock (_lock)
-        {
-            if (Check().FindById(mod.Identifier) is { } data)
-                return data.ApplyToMod(mod);
-
-            _collection.Upsert(new Data(mod));
-            Penumbra.Log.Debug($"Added new local mod data for {mod.Identifier}.");
-            return ModDataChangeType.None;
-        }
-    }
-
-    public void AddData(ModStorage mods)
-    {
-        lock (_lock)
-        {
-            foreach (var mod in mods)
-                AddData(mod);
-        }
-    }
-
-    public void Dispose()
-        => Close();
-
-    public HashSet<string> GetIds()
-    {
-        lock (_lock)
-        {
-            return Check().FindAll().Select(c => c.Id).ToHashSet();
-        }
-    }
-
-    public int Count
-    {
-        get
-        {
-            lock (_lock)
-            {
-                return Check().Count();
-            }
-        }
-    }
-
-    public ref struct TransactionDisposable(LocalModDatabase db)
-    {
-        private bool _enabled = db._database!.BeginTrans();
-
-        public void Dispose()
-        {
-            if (!_enabled)
-                return;
-
             lock (db._lock)
             {
-                db.Log();
-                _enabled = !db._database!.Commit();
+                using var currentData = File.Open(Path, FileMode.Open, FileAccess.Read, FileShare.Read);
+                return IBackupFile.Equals(currentData, other);
+            }
+        }
+
+        public void CreateEntry(ZipArchive archive, string rootDirectory)
+        {
+            lock (db._lock)
+            {
+                archive.CreateEntryFromFile(filePath, System.IO.Path.GetRelativePath(rootDirectory, filePath), CompressionLevel.Optimal);
             }
         }
     }

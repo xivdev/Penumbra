@@ -82,6 +82,8 @@ public readonly struct ColorIdData : IColorData<ColorId>
             "An in-game element that has been highlighted for ease of editing."u8, metadata);
         ret[(int)InGameHighlight2] = new ColorData<ColorId>(0xFF446CC0, "In-Game Highlight (Secondary)"u8,
             "Another in-game element that has been highlighted for ease of editing."u8, metadata);
+        ret[(int)ModSpecificPreset] = new ColorData<ColorId>(DalamudColor.HealerGreen, "Mod-Specific Setting Preset"u8,
+            "The color of a setting preset specific to this mod as opposed to a generic setting preset in the preset combo."u8, metadata);
 
         // Collections
         ret[(int)SelectedCollection] = new ColorData<ColorId>(0x6069C056, "Currently Selected Collection"u8,

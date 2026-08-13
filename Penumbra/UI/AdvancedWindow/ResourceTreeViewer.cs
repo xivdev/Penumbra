@@ -271,12 +271,7 @@ public class ResourceTreeViewer(
             table.NextColumn();
             var unfolded = _unfolded.Contains(nodePathHash);
             if (level is 0 && index is not 0)
-            {
-                using var clip = Im.Drawing.PushClipRect(Rectangle.FromSize(Im.Window.Position, Im.Window.Size));
-                Im.Window.DrawList.Shape.Line(Im.Cursor.ScreenPosition.AddY(-Im.Style.CellPadding.Y),
-                    Im.Cursor.ScreenPosition + new Vector2(Im.Window.Width, -Im.Style.CellPadding.Y),
-                    ImGuiColor.Separator.Get(), Im.Style.GlobalScale);
-            }
+                table.DrawHorizontalSeparator();
 
             using (Im.Indent(level))
             {

@@ -1,5 +1,6 @@
 using Dalamud.Interface.ImGuiNotification;
 using Luna;
+using Penumbra.Api.Enums;
 using Penumbra.Communication;
 using Penumbra.Files;
 using Penumbra.Mods.Manager;
@@ -357,7 +358,12 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
                 {
                     if (collection.GetOwnSettings(arguments.Mod.Index)?.Settings.FixAll(arguments.Mod) ?? false)
                         _saveService.QueueSave(new ModCollectionSave(_modStorage, collection));
-                    collection.Settings.SetTemporary(arguments.Mod.Index, null);
+                    if (collection.Settings.Settings[arguments.Mod.Index].TempSettings is not null)
+                    {
+                        collection.Settings.SetTemporary(arguments.Mod.Index, null);
+                        _communicator.ModSettingChanged.Invoke(new ModSettingChanged.Arguments(ModSettingChange.TemporarySetting, collection,
+                            arguments.Mod, Setting.Indefinite, -1, false));
+                    }
                 }
 
                 break;

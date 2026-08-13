@@ -138,7 +138,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
             return;
 
         mod.Favorite = state;
-        database.UpsertFavorite(mod);
+        database.UpsertModProperty(mod, p => new LocalModDatabase.ModData { Favorite = mod.Favorite });
         communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.Favorite, mod, null));
     }
 
@@ -148,7 +148,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
             return;
 
         mod.ImportDate = timeStamp;
-        database.UpsertImportDate(mod);
+        database.UpsertModProperty(mod, p => new LocalModDatabase.ModData { ImportDate = mod.ImportDate });
         communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.ImportDate, mod, null));
     }
 
@@ -158,7 +158,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
             return;
 
         mod.LastConfigEdit = timeStamp;
-        database.UpsertLastConfigEdit(mod);
+        database.UpsertModProperty(mod, p => new LocalModDatabase.ModData { LastConfigEdit = mod.LastConfigEdit });
         communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.LastConfigEdit, mod, null));
     }
 
@@ -168,7 +168,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
             return;
 
         mod.Note = newNote;
-        database.UpsertNote(mod);
+        database.UpsertModProperty(mod, p => new LocalModDatabase.ModData { Note = mod.Note });
         communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.Favorite, mod, null));
     }
 
@@ -215,7 +215,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
             saveService.QueueSave(new ModMeta(saveService, mod));
 
         if (flags.HasFlag(ModDataChangeType.LocalTags))
-            database.UpsertTags(mod);
+            database.UpsertModProperty(mod, p => new LocalModDatabase.ModData { LocalTags = mod.LocalTags.ToHashSet()});
 
         if (flags != 0)
             communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(flags, mod, null));
@@ -238,7 +238,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
         if (CleanExisting(mod.PreferredChangedItems))
         {
             ++mod.LastChangedItemsUpdate;
-            database.UpsertChangedItems(mod);
+            database.UpsertModProperty(mod, p => new LocalModDatabase.ModData { PreferredChangedItems = mod.PreferredChangedItems.Select(i => i.Id).ToHashSet() });
             communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.PreferredChangedItems, mod, null));
         }
 
@@ -293,7 +293,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
         if (!fromDefault && mod.PreferredChangedItems.Remove(id))
         {
             ++mod.LastChangedItemsUpdate;
-            database.UpsertChangedItems(mod);
+            database.UpsertModProperty(mod, p => new LocalModDatabase.ModData { PreferredChangedItems = mod.PreferredChangedItems.Select(i => i.Id).ToHashSet() });
             communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.PreferredChangedItems, mod, null));
         }
 
@@ -313,7 +313,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
         {
             mod.PreferredChangedItems = newSet;
             ++mod.LastChangedItemsUpdate;
-            database.UpsertChangedItems(mod);
+            database.UpsertModProperty(mod, p => new LocalModDatabase.ModData { PreferredChangedItems = mod.PreferredChangedItems.Select(i => i.Id).ToHashSet() });
             communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.PreferredChangedItems, mod, null));
         }
 
@@ -350,7 +350,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
         mod.PreferredChangedItems.Clear();
         mod.PreferredChangedItems.UnionWith(mod.DefaultPreferredItems);
         ++mod.LastChangedItemsUpdate;
-        database.UpsertChangedItems(mod);
+        database.UpsertModProperty(mod, p => new LocalModDatabase.ModData { PreferredChangedItems = mod.PreferredChangedItems.Select(i => i.Id).ToHashSet() });
         communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.PreferredChangedItems, mod, null));
     }
 

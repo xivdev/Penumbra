@@ -17,7 +17,7 @@ public sealed class SingleModGroupEditor(CommunicatorService communicator, SaveS
         var multiGroup = group.ConvertToMulti();
         group.Mod.Groups[idx] = multiGroup;
         SaveService.QueueSave(multiGroup);
-        Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.GroupTypeChanged, multiGroup.Mod, multiGroup, null, null, group.Id, -1));
+        Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.GroupTypeChanged, multiGroup.Mod, multiGroup, null, null, group.Id, -1, null));
     }
 
     protected override SingleModGroup CreateGroup(Mod mod, string newName, ModPriority priority, SaveType saveType = SaveType.ImmediateSync)

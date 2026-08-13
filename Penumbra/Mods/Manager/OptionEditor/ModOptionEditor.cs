@@ -30,7 +30,7 @@ public abstract class ModOptionEditor<TGroup, TOption>(
         mod.Groups.Add(group);
         SaveService.Save(saveType, group);
         Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.GroupAdded, mod, group, null, null, group.Id,
-            -1));
+            -1, null));
         return group;
     }
 
@@ -59,7 +59,7 @@ public abstract class ModOptionEditor<TGroup, TOption>(
 
         SaveService.Save(saveType, option);
         Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionAdded, group.Mod, group, option, null,
-            option.Id, -1));
+            option.Id, -1, null));
         return option;
     }
 
@@ -88,7 +88,7 @@ public abstract class ModOptionEditor<TGroup, TOption>(
 
         SaveService.QueueSave(option);
         Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionAdded, group.Mod, group, clonedOption,
-            null, option.Id, -1));
+            null, option.Id, -1, null));
         return clonedOption;
     }
 
@@ -99,11 +99,11 @@ public abstract class ModOptionEditor<TGroup, TOption>(
         var group     = option.Group;
         var optionIdx = option.Index;
         Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.PrepareChange, mod, group, option, null,
-            option.Id, -1));
+            option.Id, -1, option.Name));
         RemoveOption((TGroup)group, optionIdx);
         SaveService.QueueSave(group);
         Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionDeleted, mod, group, null, null,
-            option.Id, optionIdx));
+            option.Id, optionIdx, option.Name));
     }
 
     /// <summary> Move an option inside the given option group. </summary>
@@ -116,7 +116,7 @@ public abstract class ModOptionEditor<TGroup, TOption>(
 
         SaveService.QueueSave(option);
         Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionMoved, group.Mod, group, option, null,
-            option.Id, idx));
+            option.Id, idx, null));
     }
 
     protected abstract TGroup   CreateGroup(Mod mod, string newName, ModPriority priority, SaveType saveType = SaveType.ImmediateSync);

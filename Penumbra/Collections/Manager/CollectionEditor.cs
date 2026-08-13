@@ -1,7 +1,9 @@
 using Penumbra.Api.Enums;
+using Penumbra.Api.Preset;
 using Penumbra.Communication;
 using Penumbra.Files;
 using Penumbra.Mods;
+using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Settings;
 using Penumbra.Services;
@@ -134,6 +136,70 @@ public class CollectionEditor(SaveService saveService, CommunicatorService commu
         return old is not { Lock: > 0 } || old.Lock == key;
     }
 
+    public void ApplyPreset(ModCollection collection, Mod mod, in SettingPresetData preset, bool temporary, string source = "yourself",
+        int key = 0)
+    {
+        if (!preset.Valid)
+            return;
+
+        if (temporary)
+        {
+            if (!CanSetTemporarySettings(collection, mod, key))
+                return;
+
+            var modSettings = new TemporaryModSettings(mod, collection.GetActualSettings(mod.Index).Settings, source, key)
+            {
+                ForceInherit = preset.State is ModState.Inherited,
+            };
+            switch (preset.State)
+            {
+                case ModState.Enabled:  modSettings.Enabled =  true; break;
+                case ModState.Disabled: modSettings.Enabled =  false; break;
+                case ModState.Toggle:   modSettings.Enabled ^= true; break;
+            }
+
+            if (preset._hasPriority)
+                modSettings.Priority = new ModPriority(preset._priority);
+
+            foreach (var (groupId, options) in preset.Settings)
+            {
+                if (groupId.FindGroup(mod) is not {} group)
+                    continue;
+
+                modSettings.Settings[group.Index] = GetSetting(group, options, modSettings);
+            }
+
+            SetTemporarySettings(collection, mod, modSettings);
+        }
+        else
+        {
+            switch (preset.State)
+            {
+                case ModState.Enabled:  SetModState(collection, mod, true); break;
+                case ModState.Disabled: SetModState(collection, mod, false); break;
+                case ModState.Toggle:   SetModState(collection, mod, !(collection.GetOwnSettings(mod.Index)?.Enabled ?? false)); break;
+                case ModState.Inherited:
+                    SetModInheritance(collection, mod, true);
+                    return;
+            }
+
+            if (collection.GetOwnSettings(mod.Index) is not { } ownSettings)
+                return;
+
+            if (preset._hasPriority)
+                SetModPriority(collection, mod, new ModPriority(preset._priority));
+
+            foreach (var (groupId, options) in preset.Settings)
+            {
+                if (groupId.FindGroup(mod) is not {} group)
+                    continue;
+
+                var newSetting = GetSetting(group, options, ownSettings);
+                SetModSetting(collection, mod, group.Index, newSetting);
+            }
+        }
+    }
+
     /// <summary> Copy the settings of an existing (sourceMod != null) or stored (sourceName) mod to another mod, if they exist. </summary>
     public bool CopyModSettings(ModCollection collection, Mod? sourceMod, string sourceName, Mod? targetMod, string targetName)
     {
@@ -196,7 +262,7 @@ public class CollectionEditor(SaveService saveService, CommunicatorService commu
     private static bool FixInheritance(ModCollection collection, Mod mod, bool inherit)
     {
         var settings = collection.GetOwnSettings(mod.Index);
-        if (inherit == (settings is null))
+        if (inherit == settings is null)
             return false;
 
         var settings1 = inherit ? null : collection.GetInheritedSettings(mod.Index).Settings?.DeepCopy() ?? ModSettings.DefaultSettings(mod);
@@ -225,15 +291,69 @@ public class CollectionEditor(SaveService saveService, CommunicatorService commu
             {
                 case ModSettingChange.MultiInheritance:
                 case ModSettingChange.MultiEnableState:
-                    communicator.ModSettingChanged.Invoke(new ModSettingChanged.Arguments(type, directInheritor, null, oldValue, groupIdx, true));
+                    communicator.ModSettingChanged.Invoke(
+                        new ModSettingChanged.Arguments(type, directInheritor, null, oldValue, groupIdx, true));
                     break;
                 default:
                     if (directInheritor.GetOwnSettings(mod!.Index) is null)
-                        communicator.ModSettingChanged.Invoke(new ModSettingChanged.Arguments(type, directInheritor, mod, oldValue, groupIdx, true));
+                        communicator.ModSettingChanged.Invoke(new ModSettingChanged.Arguments(type, directInheritor, mod, oldValue, groupIdx,
+                            true));
                     break;
             }
 
             RecurseInheritors(directInheritor, type, mod, oldValue, groupIdx);
+        }
+    }
+
+    private static Setting GetSetting(IModGroup group, in GroupSettingData options, ModSettings modSettings)
+    {
+        if (group.Behaviour is GroupDrawBehaviour.SingleSelection)
+        {
+            // Use the first enabled option for single selection.
+            foreach (var optionId in options.Enabled())
+            {
+                if (group.Options.FirstOrDefault(o => optionId.Matches(ModObjectIdentifier.From(o))) is { } option)
+                    return Setting.Single(option.Index);
+            }
+
+            // Otherwise, use the first appropriate toggle option.
+            var currentSetting = modSettings.Settings[group.Index];
+            foreach (var optionId in options.Toggle())
+            {
+                if (group.Options.FirstOrDefault(o => optionId.Matches(ModObjectIdentifier.From(o)) && currentSetting.AsIndex != o.Index) is
+                    { } option)
+                    return Setting.Single(option.Index);
+            }
+
+            // Otherwise, use the first option that is not disabled if the current option should be disabled.
+            var currentIdentifier = ModObjectIdentifier.From(group.Options[currentSetting.AsIndex]);
+            if (options.GetValue(currentIdentifier) is not OptionState.Disabled)
+                return currentSetting;
+
+            foreach(var optionId in options.Disabled())
+                if (group.Options.FirstOrDefault(o => !optionId.Matches(ModObjectIdentifier.From(o))) is { } option)
+                    return Setting.Single(option.Index);
+
+            // If this is not possible, leave the setting alone.
+            return currentSetting;
+        }
+        else
+        {
+            var currentSetting = modSettings.Settings[group.Index];
+            foreach (var option in group.Options)
+            {
+                var identifier = ModObjectIdentifier.From(option);
+                var state      = options.GetValue(identifier);
+                currentSetting = state switch
+                {
+                    OptionState.Enabled  => currentSetting.SetBit(option.Index, true),
+                    OptionState.Disabled => currentSetting.SetBit(option.Index, false),
+                    OptionState.Toggle   => currentSetting.SetBit(option.Index, !currentSetting.HasFlag(option.Index)),
+                    _                    => currentSetting,
+                };
+            }
+
+            return currentSetting;
         }
     }
 }

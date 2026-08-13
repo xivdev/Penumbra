@@ -17,7 +17,7 @@ public sealed class MultiModGroupEditor(CommunicatorService communicator, SaveSe
         var singleGroup = group.ConvertToSingle();
         group.Mod.Groups[idx] = singleGroup;
         SaveService.QueueSave(singleGroup);
-        Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.GroupTypeChanged, singleGroup.Mod, singleGroup, null, null, group.Id, -1));
+        Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.GroupTypeChanged, singleGroup.Mod, singleGroup, null, null, group.Id, -1, null));
     }
 
     /// <summary> Change the internal priority of the given option. </summary>
@@ -28,7 +28,7 @@ public sealed class MultiModGroupEditor(CommunicatorService communicator, SaveSe
 
         option.Priority = newPriority;
         SaveService.QueueSave(option);
-        Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.PriorityChanged, option.Mod, option.Group, option, null, option.Id, -1));
+        Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.PriorityChanged, option.Mod, option.Group, option, null, option.Id, -1, null));
     }
 
     protected override MultiModGroup CreateGroup(Mod mod, string newName, ModPriority priority, SaveType saveType = SaveType.ImmediateSync)

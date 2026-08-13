@@ -25,7 +25,7 @@ public sealed class ImcModGroupEditor(CommunicatorService communicator, SaveServ
         mod.Groups.Add(group);
         SaveService.Save(saveType, group);
         Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.GroupAdded, mod, group, null, null, group.Id,
-            -1));
+            -1, null));
         return group;
     }
 
@@ -44,7 +44,7 @@ public sealed class ImcModGroupEditor(CommunicatorService communicator, SaveServ
         group.OptionData.Add(subMod);
         SaveService.Save(saveType, group);
         Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionAdded, group.Mod, group, subMod, null,
-            subMod.Id, -1));
+            subMod.Id, -1, null));
         return subMod;
     }
 
@@ -59,7 +59,7 @@ public sealed class ImcModGroupEditor(CommunicatorService communicator, SaveServ
 
         SaveService.Save(saveType, group);
         Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionMetaChanged, group.Mod, group, null, null,
-            group.Id, -1));
+            group.Id, -1, null));
     }
 
     public void ChangeDefaultEntry(ImcModGroup group, in ImcEntry newEntry, SaveType saveType = SaveType.Queue)
@@ -71,7 +71,7 @@ public sealed class ImcModGroupEditor(CommunicatorService communicator, SaveServ
         group.DefaultEntry = entry;
         SaveService.Save(saveType, group);
         Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionMetaChanged, group.Mod, group, null, null,
-            group.Id, -1));
+            group.Id, -1, null));
     }
 
     public void ChangeOptionAttribute(ImcSubMod option, in ImcAttributeCache cache, int idx, bool value, SaveType saveType = SaveType.Queue)
@@ -81,7 +81,7 @@ public sealed class ImcModGroupEditor(CommunicatorService communicator, SaveServ
 
         SaveService.Save(saveType, option);
         Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionMetaChanged, option.Mod, option.Group,
-            option, null, option.Id, -1));
+            option, null, option.Id, -1, null));
     }
 
     public void ChangeAllVariants(ImcModGroup group, bool allVariants, SaveType saveType = SaveType.Queue)
@@ -92,7 +92,7 @@ public sealed class ImcModGroupEditor(CommunicatorService communicator, SaveServ
         group.AllVariants = allVariants;
         SaveService.Save(saveType, group);
         Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionMetaChanged, group.Mod, group, null, null,
-            group.Id, -1));
+            group.Id, -1, null));
     }
 
     public void ChangeOnlyAttributes(ImcModGroup group, bool onlyAttributes, SaveType saveType = SaveType.Queue)
@@ -103,7 +103,7 @@ public sealed class ImcModGroupEditor(CommunicatorService communicator, SaveServ
         group.OnlyAttributes = onlyAttributes;
         SaveService.Save(saveType, group);
         Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionMetaChanged, group.Mod, group, null, null,
-            group.Id, -1));
+            group.Id, -1, null));
     }
 
     public void ChangeCanBeDisabled(ImcModGroup group, bool canBeDisabled, SaveType saveType = SaveType.Queue)
@@ -114,7 +114,7 @@ public sealed class ImcModGroupEditor(CommunicatorService communicator, SaveServ
         group.CanBeDisabled = canBeDisabled;
         SaveService.Save(saveType, group);
         Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionMetaChanged, group.Mod, group, null, null,
-            group.Id, -1));
+            group.Id, -1, null));
     }
 
     protected override ImcModGroup CreateGroup(Mod mod, string newName, ModPriority priority, SaveType saveType = SaveType.ImmediateSync)

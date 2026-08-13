@@ -1,8 +1,11 @@
 using ImSharp;
 using Luna;
+using Penumbra.Api.Preset;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
+using Penumbra.GameData.Gui;
 using Penumbra.Mods;
+using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Settings;
 using Penumbra.Services;
@@ -18,13 +21,15 @@ public class ModPanelSettingsTab(
     TutorialService tutorial,
     CommunicatorService communicator,
     ModGroupDrawer modGroupDrawer,
-    Configuration config)
+    Configuration config,
+    PresetCombo presets)
     : ITab<ModPanelTab>
 {
-    private bool _inherited;
     private bool _temporary;
     private bool _locked;
     private int? _currentPriority;
+    private bool _editPresetMode;
+    private bool _actualEditPresetMode;
 
     public ReadOnlySpan<byte> Label
         => "Settings"u8;
@@ -40,18 +45,26 @@ public class ModPanelSettingsTab(
 
     public void DrawContent()
     {
-        using var id    = Im.Id.Push(selection.ModName);
-        var       cache = CacheManager.Instance.GetOrCreateCache(Im.Id.Current, () => new ModSettingsCache(selection, config.Ui, communicator, Im.State.Storage));
+        using var id = Im.Id.Push(selection.ModName);
+        var cache = CacheManager.Instance.GetOrCreateCache(Im.Id.Current,
+            () => new ModSettingsCache(selection, config.Ui, communicator, Im.State.Storage));
 
-        _inherited = selection.Collection != collectionManager.Active.Current;
-        _temporary = selection.TemporarySettings is not null;
-        _locked    = (selection.TemporarySettings?.Lock ?? 0) > 0;
+        _actualEditPresetMode = _editPresetMode && presets.Selected is not null;
+        _temporary            = selection.TemporarySettings is not null;
+        _locked               = (selection.TemporarySettings?.Lock ?? 0) > 0;
 
         if (cache.VisiblePages.Count > 1 && config.Ui.DisplayPages)
         {
             DrawPreamble();
-            communicator.PostEnabledDraw.Invoke(new PostEnabledDraw.Arguments(selection.Mod!));
-            modGroupDrawer.Draw(cache, selection.Mod!, selection.Settings, selection.TemporarySettings);
+            if (_actualEditPresetMode)
+            {
+                DrawEditPresetMode();
+            }
+            else
+            {
+                communicator.PostEnabledDraw.Invoke(new PostEnabledDraw.Arguments(selection.Mod!));
+                modGroupDrawer.Draw(cache, selection.Mod!, selection.Settings, selection.TemporarySettings);
+            }
         }
         else
         {
@@ -59,29 +72,45 @@ public class ModPanelSettingsTab(
             using var table = Im.Table.Begin("##settings"u8, 1, TableFlags.ScrollY, Im.ContentRegion.Available);
             if (!table)
                 return;
+
             table.SetupScrollFreeze(0, 1);
             table.NextColumn();
             style.Pop();
             DrawPreamble();
             Im.Dummy(0);
             table.NextColumn();
-            communicator.PostEnabledDraw.Invoke(new PostEnabledDraw.Arguments(selection.Mod!));
-            modGroupDrawer.Draw(cache, selection.Mod!, selection.Settings, selection.TemporarySettings);
+            if (_actualEditPresetMode)
+            {
+                DrawEditPresetMode();
+            }
+            else
+            {
+                communicator.PostEnabledDraw.Invoke(new PostEnabledDraw.Arguments(selection.Mod!));
+                modGroupDrawer.Draw(cache, selection.Mod!, selection.Settings, selection.TemporarySettings);
+            }
         }
     }
 
     private void DrawPreamble()
     {
-        DrawTemporaryWarning();
-        DrawInheritedWarning();
+        if (!_actualEditPresetMode)
+        {
+            DrawTemporaryWarning();
+            DrawInheritedWarning();
+        }
+
         Im.Dummy(Vector2.Zero);
-        communicator.PreSettingsPanelDraw.Invoke(new PreSettingsPanelDraw.Arguments(selection.Mod!));
-        DrawEnabledInput();
-        tutorial.OpenTutorial(BasicTutorialSteps.EnablingMods);
-        Im.Line.Same();
-        DrawPriorityInput();
-        tutorial.OpenTutorial(BasicTutorialSteps.Priority);
-        DrawRemoveSettings();
+        DrawPresetRow();
+        if (!_actualEditPresetMode)
+        {
+            communicator.PreSettingsPanelDraw.Invoke(new PreSettingsPanelDraw.Arguments(selection.Mod!));
+            DrawEnabledInput();
+            tutorial.OpenTutorial(BasicTutorialSteps.EnablingMods);
+            Im.Line.Same();
+            DrawPriorityInput();
+            tutorial.OpenTutorial(BasicTutorialSteps.Priority);
+            DrawRemoveSettings();
+        }
     }
 
     /// <summary> Draw a big tinted bar if the current setting is temporary. </summary>
@@ -104,7 +133,7 @@ public class ModPanelSettingsTab(
     /// <summary> Draw a big red bar if the current setting is inherited. </summary>
     private void DrawInheritedWarning()
     {
-        if (!_inherited)
+        if (!selection.Inherited)
             return;
 
         using var color = ImGuiColor.Button.Push(Colors.PressEnterWarningBg);
@@ -146,6 +175,66 @@ public class ModPanelSettingsTab(
         {
             collectionManager.Editor.SetModState(collectionManager.Active.Current, selection.Mod!, enabled);
         }
+    }
+
+    private void DrawPresetRow()
+    {
+        using var id = Im.Id.Push("presets"u8);
+        if (ImEx.Icon.Button(LunaStyle.FromClipboardIcon, "Try to import a setting preset from the clipboard."u8))
+            if (SettingPresetData.FromClipboard(out var data))
+                collectionManager.Editor.ApplyPreset(collectionManager.Active.Current, selection.Mod!, data,
+                    config.Main.DefaultTemporaryMode || _temporary);
+        Im.Line.SameInner();
+        if (ImEx.Icon.Button(LunaStyle.ToClipboardIcon, "Copy the current settings to clipboard as a sharable preset."u8))
+            SettingPresetData.FromMod(selection.Mod!, selection.Settings).ToClipboard();
+
+        var buttonSize      = Im.Font.CalculateButtonSize("Turn Permanent"u8).X;
+        var smallButtonSize = new Vector2((buttonSize - Im.Style.ItemInnerSpacing.X) / 2, 0);
+        Im.Line.Same(Im.ContentRegion.Available.X
+          - (2 * Im.Style.FrameHeight + 2 * Im.Style.ItemInnerSpacing.X + Im.Style.ItemSpacing.X + 250 * Im.Style.GlobalScale + buttonSize));
+        if (ImEx.Icon.Button(LunaStyle.SaveIcon, "Save the current settings as a new preset for this mod."u8))
+            Im.Popup.Open("presetName"u8);
+
+        Im.Line.SameInner();
+        presets.Draw(StringU8.Empty, 250 * Im.Style.GlobalScale);
+        Im.Line.SameInner();
+
+        using (ImGuiColor.Button.Push(ImGuiColor.ButtonActive.Vector, _editPresetMode && presets.Selected is not null))
+        {
+            if (ImEx.Icon.Button(LunaStyle.EditIcon, "Edit the currently selected preset."u8, presets.Selected is null))
+                _editPresetMode ^= true;
+        }
+
+        Im.Line.Same();
+        if (ImEx.Button("Apply"u8, smallButtonSize, "Apply this preset to the current collection. This respects temporary settings mode."u8,
+                _locked || presets.Selected is null))
+        {
+            collectionManager.Editor.ApplyPreset(collectionManager.Active.Current, selection.Mod!, presets.Selected!.Data,
+                config.Main.DefaultTemporaryMode || _temporary);
+            presets.PresetManager.ChangeLastApply(presets.ModIdentifier, presets.Selected!, DateTimeOffset.UtcNow);
+        }
+
+        var hovered = Im.Item.Hovered();
+
+        Im.Line.SameInner();
+        if (ImEx.Button("Copy"u8, smallButtonSize, "Copy this preset's data to your clipboard to share."u8, presets.Selected is null))
+        {
+            presets.Selected!.Data.ToClipboard();
+            presets.PresetManager.ChangeLastApply(presets.ModIdentifier, presets.Selected!, DateTimeOffset.UtcNow);
+        }
+
+        if (hovered || Im.Item.Hovered())
+        {
+            using var _  = Im.Style.PushDefault();
+            using var tt = Im.Tooltip.Begin();
+            LunaStyle.DrawSeparator();
+
+            presets.DrawTooltip(presets.Selected!);
+        }
+
+
+        if (InputPopup.OpenName("presetName"u8, out var name))
+            presets.PresetManager.AddPreset(selection.Mod!, selection.Settings, name);
     }
 
     /// <summary>
@@ -198,13 +287,12 @@ public class ModPanelSettingsTab(
     /// </summary>
     private void DrawRemoveSettings()
     {
-        var drawInherited = !_inherited && !selection.Settings.IsEmpty;
-        var scroll        = Im.Scroll.MaximumY > 0 ? Im.Style.ScrollbarSize + Im.Style.ItemInnerSpacing.X : 0;
-        var buttonSize    = Im.Font.CalculateSize("Turn Permanent_"u8).X;
+        var drawInherited = !selection.Inherited && !selection.Settings.IsEmpty;
+        var buttonSize    = Im.Font.CalculateButtonSize("Turn Permanent"u8).X;
         var offset = drawInherited
-            ? buttonSize + Im.Font.CalculateSize("Inherit Settings"u8).X + Im.Style.FramePadding.X * 4 + Im.Style.ItemSpacing.X
-            : buttonSize + Im.Style.FramePadding.X * 2;
-        Im.Line.Same(Im.Window.Width - offset - scroll);
+            ? buttonSize + Im.Font.CalculateButtonSize("Inherit Settings"u8).X + Im.Style.ItemSpacing.X
+            : buttonSize;
+        Im.Line.Same(Im.ContentRegion.Available.X - offset);
         var enabled = LunaStyle.Modifier.Destructive.Active;
         if (drawInherited)
         {
@@ -267,9 +355,157 @@ public class ModPanelSettingsTab(
         else
         {
             var actual = collectionManager.Active.Current.GetActualSettings(selection.Mod!.Index).Settings;
-            if (ImEx.Button("Turn Temporary"u8, "Copy the current settings over to temporary settings to experiment with them."u8))
+            if (ImEx.Button("Turn Temporary"u8, new Vector2(buttonSize, 0),
+                    "Copy the current settings over to temporary settings to experiment with them."u8))
                 collectionManager.Editor.SetTemporarySettings(collectionManager.Active.Current, selection.Mod!,
                     new TemporaryModSettings(selection.Mod!, actual));
         }
+    }
+
+
+    private string _groupNameInput        = string.Empty;
+    private string _optionNameInput       = string.Empty;
+    private Guid   _groupIdentifierInput  = Guid.Empty;
+    private Guid   _optionIdentifierInput = Guid.Empty;
+
+    private void DrawEditPresetMode()
+    {
+        if (presets.Selected is not { } preset || selection.Mod is not { } mod)
+            return;
+
+        Im.Line.New();
+        ImEx.TextCentered($"Editing {(presets.ModIdentifier.Length > 0 ? "Mod" : "Generic")} Preset {preset.Name}");
+        LunaStyle.DrawSeparator();
+
+        var size = UiHelpers.InputTextWidth;
+        preset.DrawIdentifier(size);
+        if (preset.DrawName(size, out var newName))
+            presets.PresetManager.ChangeName(presets.ModIdentifier, preset, newName);
+        if (preset.DrawEditTime(size, out var newTime))
+            presets.PresetManager.ChangeLastEdit(presets.ModIdentifier, preset, newTime);
+        if (preset.DrawApplicationTime(size, out newTime))
+            presets.PresetManager.ChangeLastApply(presets.ModIdentifier, preset, newTime);
+        if (presets.ModIdentifier.Length > 0)
+            if (ImEx.Button("Turn Mod Preset Generic"u8, size,
+                    "Remove all GUIDs from this preset and keep only references by name to make this preset generically applicable on any mod, remove it from your mod preset list and add it to your generic preset list."u8))
+                presets.PresetManager.MakeGeneric(preset, selection.Mod);
+
+        if (ImEx.Button("Delete"u8, size, !LunaStyle.Modifier.Destructive))
+        {
+            if (presets.ModIdentifier.Length > 0)
+                presets.PresetManager.DeletePreset(mod, preset);
+            else
+                presets.PresetManager.DeleteGeneric(preset);
+        }
+
+        LunaStyle.Modifier.Destructive.TooltipLineBreak("delete"u8);
+
+        var halfSize = new Vector2((size.X - Im.Style.ItemSpacing.X) / 2, 0);
+        if (ImEx.Button("Update From Clipboard"u8, halfSize, "Try to set this preset to the preset data contained in your clipboard."u8,
+                !LunaStyle.Modifier.Misclick)
+         && SettingPresetData.FromClipboard(out var sharedData))
+            presets.PresetManager.Update(presets.ModIdentifier, preset, sharedData);
+        LunaStyle.Modifier.Misclick.TooltipLineBreak("update"u8);
+
+        Im.Line.Same();
+        if (ImEx.Button("Update From Mod"u8, halfSize, "Try to set this preset to the current settings for this mod."u8,
+                !LunaStyle.Modifier.Misclick))
+            presets.PresetManager.Update(presets.ModIdentifier, preset, mod, selection.Settings);
+        LunaStyle.Modifier.Misclick.TooltipLineBreak("update"u8);
+
+        LunaStyle.DrawSeparator();
+        if (preset.Data.DrawState(size, out var newState))
+            presets.PresetManager.ChangeState(presets.ModIdentifier, preset, newState);
+        if (preset.Data.DrawPriority(size, out var newPriority))
+            presets.PresetManager.ChangePriority(presets.ModIdentifier, preset, newPriority);
+
+        if (DrawGroups(size, preset, mod, out var changedGroupIdentifier, out var newGroupIdentifier, out var newDisableUnknown))
+        {
+            if (newDisableUnknown.HasValue)
+                presets.PresetManager.ChangeDisableUnknownOptions(presets.ModIdentifier, preset, changedGroupIdentifier,
+                    newDisableUnknown.Value);
+            else if (newGroupIdentifier is null)
+                presets.PresetManager.DeleteGroupReference(presets.ModIdentifier, preset, changedGroupIdentifier);
+            else
+                presets.PresetManager.ChangeGroupReference(presets.ModIdentifier, preset, changedGroupIdentifier, newGroupIdentifier.Value);
+        }
+
+        LunaStyle.DrawSeparator();
+        var id = new ModObjectIdentifier(_groupIdentifierInput, _groupNameInput);
+        if (preset.Data.DrawAddGroup(size, ref _groupIdentifierInput, ref _groupNameInput, out var newGroup,
+                id.FindGroup(mod) is { } g ? ModObjectIdentifier.From(g) : null))
+            presets.PresetManager.AddGroupReference(presets.ModIdentifier, preset, newGroup);
+    }
+
+    private bool DrawGroups(Vector2 size, SettingPreset preset, Mod mod, out ModObjectIdentifier changedGroupIdentifier,
+        out ModObjectIdentifier? newGroupIdentifier, out bool? newDisableUnknown)
+    {
+        var ret = false;
+        changedGroupIdentifier = default;
+        newGroupIdentifier     = null;
+        newDisableUnknown      = null;
+        foreach (var (index, (groupIdentifier, groupData)) in preset.Data.Settings.Index())
+        {
+            using var groupId = Im.Id.Push(index);
+            LunaStyle.DrawSeparator();
+            var actualGroup = groupIdentifier.FindGroup(mod);
+            if (SettingPresetData.DrawGroup(size, index, groupIdentifier,
+                    actualGroup is not null ? ModObjectIdentifier.From(actualGroup) : null, groupData.DisableAllUnknown, out var newGroup,
+                    out var disable))
+            {
+                ret                    = true;
+                changedGroupIdentifier = groupIdentifier;
+                newGroupIdentifier     = newGroup;
+                newDisableUnknown      = disable;
+            }
+
+            using var indent = Im.Indent();
+            if (DrawOptions(size.AddX(-Im.Style.IndentSpacing), groupData, actualGroup, out var changedOption, out var newOption,
+                    out var newOptionState))
+            {
+                if (newOptionState.HasValue)
+                    presets.PresetManager.ChangeOption(presets.ModIdentifier, preset, groupIdentifier, changedOption,
+                        newOptionState.Value);
+                else if (newOption is null)
+                    presets.PresetManager.DeleteOptionReference(presets.ModIdentifier, preset, groupIdentifier, changedOption);
+                else
+                    presets.PresetManager.ChangeOptionReference(presets.ModIdentifier, preset, groupIdentifier, changedOption,
+                        newOption.Value);
+            }
+
+            Im.Cursor.Y += Im.Style.ItemSpacing.Y;
+            var id = new ModObjectIdentifier(_optionIdentifierInput, _optionNameInput);
+            if (SettingPresetData.DrawAddOption(size.AddX(-Im.Style.IndentSpacing), groupData, ref _optionIdentifierInput, ref _optionNameInput, out var option,
+                    id.FindOption(actualGroup) is { } o ? ModObjectIdentifier.From(o) : null))
+                presets.PresetManager.ChangeOption(presets.ModIdentifier, preset, groupIdentifier, option, OptionState.Ignored);
+        }
+
+        return ret;
+    }
+
+    private static bool DrawOptions(Vector2 size, in GroupSettingData data, IModGroup? actualGroup,
+        out ModObjectIdentifier changedOptionIdentifier, out ModObjectIdentifier? newOptionIdentifier, out OptionState? newOptionState)
+    {
+        var ret = false;
+        changedOptionIdentifier = default;
+        newOptionIdentifier     = null;
+        newOptionState          = null;
+        foreach (var (optionIndex, (optionIdentifier, optionState)) in data.Options.Index())
+        {
+            using var id             = Im.Id.Push(optionIndex);
+            var       resolvedOption = optionIdentifier.FindOption(actualGroup);
+            Im.Cursor.Y += Im.Style.ItemSpacing.Y;
+            if (SettingPresetData.DrawOption(size, optionIndex, optionIdentifier,
+                    resolvedOption is not null ? ModObjectIdentifier.From(resolvedOption) : null,
+                    (OptionState)optionState, out var newOption, out var state))
+            {
+                ret                     = true;
+                changedOptionIdentifier = optionIdentifier;
+                newOptionIdentifier     = newOption;
+                newOptionState          = state;
+            }
+        }
+
+        return ret;
     }
 }

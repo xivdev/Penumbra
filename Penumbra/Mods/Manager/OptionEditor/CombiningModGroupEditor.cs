@@ -44,6 +44,6 @@ public sealed class CombiningModGroupEditor(CommunicatorService communicator, Sa
         container.Name = name;
         SaveService.Save(saveType, container.Group);
         Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.DisplayChange, container.Group.Mod,
-            container.Group, null, null, Guid.Empty, -1));
+            container.Group, null, null, Guid.Empty, -1, null));
     }
 }

@@ -64,6 +64,10 @@ public sealed class ModFileSystemSaver(
     protected override void SaveDataValue(IFileSystemValue value)
     {
         if (value is Mod mod)
-            localModDatabase.UpsertPath(mod);
+            localModDatabase.UpsertModProperty(mod, p => new LocalModDatabase.ModData
+            {
+                Folder        = mod.Path.Folder,
+                SortOrderName = mod.Path.SortName,
+            });
     }
 }
