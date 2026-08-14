@@ -335,6 +335,10 @@ public sealed class ModManager : ModStorage, IDisposable, IService
             {
                 try
                 {
+                    // Skip hidden directories.
+                    if (dir.IsHidden())
+                        return;
+
                     if (Creator.LoadMod(dir, false, false) is { } mod)
                         queue.Enqueue(mod);
                 }
