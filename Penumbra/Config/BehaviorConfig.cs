@@ -88,13 +88,13 @@ public sealed partial class BehaviorConfig : ConfigurationFile<FilenameService>
         if (j.TryReadObject("CollectionAssociation"u8, out var coll))
         {
             UseCharacterCollectionInMainWindow =
-                mod.PropertyOrDefault("UseCharacterCollectionInMainWindow"u8, UseCharacterCollectionInMainWindow);
-            UseCharacterCollectionsInCards  = mod.PropertyOrDefault("UseCharacterCollectionsInCards"u8,  UseCharacterCollectionsInCards);
-            UseCharacterCollectionInInspect = mod.PropertyOrDefault("UseCharacterCollectionInInspect"u8, UseCharacterCollectionInInspect);
-            UseCharacterCollectionInTryOn   = mod.PropertyOrDefault("UseCharacterCollectionInTryOn"u8,   UseCharacterCollectionInTryOn);
+                coll.PropertyOrDefault("UseCharacterCollectionInMainWindow"u8, UseCharacterCollectionInMainWindow);
+            UseCharacterCollectionsInCards  = coll.PropertyOrDefault("UseCharacterCollectionsInCards"u8,  UseCharacterCollectionsInCards);
+            UseCharacterCollectionInInspect = coll.PropertyOrDefault("UseCharacterCollectionInInspect"u8, UseCharacterCollectionInInspect);
+            UseCharacterCollectionInTryOn   = coll.PropertyOrDefault("UseCharacterCollectionInTryOn"u8,   UseCharacterCollectionInTryOn);
             UseOwnerNameForCharacterCollection =
-                mod.PropertyOrDefault("UseOwnerNameForCharacterCollection"u8, UseOwnerNameForCharacterCollection);
-            UseOwnerForHostiles = mod.PropertyOrDefault("UseOwnerForHostiles"u8, UseOwnerForHostiles);
+                coll.PropertyOrDefault("UseOwnerNameForCharacterCollection"u8, UseOwnerNameForCharacterCollection);
+            UseOwnerForHostiles = coll.PropertyOrDefault("UseOwnerForHostiles"u8, UseOwnerForHostiles);
         }
     }
 
