@@ -321,7 +321,8 @@ public sealed class LocalModDatabase(ServiceManager services) : IDisposable, ISe
         }
     }
 
-    internal struct PresetData()
+    
+    internal class PresetData()
     {
         [BsonId]
         public Guid Id = Guid.Empty;
@@ -384,8 +385,9 @@ public sealed class LocalModDatabase(ServiceManager services) : IDisposable, ISe
         }
     }
 
-    internal struct ModData()
+    internal class ModData()
     {
+        
         [BsonId]
         public string Id { get; private set; } = string.Empty;
 
