@@ -266,7 +266,7 @@ public sealed partial class UiConfig : ConfigurationFile<FilenameService>
 #pragma warning restore CA1869
             options.Converters.Add(new ColorDictionaryConverter<ColorId, ColorIdData>(Messager, true, true, true));
             if (colors.Deserialize<ColorDictionary<ColorId, ColorIdData>>(options) is { } dict)
-                dict.Apply(Colors, true);
+                Colors.Apply(dict, true);
         }
     }
 
