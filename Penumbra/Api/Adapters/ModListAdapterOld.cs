@@ -2,7 +2,7 @@ using Penumbra.Mods.Manager;
 
 namespace Penumbra.Api;
 
-public sealed class ModListAdapter(ModStorage storage) : IReadOnlyList<IDisposable>, IDisposable
+public sealed class ModListAdapterOld(ModStorage storage) : IReadOnlyList<IDisposable>, IDisposable
 {
     private readonly WeakReference<ModStorage> _storage = new(storage);
 
@@ -10,10 +10,10 @@ public sealed class ModListAdapter(ModStorage storage) : IReadOnlyList<IDisposab
         => Storage.Count;
 
     public IDisposable this[int idx]
-        => new ModAdapter(Storage[idx]);
+        => new ModAdapterOld(Storage[idx]);
 
     public IEnumerator<IDisposable> GetEnumerator()
-        => Storage.Select(m => new ModAdapter(m)).GetEnumerator();
+        => Storage.Select(m => new ModAdapterOld(m)).GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator()
         => GetEnumerator();

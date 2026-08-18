@@ -151,7 +151,10 @@
         }
       },
       "penumbra.api": {
-        "type": "Project"
+        "type": "Project",
+        "dependencies": {
+          "Luna": "[1.0.0, )"
+        }
       },
       "penumbra.crashhandler": {
         "type": "Project"

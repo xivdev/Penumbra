@@ -307,7 +307,7 @@ public sealed class ModSettingsCache : BasicCache
 
         // Check group visibility by available children.
         VisiblePages.Clear();
-        foreach (var page in _pages.Values)
+        foreach (var (_, page) in _pages.OrderBy(kvp => kvp.Key))
         {
             page.VisibleGroups.Clear();
             foreach (var group in page.Groups)

@@ -1,3 +1,4 @@
+using Dalamud.Plugin.Ipc;
 using Luna;
 using Newtonsoft.Json.Linq;
 using Penumbra.Api.Enums;
@@ -9,17 +10,19 @@ namespace Penumbra.Api.Api;
 
 public sealed class ModsApi : IPenumbraApiMods, IApiService, IDisposable
 {
-    private readonly CommunicatorService _communicator;
-    private readonly ModManager          _modManager;
-    private readonly ModImportManager    _modImportManager;
-    private readonly Configuration       _config;
-    private readonly ModFileSystem       _modFileSystem;
-    private readonly MigrationManager    _migrationManager;
-    private readonly ModConfigUpdater    _modConfigUpdater;
-    private readonly LunaLogger          _log;
+    private readonly ModManagerAdapterFactory _adapterFactory;
+    private readonly CommunicatorService      _communicator;
+    private readonly ModManager               _modManager;
+    private readonly ModImportManager         _modImportManager;
+    private readonly Configuration            _config;
+    private readonly ModFileSystem            _modFileSystem;
+    private readonly MigrationManager         _migrationManager;
+    private readonly ModConfigUpdater         _modConfigUpdater;
+    private readonly LunaLogger               _log;
 
     public ModsApi(ModManager modManager, ModImportManager modImportManager, Configuration config, ModFileSystem modFileSystem,
-        CommunicatorService communicator, MigrationManager migrationManager, LunaLogger log, ModConfigUpdater modConfigUpdater)
+        CommunicatorService communicator, MigrationManager migrationManager, LunaLogger log, ModConfigUpdater modConfigUpdater,
+        ModManagerAdapterFactory adapterFactory)
     {
         _modManager       = modManager;
         _modImportManager = modImportManager;
@@ -29,6 +32,7 @@ public sealed class ModsApi : IPenumbraApiMods, IApiService, IDisposable
         _migrationManager = migrationManager;
         _log              = log;
         _modConfigUpdater = modConfigUpdater;
+        _adapterFactory   = adapterFactory;
         _communicator.ModPathChanged.Subscribe(OnModPathChanged, ModPathChanged.Priority.ApiMods);
         _communicator.PcpCreation.Subscribe(OnPcpCreation, PcpCreation.Priority.ApiMods);
         _communicator.PcpParsing.Subscribe(OnPcpParsing, PcpParsing.Priority.ApiMods);
@@ -62,8 +66,11 @@ public sealed class ModsApi : IPenumbraApiMods, IApiService, IDisposable
     public Dictionary<string, string> GetModList()
         => _modManager.ToDictionary(m => m.ModPath.Name, m => m.Name);
 
-    public IDisposable GetModListAdapter()
-        => new ModListAdapter(_modManager);
+    public IDisposable GetModListAdapterOld()
+        => new ModListAdapterOld(_modManager);
+
+    public IIdDataShareAdapter GetModManagerAdapter(string owner)
+        => _adapterFactory.Create(owner)!;
 
     public PenumbraApiEc InstallMod(string modFilePackagePath)
     {

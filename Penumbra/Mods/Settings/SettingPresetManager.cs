@@ -1,3 +1,4 @@
+global using ModIdentifier = (string Identifier, string Name);
 global using GroupSettingData =
     (System.Collections.Generic.Dictionary<(System.Guid Identifier, string? Name), byte> Options, bool DisableAllUnknown);
 global using ModObjectIdentifier = (System.Guid Identifier, string? Name);

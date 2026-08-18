@@ -27,7 +27,7 @@ public sealed class HelpButton(ModFileSystemDrawer drawer) : BaseIconButton<Awes
     protected override void PostDraw()
     {
         drawer.Tutorial.OpenTutorial(BasicTutorialSteps.AdvancedHelp);
-        ImEx.HelpPopup("ExtendedHelp"u8, new Vector2(1000 * Im.Style.GlobalScale, 38.5f * Im.Style.TextHeightWithSpacing), PopupContent);
+        ImEx.HelpPopup("ExHelp"u8, ImEx.ScaledVectorX(1000, 38.5f * Im.Style.TextHeightWithSpacing), PopupContent);
     }
 
     private void PopupContent()

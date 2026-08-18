@@ -1,7 +1,6 @@
 using Dalamud.Plugin;
 using ImSharp;
 using Luna;
-using Penumbra.Api.Helpers;
 using Penumbra.Api.IpcSubscribers;
 
 namespace Penumbra.Api.IpcTester;

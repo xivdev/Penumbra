@@ -136,11 +136,26 @@ public class CollectionEditor(SaveService saveService, CommunicatorService commu
         return old is not { Lock: > 0 } || old.Lock == key;
     }
 
+    public void ApplyPreset(ModCollection collection, Mod mod, in SettingPresetData preset, PresetApplyMode mode, string source = "yourself",
+        int key = 0)
+        => ApplyPreset(collection, mod, preset, mode is PresetApplyMode.Auto
+            ? collection.GetTempSettings(mod.Index) is not null
+            : mode is PresetApplyMode.Temporary, source, key);
+
     public void ApplyPreset(ModCollection collection, Mod mod, in SettingPresetData preset, bool temporary, string source = "yourself",
         int key = 0)
     {
         if (!preset.Valid)
             return;
+
+        if (preset.State is ModState.RemoveTemporary)
+        {
+            if (!CanSetTemporarySettings(collection, mod, key))
+                return;
+
+            SetTemporarySettings(collection, mod, null, key);
+            return;
+        }
 
         if (temporary)
         {
@@ -163,7 +178,7 @@ public class CollectionEditor(SaveService saveService, CommunicatorService commu
 
             foreach (var (groupId, options) in preset.Settings)
             {
-                if (groupId.FindGroup(mod) is not {} group)
+                if (groupId.FindGroup(mod) is not { } group)
                     continue;
 
                 modSettings.Settings[group.Index] = GetSetting(group, options, modSettings);
@@ -191,7 +206,7 @@ public class CollectionEditor(SaveService saveService, CommunicatorService commu
 
             foreach (var (groupId, options) in preset.Settings)
             {
-                if (groupId.FindGroup(mod) is not {} group)
+                if (groupId.FindGroup(mod) is not { } group)
                     continue;
 
                 var newSetting = GetSetting(group, options, ownSettings);
@@ -330,9 +345,11 @@ public class CollectionEditor(SaveService saveService, CommunicatorService commu
             if (options.GetValue(currentIdentifier) is not OptionState.Disabled)
                 return currentSetting;
 
-            foreach(var optionId in options.Disabled())
+            foreach (var optionId in options.Disabled())
+            {
                 if (group.Options.FirstOrDefault(o => !optionId.Matches(ModObjectIdentifier.From(o))) is { } option)
                     return Setting.Single(option.Index);
+            }
 
             // If this is not possible, leave the setting alone.
             return currentSetting;

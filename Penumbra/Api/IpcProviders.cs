@@ -1,7 +1,6 @@
 using Dalamud.Plugin;
 using Luna;
 using Penumbra.Api.Api;
-using Penumbra.Api.Helpers;
 using Penumbra.Communication;
 using CharacterUtility = Penumbra.Interop.Services.CharacterUtility;
 
@@ -28,6 +27,7 @@ public sealed class IpcProviders : IDisposable, IApiService, IRequiredService
         _providers =
         [
             IpcSubscribers.GetCollections.Provider(pi, api.Collection),
+            IpcSubscribers.GetCollectionManagerAdapter.Provider(pi, api.Collection),
             IpcSubscribers.GetCollectionsByIdentifier.Provider(pi, api.Collection),
             IpcSubscribers.GetChangedItemsForCollection.Provider(pi, api.Collection),
             IpcSubscribers.GetCollection.Provider(pi, api.Collection),
@@ -52,7 +52,8 @@ public sealed class IpcProviders : IDisposable, IApiService, IRequiredService
             IpcSubscribers.GetMetaManipulations.Provider(pi, api.Meta),
 
             IpcSubscribers.GetModList.Provider(pi, api.Mods),
-            IpcSubscribers.GetModListAdapter.Provider(pi, api.Mods),
+            IpcSubscribers.GetModListAdapterOld.Provider(pi, api.Mods),
+            IpcSubscribers.GetModManagerAdapter.Provider(pi, api.Mods),
             IpcSubscribers.InstallMod.Provider(pi, api.Mods),
             IpcSubscribers.ReloadMod.Provider(pi, api.Mods),
             IpcSubscribers.AddMod.Provider(pi, api.Mods),

@@ -3,7 +3,6 @@ using Dalamud.Plugin;
 using ImSharp;
 using Luna;
 using Penumbra.Api.Enums;
-using Penumbra.Api.Helpers;
 using Penumbra.Api.IpcSubscribers;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Interop;

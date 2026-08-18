@@ -1,12 +1,12 @@
 using Dalamud.Plugin;
 using ImSharp;
+using Luna;
 using Penumbra.Api.Enums;
-using Penumbra.Api.Helpers;
 using Penumbra.Api.IpcSubscribers;
 
 namespace Penumbra.Api.IpcTester;
 
-public class ModSettingsIpcTester : Luna.IUiService, IDisposable
+public class ModSettingsIpcTester : IUiService, IDisposable
 {
     private readonly IDalamudPluginInterface                               _pi;
     public readonly  EventSubscriber<ModSettingChange, Guid, string, bool> SettingChanged;
@@ -18,17 +18,18 @@ public class ModSettingsIpcTester : Luna.IUiService, IDisposable
     private bool             _lastSettingChangeInherited;
     private DateTimeOffset   _lastSettingChange;
 
-    private string                                                                         _settingsModDirectory = string.Empty;
-    private string                                                                         _settingsModName      = string.Empty;
-    private Guid?                                                                          _settingsCollection;
-    private string                                                                         _settingsCollectionName = string.Empty;
-    private bool                                                                           _settingsIgnoreInheritance;
-    private bool                                                                           _settingsIgnoreTemporary;
-    private int                                                                            _settingsKey;
-    private bool                                                                           _settingsInherit;
-    private bool                                                                           _settingsTemporary;
-    private bool                                                                           _settingsEnabled;
-    private int                                                                            _settingsPriority;
+    private string _settingsModDirectory = string.Empty;
+    private string _settingsModName      = string.Empty;
+    private Guid?  _settingsCollection;
+    private string _settingsCollectionName = string.Empty;
+    private bool   _settingsIgnoreInheritance;
+    private bool   _settingsIgnoreTemporary;
+    private int    _settingsKey;
+    private bool   _settingsInherit;
+    private bool   _settingsTemporary;
+    private bool   _settingsEnabled;
+    private int    _settingsPriority;
+
     private IReadOnlyDictionary<string, (string[], GroupType)>?                            _availableSettings;
     private Dictionary<string, List<string>>?                                              _currentSettings;
     private Dictionary<string, (bool, int, Dictionary<string, List<string>>, bool, bool)>? _allSettings;

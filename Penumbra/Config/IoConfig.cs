@@ -144,29 +144,30 @@ public sealed partial class IoConfig : ConfigurationFile<FilenameService>
     {
         if (j.TryReadObject("Import"u8, out var import))
         {
-            DefaultModImportPath = import.PropertyOrDefault("DefaultModImportPath"u8, DefaultModImportPath);
-            DefaultImportFolder = import.PropertyOrDefault("DefaultImportFolder"u8, DefaultImportFolder);
-            AlwaysOpenDefaultImport = import.PropertyOrDefault("AlwaysOpenDefaultImport"u8, AlwaysOpenDefaultImport);
-            ReplaceNonAsciiOnImport = import.PropertyOrDefault("ReplaceNonAsciiOnImport"u8, ReplaceNonAsciiOnImport);
-            MigrateImportedModelsToV6 = import.PropertyOrDefault("MigrateImportedModelsToV6"u8, MigrateImportedModelsToV6);
+            DefaultModImportPath             = import.PropertyOrDefault("DefaultModImportPath"u8,             DefaultModImportPath);
+            DefaultImportFolder              = import.PropertyOrDefault("DefaultImportFolder"u8,              DefaultImportFolder);
+            AlwaysOpenDefaultImport          = import.PropertyOrDefault("AlwaysOpenDefaultImport"u8,          AlwaysOpenDefaultImport);
+            ReplaceNonAsciiOnImport          = import.PropertyOrDefault("ReplaceNonAsciiOnImport"u8,          ReplaceNonAsciiOnImport);
+            MigrateImportedModelsToV6        = import.PropertyOrDefault("MigrateImportedModelsToV6"u8,        MigrateImportedModelsToV6);
             MigrateImportedMaterialsToLegacy = import.PropertyOrDefault("MigrateImportedMaterialsToLegacy"u8, MigrateImportedMaterialsToLegacy);
-            AlwaysShowDetailedModImport = import.PropertyOrDefault("AlwaysShowDetailedModImport"u8, AlwaysShowDetailedModImport);
+            AlwaysShowDetailedModImport      = import.PropertyOrDefault("AlwaysShowDetailedModImport"u8,      AlwaysShowDetailedModImport);
         }
 
         if (j.TryReadObject("Export"u8, out var export))
         {
-            ExportDirectory = export.PropertyOrDefault("ExportDirectory"u8, ExportDirectory);
-            DefaultModAuthor = export.PropertyOrDefault("DefaultModAuthor"u8, DefaultModAuthor);
+            ExportDirectory   = export.PropertyOrDefault("ExportDirectory"u8,   ExportDirectory);
+            DefaultModAuthor  = export.PropertyOrDefault("DefaultModAuthor"u8,  DefaultModAuthor);
             IncludeShpkInSwap = export.PropertyOrDefault("IncludeShpkInSwap"u8, IncludeShpkInSwap);
         }
 
         if (j.TryReadObject("Watcher"u8, out var watcher))
         {
-            WatchDirectory = watcher.PropertyOrDefault("WatchDirectory"u8, WatchDirectory );
-            EnableDirectoryWatch = watcher.PropertyOrDefault("EnableDirectoryWatch"u8, EnableDirectoryWatch );
-            EnableAutomaticModImport = watcher.PropertyOrDefault("EnableAutomaticModImport"u8, EnableAutomaticModImport );
-            EnableContainerPeeking = watcher.PropertyOrDefault("EnableContainerPeeking"u8, EnableContainerPeeking );
-            AutoDismissModImportSuccessReports = watcher.PropertyOrDefault("AutoDismissModImportSuccessReports"u8, AutoDismissModImportSuccessReports );
+            WatchDirectory           = watcher.PropertyOrDefault("WatchDirectory"u8,           WatchDirectory);
+            EnableDirectoryWatch     = watcher.PropertyOrDefault("EnableDirectoryWatch"u8,     EnableDirectoryWatch);
+            EnableAutomaticModImport = watcher.PropertyOrDefault("EnableAutomaticModImport"u8, EnableAutomaticModImport);
+            EnableContainerPeeking   = watcher.PropertyOrDefault("EnableContainerPeeking"u8,   EnableContainerPeeking);
+            AutoDismissModImportSuccessReports =
+                watcher.PropertyOrDefault("AutoDismissModImportSuccessReports"u8, AutoDismissModImportSuccessReports);
             PreventExportLoopback = watcher.PropertyOrDefault("PreventExportLoopback"u8, PreventExportLoopback);
         }
 
