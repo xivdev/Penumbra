@@ -1,4 +1,6 @@
+using Dalamud.Plugin.Ipc;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
+using Luna;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Communication;
@@ -10,22 +12,24 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.Api.Api;
 
-public class GameStateApi : IPenumbraApiGameState, Luna.IApiService, IDisposable
+public class GameStateApi : IPenumbraApiGameState, IApiService, IDisposable
 {
-    private readonly CommunicatorService _communicator;
-    private readonly CollectionResolver  _collectionResolver;
-    private readonly DrawObjectState     _drawObjectState;
-    private readonly CutsceneService     _cutsceneService;
-    private readonly ResourceLoader      _resourceLoader;
+    private readonly CommunicatorService     _communicator;
+    private readonly CollectionResolver      _collectionResolver;
+    private readonly DrawObjectState         _drawObjectState;
+    private readonly CutsceneService         _cutsceneService;
+    private readonly ResourceLoader          _resourceLoader;
+    private readonly GameStateAdapterFactory _adapterFactory;
 
     public unsafe GameStateApi(CommunicatorService communicator, CollectionResolver collectionResolver, CutsceneService cutsceneService,
-        ResourceLoader resourceLoader, DrawObjectState drawObjectState)
+        ResourceLoader resourceLoader, DrawObjectState drawObjectState, GameStateAdapterFactory adapterFactory)
     {
         _communicator                  =  communicator;
         _collectionResolver            =  collectionResolver;
         _cutsceneService               =  cutsceneService;
         _resourceLoader                =  resourceLoader;
         _drawObjectState               =  drawObjectState;
+        _adapterFactory                =  adapterFactory;
         _resourceLoader.ResourceLoaded += OnResourceLoaded;
         _resourceLoader.PapRequested   += OnPapRequested;
         _communicator.CreatedCharacterBase.Subscribe(OnCreatedCharacterBase, Communication.CreatedCharacterBase.Priority.Api);
@@ -33,7 +37,8 @@ public class GameStateApi : IPenumbraApiGameState, Luna.IApiService, IDisposable
     }
 
     private void OnCreatingCharacterBase(in CreatingCharacterBase.Arguments arguments)
-        => CreatingCharacterBase?.Invoke(arguments.GameObject.Address, arguments.Collection.Identity.Id, arguments.ModelCharaId, arguments.Customize,
+        => CreatingCharacterBase?.Invoke(arguments.GameObject.Address, arguments.Collection.Identity.Id, arguments.ModelCharaId,
+            arguments.Customize,
             arguments.EquipData);
 
     public unsafe void Dispose()
@@ -53,6 +58,9 @@ public class GameStateApi : IPenumbraApiGameState, Luna.IApiService, IDisposable
         var data = _collectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
         return (data.AssociatedGameObject, (Id: data.ModCollection.Identity.Id, Name: data.ModCollection.Identity.Name));
     }
+
+    public IIdDataShareAdapter GetGameStateAdapter(string owner)
+        => _adapterFactory.Create(owner)!;
 
     public int GetCutsceneParentIndex(int actorIdx)
         => _cutsceneService.GetParentIndex(actorIdx);
