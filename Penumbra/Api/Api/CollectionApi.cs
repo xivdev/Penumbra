@@ -33,7 +33,7 @@ public class CollectionApi(CollectionManager collections, ApiHelpers helpers, Co
         return list;
     }
 
-    public Func<string, (string ModDirectory, string ModName)[]> CheckCurrentChangedItemFunc()
+    public Func<string, ModIdentifier[]> CheckCurrentChangedItemFunc()
     {
         var weakRef = new WeakReference<CollectionManager>(collections);
         return s =>
