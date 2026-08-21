@@ -59,10 +59,10 @@ public class MultiModPanel(ModFileSystem fileSystem, ModDataEditor editor, Prede
             table.SetupColumn("mod"u8,  TableColumnFlags.WidthFixed, sizeMods);
             table.SetupColumn("path"u8, TableColumnFlags.WidthFixed, sizeFolders);
 
-            var i = 0;
+            using var id = Im.Id.Empty();
             foreach (var node in fileSystem.Selection.OrderedNodes.OrderBy(p => p.FullPath, StringComparer.OrdinalIgnoreCase))
             {
-                using var id = Im.Id.Push(i++);
+                id.PushNext();
                 var (icon, text) = node is IFileSystemData<Mod> l
                     ? (LunaStyle.RemoveFileIcon, l.Value.Name)
                     : (LunaStyle.RemoveFolderIcon, string.Empty);
@@ -72,6 +72,7 @@ public class MultiModPanel(ModFileSystem fileSystem, ModDataEditor editor, Prede
 
                 table.DrawFrameColumn(text);
                 table.DrawFrameColumn(node.FullPath);
+                id.Pop();
             }
         }
 

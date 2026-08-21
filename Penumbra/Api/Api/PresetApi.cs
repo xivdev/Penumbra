@@ -9,7 +9,7 @@ namespace Penumbra.Api.Api;
 
 public class PresetApi(ApiHelpers helpers, CollectionManager collections, ModManager mods, MainConfig config) : IPenumbraApiPresets, IApiService
 {
-    public (PenumbraApiEc, SettingPresetData?) GetPreset(Guid collectionId, in (string Identifier, string Name) mod, PresetQueryMode mode,
+    public (PenumbraApiEc, SettingPresetData?) GetPreset(Guid collectionId, in ModIdentifier mod, PresetQueryMode mode,
         int key)
     {
         var args = ApiHelpers.Args("CollectionId", collectionId, "ModDirectory", mod.Identifier, "ModName", mod.Name, "Mode", mode, "Key", key);
@@ -22,7 +22,7 @@ public class PresetApi(ApiHelpers helpers, CollectionManager collections, ModMan
         return GetPresetBase(args, collection, mod.Identifier, mod.Name, mode, key);
     }
 
-    public (PenumbraApiEc, SettingPresetData?) GetPresetPlayer(int objectIndex, in (string Identifier, string Name) mod, PresetQueryMode mode,
+    public (PenumbraApiEc, SettingPresetData?) GetPresetPlayer(int objectIndex, in ModIdentifier mod, PresetQueryMode mode,
         int key)
     {
         var args = ApiHelpers.Args("ObjectIndex", objectIndex, "ModDirectory", mod.Identifier, "ModName", mod.Name, "Mode", mode, "Key", key);
@@ -35,7 +35,7 @@ public class PresetApi(ApiHelpers helpers, CollectionManager collections, ModMan
         return GetPresetBase(args, collection, mod.Identifier, mod.Name, mode, key);
     }
 
-    public PenumbraApiEc ApplyPreset(Guid collectionId, in (string Identifier, string Name) mod, in SettingPresetData preset,
+    public PenumbraApiEc ApplyPreset(Guid collectionId, in ModIdentifier mod, in SettingPresetData preset,
         PresetApplyMode mode, int key, string source)
     {
         var args = ApiHelpers.Args("CollectionId", collectionId, "ModDirectory", mod.Identifier, "ModName", mod.Name, "Mode", mode, "Key", key,
@@ -46,7 +46,7 @@ public class PresetApi(ApiHelpers helpers, CollectionManager collections, ModMan
         return ApplyPresetBase(args, collection, mod.Identifier, mod.Name, preset, mode, key, source);
     }
 
-    public PenumbraApiEc ApplyPresetPlayer(int objectIndex, in (string Identifier, string Name) mod, in SettingPresetData preset,
+    public PenumbraApiEc ApplyPresetPlayer(int objectIndex, in ModIdentifier mod, in SettingPresetData preset,
         PresetApplyMode mode, int key, string source)
     {
         var args = ApiHelpers.Args("ObjectIndex", objectIndex, "ModDirectory", mod.Identifier, "ModName", mod.Name, "Mode", mode, "Key", key,

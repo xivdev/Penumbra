@@ -17,9 +17,11 @@ public sealed class CollectionManagerAdapterFactory(
     CollectionResolver resolver,
     ObjectManager objects,
     ActorManager actors,
-    ModStorage mods) : IAdapterFactory, IApiService
+    ModStorage mods,
+    LunaLogger log) : IAdapterFactory, IApiService
 {
     public          IpcObjectManager   IpcManager { get; } = ipcManager;
+    public readonly LunaLogger         Log         = log;
     public readonly ModStorage         Mods        = mods;
     public readonly CollectionManager  Collections = collections;
     public readonly ObjectManager      Objects     = objects;
@@ -105,6 +107,18 @@ public sealed partial class CollectionManagerAdapter(CollectionManagerAdapterFac
         var data = Parent.Resolver.IdentifyCollection(actor.AsObject, false);
         return CreateCollection(data.ModCollection);
     }
+
+    [AdapterMethod(CollectionManagerWrapper.Method.GetObjectCollectionId)]
+    public unsafe Guid ObjectCollectionId(int objectIndex)
+        => Parent.Resolver.IdentifyCollection(Parent.Objects[objectIndex].AsObject, true).ModCollection.Identity.Id;
+
+    [AdapterMethod(CollectionManagerWrapper.Method.GetPlayerCollectionId)]
+    public unsafe Guid PlayerCollectionId
+        => ObjectCollectionId(0);
+
+    [AdapterMethod(CollectionManagerWrapper.Method.GetPlayerCollection, DisposeOnFailure = true)]
+    public IIdDataShareAdapter? PlayerCollection
+        => TryGetForObject(0, false);
 
     [AdapterMethod(CollectionManagerWrapper.Method.GetNames)]
     private IEnumerable<(Guid Identifier, string Name, int Index)> GetNames()

@@ -125,7 +125,13 @@ public sealed partial class CollectionAdapter(CollectionManagerAdapter parent, M
 
     [AdapterMethod(CollectionWrapper.Method.ApplyPreset)]
     private void ApplyPreset(int modIndex, SettingPresetData preset, int mode, string source, int key)
-        => Parent.Collections.Editor.ApplyPreset(_collection, Parent.Mods[modIndex], preset, (PresetApplyMode)mode, source, key);
+    {
+        if (Parent.Mods.Count <= modIndex || modIndex < 0)
+            return;
+
+        Parent.Log.Debug($"[{Owner}] Applying preset to {Parent.Mods[modIndex].Identifier}...");
+        Parent.Collections.Editor.ApplyPreset(_collection, Parent.Mods[modIndex], preset, (PresetApplyMode)mode, source, key);
+    }
 
     protected override void DisposeInternal()
         => _collection = null!;

@@ -11,10 +11,12 @@ public sealed class GameStateAdapterFactory(
     IpcObjectManager ipcManager,
     RedrawService redrawService,
     CutsceneService cutsceneService,
-    DrawObjectState drawObjectState)
+    DrawObjectState drawObjectState,
+    LunaLogger log)
     : IAdapterFactory, IApiService
 {
     public          IpcObjectManager IpcManager { get; } = ipcManager;
+    public readonly LunaLogger       Log             = log;
     public readonly RedrawService    RedrawService   = redrawService;
     public readonly CutsceneService  CutsceneService = cutsceneService;
     public readonly DrawObjectState  DrawObjectState = drawObjectState;
@@ -47,5 +49,8 @@ public sealed partial class GameStateAdapter(GameStateAdapterFactory parent, str
 
     [AdapterMethod(GameStateWrapper.Method.SetCutsceneActor)]
     private void SetCutsceneParentIndex(ushort changedObject, ushort newParent)
-        => Parent.CutsceneService.SetParentIndex(changedObject, newParent);
+    {
+        Parent.Log.Debug($"[{Owner}] Setting cutscene parent of actor {changedObject} to {newParent}...");
+        Parent.CutsceneService.SetParentIndex(changedObject, newParent);
+    }
 }

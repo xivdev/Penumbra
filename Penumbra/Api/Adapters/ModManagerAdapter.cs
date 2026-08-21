@@ -7,9 +7,9 @@ using Penumbra.Mods.Manager;
 
 namespace Penumbra.Api;
 
-public sealed class ModManagerAdapterFactory(IpcObjectManager ipcManager, ModStorage mods) : IAdapterFactory, IApiService
+public sealed class ModManagerAdapterFactory(IpcObjectManager ipcManager, ModManager mods) : IAdapterFactory, IApiService
 {
-    public readonly ModStorage       Mods = mods;
+    public readonly ModManager       Mods = mods;
     public          IpcObjectManager IpcManager { get; } = ipcManager;
 
     public IpcObjectManager.BasicAdapter CreateAdapter(string owner, object? data)
@@ -40,6 +40,10 @@ public sealed partial class ModManagerAdapter(ModManagerAdapterFactory parent, s
     [AdapterMethod(ModManagerWrapper.Method.EnumerateNames)]
     private IEnumerable<ModIdentifier> EnumerateNames()
         => Parent.Mods.Select(m => (m.Identifier, m.Name));
+
+    [AdapterMethod(ModManagerWrapper.Method.ModDirectory)]
+    private DirectoryInfo? ModDirectory
+        => parent.Mods.Valid ? parent.Mods.BasePath : null;
 
     [return: NotNullIfNotNull(nameof(mod))]
     private IIdDataShareAdapter? CreateMod(Mod? mod, [CallerMemberName] string? callerName = null)
