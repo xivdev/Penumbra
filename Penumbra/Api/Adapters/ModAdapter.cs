@@ -8,6 +8,10 @@ namespace Penumbra.Api;
 public sealed partial class ModAdapter(ModManagerAdapter parent, Mod mod)
     : IpcObjectManager.BasicAdapter(parent.Parent, parent.Owner, nameof(ModAdapter))
 {
+    [AdapterMethod(ModWrapper.Method.Version)]
+    public override (int Major, int Minor) Version
+        => (1, 0);
+
     private Mod _mod = mod;
 
     [AdapterMethod(ModWrapper.Method.ModPath)]
@@ -34,8 +38,8 @@ public sealed partial class ModAdapter(ModManagerAdapter parent, Mod mod)
     private string Description
         => _mod.Description;
 
-    [AdapterMethod(ModWrapper.Method.Version)]
-    private string Version
+    [AdapterMethod(ModWrapper.Method.ModVersion)]
+    private string ModVersion
         => _mod.Version;
 
     [AdapterMethod(ModWrapper.Method.Website)]

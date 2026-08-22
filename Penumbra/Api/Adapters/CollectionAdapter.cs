@@ -16,6 +16,10 @@ public sealed partial class CollectionAdapter(CollectionManagerAdapter parent, M
     private new CollectionManagerAdapterFactory Parent
         => (CollectionManagerAdapterFactory)base.Parent!;
 
+    [AdapterMethod(CollectionWrapper.Method.Version)]
+    public override (int Major, int Minor) Version
+        => (1, 0);
+
     [AdapterMethod(CollectionWrapper.Method.GetIndex)]
     private int Index
         => _collection.Identity.Index;

@@ -19,6 +19,10 @@ public sealed class ModManagerAdapterFactory(IpcObjectManager ipcManager, ModMan
 public sealed partial class ModManagerAdapter(ModManagerAdapterFactory parent, string owner)
     : IpcObjectManager.BasicAdapter(parent, owner, nameof(ModManagerAdapter)), IAdapterFactory
 {
+    [AdapterMethod(ModManagerWrapper.Method.Version)]
+    public override (int Major, int Minor) Version
+        => (1, 0);
+
     public IpcObjectManager IpcManager
         => Parent.IpcManager;
 

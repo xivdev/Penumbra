@@ -4,10 +4,13 @@ using Luna.Generators;
 using Penumbra.Api.Wrappers;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
+using Penumbra.Communication;
 using Penumbra.GameData.Actors;
 using Penumbra.GameData.Interop;
 using Penumbra.Interop.PathResolving;
+using Penumbra.Mods;
 using Penumbra.Mods.Manager;
+using Penumbra.Services;
 
 namespace Penumbra.Api;
 
@@ -18,15 +21,17 @@ public sealed class CollectionManagerAdapterFactory(
     ObjectManager objects,
     ActorManager actors,
     ModStorage mods,
-    LunaLogger log) : IAdapterFactory, IApiService
+    LunaLogger log,
+    CommunicatorService communicator) : IAdapterFactory, IApiService
 {
-    public          IpcObjectManager   IpcManager { get; } = ipcManager;
-    public readonly LunaLogger         Log         = log;
-    public readonly ModStorage         Mods        = mods;
-    public readonly CollectionManager  Collections = collections;
-    public readonly ObjectManager      Objects     = objects;
-    public readonly ActorManager       Actors      = actors;
-    public readonly CollectionResolver Resolver    = resolver;
+    public          IpcObjectManager    IpcManager { get; } = ipcManager;
+    public readonly LunaLogger          Log          = log;
+    public readonly ModStorage          Mods         = mods;
+    public readonly CollectionManager   Collections  = collections;
+    public readonly ObjectManager       Objects      = objects;
+    public readonly ActorManager        Actors       = actors;
+    public readonly CollectionResolver  Resolver     = resolver;
+    public readonly CommunicatorService Communicator = communicator;
 
     public IpcObjectManager.BasicAdapter CreateAdapter(string owner, object? _ = null)
         => new CollectionManagerAdapter(this, owner);
@@ -40,6 +45,15 @@ public sealed partial class CollectionManagerAdapter(CollectionManagerAdapterFac
 
     public new CollectionManagerAdapterFactory Parent
         => (CollectionManagerAdapterFactory)base.Parent!;
+
+    [AdapterMethod(CollectionManagerWrapper.Method.Version)]
+    public override (int Major, int Minor) Version
+        => (1, 0);
+
+    [AdapterMethod(CollectionManagerWrapper.Method.ModSettingsChanged,
+        SubscribeEvent = nameof(SubscribeModSettingChanged),
+        UnsubscribeEvent = nameof(UnsubscribeModSettingChanged))]
+    private event Action<int, Guid, string, bool>? ModSettingsChanged;
 
     [AdapterMethod(CollectionManagerWrapper.Method.GetCurrent, DisposeOnFailure = true)]
     private IIdDataShareAdapter Current
@@ -108,12 +122,25 @@ public sealed partial class CollectionManagerAdapter(CollectionManagerAdapterFac
         return CreateCollection(data.ModCollection);
     }
 
-    [AdapterMethod(CollectionManagerWrapper.Method.GetObjectCollectionId)]
-    public unsafe Guid ObjectCollectionId(int objectIndex)
-        => Parent.Resolver.IdentifyCollection(Parent.Objects[objectIndex].AsObject, true).ModCollection.Identity.Id;
+    [AdapterMethod(CollectionManagerWrapper.Method.GetTypeCollectionIdentity)]
+    public (Guid Identifier, string Name, int Index)? TypeCollectionId(int type)
+    {
+        var collection = Parent.Collections.Active.ByType((CollectionType)type);
+        if (collection is null)
+            return null;
 
-    [AdapterMethod(CollectionManagerWrapper.Method.GetPlayerCollectionId)]
-    public unsafe Guid PlayerCollectionId
+        return (collection.Identity.Id, collection.Identity.Name, collection.Identity.Index);
+    }
+
+    [AdapterMethod(CollectionManagerWrapper.Method.GetObjectCollectionIdentity)]
+    public unsafe (Guid Identifier, string Name, int Index) ObjectCollectionId(int objectIndex)
+    {
+        var collection = Parent.Resolver.IdentifyCollection(Parent.Objects[objectIndex].AsObject, true).ModCollection;
+        return (collection.Identity.Id, collection.Identity.Name, collection.Identity.Index);
+    }
+
+    [AdapterMethod(CollectionManagerWrapper.Method.GetPlayerCollectionIdentity)]
+    public (Guid Identifier, string Name, int Index) PlayerCollectionId
         => ObjectCollectionId(0);
 
     [AdapterMethod(CollectionManagerWrapper.Method.GetPlayerCollection, DisposeOnFailure = true)]
@@ -124,10 +151,41 @@ public sealed partial class CollectionManagerAdapter(CollectionManagerAdapterFac
     private IEnumerable<(Guid Identifier, string Name, int Index)> GetNames()
         => Parent.Collections.Storage.Select(collection => (collection.Identity.Id, collection.Identity.Name, collection.Identity.Index));
 
+    [AdapterMethod(CollectionManagerWrapper.Method.CheckCurrentChangedItems)]
+    private IEnumerable<ModIdentifier> CheckCurrentChangedItems(string itemName)
+    {
+        if (!Parent.Collections.Active.Current.ChangedItems.TryGetValue(itemName, out var data))
+            return [];
+
+        return data.Item1.Select(m => new ModIdentifier(m is Mod mod ? mod.Identifier : string.Empty, m.Name));
+    }
+
     [return: NotNullIfNotNull(nameof(collection))]
     private IIdDataShareAdapter? CreateCollection(ModCollection? collection, [CallerMemberName] string? callerName = null)
         => this.Create(Owner, collection, callerName);
 
     public IpcObjectManager.BasicAdapter? CreateAdapter(string owner, object? collection)
         => collection is not ModCollection c ? null : new CollectionAdapter(this, c);
+
+    private void SubscribeModSettingChanged()
+        => Parent.Communicator.ModSettingChanged.Subscribe(OnModSettingChanged, ModSettingChanged.Priority.Api);
+
+    private void UnsubscribeModSettingChanged()
+        => Parent.Communicator.ModSettingChanged.Unsubscribe(OnModSettingChanged);
+
+    private void OnModSettingChanged(in ModSettingChanged.Arguments arguments)
+    {
+        try
+        {
+            ModSettingsChanged?.Invoke((int)arguments.Type, arguments.Collection.Identity.Id, arguments.Mod?.Identifier ?? string.Empty,
+                arguments.Inherited);
+        }
+        catch (Exception ex)
+        {
+            Parent.Log.Error($"[{Owner}] Error invoking {nameof(CollectionManagerWrapper.ModSettingsChanged)} subscribers:\n{ex}");
+        }
+    }
+
+    protected override void DisposeInternal()
+        => UnsubscribeModSettingChanged();
 }

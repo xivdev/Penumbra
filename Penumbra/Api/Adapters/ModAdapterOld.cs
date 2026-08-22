@@ -17,7 +17,7 @@ public sealed class ModAdapterOld(Mod mod) : IReadOnlyList<object?>, IDisposable
             (int)ModWrapper.Method.Identifier       => Mod.Identifier,
             (int)ModWrapper.Method.Author           => Mod.Author,
             (int)ModWrapper.Method.Description      => Mod.Description,
-            (int)ModWrapper.Method.Version          => Mod.Version,
+            (int)ModWrapper.Method.ModVersion          => Mod.Version,
             (int)ModWrapper.Method.Website          => Mod.Website,
             (int)ModWrapper.Method.Image            => Mod.Image,
             (int)ModWrapper.Method.ModTags          => Mod.ModTags,
