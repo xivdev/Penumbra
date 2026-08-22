@@ -139,6 +139,44 @@ public sealed partial class CollectionManagerAdapter(CollectionManagerAdapterFac
         return (collection.Identity.Id, collection.Identity.Name, collection.Identity.Index);
     }
 
+    [AdapterMethod(CollectionManagerWrapper.Method.GetByIndexIdentity)]
+    public (Guid Identifier, string Name, int Index)? IdentityByIndex(int index)
+    {
+        if (index < 0 || index >= Parent.Collections.Storage.Count)
+            return null;
+
+        var collection = Parent.Collections.Storage[index];
+        return (collection.Identity.Id, collection.Identity.Name, collection.Identity.Index);
+    }
+
+    [AdapterMethod(CollectionManagerWrapper.Method.GetByIdIdentity)]
+    public (Guid Identifier, string Name, int Index)? IdentityById(Guid identifier)
+    {
+        if (!Parent.Collections.Storage.ById(identifier, out var collection)
+         && !Parent.Collections.Temp.CollectionById(identifier, out collection))
+            return null;
+
+        return (collection.Identity.Id, collection.Identity.Name, collection.Identity.Index);
+    }
+
+    [AdapterMethod(CollectionManagerWrapper.Method.GetByNameIdentity)]
+    public (Guid Identifier, string Name, int Index)? IdentityByName(string name)
+    {
+        if (!Parent.Collections.Storage.ByName(name, out var collection) && !Parent.Collections.Temp.CollectionByName(name, out collection))
+            return null;
+
+        return (collection.Identity.Id, collection.Identity.Name, collection.Identity.Index);
+    }
+
+    [AdapterMethod(CollectionManagerWrapper.Method.GetByIdentifierIdentity)]
+    public (Guid Identifier, string Name, int Index)? IdentityByIdentifier(string identifier)
+    {
+        if (!Parent.Collections.Storage.ByIdentifier(identifier, out var collection))
+            return null;
+
+        return (collection.Identity.Id, collection.Identity.Name, collection.Identity.Index);
+    }
+
     [AdapterMethod(CollectionManagerWrapper.Method.GetPlayerCollectionIdentity)]
     public (Guid Identifier, string Name, int Index) PlayerCollectionId
         => ObjectCollectionId(0);
@@ -158,6 +196,24 @@ public sealed partial class CollectionManagerAdapter(CollectionManagerAdapterFac
             return [];
 
         return data.Item1.Select(m => new ModIdentifier(m is Mod mod ? mod.Identifier : string.Empty, m.Name));
+    }
+
+    [AdapterMethod(CollectionManagerWrapper.Method.RemoveAllTemporarySettings)]
+    private int RemoveAllTemporarySettingsObject(Guid collectionId, int key)
+    {
+        if (!Parent.Collections.Storage.ById(collectionId, out var collection))
+            return 0;
+
+        var numRemoved = Parent.Collections.Editor.ClearTemporarySettings(collection, key);
+        return numRemoved;
+    }
+
+    [AdapterMethod(CollectionManagerWrapper.Method.RemoveAllTemporarySettingsObject)]
+    private unsafe int RemoveAllTemporarySettingsObject(int objectIndex, int key)
+    {
+        var collection = Parent.Resolver.IdentifyCollection(Parent.Objects[objectIndex].AsObject, true).ModCollection;
+        var numRemoved = Parent.Collections.Editor.ClearTemporarySettings(collection, key);
+        return numRemoved;
     }
 
     [return: NotNullIfNotNull(nameof(collection))]
