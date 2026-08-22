@@ -179,6 +179,9 @@ public class ModPanelSettingsTab(
 
     private void DrawPresetRow()
     {
+        if (config.Ui.HidePresetBar)
+            return;
+
         using var id = Im.Id.Push("presets"u8);
         if (ImEx.Icon.Button(LunaStyle.FromClipboardIcon, "Try to import a setting preset from the clipboard."u8))
             if (SettingPresetData.FromClipboard(out var data))
@@ -475,7 +478,8 @@ public class ModPanelSettingsTab(
 
             Im.Cursor.Y += Im.Style.ItemSpacing.Y;
             var id = new ModObjectIdentifier(_optionIdentifierInput, _optionNameInput);
-            if (SettingPresetData.DrawAddOption(size.AddX(-Im.Style.IndentSpacing), groupData, ref _optionIdentifierInput, ref _optionNameInput, out var option,
+            if (SettingPresetData.DrawAddOption(size.AddX(-Im.Style.IndentSpacing), groupData, ref _optionIdentifierInput, ref _optionNameInput,
+                    out var option,
                     id.FindOption(actualGroup) is { } o ? ModObjectIdentifier.From(o) : null))
                 presets.PresetManager.ChangeOption(presets.ModIdentifier, preset, groupIdentifier, option, OptionState.Ignored);
         }

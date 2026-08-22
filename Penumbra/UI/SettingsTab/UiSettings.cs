@@ -48,6 +48,7 @@ public sealed class UiSettings(UiConfig config, IUiBuilder uiBuilder) : IUiServi
             uiBuilder.DisableGposeUiHide =  config.HideUiInGPose;
             config.HideUiInGPose         ^= true;
         }
+
         LunaStyle.DrawSeparator();
     }
 
@@ -89,6 +90,11 @@ public sealed class UiSettings(UiConfig config, IUiBuilder uiBuilder) : IUiServi
         using var tree = Im.Tree.Node("General Display"u8, TreeNodeFlags.DefaultOpen);
         if (!tree)
             return;
+
+        if (SettingsTab.Checkbox("Hide Preset Row in Mod Panel"u8,
+                "Hides the top row of buttons and options that concern preset application and setting import/export in the mod panel in your Mods tab."u8,
+                config.HidePresetBar))
+            config.HidePresetBar ^= true;
 
         if (SettingsTab.Checkbox("Hide Redraw Bar in Mod Panel"u8, "Hides the lower redraw buttons in the mod panel in your Mods tab."u8,
                 config.HideRedrawBar))

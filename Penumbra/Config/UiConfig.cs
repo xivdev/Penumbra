@@ -57,6 +57,9 @@ public sealed partial class UiConfig : ConfigurationFile<FilenameService>
     #region Display
 
     [ConfigProperty]
+    private bool _hidePresetBar = false;
+
+    [ConfigProperty]
     private ChangedItemMode _changedItemDisplay = ChangedItemMode.GroupedCollapsed;
 
     [ConfigProperty(EventName = "HideChangedItemFiltersChanged")]
