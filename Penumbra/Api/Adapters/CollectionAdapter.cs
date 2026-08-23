@@ -4,7 +4,10 @@ using Luna.Generators;
 using Penumbra.Api.Enums;
 using Penumbra.Api.Wrappers;
 using Penumbra.Collections;
+using Penumbra.GameData.Gui;
 using Penumbra.Mods.Settings;
+using Penumbra.UI;
+using TerraFX.Interop.Windows;
 
 namespace Penumbra.Api;
 
@@ -135,6 +138,31 @@ public sealed partial class CollectionAdapter(CollectionManagerAdapter parent, M
 
         Parent.Log.Debug($"[{Owner}] Applying preset to {Parent.Mods[modIndex].Identifier}...");
         Parent.Collections.Editor.ApplyPreset(_collection, Parent.Mods[modIndex], preset, (PresetApplyMode)mode, source, key);
+    }
+
+    [AdapterMethod(CollectionWrapper.Method.DrawPresetTooltip)]
+    private void DrawPresetTooltip(int modIndex, SettingPresetData preset)
+    {
+        if (Parent.Mods.Count <= modIndex || modIndex < 0)
+            return;
+
+        var mod = Parent.Mods[modIndex];
+        var (settings, collection) =   _collection.GetActualSettings(modIndex);
+        settings                   ??= ModSettings.Empty;
+        preset.DrawTooltip(collection != _collection ? null : settings.Enabled, GetGroupData);
+
+        IReadOnlyList<(ModObjectIdentifier, bool)>? GetGroupData(in ModObjectIdentifier groupIdentifier, out string? name)
+        {
+            if (groupIdentifier.FindGroup(mod) is not { } group)
+            {
+                name = null;
+                return null;
+            }
+
+            name = group.Name;
+            return new PresetTooltipAdapterList(group.Options, settings.IsEmpty ? group.DefaultSettings : settings.Settings[group.Index],
+                group.Behaviour);
+        }
     }
 
     protected override void DisposeInternal()

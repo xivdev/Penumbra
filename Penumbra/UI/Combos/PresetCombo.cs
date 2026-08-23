@@ -157,11 +157,11 @@ public sealed class PresetCombo : FilterComboBase<PresetCombo.CacheItem>, IUiSer
         }
 
         name = group.Name;
-        return new AdapterList(group.Options, _selection.Settings.IsEmpty ? group.DefaultSettings : _selection.Settings.Settings[group.Index],
+        return new PresetTooltipAdapterList(group.Options, _selection.Settings.IsEmpty ? group.DefaultSettings : _selection.Settings.Settings[group.Index],
             group.Behaviour);
     }
 
-    private sealed class AdapterList(IReadOnlyList<IModOption> options, Setting setting, GroupDrawBehaviour single)
+    internal sealed class PresetTooltipAdapterList(IReadOnlyList<IModOption> options, Setting setting, GroupDrawBehaviour single)
         : IReadOnlyList<(ModObjectIdentifier, bool)>
     {
         public IEnumerator<(ModObjectIdentifier, bool)> GetEnumerator()
