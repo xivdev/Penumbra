@@ -157,27 +157,28 @@ public sealed class PresetCombo : FilterComboBase<PresetCombo.CacheItem>, IUiSer
         }
 
         name = group.Name;
-        return new PresetTooltipAdapterList(group.Options, _selection.Settings.IsEmpty ? group.DefaultSettings : _selection.Settings.Settings[group.Index],
+        return new PresetTooltipAdapterList(group.Options,
+            _selection.Settings.IsEmpty ? group.DefaultSettings : _selection.Settings.Settings[group.Index],
             group.Behaviour);
     }
+}
 
-    internal sealed class PresetTooltipAdapterList(IReadOnlyList<IModOption> options, Setting setting, GroupDrawBehaviour single)
-        : IReadOnlyList<(ModObjectIdentifier, bool)>
-    {
-        public IEnumerator<(ModObjectIdentifier, bool)> GetEnumerator()
-            => options.Select(Convert).GetEnumerator();
+internal sealed class PresetTooltipAdapterList(IReadOnlyList<IModOption> options, Setting setting, GroupDrawBehaviour single)
+    : IReadOnlyList<(ModObjectIdentifier, bool)>
+{
+    public IEnumerator<(ModObjectIdentifier, bool)> GetEnumerator()
+        => options.Select(Convert).GetEnumerator();
 
-        private (ModObjectIdentifier, bool) Convert(IModOption option, int index)
-            => (ModObjectIdentifier.From(option),
-                single is GroupDrawBehaviour.SingleSelection ? setting.AsIndex == index : setting.HasFlag(index));
+    private (ModObjectIdentifier, bool) Convert(IModOption option, int index)
+        => (ModObjectIdentifier.From(option),
+            single is GroupDrawBehaviour.SingleSelection ? setting.AsIndex == index : setting.HasFlag(index));
 
-        IEnumerator IEnumerable.GetEnumerator()
-            => GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator()
+        => GetEnumerator();
 
-        public int Count
-            => options.Count;
+    public int Count
+        => options.Count;
 
-        public (ModObjectIdentifier, bool) this[int index]
-            => Convert(options[index], index);
-    }
+    public (ModObjectIdentifier, bool) this[int index]
+        => Convert(options[index], index);
 }

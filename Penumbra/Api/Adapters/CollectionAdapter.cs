@@ -150,6 +150,7 @@ public sealed partial class CollectionAdapter(CollectionManagerAdapter parent, M
         var (settings, collection) =   _collection.GetActualSettings(modIndex);
         settings                   ??= ModSettings.Empty;
         preset.DrawTooltip(collection != _collection ? null : settings.Enabled, GetGroupData);
+        return;
 
         IReadOnlyList<(ModObjectIdentifier, bool)>? GetGroupData(in ModObjectIdentifier groupIdentifier, out string? name)
         {
