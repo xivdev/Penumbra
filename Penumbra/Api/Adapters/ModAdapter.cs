@@ -6,7 +6,7 @@ using Penumbra.Mods;
 namespace Penumbra.Api;
 
 public sealed partial class ModAdapter(ModManagerAdapter parent, Mod mod)
-    : IpcObjectManager.BasicAdapter(parent.Parent, parent.Owner, nameof(ModAdapter))
+    : IpcObjectManager.BasicAdapter(parent.Parent, parent.Owner, nameof(ModAdapter)), IpcObjectManager.IBasicAdapter
 {
     [AdapterMethod(ModWrapper.Method.Version)]
     public override (int Major, int Minor) Version

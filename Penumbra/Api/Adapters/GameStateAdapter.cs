@@ -31,12 +31,12 @@ public sealed class GameStateAdapterFactory(
     public readonly CommunicatorService Communicator    = communicator;
     public readonly ResourceLoader      ResourceLoader  = resourceLoader;
 
-    public IpcObjectManager.BasicAdapter CreateAdapter(string owner, object? data)
+    public IpcObjectManager.IBasicAdapter CreateAdapter(string owner, object? data)
         => new GameStateAdapter(this, owner);
 }
 
 public sealed partial class GameStateAdapter(GameStateAdapterFactory parent, string owner)
-    : IpcObjectManager.BasicAdapter(parent, owner, nameof(GameStateAdapter))
+    : IpcObjectManager.BasicAdapter(parent, owner, nameof(GameStateAdapter)), IpcObjectManager.IBasicAdapter
 {
     public new GameStateAdapterFactory Parent
         => (GameStateAdapterFactory)base.Parent!;
@@ -83,7 +83,7 @@ public sealed partial class GameStateAdapter(GameStateAdapterFactory parent, str
         UnsubscribeEvent = nameof(UnsubscribeGameObjectResourceResolved))]
     private event Action<nint, string, string>? GameObjectResourceResolved;
 
-    protected override unsafe void DisposeInternal()
+    protected override void DisposeInternal()
     {
         UnsubscribeCreatingCharacterBase();
         UnsubscribeCreatedCharacterBase();

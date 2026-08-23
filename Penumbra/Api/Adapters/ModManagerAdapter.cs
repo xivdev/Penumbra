@@ -12,12 +12,12 @@ public sealed class ModManagerAdapterFactory(IpcObjectManager ipcManager, ModMan
     public readonly ModManager       Mods = mods;
     public          IpcObjectManager IpcManager { get; } = ipcManager;
 
-    public IpcObjectManager.BasicAdapter CreateAdapter(string owner, object? data)
+    public IpcObjectManager.IBasicAdapter CreateAdapter(string owner, object? data)
         => new ModManagerAdapter(this, owner);
 }
 
 public sealed partial class ModManagerAdapter(ModManagerAdapterFactory parent, string owner)
-    : IpcObjectManager.BasicAdapter(parent, owner, nameof(ModManagerAdapter)), IAdapterFactory
+    : IpcObjectManager.BasicAdapter(parent, owner, nameof(ModManagerAdapter)), IAdapterFactory, IpcObjectManager.IBasicAdapter
 {
     [AdapterMethod(ModManagerWrapper.Method.Version)]
     public override (int Major, int Minor) Version
@@ -43,6 +43,7 @@ public sealed partial class ModManagerAdapter(ModManagerAdapterFactory parent, s
         return (mod.Identifier, mod.Name);
     }
 
+    [AdapterMethod(ModManagerWrapper.Method.IndexByName)]
     private int IndexByName(ModIdentifier mod)
         => Parent.Mods.TryGetMod(mod.Identifier, mod.Name, out var m) ? m.Index : -1;
 
@@ -76,6 +77,6 @@ public sealed partial class ModManagerAdapter(ModManagerAdapterFactory parent, s
     private IIdDataShareAdapter? CreateMod(Mod? mod, [CallerMemberName] string? callerName = null)
         => this.Create(Owner, mod, callerName);
 
-    public IpcObjectManager.BasicAdapter? CreateAdapter(string owner, object? mod)
+    public IpcObjectManager.IBasicAdapter? CreateAdapter(string owner, object? mod)
         => mod is not Mod m ? null : new ModAdapter(this, m);
 }

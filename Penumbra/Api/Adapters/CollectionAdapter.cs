@@ -1,4 +1,3 @@
-using Dalamud.Plugin.Ipc;
 using Luna;
 using Luna.Generators;
 using Penumbra.Api.Enums;
@@ -7,12 +6,11 @@ using Penumbra.Collections;
 using Penumbra.GameData.Gui;
 using Penumbra.Mods.Settings;
 using Penumbra.UI;
-using TerraFX.Interop.Windows;
 
 namespace Penumbra.Api;
 
 public sealed partial class CollectionAdapter(CollectionManagerAdapter parent, ModCollection collection)
-    : IpcObjectManager.BasicAdapter(parent.Parent, parent.Owner, nameof(CollectionAdapter)), IIdDataShareAdapter
+    : IpcObjectManager.BasicAdapter(parent.Parent, parent.Owner, nameof(CollectionAdapter)), IpcObjectManager.IBasicAdapter
 {
     private ModCollection _collection = collection;
 
