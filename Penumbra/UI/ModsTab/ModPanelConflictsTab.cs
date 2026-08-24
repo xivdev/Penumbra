@@ -72,7 +72,6 @@ public class ModPanelConflictsTab(CollectionManager collectionManager, ModSelect
         table.NextColumn();
         var actualSettings = collectionManager.Active.Current.GetActualSettings(selection.Mod!.Index).Settings!;
         var priority       = actualSettings.Priority.Value;
-        // TODO
         using (Im.Disabled(actualSettings is TemporaryModSettings))
         {
             if (ImEx.InputOnDeactivation.Scalar("##priority"u8, ref priority))

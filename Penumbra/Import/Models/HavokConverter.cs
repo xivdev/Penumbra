@@ -82,7 +82,7 @@ public static unsafe class HavokConverter
         loadOptions->ClassNameRegistry = builtinTypeRegistry->GetClassNameRegistry();
         loadOptions->TypeInfoRegistry = builtinTypeRegistry->GetTypeInfoRegistry();
 
-        // TODO: probably can use LoadFromBuffer for this.
+        // TODO 20260824 probably can use LoadFromBuffer for this.
         return hkSerializeUtil.LoadFromFile(path, null, loadOptions);
     }
 

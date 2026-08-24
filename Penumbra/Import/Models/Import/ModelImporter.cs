@@ -78,7 +78,7 @@ public partial class ModelImporter(ModelRoot model, IoNotifier notifier)
             SubMeshes          = [.. _subMeshes],
             BoneTables         = [.. _boneTables],
             Bones              = [.. _bones],
-            // TODO: Game doesn't seem to rely on this, but would be good to populate.
+            // TODO 20260824 Game doesn't seem to rely on this, but would be good to populate.
             SubMeshBoneMap = [],
             Attributes     = [.. _metaAttributes],
             Shapes         = [.. shapes],
@@ -102,8 +102,8 @@ public partial class ModelImporter(ModelRoot model, IoNotifier notifier)
             Materials     = [.. materials],
             BoundingBoxes = _boundingBox.ToStruct(),
 
-            // TODO: Would be good to calculate all of this up the tree.
-            Radius            = 1,
+            // TODO 20260824 Would be good to calculate all of this up the tree.
+            Radius = 1,
             BoneBoundingBoxes = Enumerable.Repeat(MdlFile.EmptyBoundingBox, _bones.Count).ToArray(),
             RemainingData     = [.._vertexBuffer, ..indexBuffer],
             Valid             = true,
@@ -210,7 +210,7 @@ public partial class ModelImporter(ModelRoot model, IoNotifier notifier)
         if (index >= 0)
             return (ushort)index;
 
-        // TODO: permit, with a warning to reduce, and validation in MdlTab.
+        // TODO 20260824 permit, with a warning to reduce, and validation in MdlTab.
         var count = _materials.Count;
         if (count >= MaterialLimit)
             return 0;
@@ -219,7 +219,7 @@ public partial class ModelImporter(ModelRoot model, IoNotifier notifier)
         return (ushort)count;
     }
 
-    // #TODO @ackwell fix for V6 Models
+    // #TODO 20260824 @ackwell fix for V6 Models
     private ushort BuildBoneTable(List<string> boneNames)
     {
         var boneIndices = new List<ushort>();

@@ -40,7 +40,7 @@ public class ModelExporter
         {
             var lod = mdl.Lods[lodIndex];
 
-            // TODO: consider other types of mesh?
+            // TODO 20260824 consider other types of mesh?
             for (ushort meshOffset = 0; meshOffset < lod.MeshCount; meshOffset++)
             {
                 var meshIndex = (ushort)(lod.MeshIndex + meshOffset);

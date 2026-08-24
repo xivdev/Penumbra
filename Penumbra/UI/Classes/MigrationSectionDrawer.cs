@@ -16,7 +16,7 @@ public class MigrationSectionDrawer(MigrationManager migrationManager, Configura
         DrawMdlMigration();
         DrawMdlRestore();
         DrawMdlCleanup();
-        // TODO enable when this works
+        // TODO 20260824 enable when this works
         Im.Separator();
         //DrawMtrlMigration();
         DrawMtrlRestore();
@@ -30,7 +30,7 @@ public class MigrationSectionDrawer(MigrationManager migrationManager, Configura
 
         Im.Tooltip.OnHover("This increments the version marker and restructures the bone table to the new version."u8);
 
-        // TODO enable when this works
+        // TODO 20260824 enable when this works
         //value = config.MigrateImportedMaterialsToLegacy;
         //if (Im.Checkbox("Automatically Migrate Materials to Dawntrail on Import"u8, ref value))
         //{

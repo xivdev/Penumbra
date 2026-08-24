@@ -112,7 +112,7 @@ public sealed class ModelManager(
     /// <summary> Try to resolve the absolute path to a .mtrl from the potentially-partial path provided by a model. </summary>
     private string? ResolveMtrlPath(string rawPath, IoNotifier notifier)
     {
-        // TODO: this should probably be chosen in the export settings
+        // TODO 20260824 this should probably be chosen in the export settings
         var variantId = 1;
 
         // Get standardised paths
@@ -292,7 +292,7 @@ public sealed class ModelManager(
             if (other is not ExportToGltfAction)
                 return false;
 
-            // TODO: compare configuration and such
+            // TODO 20260824 compare configuration and such
             return true;
         }
     }

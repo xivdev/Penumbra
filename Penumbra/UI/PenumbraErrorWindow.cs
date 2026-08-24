@@ -16,7 +16,7 @@ public sealed class PenumbraErrorWindow(IDalamudPluginInterface pi)
 
         if (Im.Input.Text("##FileCheck"u8, ref cache.FileName, "Check Game File Existence..."u8))
         {
-            // TODO: remove the / check when Lumina doesn't throw on this.
+            // TODO 20260824 remove the / check when Lumina doesn't throw on this.
             if (cache.FileName.Contains('/') && dataManager.FileExists(cache.FileName))
                 cache.File = dataManager.GetFile(cache.FileName);
             else

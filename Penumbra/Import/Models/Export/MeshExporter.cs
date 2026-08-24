@@ -66,7 +66,6 @@ public class MeshExporter
     private readonly Type _materialType;
     private readonly Type _skinningType;
 
-    // TODO: This signature is getting out of control.
     private MeshExporter(in ExportConfig config, MdlFile mdl, byte lod, ushort meshIndex, MaterialBuilder[] materials,
         GltfSkeleton? skeleton, IoNotifier notifier)
     {
@@ -112,7 +111,7 @@ public class MeshExporter
         var xivBoneTable = _mdl.BoneTables[XivMesh.BoneTableIndex];
 
         var indexMap = new Dictionary<ushort, int>();
-        // #TODO @ackwell maybe fix for V6 Models, I think this works fine.
+        // #TODO 20260824 @ackwell maybe fix for V6 Models, I think this works fine.
 
         foreach (var (tableIndex, xivBoneIndex) in xivBoneTable.BoneIndex.Take((int)xivBoneTable.BoneCount).Index())
         {
@@ -357,7 +356,7 @@ public class MeshExporter
         if (_geometryType == typeof(VertexPositionNormalTangent))
         {
             // (Bi)tangents are universally stored as ByteFloat4, which uses 0..1 to represent the full -1..1 range.
-            // TODO: While this assumption is safe, it would be sensible to actually check.
+            // TODO 20260824 While this assumption is safe, it would be sensible to actually check.
             var bitangent = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Tangent1)) * 2 - Vector4.One;
             
             return new VertexPositionNormalTangent(

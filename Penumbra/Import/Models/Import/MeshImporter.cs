@@ -137,7 +137,7 @@ public class MeshImporter(IEnumerable<Node> nodes, IoNotifier notifier)
             Utility.EnsureVertexDeclarationMatch(_vertexDeclaration.Value, subMesh.VertexDeclaration, notifier);
 
         // Given that strides are derived from declarations, a lack of mismatch in declarations means the strides are fine.
-        // TODO: I mean, given that strides are derivable, might be worth dropping strides from the sub mesh return structure and computing when needed.
+        // TODO 20260824 I mean, given that strides are derivable, might be worth dropping strides from the sub mesh return structure and computing when needed.
         _strides ??= subMesh.Strides;
 
         // Merge the sub-mesh streams into the main mesh stream bodies.

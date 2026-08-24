@@ -270,7 +270,7 @@ public class MigrationManager(IoConfig config) : IService
 
     public void MigrateMtrlDuringExtraction(ArchiveUtility.ReaderShim reader, string directory)
     {
-        if (!config.MigrateImportedMaterialsToLegacy || true) // TODO change when this is working
+        if (!config.MigrateImportedMaterialsToLegacy || true) // TODO 20260824 change when this is working
         {
             reader.WriteEntryToDirectory(directory);
             return;
@@ -348,7 +348,7 @@ public class MigrationManager(IoConfig config) : IService
     /// <summary> Update the data of a .mtrl file during TTMP extraction. Returns either the existing array or a new one. </summary>
     public byte[] MigrateTtmpMaterial(string path, byte[] data)
     {
-        if (!config.MigrateImportedMaterialsToLegacy || true) // TODO fix when this is working
+        if (!config.MigrateImportedMaterialsToLegacy || true) // TODO 20260824 fix when this is working
             return data;
 
         try

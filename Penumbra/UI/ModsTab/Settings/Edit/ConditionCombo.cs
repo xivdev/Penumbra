@@ -73,7 +73,7 @@ internal sealed class ConditionCombo : ModObjectCombo
                 if (_optionSelected is null || group.Behaviour is GroupDrawBehaviour.SingleSelection)
                     continue;
 
-                // TODO: Check cycles and sensibility.
+                // TODO 20260824 Check cycles and sensibility.
                 foreach (var option in group.Options)
                 {
                     // Can not depend on itself.
@@ -85,7 +85,7 @@ internal sealed class ConditionCombo : ModObjectCombo
             }
             else
             {
-                // TODO: Check cycles and sensibility.
+                // TODO 20260824 Check cycles and sensibility.
                 foreach (var option in group.Options)
                     yield return new ModObjectCache(option, parent);
             }

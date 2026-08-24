@@ -97,7 +97,7 @@ public class SubMeshImporter
                 IndexCount         = (uint)_indices.Count,
                 AttributeIndexMask = attributeMask,
 
-                // TODO: Flesh these out. Game doesn't seem to rely on them existing, though.
+                // TODO 20260824 Flesh these out. Game doesn't seem to rely on them existing, though.
                 BoneStartIndex = 0,
                 BoneCount      = 0,
             },

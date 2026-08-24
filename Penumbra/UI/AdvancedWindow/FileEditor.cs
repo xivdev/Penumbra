@@ -301,7 +301,6 @@ public sealed class FileEditor(
     {
         private sealed class FileFilter : RegexFilterBase<FileRegistry>
         {
-            // TODO: Avoid ToString.
             public override bool WouldBeVisible(in FileRegistry item, int globalIndex)
                 => WouldBeVisible(item.File.FullName) || item.SubModUsage.Any(f => WouldBeVisible(f.Item2.ToString()));
 

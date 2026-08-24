@@ -113,7 +113,7 @@ public sealed partial class ModelEditor : IFileEditor
         BeginIo();
         var task = Task.Run(() =>
         {
-            // TODO: Is it worth trying to order results based on option priorities for cases where more than one match is found?
+            // TODO 20260824 Is it worth trying to order results based on option priorities for cases where more than one match is found?
             // NOTE: We're using case-insensitive comparisons, as option group paths in mods are stored in lower case, but the mod editor uses paths directly from the file system, which may be mixed case.
             return containers
                 .SelectMany(m => m.Files.Concat(m.FileSwaps))
@@ -207,7 +207,7 @@ public sealed partial class ModelEditor : IFileEditor
         // Until someone works out how to actually author these, unconditionally merge element ids.
         MergeElementIds(newMdl, Mdl);
 
-        // TODO: Add flag editing.
+        // TODO 20260824 Add flag editing.
         newMdl.Flags1 = Mdl.Flags1;
         newMdl.Flags2 = Mdl.Flags2;
 
@@ -268,7 +268,7 @@ public sealed partial class ModelEditor : IFileEditor
     private static void MergeElementIds(MdlFile target, MdlFile source)
     {
         // This is overly simplistic, but effectively reproduces what TT did, sort of.
-        // TODO: Get a better idea of what these values represent. `ParentBoneName`, if it is a pointer into the bone array, does not seem to be _bounded_ by the bone array length, at least in the model. I'm guessing it _may_ be pointing into a .sklb instead? (i.e. the weapon's skeleton). EID stuff in general needs more work.
+        // TODO 20260824 Get a better idea of what these values represent. `ParentBoneName`, if it is a pointer into the bone array, does not seem to be _bounded_ by the bone array length, at least in the model. I'm guessing it _may_ be pointing into a .sklb instead? (i.e. the weapon's skeleton). EID stuff in general needs more work.
         target.ElementIds = [.. source.ElementIds];
     }
 
@@ -315,13 +315,13 @@ public sealed partial class ModelEditor : IFileEditor
     /// <param name="path"> Game path to the file to load. </param>
     private byte[]? ReadFile(string path)
     {
-        // TODO: if cross-collection lookups are turned off, this conversion can be skipped
+        // TODO 20260824 if cross-collection lookups are turned off, this conversion can be skipped
         if (!Utf8GamePath.FromString(path, out var utf8Path))
             throw new Exception($"Resolved path {path} could not be converted to a game path.");
 
         var resolvedPath = _context?.FindBestMatch(utf8Path) ?? _activeCollections.Current.ResolvePath(utf8Path) ?? new FullPath(utf8Path);
 
-        // TODO: is it worth trying to use streams for these instead? I'll need to do this for mtrl/tex too, so might be a good idea. that said, the mtrl reader doesn't accept streams, so...
+        // TODO 20260824 is it worth trying to use streams for these instead? I'll need to do this for mtrl/tex too, so might be a good idea. that said, the mtrl reader doesn't accept streams, so...
         return resolvedPath.IsRooted
             ? File.ReadAllBytes(resolvedPath.FullName)
             : _gameData.GetFile(resolvedPath.InternalName.ToString())?.Data;
@@ -364,7 +364,7 @@ public sealed partial class ModelEditor : IFileEditor
         => mdl.SubMeshes.Select(s =>
         {
             var maxAttribute = 31 - BitOperations.LeadingZeroCount(s.AttributeIndexMask);
-            // TODO: Research what results in this - it seems to primarily be reproducible on bgparts, is it garbage data, or an alternative usage of the value?
+            // TODO 20260824 Research what results in this - it seems to primarily be reproducible on bgparts, is it garbage data, or an alternative usage of the value?
             return maxAttribute < mdl.Attributes.Length
                 ? Enumerable.Range(0, 32)
                     .Where(idx => ((s.AttributeIndexMask >> idx) & 1) == 1)
