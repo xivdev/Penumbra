@@ -17,6 +17,7 @@ public enum ColorId
     FolderExpanded,
     FolderCollapsed,
     FolderLine,
+    AlternatingFolderLine,
     ItemId,
     IncreasedMetaValue,
     DecreasedMetaValue,

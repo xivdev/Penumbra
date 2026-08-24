@@ -4,6 +4,7 @@ using Penumbra.Api.Enums;
 using Penumbra.Api.Wrappers;
 using Penumbra.Collections;
 using Penumbra.GameData.Gui;
+using Penumbra.Mods.Groups;
 using Penumbra.Mods.Settings;
 using Penumbra.UI;
 
@@ -150,15 +151,17 @@ public sealed partial class CollectionAdapter(CollectionManagerAdapter parent, M
         preset.DrawTooltip(collection != _collection ? null : settings.Enabled, GetGroupData);
         return;
 
-        IReadOnlyList<(ModObjectIdentifier, bool)>? GetGroupData(in ModObjectIdentifier groupIdentifier, out string? name)
+        IReadOnlyList<(ModObjectIdentifier, bool)>? GetGroupData(in ModObjectIdentifier groupIdentifier, out string? name, out bool single)
         {
             if (groupIdentifier.FindGroup(mod) is not { } group)
             {
-                name = null;
+                name   = null;
+                single = false;
                 return null;
             }
 
-            name = group.Name;
+            name   = group.Name;
+            single = group.Behaviour is GroupDrawBehaviour.SingleSelection;
             return new PresetTooltipAdapterList(group.Options, settings.IsEmpty ? group.DefaultSettings : settings.Settings[group.Index],
                 group.Behaviour);
         }

@@ -60,9 +60,10 @@ public class PresetIpcTester(IDalamudPluginInterface pi) : IUiService
                 if (ec is not PenumbraApiEc.Success)
                     Im.Text(ec.StringU8);
                 else
-                    data!.Value.DrawTooltip(null, (in _, out name) =>
+                    data!.Value.DrawTooltip(null, static (in _, out name, out single) =>
                     {
-                        name = null;
+                        name   = null;
+                        single = false;
                         return [];
                     });
             }
@@ -78,9 +79,10 @@ public class PresetIpcTester(IDalamudPluginInterface pi) : IUiService
                 if (ec is not PenumbraApiEc.Success)
                     Im.Text(ec.StringU8);
                 else
-                    data!.Value.DrawTooltip(null, (in _, out name) =>
+                    data!.Value.DrawTooltip(null, static (in _, out name, out single) =>
                     {
-                        name = null;
+                        name    = null;
+                        single = false;
                         return [];
                     });
             }

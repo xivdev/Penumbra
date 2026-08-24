@@ -148,15 +148,17 @@ public sealed class PresetCombo : FilterComboBase<PresetCombo.CacheItem>, IUiSer
         _selectedName = StringU8.Empty;
     }
 
-    private IReadOnlyList<(ModObjectIdentifier, bool)>? GetGroupData(in ModObjectIdentifier groupIdentifier, out string? name)
+    private IReadOnlyList<(ModObjectIdentifier, bool)>? GetGroupData(in ModObjectIdentifier groupIdentifier, out string? name, out bool single)
     {
         if (groupIdentifier.FindGroup(_selection.Mod) is not { } group)
         {
-            name = null;
+            name   = null;
+            single = false;
             return null;
         }
 
-        name = group.Name;
+        name   = group.Name;
+        single = group.Behaviour is GroupDrawBehaviour.SingleSelection;
         return new PresetTooltipAdapterList(group.Options,
             _selection.Settings.IsEmpty ? group.DefaultSettings : _selection.Settings.Settings[group.Index],
             group.Behaviour);

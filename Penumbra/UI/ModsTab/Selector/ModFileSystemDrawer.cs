@@ -19,7 +19,7 @@ public sealed class ModFileSystemDrawer : FileSystemDrawer<ModFileSystemCache.Mo
     public readonly TutorialService     Tutorial;
     public readonly CommunicatorService Communicator;
 
-    public ModFileSystemDrawer(Services.PenumbraMessager messager, ModFileSystem fileSystem, ModManager modManager,
+    public ModFileSystemDrawer(PenumbraMessager messager, ModFileSystem fileSystem, ModManager modManager,
         CollectionManager collectionManager, Configuration config, ModImportManager modImport, FileDialogService fileService,
         TutorialService tutorial, CommunicatorService communicator)
         : base(messager, fileSystem, new ModFilter(modManager, collectionManager.Active, config))
@@ -73,8 +73,11 @@ public sealed class ModFileSystemDrawer : FileSystemDrawer<ModFileSystemCache.Mo
     public override Vector4 ExpandedFolderColor
         => ColorId.FolderExpanded.Vector;
 
-    public override Vector4 FolderLineColor
-        => ColorId.FolderLine.Vector;
+    public override Rgba32 FolderLineColor
+        => ColorId.FolderLine.Value;
+
+    public override Rgba32 AlternatingFolderLineColor
+        => ColorId.AlternatingFolderLine.Value;
 
     public override IEnumerable<ISortMode> ValidSortModes
         => ISortMode.Valid.Values;

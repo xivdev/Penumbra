@@ -91,27 +91,41 @@ public sealed partial class GameStateAdapter(GameStateAdapterFactory parent, str
     }
 
     private void SubscribeCreatingCharacterBase()
-        => Parent.Communicator.CreatingCharacterBase.Subscribe(OnCreatingCharacterBase, Communication.CreatingCharacterBase.Priority.Api);
+    {
+        Parent.Communicator.CreatingCharacterBase.Subscribe(OnCreatingCharacterBase, Communication.CreatingCharacterBase.Priority.Api);
+        SubscribedEvents.TryAdd(nameof(CreatingCharacterBase));
+    }
 
     private void UnsubscribeCreatingCharacterBase()
-        => Parent.Communicator.CreatingCharacterBase.Unsubscribe(OnCreatingCharacterBase);
+    {
+        Parent.Communicator.CreatingCharacterBase.Unsubscribe(OnCreatingCharacterBase);
+        SubscribedEvents.TryRemove(nameof(CreatingCharacterBase));
+    }
 
     private void SubscribeCreatedCharacterBase()
-        => Parent.Communicator.CreatedCharacterBase.Subscribe(OnCreatedCharacterBase, Communication.CreatedCharacterBase.Priority.Api);
+    {
+        Parent.Communicator.CreatedCharacterBase.Subscribe(OnCreatedCharacterBase, Communication.CreatedCharacterBase.Priority.Api);
+        SubscribedEvents.TryAdd(nameof(CreatedCharacterBase));
+    }
 
     private void UnsubscribeCreatedCharacterBase()
-        => Parent.Communicator.CreatedCharacterBase.Unsubscribe(OnCreatedCharacterBase);
+    {
+        Parent.Communicator.CreatedCharacterBase.Unsubscribe(OnCreatedCharacterBase);
+        SubscribedEvents.TryRemove(nameof(CreatedCharacterBase));
+    }
 
     private unsafe void SubscribeGameObjectResourceResolved()
     {
         Parent.ResourceLoader.ResourceLoaded += OnResourceLoaded;
         Parent.ResourceLoader.PapRequested   += OnPapRequested;
+        SubscribedEvents.TryAdd(nameof(GameObjectResourceResolved));
     }
 
     private unsafe void UnsubscribeGameObjectResourceResolved()
     {
         Parent.ResourceLoader.ResourceLoaded -= OnResourceLoaded;
         Parent.ResourceLoader.PapRequested   -= OnPapRequested;
+        SubscribedEvents.TryRemove(nameof(GameObjectResourceResolved));
     }
 
     private void OnPapRequested(Utf8GamePath originalPath, FullPath? manipulatedPath, ResolveData resolveData)

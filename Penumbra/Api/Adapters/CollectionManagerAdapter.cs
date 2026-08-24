@@ -224,10 +224,16 @@ public sealed partial class CollectionManagerAdapter(CollectionManagerAdapterFac
         => collection is not ModCollection c ? null : new CollectionAdapter(this, c);
 
     private void SubscribeModSettingChanged()
-        => Parent.Communicator.ModSettingChanged.Subscribe(OnModSettingChanged, ModSettingChanged.Priority.Api);
+    {
+        Parent.Communicator.ModSettingChanged.Subscribe(OnModSettingChanged, ModSettingChanged.Priority.Api);
+        SubscribedEvents.TryAdd(nameof(ModSettingsChanged));
+    }
 
     private void UnsubscribeModSettingChanged()
-        => Parent.Communicator.ModSettingChanged.Unsubscribe(OnModSettingChanged);
+    {
+        Parent.Communicator.ModSettingChanged.Unsubscribe(OnModSettingChanged);
+        SubscribedEvents.TryRemove(nameof(ModSettingsChanged));
+    }
 
     private void OnModSettingChanged(in ModSettingChanged.Arguments arguments)
     {

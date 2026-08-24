@@ -101,6 +101,7 @@ public sealed class DebugTab : Window, ITab<TabType>
     private readonly ShapeInspector                _shapeInspector;
     private readonly FileWatcher.FileWatcherDrawer _fileWatcherDrawer;
     private readonly DragDropManager               _dragDropManager;
+    private readonly IpcObjectManager              _ipcObjects;
 
     public DebugTab(Configuration config, CollectionManager collectionManager, ObjectManager objects, IDataManager dataManager,
         ValidityChecker validityChecker, ModManager modManager, HttpApi httpApi, ActorManager actors, StainService stains,
@@ -112,7 +113,7 @@ public sealed class DebugTab : Window, ITab<TabType>
         LunaDxTester lunaDxTester, HookOverrideDrawer hookOverrides, RsfService rsfService, GlobalVariablesDrawer globalVariablesDrawer,
         ActionTmbListDrawer actionTmbs, ObjectIdentification objectIdentification, RenderTargetDrawer renderTargetDrawer,
         ModMigratorDebug modMigratorDebug, ShapeInspector shapeInspector, FileWatcher.FileWatcherDrawer fileWatcherDrawer,
-        DragDropManager dragDropManager)
+        DragDropManager dragDropManager, IpcObjectManager ipcObjects)
         : base("Penumbra Debug Window", WindowFlags.NoCollapse)
     {
         IsOpen = true;
@@ -158,6 +159,7 @@ public sealed class DebugTab : Window, ITab<TabType>
         _shapeInspector            = shapeInspector;
         _fileWatcherDrawer         = fileWatcherDrawer;
         _dragDropManager           = dragDropManager;
+        _ipcObjects                = ipcObjects;
         _objects                   = objects;
         _dataManager               = dataManager;
     }
@@ -1189,6 +1191,12 @@ public sealed class DebugTab : Window, ITab<TabType>
             if (tree)
                 foreach (var caller in IpcProviders.Callers)
                     Im.BulletText($"{caller.Name} ({caller.InternalName}) v{caller.Version}");
+        }
+
+        using (var tree = Im.Tree.Node("Adapters"u8))
+        {
+            if (tree)
+                _ipcObjects.DrawDebug();
         }
 
         using (var tree = Im.Tree.Node("Dynamis"u8))

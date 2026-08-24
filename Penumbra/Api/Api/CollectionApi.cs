@@ -1,4 +1,5 @@
 using Dalamud.Plugin.Ipc;
+using Luna;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
@@ -6,13 +7,14 @@ using Penumbra.Mods;
 
 namespace Penumbra.Api.Api;
 
-public class CollectionApi(CollectionManager collections, ApiHelpers helpers, CollectionManagerAdapterFactory adapterFactory) : IPenumbraApiCollection, Luna.IApiService
+public class CollectionApi(CollectionManager collections, ApiHelpers helpers, CollectionManagerAdapterFactory adapterFactory)
+    : IPenumbraApiCollection, IApiService
 {
     public Dictionary<Guid, string> GetCollections()
         => collections.Storage.ToDictionary(c => c.Identity.Id, c => c.Identity.Name);
 
     public IIdDataShareAdapter GetCollectionManagerAdapter(string owner)
-        => adapterFactory.CreateAdapter(owner);
+        => adapterFactory.Create(owner)!;
 
     public List<(Guid Id, string Name)> GetCollectionsByIdentifier(string identifier)
     {

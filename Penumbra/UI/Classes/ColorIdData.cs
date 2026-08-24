@@ -57,7 +57,9 @@ public readonly struct ColorIdData : IColorData<ColorId>
         ret[(int)FolderCollapsed] = new ColorData<ColorId>(FolderLine, "Collapsed Mod Folder"u8,
             "A mod folder that is currently collapsed."u8, modSelector);
         ret[(int)FolderLine] = new ColorData<ColorId>(0xFFFFF0C0, "Expanded Mod Folder Line"u8,
-            "The line signifying which descendants belong to an expanded mod folder."u8, modSelector);
+            "The line signifying which descendants belong to an expanded mod folder for odd folder lines."u8, modSelector);
+        ret[(int)AlternatingFolderLine] = new ColorData<ColorId>(FolderLine, "Expanded Mod Folder Line (Alternating)"u8,
+            "The line signifying which descendants belong to an expanded mod folder for even folder lines."u8, modSelector);
         ret[(int)SelectorPriority] = new ColorData<ColorId>(ImGuiColor.TextDisabled, "Mod Selector Priority"u8,
             "The priority displayed for non-zero priority mods in the mod selector."u8, modSelector);
         ret[(int)TemporaryModSettingsTint] = new ColorData<ColorId>(0x30FF0000, "Mod with Temporary Settings"u8,
@@ -116,7 +118,7 @@ public readonly struct ColorIdData : IColorData<ColorId>
         ret[(int)OptionColor8] = new ColorData<ColorId>(0xFF6BB5A6, "Selectable Color for Mod Option #8"u8, OptionColorTooltip, modSettings);
         ret[(int)OptionTreeLine] = new ColorData<ColorId>(ImGuiColor.Separator, "Option Group Dependency Tree Line"u8,
             "The color for the line connecting option groups and nodes in the mod settings panel."u8, modSettings);
-        ret[(int)GroupLabelBackground] = new ColorData<ColorId>(ImGuiColor.TitleBackground, "Option Group Label Background (Non-Interactive)"u8,
+        ret[(int)GroupLabelBackground] = new ColorData<ColorId>(Rgba32.Transparent, "Option Group Label Background (Non-Interactive)"u8,
             "The color for the background of option group labels when they are not collapsible."u8, modSettings);
         ret[(int)GroupLabelBorder] = new ColorData<ColorId>(OptionTreeLine, "Option Group Label Border (Non-Interactive)"u8,
             "The color for the border around option group labels when they are not collapsible."u8, modSettings);
