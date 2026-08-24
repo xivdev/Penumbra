@@ -1,4 +1,5 @@
 using Luna;
+using Penumbra.Api;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.UI.CollectionTab;
@@ -12,8 +13,11 @@ public sealed class CollectionChange(LunaLogger log)
 {
     public enum Priority
     {
+        /// <see cref="CollectionManagerAdapter.OnCollectionChange"/>
+        Api = int.MinValue,
+
         /// <see cref="EffectiveTab.Cache.OnCollectionChange"/>
-        EffectiveChangesCache = int.MinValue,
+        EffectiveChangesCache = int.MinValue + 1,
 
         /// <seealso cref="Api.DalamudSubstitutionProvider.OnCollectionChange"/>
         DalamudSubstitutionProvider = -3,

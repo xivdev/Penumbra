@@ -55,6 +55,11 @@ public sealed partial class CollectionManagerAdapter(CollectionManagerAdapterFac
         UnsubscribeEvent = nameof(UnsubscribeModSettingChanged))]
     private event Action<int, Guid, string, bool>? ModSettingsChanged;
 
+    [AdapterMethod(CollectionManagerWrapper.Method.CollectionChanged,
+        SubscribeEvent = nameof(SubscribeCollectionChanged),
+        UnsubscribeEvent = nameof(UnsubscribeCollectionChanged))]
+    private event Action<int, Guid?, Guid?, string>? CollectionChanged;
+
     [AdapterMethod(CollectionManagerWrapper.Method.GetCurrent, DisposeOnFailure = true)]
     private IIdDataShareAdapter Current
         => CreateCollection(Parent.Collections.Active.Current);
@@ -234,6 +239,22 @@ public sealed partial class CollectionManagerAdapter(CollectionManagerAdapterFac
         Parent.Communicator.ModSettingChanged.Unsubscribe(OnModSettingChanged);
         SubscribedEvents.TryRemove(nameof(ModSettingsChanged));
     }
+
+    private void SubscribeCollectionChanged()
+    {
+        Parent.Communicator.CollectionChange.Subscribe(OnCollectionChange, CollectionChange.Priority.Api);
+        SubscribedEvents.TryAdd(nameof(CollectionChanged));
+    }
+
+    private void UnsubscribeCollectionChanged()
+    {
+        Parent.Communicator.CollectionChange.Unsubscribe(OnCollectionChange);
+        SubscribedEvents.TryRemove(nameof(CollectionChanged));
+    }
+
+    private void OnCollectionChange(in CollectionChange.Arguments arguments)
+        => CollectionChanged?.Invoke((int)arguments.Type, arguments.OldCollection?.Identity.Id, arguments.NewCollection?.Identity.Id,
+            arguments.DisplayName);
 
     private void OnModSettingChanged(in ModSettingChanged.Arguments arguments)
     {
