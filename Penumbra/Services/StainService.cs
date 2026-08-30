@@ -4,6 +4,7 @@ using Luna;
 using Penumbra.GameData.DataContainers;
 using Penumbra.GameData.Files;
 using Penumbra.GameData.Files.StainMapStructs;
+using Penumbra.GameData.Interop;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
@@ -182,38 +183,41 @@ public class StainService : IService
     public const int VanillaChannelCount = 2;
     public const int ChannelCount        = 4;
 
+    private readonly StainAccessor _stainAccessor;
+
     public readonly StainCombo                        StainCombo1;
     public readonly StainCombo                        StainCombo2;
     public readonly StainCombo                        StainCombo3;
     public readonly StainCombo                        StainCombo4; // FIXME is there a better way to handle this?
-    public readonly StmFile<LegacyDyePack>            LegacyStmFile;
-    public readonly StmFile<DyePack>                  GudStmFile;
     public readonly StainTemplateCombo<LegacyDyePack> LegacyTemplateCombo;
     public readonly StainTemplateCombo<DyePack>       GudTemplateCombo;
 
-    public unsafe StainService(IDataManager dataManager, CharacterUtility characterUtility, DictStain stainData)
+    public StmFile<LegacyDyePack> LegacyStmFile
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => _stainAccessor.LegacyStmFile;
+    }
+
+    public StmFile<DyePack> GudStmFile
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => _stainAccessor.GudStmFile;
+    }
+
+    public StainService(StainAccessor stainAccessor, DictStain stainData)
+    {
+        _stainAccessor = stainAccessor;
+
         StainCombo1 = new StainCombo(stainData);
         StainCombo2 = new StainCombo(stainData);
         StainCombo3 = new StainCombo(stainData);
         StainCombo4 = new StainCombo(stainData);
 
-        if (characterUtility.Address == null)
-        {
-            LegacyStmFile = LoadStmFile<LegacyDyePack>(dataManager);
-            GudStmFile    = LoadStmFile<DyePack>(dataManager);
-        }
-        else
-        {
-            LegacyStmFile = LoadStmFile<LegacyDyePack>(characterUtility.Address->LegacyStmResource, dataManager);
-            GudStmFile    = LoadStmFile<DyePack>(characterUtility.Address->GudStmResource, dataManager);
-        }
-
 
         StainCombo[] stainCombos = [StainCombo1, StainCombo2, StainCombo3, StainCombo4];
 
-        LegacyTemplateCombo = new StainTemplateCombo<LegacyDyePack>(stainCombos, LegacyStmFile);
-        GudTemplateCombo    = new StainTemplateCombo<DyePack>(stainCombos, GudStmFile);
+        LegacyTemplateCombo = new StainTemplateCombo<LegacyDyePack>(stainCombos, stainAccessor.LegacyStmFile);
+        GudTemplateCombo    = new StainTemplateCombo<DyePack>(stainCombos, stainAccessor.GudStmFile);
     }
 
     /// <summary> Retrieves the <see cref="FilterComboColors"/> instance for the given channel. Indexing is zero-based. </summary>
@@ -238,38 +242,6 @@ public class StainService : IService
 
     public static int GetUiChannelCount(EditingConfig configuration)
         => configuration.AllDyeChannels ? ChannelCount : VanillaChannelCount;
-    
-    /// <summary> Loads a STM file. Opportunistically attempts to re-use the file already read by the game, with Lumina fallback. </summary>
-    private static unsafe StmFile<TDyePack> LoadStmFile<TDyePack>(ResourceHandle* stmResourceHandle, IDataManager dataManager)
-        where TDyePack : unmanaged, IDyePack
-        => LoadStmFile<TDyePack>(stmResourceHandle) ?? LoadStmFile<TDyePack>(dataManager);
-
-    private static unsafe StmFile<TDyePack>? LoadStmFile<TDyePack>(ResourceHandle* stmResourceHandle) where TDyePack : unmanaged, IDyePack
-    {
-        if (stmResourceHandle is null)
-            return null;
-
-        var stmPath = stmResourceHandle->CsHandle.FileName.ToString();
-        if (!string.Equals(stmPath, TDyePack.DefaultStmPath, StringComparison.OrdinalIgnoreCase))
-        {
-            Penumbra.Log.Warning(
-                $"[StainService] Cannot load StmFile<{typeof(TDyePack)}> ({TDyePack.DefaultStmPath}) from ResourceHandle 0x{(nint)stmResourceHandle:X} ({stmPath})");
-            return null;
-        }
-
-        var stmData = stmResourceHandle->CsHandle.GetDataSpan();
-        if (stmData.Length is 0)
-            return null;
-
-        Penumbra.Log.Debug($"[StainService] Loading StmFile<{typeof(TDyePack)}> from ResourceHandle 0x{(nint)stmResourceHandle:X}");
-        return new StmFile<TDyePack>(stmData);
-    }
-
-    private static StmFile<TDyePack> LoadStmFile<TDyePack>(IDataManager dataManager) where TDyePack : unmanaged, IDyePack
-    {
-        Penumbra.Log.Debug($"[StainService] Loading StmFile<{typeof(TDyePack)}> from Lumina");
-        return new StmFile<TDyePack>(dataManager);
-    }
 
     public sealed class StainCombo(DictStain stainData) : FilterComboColors
     {
