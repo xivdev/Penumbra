@@ -68,7 +68,7 @@ public sealed class DebugTab : Window, ITab<TabType>
     private readonly ValidityChecker               _validityChecker;
     private readonly HttpApi                       _httpApi;
     private readonly ActorManager                  _actors;
-    private readonly StainService                  _stains;
+    private readonly StainAccessor                 _stains;
     private readonly GlobalVariablesDrawer         _globalVariablesDrawer;
     private readonly ResourceManagerService        _resourceManager;
     private readonly ResourceLoader                _resourceLoader;
@@ -104,7 +104,7 @@ public sealed class DebugTab : Window, ITab<TabType>
     private readonly IpcObjectManager              _ipcObjects;
 
     public DebugTab(Configuration config, CollectionManager collectionManager, ObjectManager objects, IDataManager dataManager,
-        ValidityChecker validityChecker, ModManager modManager, HttpApi httpApi, ActorManager actors, StainService stains,
+        ValidityChecker validityChecker, ModManager modManager, HttpApi httpApi, ActorManager actors, StainAccessor stains,
         ResourceManagerService resourceManager, ResourceLoader resourceLoader, CollectionResolver collectionResolver,
         DrawObjectState drawObjectState, PathState pathState, SubfileHelper subfileHelper, IdentifiedCollectionCache identifiedCollectionCache,
         CutsceneService cutsceneService, ModImportManager modImporter, ImportPopup importPopup, FrameworkManager framework,
