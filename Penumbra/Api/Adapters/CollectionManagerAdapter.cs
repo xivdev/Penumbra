@@ -46,9 +46,19 @@ public sealed partial class CollectionManagerAdapter(CollectionManagerAdapterFac
     public new CollectionManagerAdapterFactory Parent
         => (CollectionManagerAdapterFactory)base.Parent!;
 
-    [AdapterMethod(CollectionManagerWrapper.Method.Version)]
+    [AdapterMethod(CollectionManagerWrapper.Method.Version, AlwaysAlive = true)]
     public override (int Major, int Minor) Version
         => (1, 0);
+
+    [AdapterMethod(CollectionManagerWrapper.Method.Alive, AlwaysAlive = true)]
+    public override bool Alive
+        => base.Parent is not null;
+
+    [AdapterMethod(CollectionManagerWrapper.Method.DisposedEvent, AlwaysAlive = true)]
+    public event Action? Disposed;
+
+    protected override void InvokeDisposed()
+        => Disposed?.Invoke();
 
     [AdapterMethod(CollectionManagerWrapper.Method.ModSettingsChanged,
         SubscribeEvent = nameof(SubscribeModSettingChanged),

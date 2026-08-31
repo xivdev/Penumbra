@@ -41,9 +41,19 @@ public sealed partial class GameStateAdapter(GameStateAdapterFactory parent, str
     public new GameStateAdapterFactory Parent
         => (GameStateAdapterFactory)base.Parent!;
 
-    [AdapterMethod(GameStateWrapper.Method.Version)]
+    [AdapterMethod(GameStateWrapper.Method.Version, AlwaysAlive = true)]
     public override (int Major, int Minor) Version
         => (1, 0);
+
+    [AdapterMethod(GameStateWrapper.Method.Alive, AlwaysAlive = true)]
+    public override bool Alive
+        => base.Parent is not null;
+
+    [AdapterMethod(GameStateWrapper.Method.DisposedEvent, AlwaysAlive = true)]
+    public event Action? Disposed;
+
+    protected override void InvokeDisposed()
+        => Disposed?.Invoke();
 
     [AdapterMethod(GameStateWrapper.Method.GetLastGameObject)]
     private nint LastGameObject

@@ -535,16 +535,16 @@ public partial class MaterialEditor
         var     dye = dyeTable?[rowIdx] ?? default;
 
         Im.Item.SetNextWidth(scalarSize);
-        ret |= CtDragHalf("Field #11"u8, default, row.Scalar11, "%.2f"u8, HalfMinValue, HalfMaxValue, 0.1f,
-            v => table[rowIdx].Scalar11 = v);
+        ret |= CtDragHalf("Exposure"u8, default, row.Exposure, "%.2f"u8, HalfMinValue, HalfMaxValue, 0.1f,
+            v => table[rowIdx].Exposure = v);
         if (dyeTable is not null)
         {
             Im.Line.Same(dyeOffset);
-            ret |= CtApplyStainCheckbox("##dyeScalar11"u8, "Apply Field #11 on Dye"u8, dye.Scalar3,
-                b => dyeTable[rowIdx].Scalar3 = b);
+            ret |= CtApplyStainCheckbox("##dyeExposure"u8, "Apply Exposure on Dye"u8, dye.Exposure,
+                b => dyeTable[rowIdx].Exposure = b);
             Im.Line.SameInner();
             Im.Item.SetNextWidth(scalarSize);
-            CtDragHalf("##dyePreviewScalar11"u8, "Dye Preview for Field #11"u8, dyePack?.Scalar3, "%.2f"u8);
+            CtDragHalf("##dyePreviewExposure"u8, "Dye Preview for Exposure"u8, dyePack?.Exposure, "%.2f"u8);
         }
 
         Im.Dummy(new Vector2(Im.Style.TextHeight / 2));

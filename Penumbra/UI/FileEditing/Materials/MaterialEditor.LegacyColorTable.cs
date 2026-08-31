@@ -270,8 +270,8 @@ public partial class MaterialEditor
         if (dyeTable is not null)
         {
             Im.Line.SameInner();
-            ret |= CtApplyStainCheckbox("##dyeShininess"u8, "Apply Gloss Strength on Dye"u8, dye.Scalar3,
-                b => dyeTable[rowIdx].Scalar3 = b);
+            ret |= CtApplyStainCheckbox("##dyeShininess"u8, "Apply Gloss Strength on Dye"u8, dye.Exposure,
+                b => dyeTable[rowIdx].Exposure = b);
         }
 
         Im.Table.NextColumn();
