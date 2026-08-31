@@ -108,12 +108,13 @@ public partial class TexToolsImporter
                     Directory.Move(oldName, _currentModDirectory.FullName);
                 }
             }
-            catch (IOException io)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
                 if (i == numTries)
                     throw;
 
-                Penumbra.Log.Warning($"Error when renaming the extracted mod, try {i}/{numTries}: {io.Message}.");
+                Penumbra.Log.Warning($"Error when renaming the extracted mod, try {i}/{numTries}: {ex.Message}.");
+                Thread.Sleep(100 * i);
                 continue;
             }
 
