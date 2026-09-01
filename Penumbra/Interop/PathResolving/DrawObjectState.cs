@@ -59,6 +59,7 @@ public sealed class DrawObjectState : IDisposable, IReadOnlyDictionary<Model, (A
         if (currentObject != gameObject.Item1)
         {
             Penumbra.Log.Warning($"[DrawObjectState] Stored association {drawObject} -> {gameObject.Item1} has index {gameObject.Item2}, which resolves to {currentObject}.");
+
             return false;
         }
 
@@ -127,7 +128,7 @@ public sealed class DrawObjectState : IDisposable, IReadOnlyDictionary<Model, (A
     private void OnCharacterBaseCreated(in CreateCharacterBase.PostEvent.Arguments arguments)
     {
         Actor gameObject = LastGameObject;
-        if (gameObject.Valid)
+        if (gameObject.Valid && arguments.CharacterBase.Valid)
             _drawObjectToGameObject[arguments.CharacterBase] = (gameObject, gameObject.Index, false);
     }
 
@@ -146,7 +147,7 @@ public sealed class DrawObjectState : IDisposable, IReadOnlyDictionary<Model, (A
 
     private unsafe void IterateDrawObjectTree(Object* drawObject, Actor gameObject, bool isChild, bool iterate)
     {
-        if (drawObject == null)
+        if (drawObject is null)
             return;
 
         _drawObjectToGameObject[drawObject] = (gameObject, gameObject.Index, isChild);
