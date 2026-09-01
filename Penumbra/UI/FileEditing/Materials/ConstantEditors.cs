@@ -1,6 +1,7 @@
 using System.Collections.Frozen;
 using Luna;
 using Penumbra.GameData.Files.ShaderStructs;
+using Penumbra.GameData.Gui;
 
 namespace Penumbra.UI.FileEditing.Materials;
 
@@ -13,7 +14,7 @@ public static class ConstantEditors
 
     /// <summary>
     /// Material constants known to be encoded as native <see cref="int"/>s.
-    /// 
+    ///
     /// A <see cref="float"/> editor is nonfunctional for them, as typical values for these constants would fall into the IEEE 754 denormalized number range.
     /// </summary>
     private static readonly FrozenSet<Name> KnownIntConstants;
@@ -29,14 +30,14 @@ public static class ConstantEditors
         KnownIntConstants = knownIntConstants.ToFrozenSet();
     }
 
-    public static IEditor<byte> DefaultFor(Name name, MaterialTemplatePickers? materialTemplatePickers = null)
+    public static IEditor<byte> DefaultFor(Name name, TextureArraySlicePickers? textureArraySlicePickers = null)
     {
-        if (materialTemplatePickers is not null)
+        if (textureArraySlicePickers is not null)
         {
             if (name == Names.SphereMapIndexConstantName)
-                return materialTemplatePickers.SphereMapIndexPicker;
+                return textureArraySlicePickers.SphereMapIndexPicker;
             if (name == Names.TileIndexConstantName)
-                return materialTemplatePickers.TileIndexPicker;
+                return textureArraySlicePickers.TileIndexPicker;
         }
 
         if (name.Value != null && name.Value.EndsWith("Color"))

@@ -1,6 +1,8 @@
 using Dalamud.Plugin.Services;
+using Luna;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Files;
+using Penumbra.GameData.Gui;
 using Penumbra.GameData.Interop;
 using Penumbra.Interop.Hooks.Objects;
 using Penumbra.Interop.ResourceTree;
@@ -17,8 +19,8 @@ public sealed class MaterialEditorFactory(
     StainService stainService,
     ResourceTreeFactory resourceTreeFactory,
     FileDialogService fileDialog,
-    MaterialTemplatePickers materialTemplatePickers,
-    Configuration config) : BaseFileEditorFactory(gameData), Luna.IUiService
+    TextureArraySlicePickers textureArraySlicePickers,
+    Configuration config) : BaseFileEditorFactory(gameData), IUiService
 {
     public override string Identifier
         => typeof(MaterialEditor).FullName!;
@@ -35,5 +37,5 @@ public sealed class MaterialEditorFactory(
     public override IFileEditor CreateForData(ReadOnlySpan<byte> data, string path, bool writable, string? gamePath,
         FileEditingContext? context)
         => new MaterialEditor(GameData, framework, objects, characterBaseDestructor, stainService, resourceTreeFactory, fileDialog,
-            materialTemplatePickers, config, context, new MtrlFile(data), path, writable);
+            textureArraySlicePickers, config, context, new MtrlFile(data), path, writable);
 }

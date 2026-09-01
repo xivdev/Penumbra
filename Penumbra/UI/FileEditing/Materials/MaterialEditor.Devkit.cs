@@ -2,6 +2,7 @@ using ImSharp;
 using JetBrains.Annotations;
 using Luna;
 using Newtonsoft.Json.Linq;
+using Penumbra.GameData.Gui;
 using Penumbra.String.Classes;
 using static Penumbra.GameData.Files.ShpkFile;
 
@@ -187,7 +188,7 @@ public partial class MaterialEditor
                 _                                 => sizeof(float),
             };
 
-        public IEditor<byte>? CreateEditor(MaterialTemplatePickers? materialTemplatePickers)
+        public IEditor<byte>? CreateEditor(TextureArraySlicePickers? textureArraySlicePickers)
             => Type switch
             {
                 DevkitConstantType.Hidden         => null,
@@ -205,8 +206,8 @@ public partial class MaterialEditor
                 DevkitConstantType.Int64Enum      => CreateEnumEditor(ToInteger<long>).AsByteEditor(),
                 DevkitConstantType.Half           => CreateFloatEditor<Half>().AsByteEditor(),
                 DevkitConstantType.Double         => CreateFloatEditor<double>().AsByteEditor(),
-                DevkitConstantType.TileIndex      => materialTemplatePickers?.TileIndexPicker ?? ConstantEditors.DefaultIntAsFloat,
-                DevkitConstantType.SphereMapIndex => materialTemplatePickers?.SphereMapIndexPicker ?? ConstantEditors.DefaultIntAsFloat,
+                DevkitConstantType.TileIndex      => textureArraySlicePickers?.TileIndexPicker ?? ConstantEditors.DefaultIntAsFloat,
+                DevkitConstantType.SphereMapIndex => textureArraySlicePickers?.SphereMapIndexPicker ?? ConstantEditors.DefaultIntAsFloat,
                 _                                 => ConstantEditors.DefaultFloat,
             };
 

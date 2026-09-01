@@ -438,7 +438,7 @@ public partial class MaterialEditor
         using var _              = Im.Disabled();
         var       valueOrDefault = value ?? Half.Zero;
         var       floatValue     = (float)valueOrDefault;
-        CtDragHalf(label, description, valueOrDefault, value.HasValue ? format : "-"u8, floatValue, floatValue, 0.0f, Nop);
+        CtDragHalf(label, description, valueOrDefault, value.HasValue ? format : ReadOnlySpan<byte>.EmDash, floatValue, floatValue, 0.0f, Nop);
     }
 
     private static bool CtDragScalar<T>(ReadOnlySpan<byte> label, ReadOnlySpan<byte> description, T value, ReadOnlySpan<byte> format, T min,
@@ -473,12 +473,13 @@ public partial class MaterialEditor
     {
         using var _              = Im.Disabled();
         var       valueOrDefault = value ?? T.Zero;
-        CtDragScalar(label, description, valueOrDefault, value.HasValue ? format : "-"u8, valueOrDefault, valueOrDefault, 0.0f, Nop);
+        CtDragScalar(label, description, valueOrDefault, value.HasValue ? format : ReadOnlySpan<byte>.EmDash, valueOrDefault, valueOrDefault,
+            0.0f,           Nop);
     }
 
     private bool CtTileIndexPicker(ReadOnlySpan<byte> label, ReadOnlySpan<byte> description, ushort value, bool compact, Action<ushort> setter)
     {
-        if (!_materialTemplatePickers.DrawTileIndexPicker(label, description, ref value, compact))
+        if (!_textureArraySlicePickers.DrawTileIndexPicker(label, description, ref value, compact))
             return false;
 
         setter(value);
@@ -488,7 +489,7 @@ public partial class MaterialEditor
     private bool CtSphereMapIndexPicker(ReadOnlySpan<byte> label, ReadOnlySpan<byte> description, ushort value, bool compact,
         Action<ushort> setter)
     {
-        if (!_materialTemplatePickers.DrawSphereMapIndexPicker(label, description, ref value, compact))
+        if (!_textureArraySlicePickers.DrawSphereMapIndexPicker(label, description, ref value, compact))
             return false;
 
         setter(value);

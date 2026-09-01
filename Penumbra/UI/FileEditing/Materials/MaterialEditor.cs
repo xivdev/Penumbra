@@ -3,6 +3,7 @@ using ImSharp;
 using Luna;
 using Penumbra.GameData.Files;
 using Penumbra.GameData.Files.MaterialStructs;
+using Penumbra.GameData.Gui;
 using Penumbra.GameData.Interop;
 using Penumbra.Interop.Hooks.Objects;
 using Penumbra.Interop.ResourceTree;
@@ -18,15 +19,15 @@ public sealed partial class MaterialEditor : IFileEditor
 
     private static readonly CiByteString ShpkPrefix = CiByteString.FromSpanUnsafe("shader/sm5/shpk/"u8, true, true, true);
 
-    private readonly IDataManager            _gameData;
-    private readonly IFramework              _framework;
-    private readonly ObjectManager           _objects;
-    private readonly CharacterBaseDestructor _characterBaseDestructor;
-    private readonly StainService            _stainService;
-    private readonly ResourceTreeFactory     _resourceTreeFactory;
-    private readonly FileDialogService       _fileDialog;
-    private readonly MaterialTemplatePickers _materialTemplatePickers;
-    private readonly Configuration           _config;
+    private readonly IDataManager             _gameData;
+    private readonly IFramework               _framework;
+    private readonly ObjectManager            _objects;
+    private readonly CharacterBaseDestructor  _characterBaseDestructor;
+    private readonly StainService             _stainService;
+    private readonly ResourceTreeFactory      _resourceTreeFactory;
+    private readonly FileDialogService        _fileDialog;
+    private readonly TextureArraySlicePickers _textureArraySlicePickers;
+    private readonly Configuration            _config;
 
     private readonly FileEditingContext? _context;
     public readonly  MtrlFile            Mtrl;
@@ -39,18 +40,18 @@ public sealed partial class MaterialEditor : IFileEditor
 
     public MaterialEditor(IDataManager gameData, IFramework framework, ObjectManager objects, CharacterBaseDestructor characterBaseDestructor,
         StainService stainService, ResourceTreeFactory resourceTreeFactory, FileDialogService fileDialog,
-        MaterialTemplatePickers materialTemplatePickers,
-        Configuration config, FileEditingContext? context, MtrlFile file, string filePath, bool writable)
+        TextureArraySlicePickers textureArraySlicePickers, Configuration config, FileEditingContext? context, MtrlFile file, string filePath,
+        bool writable)
     {
-        _gameData                = gameData;
-        _framework               = framework;
-        _objects                 = objects;
-        _characterBaseDestructor = characterBaseDestructor;
-        _stainService            = stainService;
-        _resourceTreeFactory     = resourceTreeFactory;
-        _fileDialog              = fileDialog;
-        _materialTemplatePickers = materialTemplatePickers;
-        _config                  = config;
+        _gameData                 = gameData;
+        _framework                = framework;
+        _objects                  = objects;
+        _characterBaseDestructor  = characterBaseDestructor;
+        _stainService             = stainService;
+        _resourceTreeFactory      = resourceTreeFactory;
+        _fileDialog               = fileDialog;
+        _textureArraySlicePickers = textureArraySlicePickers;
+        _config                   = config;
 
         _context              = context;
         Mtrl                  = file;
