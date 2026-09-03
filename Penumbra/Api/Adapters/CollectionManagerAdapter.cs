@@ -1,6 +1,7 @@
 using Dalamud.Plugin.Ipc;
 using Luna;
 using Luna.Generators;
+using Penumbra.Api.Enums;
 using Penumbra.Api.Wrappers;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
@@ -10,6 +11,8 @@ using Penumbra.GameData.Interop;
 using Penumbra.Interop.PathResolving;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
+using Penumbra.Mods.Manager.OptionEditor;
+using Penumbra.Mods.Settings;
 using Penumbra.Services;
 
 namespace Penumbra.Api;
@@ -241,13 +244,23 @@ public sealed partial class CollectionManagerAdapter(CollectionManagerAdapterFac
     private void SubscribeModSettingChanged()
     {
         Parent.Communicator.ModSettingChanged.Subscribe(OnModSettingChanged, ModSettingChanged.Priority.Api);
+        Parent.Communicator.ModPathChanged.Subscribe(OnModPathChanged, ModPathChanged.Priority.ApiModSettings);
+        Parent.Communicator.ModOptionChanged.Subscribe(OnModOptionChanged, ModOptionChanged.Priority.Api);
         SubscribedEvents.TryAdd(nameof(ModSettingsChanged));
     }
 
     private void UnsubscribeModSettingChanged()
     {
         Parent.Communicator.ModSettingChanged.Unsubscribe(OnModSettingChanged);
+        Parent.Communicator.ModPathChanged.Unsubscribe(OnModPathChanged);
+        Parent.Communicator.ModOptionChanged.Unsubscribe(OnModOptionChanged);
         SubscribedEvents.TryRemove(nameof(ModSettingsChanged));
+    }
+
+    private void OnModPathChanged(in ModPathChanged.Arguments arguments)
+    {
+        if (arguments.Type is ModPathChangeType.Reloaded)
+            TriggerSettingEditedForPlayer(arguments.Mod);
     }
 
     private void SubscribeCollectionChanged()
@@ -279,6 +292,33 @@ public sealed partial class CollectionManagerAdapter(CollectionManagerAdapterFac
         }
     }
 
+    private void OnModOptionChanged(in ModOptionChanged.Arguments arguments)
+    {
+        switch (arguments.Type)
+        {
+            case ModOptionChangeType.GroupDeleted:
+            case ModOptionChangeType.GroupMoved:
+            case ModOptionChangeType.GroupTypeChanged:
+            case ModOptionChangeType.PriorityChanged:
+            case ModOptionChangeType.OptionDeleted:
+            case ModOptionChangeType.OptionMoved:
+            case ModOptionChangeType.OptionFilesChanged:
+            case ModOptionChangeType.OptionFilesAdded:
+            case ModOptionChangeType.OptionSwapsChanged:
+            case ModOptionChangeType.OptionMetaChanged:
+            case ModOptionChangeType.ConditionChanged:
+                TriggerSettingEditedForPlayer(arguments.Mod);
+                break;
+        }
+    }
+
     protected override void DisposeInternal()
         => UnsubscribeModSettingChanged();
+
+    private void TriggerSettingEditedForPlayer(Mod mod)
+    {
+        var playerCollection = Parent.Resolver.PlayerCollection();
+        var (_, parent) = playerCollection.GetActualSettings(mod.Index);
+        OnModSettingChanged(new ModSettingChanged.Arguments(ModSettingChange.Edited, Parent.Resolver.PlayerCollection(), mod, Setting.Indefinite, -1, parent != playerCollection));
+    }
 }
