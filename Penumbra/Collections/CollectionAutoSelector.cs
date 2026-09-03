@@ -5,7 +5,7 @@ using Penumbra.Interop.PathResolving;
 
 namespace Penumbra.Collections;
 
-public sealed class CollectionAutoSelector : Luna.IService, IDisposable
+public sealed class CollectionAutoSelector : Luna.IRequiredService, IDisposable
 {
     private readonly BehaviorConfig     _config;
     private readonly ActiveCollections  _collections;

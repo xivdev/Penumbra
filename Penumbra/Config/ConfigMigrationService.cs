@@ -2,7 +2,6 @@ using System.Text.Json;
 using Dalamud.Interface.ImGuiNotification;
 using ImSharp;
 using Luna;
-using Microsoft.Extensions.Options;
 using Penumbra.Api.Enums;
 using Penumbra.Files;
 using Penumbra.Mods;
