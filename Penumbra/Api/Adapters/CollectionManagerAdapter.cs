@@ -36,11 +36,11 @@ public sealed class CollectionManagerAdapterFactory(
     public readonly CollectionResolver  Resolver     = resolver;
     public readonly CommunicatorService Communicator = communicator;
 
-    public IpcObjectManager.IBasicAdapter CreateAdapter(string owner, object? _ = null)
+    public IpcObjectManager.IBasicAdapter CreateAdapter(CallerPlugin owner, object? _ = null)
         => new CollectionManagerAdapter(this, owner);
 }
 
-public sealed partial class CollectionManagerAdapter(CollectionManagerAdapterFactory parent, string owner)
+public sealed partial class CollectionManagerAdapter(CollectionManagerAdapterFactory parent, CallerPlugin owner)
     : IpcObjectManager.BasicAdapter(parent, owner, nameof(CollectionManagerAdapter)), IAdapterFactory, IpcObjectManager.IBasicAdapter
 {
     public IpcObjectManager IpcManager
@@ -238,7 +238,7 @@ public sealed partial class CollectionManagerAdapter(CollectionManagerAdapterFac
     private IIdDataShareAdapter? CreateCollection(ModCollection? collection, [CallerMemberName] string? callerName = null)
         => this.Create(Owner, collection, callerName);
 
-    public IpcObjectManager.IBasicAdapter? CreateAdapter(string owner, object? collection)
+    public IpcObjectManager.IBasicAdapter? CreateAdapter(CallerPlugin owner, object? collection)
         => collection is not ModCollection c ? null : new CollectionAdapter(this, c);
 
     private void SubscribeModSettingChanged()

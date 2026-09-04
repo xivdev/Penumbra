@@ -1190,7 +1190,7 @@ public sealed class DebugTab : Window, ITab<TabType>
         {
             if (tree)
                 foreach (var caller in IpcProviders.Callers)
-                    Im.BulletText($"{caller.Name} ({caller.InternalName}) v{caller.Version}");
+                    Im.BulletText($"{caller.DisplayName} ({caller.InternalName}) v{caller.Version}");
         }
 
         using (var tree = Im.Tree.Node("Adapters"u8))

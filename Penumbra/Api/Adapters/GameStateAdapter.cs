@@ -31,11 +31,11 @@ public sealed class GameStateAdapterFactory(
     public readonly CommunicatorService Communicator    = communicator;
     public readonly ResourceLoader      ResourceLoader  = resourceLoader;
 
-    public IpcObjectManager.IBasicAdapter CreateAdapter(string owner, object? data)
+    public IpcObjectManager.IBasicAdapter CreateAdapter(CallerPlugin owner, object? data)
         => new GameStateAdapter(this, owner);
 }
 
-public sealed partial class GameStateAdapter(GameStateAdapterFactory parent, string owner)
+public sealed partial class GameStateAdapter(GameStateAdapterFactory parent, CallerPlugin owner)
     : IpcObjectManager.BasicAdapter(parent, owner, nameof(GameStateAdapter)), IpcObjectManager.IBasicAdapter
 {
     public new GameStateAdapterFactory Parent

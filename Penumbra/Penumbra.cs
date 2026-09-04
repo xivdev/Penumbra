@@ -241,8 +241,8 @@ public class Penumbra : IDalamudPlugin
                 return (item.IsLoaded, item.Version, item.Name);
             });
 
-        foreach (var plugin in IpcProviders.Callers.OrderBy(p => p.Name).ThenBy(p => p.Version))
-            sb.Append($"> **`{plugin.Name + ':',-29}`** {plugin.Version} (IPC)\n");
+        foreach (var plugin in IpcProviders.Callers.OrderBy(p => p.DisplayName).ThenBy(p => p.Version))
+            sb.Append($"> **`{plugin.DisplayName + ':',-29}`** {plugin.Version} (IPC)\n");
 
         foreach (var plugin in relevantPlugins)
         {

@@ -12,11 +12,11 @@ public sealed class ModManagerAdapterFactory(IpcObjectManager ipcManager, ModMan
     public readonly ModManager       Mods = mods;
     public          IpcObjectManager IpcManager { get; } = ipcManager;
 
-    public IpcObjectManager.IBasicAdapter CreateAdapter(string owner, object? data)
+    public IpcObjectManager.IBasicAdapter CreateAdapter(CallerPlugin owner, object? data)
         => new ModManagerAdapter(this, owner);
 }
 
-public sealed partial class ModManagerAdapter(ModManagerAdapterFactory parent, string owner)
+public sealed partial class ModManagerAdapter(ModManagerAdapterFactory parent, CallerPlugin owner)
     : IpcObjectManager.BasicAdapter(parent, owner, nameof(ModManagerAdapter)), IAdapterFactory, IpcObjectManager.IBasicAdapter
 {
     [AdapterMethod(ModManagerWrapper.Method.Version, AlwaysAlive = true)]
@@ -87,6 +87,6 @@ public sealed partial class ModManagerAdapter(ModManagerAdapterFactory parent, s
     private IIdDataShareAdapter? CreateMod(Mod? mod, [CallerMemberName] string? callerName = null)
         => this.Create(Owner, mod, callerName);
 
-    public IpcObjectManager.IBasicAdapter? CreateAdapter(string owner, object? mod)
+    public IpcObjectManager.IBasicAdapter? CreateAdapter(CallerPlugin owner, object? mod)
         => mod is not Mod m ? null : new ModAdapter(this, m);
 }

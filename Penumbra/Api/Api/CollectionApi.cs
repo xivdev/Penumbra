@@ -13,7 +13,7 @@ public class CollectionApi(CollectionManager collections, ApiHelpers helpers, Co
     public Dictionary<Guid, string> GetCollections()
         => collections.Storage.ToDictionary(c => c.Identity.Id, c => c.Identity.Name);
 
-    public IIdDataShareAdapter GetCollectionManagerAdapter(string owner)
+    public IIdDataShareAdapter GetCollectionManagerAdapter(CallerPlugin owner)
         => adapterFactory.Create(owner)!;
 
     public List<(Guid Id, string Name)> GetCollectionsByIdentifier(string identifier)

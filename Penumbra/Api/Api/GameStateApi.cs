@@ -59,7 +59,7 @@ public class GameStateApi : IPenumbraApiGameState, IApiService, IDisposable
         return (data.AssociatedGameObject, (Id: data.ModCollection.Identity.Id, Name: data.ModCollection.Identity.Name));
     }
 
-    public IIdDataShareAdapter GetGameStateAdapter(string owner)
+    public IIdDataShareAdapter GetGameStateAdapter(CallerPlugin owner)
         => _adapterFactory.Create(owner)!;
 
     public int GetCutsceneParentIndex(int actorIdx)

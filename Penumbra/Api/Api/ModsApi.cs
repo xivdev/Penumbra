@@ -69,7 +69,7 @@ public sealed class ModsApi : IPenumbraApiMods, IApiService, IDisposable
     public IDisposable GetModListAdapterOld()
         => new ModListAdapterOld(_modManager);
 
-    public IIdDataShareAdapter GetModManagerAdapter(string owner)
+    public IIdDataShareAdapter GetModManagerAdapter(CallerPlugin owner)
         => _adapterFactory.Create(owner)!;
 
     public PenumbraApiEc InstallMod(string modFilePackagePath)
