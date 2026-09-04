@@ -11,6 +11,10 @@ public partial class MaterialEditor
 {
     private const float ColorTableScalarSize = 65.0f;
 
+    private static readonly float ExposureMax          = MathF.Log2((float)Half.MaxValue) * 0.5f;
+    private static readonly float ExposureMinThreshold = -MathF.Ceiling(ExposureMax * 10.0f) * 0.1f;
+    private static readonly float ExposureMinInfDummy  = ExposureMinThreshold - 0.025f;
+
     private int _colorTableSelectedPair;
 
     private bool DrawColorTable(ColorTable table, ColorDyeTable? dyeTable, bool disabled)
@@ -206,13 +210,13 @@ public partial class MaterialEditor
             using var dis = Im.Disabled(disabled);
             using (Im.Id.Push("FurtherA"u8))
             {
-                retA |= DrawFurther(table, dyeTable, dyePackA, rowAIdx);
+                retA |= DrawFurther(table, rowAIdx);
             }
 
             columns.Next();
             using (Im.Id.Push("FurtherB"u8))
             {
-                retB |= DrawFurther(table, dyeTable, dyePackB, rowBIdx);
+                retB |= DrawFurther(table, rowBIdx);
             }
         }
 
@@ -309,18 +313,16 @@ public partial class MaterialEditor
         var     dye = dyeTable?[rowIdx] ?? default;
 
         Im.Item.SetNextWidth(scalarSize);
-        ret |= CtDragHalf(isRowB ? "Field #19"u8 : "Anisotropy Degree"u8, default, row.Anisotropy, "%.2f"u8, 0.0f, HalfMaxValue, 0.1f,
-            v => table[rowIdx].Anisotropy = v);
+        ret |= CtDragHalf(isRowB ? "Anisotropy Degree (Unused)"u8 : "Anisotropy Degree"u8, default, row.Anisotropy, "%.1f"u8, 0.0f,
+            HalfMaxValue,                                                                  0.025f,    v => table[rowIdx].Anisotropy = v);
         if (dyeTable is not null)
         {
             Im.Line.Same(dyeOffset);
-            ret |= CtApplyStainCheckbox("##dyeAnisotropy"u8, isRowB ? "Apply Field #19 on Dye"u8 : "Apply Anisotropy Degree on Dye"u8,
-                dye.Anisotropy,
+            ret |= CtApplyStainCheckbox("##dyeAnisotropy"u8, "Apply Anisotropy Degree on Dye"u8, dye.Anisotropy,
                 b => dyeTable[rowIdx].Anisotropy = b);
             Im.Line.SameInner();
             Im.Item.SetNextWidth(scalarSize);
-            CtDragHalf("##dyePreviewAnisotropy"u8, isRowB ? "Dye Preview for Field #19"u8 : "Dye Preview for Anisotropy Degree"u8,
-                dyePack?.Anisotropy,               "%.2f"u8);
+            CtDragHalf("##dyePreviewAnisotropy"u8, "Dye Preview for Anisotropy Degree"u8, dyePack?.Anisotropy, "%.1f"u8);
         }
 
         return ret;
@@ -457,6 +459,30 @@ public partial class MaterialEditor
             CtDragScalar("##dyePreviewMetalness"u8, "Dye Preview for Metalness"u8, (float?)dyePack?.Metalness * 100.0f, "%.0f%%"u8);
         }
 
+        Im.Item.SetNextWidth(scalarSize);
+        var rawExposureValue = (float)row.Exposure;
+        var exposureValue    = rawExposureValue is 0.0f ? ExposureMinInfDummy : MathF.Log2(rawExposureValue) * 0.5f;
+        ret |= CtDragScalar("Exposure Value"u8, default, exposureValue, rawExposureValue is 0.0f ? "-∞"u8 : "%.1f"u8, ExposureMinInfDummy,
+            ExposureMax,                        0.025f,
+            v => table[rowIdx].Exposure =
+                (Half)(v < ExposureMinThreshold ? 0.0f : MathF.Pow(2.0f, Math.Clamp(v, -ExposureMax, ExposureMax) * 2.0f)));
+        if (dyeTable is not null)
+        {
+            Im.Line.Same(dyeOffset);
+            ret |= CtApplyStainCheckbox("##dyeExposure"u8, "Apply Exposure Value on Dye"u8, dye.Exposure,
+                b => dyeTable[rowIdx].Exposure = b);
+            Im.Line.SameInner();
+            Im.Item.SetNextWidth(scalarSize);
+            var dyeExposureValue = (float?)dyePack?.Exposure switch
+            {
+                null      => new float?(),
+                0.0f      => ExposureMinInfDummy,
+                { } value => MathF.Log2(value) * 0.5f,
+            };
+            CtDragScalar("##dyePreviewExposure"u8, "Dye Preview for Exposure Value"u8, dyeExposureValue,
+                dyePack?.Exposure == Half.Zero ? "-∞"u8 : "%.1f"u8);
+        }
+
         return ret;
     }
 
@@ -520,34 +546,13 @@ public partial class MaterialEditor
         return ret;
     }
 
-    private static bool DrawFurther(ColorTable table, ColorDyeTable? dyeTable, DyePack? dyePack, int rowIdx)
+    private static bool DrawFurther(ColorTable table, int rowIdx)
     {
         var scalarSize  = ColorTableScalarSize * Im.Style.GlobalScale;
         var subColWidth = CalculateSubColumnWidth(2) + Im.Style.ItemSpacing.X;
-        var dyeOffset = subColWidth
-          - Im.Style.ItemSpacing.X * 2.0f
-          - Im.Style.ItemInnerSpacing.X
-          - Im.Style.FrameHeight
-          - scalarSize;
 
         var     ret = false;
         ref var row = ref table[rowIdx];
-        var     dye = dyeTable?[rowIdx] ?? default;
-
-        Im.Item.SetNextWidth(scalarSize);
-        ret |= CtDragHalf("Exposure"u8, default, row.Exposure, "%.2f"u8, HalfMinValue, HalfMaxValue, 0.1f,
-            v => table[rowIdx].Exposure = v);
-        if (dyeTable is not null)
-        {
-            Im.Line.Same(dyeOffset);
-            ret |= CtApplyStainCheckbox("##dyeExposure"u8, "Apply Exposure on Dye"u8, dye.Exposure,
-                b => dyeTable[rowIdx].Exposure = b);
-            Im.Line.SameInner();
-            Im.Item.SetNextWidth(scalarSize);
-            CtDragHalf("##dyePreviewExposure"u8, "Dye Preview for Exposure"u8, dyePack?.Exposure, "%.2f"u8);
-        }
-
-        Im.Dummy(new Vector2(Im.Style.TextHeight / 2));
 
         Im.Item.SetNextWidth(scalarSize);
         ret |= CtDragHalf("Field #3"u8, default, row.Scalar3, "%.2f"u8, HalfMinValue, HalfMaxValue, 0.1f,

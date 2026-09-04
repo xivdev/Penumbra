@@ -54,7 +54,7 @@ public partial class MaterialEditor
                         if (length <= 0)
                             continue;
 
-                        var editor = dkConstant.CreateEditor(_materialTemplatePickers);
+                        var editor = dkConstant.CreateEditor(_textureArraySlicePickers);
                         if (editor != null)
                             FindOrAddGroup(Constants, dkConstant.Group.Length > 0 ? dkConstant.Group : "Further Constants")
                                 .Add((dkConstant.Label, constantIndex, offset..(offset + length), dkConstant.Description, false, editor));
@@ -142,7 +142,7 @@ public partial class MaterialEditor
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private IEditor<byte> DefaultConstantEditorFor(Name name)
-        => ConstantEditors.DefaultFor(name, _materialTemplatePickers);
+        => ConstantEditors.DefaultFor(name, _textureArraySlicePickers);
 
     private bool DrawConstantsSection(bool disabled)
     {
