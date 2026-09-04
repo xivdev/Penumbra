@@ -1,7 +1,10 @@
+using System.Buffers;
+using System.Text.Json;
 using ImSharp;
 using Luna;
 using Penumbra.Api.Api;
 using Penumbra.Api.Enums;
+using Penumbra.Files;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.Meta.Manipulations;
@@ -191,7 +194,13 @@ public partial class ModEditWindow
         if (!ImEx.Icon.Button(LunaStyle.ToClipboardIcon, tooltip, iconSize))
             return;
 
-        var text = CompressionFunctions.ToCompressedBase64(manipulations, 0);
+        var array = new ArrayBufferWriter<byte>();
+        using (var j = new Utf8JsonWriter(array, JsonFunctions.UnformattedOptions))
+        {
+            MetaSerialization.WriteMetaDictionary(j, manipulations);
+        }
+
+        var text = CompressionFunctions.ToCompressedBase64(array.WrittenSpan, 0);
         if (text.Length > 0)
             Im.Clipboard.Set(text);
     }

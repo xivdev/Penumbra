@@ -2,8 +2,8 @@ using Dalamud.Interface;
 using Dalamud.Interface.ImGuiNotification;
 using ImSharp;
 using Luna;
-using Newtonsoft.Json.Linq;
 using Penumbra.Collections.Cache;
+using Penumbra.Files;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Files;
@@ -90,7 +90,8 @@ public sealed class AtchMetaDrawer : MetaDrawer<AtchIdentifier, AtchEntry>
     {
         Im.Table.NextColumn();
         CopyToClipboardButton("Copy all current ATCH manipulations to clipboard."u8,
-            new Lazy<JToken?>(() => MetaDictionary.SerializeTo([], Editor.Atch)));
+
+            CreateLazy(j => MetaSerialization.SerializeTo(j, Editor.Atch)));
 
         Im.Table.NextColumn();
         var canAdd = !Editor.Contains(Identifier);

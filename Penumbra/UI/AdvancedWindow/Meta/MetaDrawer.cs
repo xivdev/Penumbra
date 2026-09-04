@@ -1,6 +1,8 @@
+using System.Buffers;
+using System.Text.Json;
 using ImSharp;
 using Luna;
-using Newtonsoft.Json.Linq;
+using Penumbra.Files;
 using Penumbra.Meta;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Editor;
@@ -141,20 +143,34 @@ public abstract class MetaDrawer<TIdentifier, TEntry>(ModMetaEditor editor, Meta
     protected void DrawMetaButtons(TIdentifier identifier, TEntry entry)
     {
         Im.Table.NextColumn();
-        CopyToClipboardButton("Copy this manipulation to clipboard."u8,
-            new Lazy<JToken?>(() => new JArray { MetaDictionary.Serialize(identifier, entry)! }));
+        CopyToClipboardButton("Copy this manipulation to clipboard."u8, CreateLazy(j => MetaSerialization.Serialize(j, identifier, entry)));
 
         Im.Table.NextColumn();
         if (ImEx.Icon.Button(LunaStyle.DeleteIcon, "Delete this meta manipulation."u8))
             Editor.Changes |= Editor.Remove(identifier);
     }
 
-    protected void CopyToClipboardButton(ReadOnlySpan<byte> tooltip, Lazy<JToken?> manipulations)
+    protected static Lazy<ReadOnlyMemory<byte>> CreateLazy(Action<Utf8JsonWriter> serialize)
+        => new(() =>
+        {
+            var writer = new ArrayBufferWriter<byte>();
+            using (var j = new Utf8JsonWriter(writer, JsonFunctions.UnformattedOptions))
+            {
+                j.WriteStartArray();
+                serialize(j);
+                j.WriteEndArray();
+            }
+
+            return writer.WrittenMemory;
+        });
+
+
+    protected void CopyToClipboardButton(ReadOnlySpan<byte> tooltip, Lazy<ReadOnlyMemory<byte>> manipulations)
     {
         if (!ImEx.Icon.Button(LunaStyle.ToClipboardIcon, tooltip))
             return;
 
-        var text = CompressionFunctions.ToCompressedBase64(manipulations.Value, 0);
+        var text = CompressionFunctions.ToCompressedBase64(manipulations.Value.Span, 0);
         if (text.Length > 0)
             Im.Clipboard.Set(text);
     }

@@ -1,6 +1,6 @@
 using ImSharp;
 using Luna;
-using Newtonsoft.Json.Linq;
+using Penumbra.Files;
 using Penumbra.GameData.Enums;
 using Penumbra.Meta;
 using Penumbra.Meta.Files;
@@ -34,7 +34,7 @@ public sealed class EstMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     {
         Im.Table.NextColumn();
         CopyToClipboardButton("Copy all current EST manipulations to clipboard."u8,
-            new Lazy<JToken?>(() => MetaDictionary.SerializeTo([], Editor.Est)));
+            CreateLazy(j => MetaSerialization.SerializeTo(j, Editor.Est)));
 
         Im.Table.NextColumn();
         var canAdd = !Editor.Contains(Identifier);
