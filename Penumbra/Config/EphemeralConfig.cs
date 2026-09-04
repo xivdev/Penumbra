@@ -126,7 +126,7 @@ public sealed partial class EphemeralConfig : ConfigurationFile<FilenameService>
             SelectedManagementTab = selection.EnumOrDefault("ManagementTab"u8,   SelectedManagementTab);
             SelectedModPanelTab   = selection.EnumOrDefault("ModPanelTab"u8,     SelectedModPanelTab);
             CollectionPanel       = selection.EnumOrDefault("CollectionPanel"u8, CollectionPanel);
-            if (selection.TryReadObject("AdvancedEditingOpen"u8, out var advanced))
+            if (selection.TryReadArray("AdvancedEditingOpen"u8, out var advanced))
                 AdvancedEditingOpenForModPaths = advanced.Deserialize<HashSet<string>>() ?? AdvancedEditingOpenForModPaths;
         }
     }
