@@ -103,7 +103,7 @@ public partial class MaterialEditor
         Im.Line.SameInner();
         var ret = ColorTablePasteFromClipboardButton(rowIdx, disabled);
         Im.Line.SameInner();
-        ColorTableRowHighlightButton(rowIdx, disabled);
+        ColorTableRowHighlightButton(rowIdx, disabled, false);
 
         Im.Table.NextColumn();
         using (Im.Font.PushMono())
@@ -210,7 +210,7 @@ public partial class MaterialEditor
         Im.Line.SameInner();
         var ret = ColorTablePasteFromClipboardButton(rowIdx, disabled);
         Im.Line.SameInner();
-        ColorTableRowHighlightButton(rowIdx, disabled);
+        ColorTableRowHighlightButton(rowIdx, disabled, false);
 
         Im.Table.NextColumn();
         using (Im.Font.PushMono())

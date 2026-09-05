@@ -16,12 +16,35 @@ public partial class MaterialEditor
     private static readonly float ExposureMinThreshold = -MathF.Ceiling(ExposureMax * 10.0f) * 0.1f;
     private static readonly float ExposureMinInfDummy  = ExposureMinThreshold - 0.025f;
 
-    private int _colorTableSelectedPair;
+    private int  _colorTableSelectedPair;
+    private bool _colorTableSelectedRowB;
 
     private bool DrawColorTable(ColorTable table, ColorDyeTable? dyeTable, bool disabled)
     {
-        DrawColorTablePairSelector(table, disabled);
-        return DrawColorTablePairEditor(table, dyeTable, disabled);
+        var numSimpleRows  = dyeTable is not null ? 14 : 13;
+        var numDummies     = dyeTable is not null ? 9 : 8;
+        var numRowSpacings = numSimpleRows + numDummies + 1;
+        var taspHeight     = TextureArraySlicePickers.MaximumTextureSize + 2f * Im.Style.FramePadding.Y;
+        var tileHeight     = MathF.Max(taspHeight, 3f * Im.Style.FrameHeight + 2f * Im.Style.ItemSpacing.Y);
+        var totalHeight = numSimpleRows * Im.Style.FrameHeight
+          + numDummies * (Im.Style.TextHeight / 2)
+          + numRowSpacings * Im.Style.ItemSpacing.Y
+          + taspHeight
+          + tileHeight
+          + 2f * Im.Style.WindowPadding.Y;
+
+        if (Im.ContentRegion.Available.X >= 1152.0f)
+        {
+            DrawColorTablePairSelector(table, disabled);
+            return DrawColorTablePairEditor(table, dyeTable, disabled, totalHeight);
+        }
+        else
+        {
+            // We see you, user who docks windows to bypass size restrictions!
+            DrawColorTableRowSelector(table, disabled, totalHeight);
+            Im.Line.Same();
+            return DrawColorTableRowEditor(table, dyeTable, disabled, totalHeight);
+        }
     }
 
     private void DrawColorTablePairSelector(ColorTable table, bool disabled)
@@ -82,41 +105,88 @@ public partial class MaterialEditor
         }
     }
 
-    private bool DrawColorTablePairEditor(ColorTable table, ColorDyeTable? dyeTable, bool disabled)
+    private void DrawColorTableRowSelector(ColorTable table, bool disabled, float totalHeight)
+    {
+        using var child = Im.Child.Begin("ColorTableRowSelector"u8,
+            new Vector2(168.0f * Im.Style.GlobalScale + Im.Style.ScrollbarSize, totalHeight), false, WindowFlags.AlwaysVerticalScrollbar);
+        if (!child)
+            return;
+
+        var itemInnerSpacing = Im.Style.ItemInnerSpacing.X;
+        var framePadding     = Im.Style.FramePadding;
+        var buttonWidth      = Im.ContentRegion.Available.X;
+        var frameHeight      = Im.Style.FrameHeight;
+        var highlighterSize  = ImEx.Icon.CalculateSize(LunaStyle.OnHoverIcon) + framePadding * 2.0f;
+
+        using var alignment = ImStyleDouble.ButtonTextAlign.Push(new Vector2(0, 0.5f));
+
+        var buttonSize = new Vector2(buttonWidth, MathF.Max(frameHeight, highlighterSize.Y + framePadding.Y * 2.0f));
+        for (var i = 0; i < ColorTable.NumRows; ++i)
+        {
+            var       pairIndex = i >> 1;
+            var       isRowB    = (i & 1) is not 0;
+            using var id        = Im.Id.Push(i);
+            using (ImGuiColor.Button.Push(Im.Style[ImGuiColor.ButtonActive],
+                       pairIndex == _colorTableSelectedPair && isRowB == _colorTableSelectedRowB))
+            {
+                if (Im.Button(StringU8.Empty, buttonSize))
+                {
+                    _colorTableSelectedPair = pairIndex;
+                    _colorTableSelectedRowB = isRowB;
+                }
+            }
+
+            var rcMin = Im.Item.UpperLeftCorner + framePadding;
+            var rcMax = Im.Item.LowerRightCorner - framePadding;
+            CtColorRect(
+                rcMin with { X = rcMax.X - frameHeight * 3 - itemInnerSpacing * 2 },
+                rcMax with { X = rcMax.X - (frameHeight + itemInnerSpacing) * 2 },
+                PseudoSqrtRgb((Vector3)table[i].DiffuseColor)
+            );
+            CtColorRect(
+                rcMin with { X = rcMax.X - frameHeight * 2 - itemInnerSpacing },
+                rcMax with { X = rcMax.X - frameHeight - itemInnerSpacing },
+                PseudoSqrtRgb((Vector3)table[i].SpecularColor)
+            );
+            CtColorRect(
+                rcMin with { X = rcMax.X - frameHeight }, rcMax,
+                PseudoSqrtRgb((Vector3)table[i].EmissiveColor)
+            );
+
+            var cursor    = Im.Cursor.ScreenPosition;
+            var buttonPos = rcMin with { Y = float.Lerp(rcMin.Y, rcMax.Y, 0.5f) - highlighterSize.Y * 0.5f };
+            Im.Cursor.ScreenPosition = buttonPos;
+            ColorTableRowHighlightButton(i, disabled, true);
+            Im.Cursor.ScreenPosition = buttonPos + new Vector2(Im.Style.FrameHeight + Im.Style.ItemInnerSpacing.X, Im.Style.FramePadding.Y);
+            using var font = Im.Font.PushMono();
+            Im.Text($"#{pairIndex + 1:D2}{(isRowB ? 'B' : 'A')}");
+            Im.Cursor.ScreenPosition = cursor;
+        }
+    }
+
+    private bool DrawColorTablePairEditor(ColorTable table, ColorDyeTable? dyeTable, bool disabled, float totalHeight)
     {
         bool retA;
         bool retB;
         var  rowAIdx     = _colorTableSelectedPair << 1;
         var  rowBIdx     = rowAIdx | 1;
-        var  dyeA        = dyeTable?[_colorTableSelectedPair << 1] ?? default;
-        var  dyeB        = dyeTable?[(_colorTableSelectedPair << 1) | 1] ?? default;
+        var  dyeA        = dyeTable?[rowAIdx] ?? default;
+        var  dyeB        = dyeTable?[rowBIdx] ?? default;
         var  previewDyeA = _stainService.GetStainCombo(dyeA.Channel).CurrentSelection.Id;
         var  previewDyeB = _stainService.GetStainCombo(dyeB.Channel).CurrentSelection.Id;
         var  dyePackA    = _stainService.GudStmFile.GetValueOrNull(dyeA.Template, previewDyeA);
         var  dyePackB    = _stainService.GudStmFile.GetValueOrNull(dyeB.Template, previewDyeB);
 
-        var numSimpleRows  = dyeTable is not null ? 14 : 13;
-        var numDummies     = dyeTable is not null ? 9 : 8;
-        var numRowSpacings = numSimpleRows + numDummies + 1;
-        var taspHeight     = TextureArraySlicePickers.MaximumTextureSize + 2f * Im.Style.FramePadding.Y;
-        var tileHeight     = MathF.Max(taspHeight, 3f * Im.Style.FrameHeight + 2f * Im.Style.ItemSpacing.Y);
-        var totalHeight = numSimpleRows * Im.Style.FrameHeight
-          + numDummies * (Im.Style.TextHeight / 2)
-          + numRowSpacings * Im.Style.ItemSpacing.Y
-          + taspHeight
-          + tileHeight
-          + 2f * Im.Style.WindowPadding.Y;
-
-        using (Im.Child.Begin("RowA"u8, new Vector2((Im.ContentRegion.Available.X - Im.Style.ItemSpacing.X) * 0.5f, totalHeight), true,
-                   WindowFlags.NoScrollbar))
+        using (var childA = Im.Child.Begin("RowA"u8, new Vector2((Im.ContentRegion.Available.X - Im.Style.ItemSpacing.X) * 0.5f, totalHeight),
+                   true, WindowFlags.NoScrollbar))
         {
-            retA = DrawColorRowEditor(table, dyeTable, in dyePackA, rowAIdx, disabled);
+            retA = childA.Success && DrawColorRowEditor(table, dyeTable, in dyePackA, rowAIdx, disabled);
         }
 
         Im.Line.Same();
-        using (Im.Child.Begin("RowB"u8, Im.ContentRegion.Available with { Y = totalHeight }, true, WindowFlags.NoScrollbar))
+        using (var childB = Im.Child.Begin("RowB"u8, Im.ContentRegion.Available with { Y = totalHeight }, true, WindowFlags.NoScrollbar))
         {
-            retB = DrawColorRowEditor(table, dyeTable, in dyePackB, rowBIdx, disabled);
+            retB = childB.Success && DrawColorRowEditor(table, dyeTable, in dyePackB, rowBIdx, disabled);
         }
 
         if (retA)
@@ -125,6 +195,25 @@ public partial class MaterialEditor
             UpdateColorTableRowPreview(rowBIdx);
 
         return retA | retB;
+    }
+
+    private bool DrawColorTableRowEditor(ColorTable table, ColorDyeTable? dyeTable, bool disabled, float totalHeight)
+    {
+        bool ret;
+        var  rowIdx     = (_colorTableSelectedPair << 1) | (_colorTableSelectedRowB ? 1 : 0);
+        var  dye        = dyeTable?[rowIdx] ?? default;
+        var  previewDye = _stainService.GetStainCombo(dye.Channel).CurrentSelection.Id;
+        var  dyePack    = _stainService.GudStmFile.GetValueOrNull(dye.Template, previewDye);
+
+        using (var child = Im.Child.Begin("Row"u8, Im.ContentRegion.Available with { Y = totalHeight }, true, WindowFlags.NoScrollbar))
+        {
+            ret = child.Success && DrawColorRowEditor(table, dyeTable, in dyePack, rowIdx, disabled);
+        }
+
+        if (ret)
+            UpdateColorTableRowPreview(rowIdx);
+
+        return ret;
     }
 
     private bool DrawColorRowEditor(ColorTable table, ColorDyeTable? dyeTable, in DyePack? dyePack, int rowIdx, bool disabled)
@@ -189,7 +278,7 @@ public partial class MaterialEditor
         Im.Line.SameInner();
         var ret = ColorTablePasteFromClipboardButton(rowIdx, disabled);
         Im.Line.SameInner();
-        ColorTableRowHighlightButton(rowIdx, disabled);
+        ColorTableRowHighlightButton(rowIdx, disabled, false);
 
         Im.Line.Same();
         var titleMin    = Im.Cursor.ScreenPosition;
