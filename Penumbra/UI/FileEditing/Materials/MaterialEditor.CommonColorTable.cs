@@ -333,14 +333,29 @@ public partial class MaterialEditor
             HighlightColorTableRows(pairIdx << 1, 2);
     }
 
-    private void ColorTableRowHighlightButton(int rowIdx, bool disabled)
+    private void ColorTableRowHighlightButton(int rowIdx, bool disabled, bool allowWholeSelectorHighlight)
     {
+        var wholeRowSelectorHighlight = allowWholeSelectorHighlight
+         && (_config.Editing.WholePairSelectorAlwaysHighlights || Im.Io.KeyControl)
+         && Im.Item.Hovered();
+
         ImEx.Icon.Button(LunaStyle.OnHoverIcon,
             "Highlight this row on your character, if possible.\n\nHighlight colors can be configured in Penumbra's settings."u8,
             disabled || _colorTablePreviewers.Count is 0);
 
-        if (Im.Item.Hovered())
+        if (wholeRowSelectorHighlight || Im.Item.Hovered())
             HighlightColorTableRows(rowIdx, 1);
+    }
+
+    private static void CtColorRect(Vector2 rcMin, Vector2 rcMax, Rgba32 color)
+    {
+        var frameRounding  = Im.Style.FrameRounding;
+        var frameThickness = Im.Style.FrameBorderThickness;
+        var borderColor    = ImGuiColor.Border.Get();
+        var drawList       = Im.Window.DrawList.Shape;
+
+        drawList.RectangleFilled(rcMin, rcMax, color, frameRounding);
+        drawList.Rectangle(rcMin, rcMax, borderColor.Color, frameRounding, default, frameThickness);
     }
 
     private static void CtBlendRect(Vector2 rcMin, Vector2 rcMax, Rgba32 topColor, Rgba32 bottomColor)
