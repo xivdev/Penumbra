@@ -10,11 +10,12 @@ namespace Penumbra.UI.FileEditing.Materials;
 
 public partial class MaterialEditor
 {
-    private readonly List<LiveMaterialPreviewer>   _materialPreviewers        = new(4);
-    private readonly List<LiveColorTablePreviewer> _colorTablePreviewers      = new(4);
-    private          int                           _highlightedColorTableRow  = -1;
-    private          int                           _highlightedColorTablePair = -1;
-    private readonly Stopwatch                     _highlightTime             = new();
+    private readonly List<LiveMaterialPreviewer>   _materialPreviewers            = new(4);
+    private readonly List<LiveColorTablePreviewer> _colorTablePreviewers          = new(4);
+    private          int                           _highlightedColorTableRowStart = 0;
+    private          int                           _highlightedColorTableRowCount = 0;
+    private          bool                          _highlightPreserve             = false;
+    private readonly Stopwatch                     _highlightTime                 = new();
 
     private void DrawMaterialLivePreviewRebind(bool disabled)
     {
@@ -143,62 +144,53 @@ public partial class MaterialEditor
             SetSamplerFlags(sampler.SamplerId, sampler.Flags);
     }
 
-    private void HighlightColorTablePair(int pairIdx)
+    private void HighlightColorTableRows(int start, int count)
     {
-        var oldPairIdx = _highlightedColorTablePair;
+        if (count is 0 && _highlightedColorTableRowCount is 0)
+            return;
 
-        if (_highlightedColorTablePair != pairIdx)
+        _highlightPreserve = count is not 0;
+
+        if (start == _highlightedColorTableRowStart && count == _highlightedColorTableRowCount)
         {
-            _highlightedColorTablePair = pairIdx;
+            UpdateColorTableRowsPreview(start, count);
+            return;
+        }
+
+        var oldStart = _highlightedColorTableRowStart;
+        var oldCount = _highlightedColorTableRowCount;
+
+        _highlightedColorTableRowStart = start;
+        _highlightedColorTableRowCount = count;
+
+        if (count is not 0)
             _highlightTime.Restart();
-        }
+        else
+            _highlightTime.Reset();
 
-        if (oldPairIdx >= 0)
+        if (start + count < oldStart || oldStart + oldCount < start)
         {
-            UpdateColorTableRowPreview(oldPairIdx << 1);
-            UpdateColorTableRowPreview((oldPairIdx << 1) | 1);
+            UpdateColorTableRowsPreview(oldStart, oldCount);
+            UpdateColorTableRowsPreview(start, count);
         }
-
-        if (pairIdx >= 0)
+        else
         {
-            UpdateColorTableRowPreview(pairIdx << 1);
-            UpdateColorTableRowPreview((pairIdx << 1) | 1);
+            var unionStart = Math.Min(start, oldStart);
+            UpdateColorTableRowsPreview(unionStart, Math.Max(start + count, oldStart + oldCount) - unionStart);
         }
     }
 
-    private void HighlightColorTableRow(int rowIdx)
+    private void UpdateColorTableRowsPreview(int rowStart, int rowCount)
     {
-        var oldRowIdx = _highlightedColorTableRow;
-
-        if (_highlightedColorTableRow != rowIdx)
+        if (rowStart is 0 && rowCount is ColorTable.NumRows)
         {
-            _highlightedColorTableRow = rowIdx;
-            _highlightTime.Restart();
+            UpdateColorTablePreview();
+            return;
         }
 
-        if (oldRowIdx >= 0)
-            UpdateColorTableRowPreview(oldRowIdx);
-
-        if (rowIdx >= 0)
-            UpdateColorTableRowPreview(rowIdx);
-    }
-
-    private void CancelColorTableHighlight()
-    {
-        var rowIdx  = _highlightedColorTableRow;
-        var pairIdx = _highlightedColorTablePair;
-
-        _highlightedColorTableRow  = -1;
-        _highlightedColorTablePair = -1;
-        _highlightTime.Reset();
-
-        if (rowIdx >= 0)
-            UpdateColorTableRowPreview(rowIdx);
-
-        if (pairIdx >= 0)
+        for (var i = 0; i < rowCount; ++i)
         {
-            UpdateColorTableRowPreview(pairIdx << 1);
-            UpdateColorTableRowPreview((pairIdx << 1) | 1);
+            UpdateColorTableRowPreview(rowStart + i);
         }
     }
 
@@ -234,10 +226,9 @@ public partial class MaterialEditor
             }
         }
 
-        if (_highlightedColorTablePair << 1 == rowIdx || _highlightedColorTableRow == rowIdx)
-            ApplyHighlight(ref row, ColorId.InGameHighlight, (float)_highlightTime.Elapsed.TotalSeconds);
-        else if (((_highlightedColorTablePair << 1) | 1) == rowIdx)
-            ApplyHighlight(ref row, ColorId.InGameHighlight2, (float)_highlightTime.Elapsed.TotalSeconds);
+        var highlightIndex = rowIdx - _highlightedColorTableRowStart;
+        if (highlightIndex >= 0 && highlightIndex < _highlightedColorTableRowCount)
+            ApplyHighlight(ref row, highlightIndex, (float)_highlightTime.Elapsed.TotalSeconds);
 
         foreach (var previewer in _colorTablePreviewers)
         {
@@ -264,14 +255,9 @@ public partial class MaterialEditor
             rows.ApplyDye(_stainService.GudStmFile,    stainIds, dyeRows);
         }
 
-        if (_highlightedColorTableRow >= 0)
-            ApplyHighlight(ref rows[_highlightedColorTableRow], ColorId.InGameHighlight, (float)_highlightTime.Elapsed.TotalSeconds);
-
-        if (_highlightedColorTablePair >= 0)
+        for (var i = 0; i < _highlightedColorTableRowCount; ++i)
         {
-            ApplyHighlight(ref rows[_highlightedColorTablePair << 1], ColorId.InGameHighlight, (float)_highlightTime.Elapsed.TotalSeconds);
-            ApplyHighlight(ref rows[(_highlightedColorTablePair << 1) | 1], ColorId.InGameHighlight2,
-                (float)_highlightTime.Elapsed.TotalSeconds);
+            ApplyHighlight(ref rows[_highlightedColorTableRowStart + i], i, (float)_highlightTime.Elapsed.TotalSeconds);
         }
 
         foreach (var previewer in _colorTablePreviewers)
@@ -280,6 +266,10 @@ public partial class MaterialEditor
             previewer.ScheduleUpdate();
         }
     }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void ApplyHighlight(ref ColorTableRow row, int highlightIndex, float time)
+        => ApplyHighlight(ref row, (highlightIndex & 1) is 0 ? ColorId.InGameHighlight : ColorId.InGameHighlight2, time);
 
     private static void ApplyHighlight(ref ColorTableRow row, ColorId colorId, float time)
     {
@@ -291,5 +281,23 @@ public partial class MaterialEditor
         row.DiffuseColor  = halfColor;
         row.SpecularColor = halfColor;
         row.EmissiveColor = halfColor;
+    }
+
+    private ref struct AutoHighlightCancellation : IDisposable
+    {
+        private readonly MaterialEditor _owner;
+
+        public AutoHighlightCancellation(MaterialEditor owner)
+        {
+            _owner = owner;
+
+            owner._highlightPreserve = false;
+        }
+
+        public void Dispose()
+        {
+            if (!_owner._highlightPreserve)
+                _owner.HighlightColorTableRows(0, 0);
+        }
     }
 }

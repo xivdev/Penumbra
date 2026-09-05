@@ -18,11 +18,13 @@ public partial class MaterialEditor
 
     private bool DrawColorTableSection(bool disabled)
     {
+        using var _ = new AutoHighlightCancellation(this);
+
         if (!_shpkLoading && !TextureIds.Contains(ShpkFile.TableSamplerId) || Mtrl.Table == null)
             return false;
 
         Im.Dummy(new Vector2(Im.Style.TextHeight / 2));
-        if (!Im.Tree.Header("Color Table"u8, TreeNodeFlags.DefaultOpen))
+        if (!ColorTableHeaderButton(disabled))
             return false;
 
         ColorTableCopyAllClipboardButton();
@@ -54,6 +56,51 @@ public partial class MaterialEditor
         };
 
         return ret;
+    }
+
+    private bool ColorTableHeaderButton(bool disabled)
+    {
+        // UI widget mostly taken from Glamourer's compact equipment window button.
+
+        var sideShift = Im.Style.WindowPadding.X * 0.5f - 1f;
+
+        var savedCursor = Im.Cursor.Position;
+        var headerWidth = Im.ContentRegion.Available.X
+          + sideShift
+          - ImEx.Icon.CalculateLabeledButtonSize(LunaStyle.OnHoverIcon, "Highlight All"u8).X;
+        Im.Cursor.X += headerWidth;
+        using var color = ImGuiColor.Button.Push(ImGuiColor.Header)
+            .Push(ImGuiColor.ButtonHovered, ImGuiColor.HeaderHovered)
+            .Push(ImGuiColor.ButtonActive,  ImGuiColor.HeaderActive);
+        ImEx.Icon.LabeledButton(LunaStyle.OnHoverIcon, "Highlight All###switchToEquipBar"u8,
+            "Highlight the whole color table on your character, if possible.\n\nHighlight colors can be configured in Penumbra's settings."u8,
+            disabled || _colorTablePreviewers.Count is 0,
+            corners: Corners.Right);
+        if (Im.Item.Hovered())
+            HighlightColorTableRows(0, ColorTable.NumRows);
+        Im.Cursor.Position = savedCursor;
+
+        var basePosition = Im.Cursor.ScreenPosition;
+        var upperLeft    = basePosition - new Vector2(sideShift,   0f);
+        var lowerRight   = basePosition + new Vector2(headerWidth, Im.Style.FrameHeight);
+
+        // We have to shave off an epsilon of width, otherwise there is a pixel that is considered as hovering both parts of the widget.
+        var headerColor =
+            (Im.Mouse.IsHoveringRectangle(upperLeft, lowerRight - new Vector2(0.001f, 0.0f)), Im.Mouse.IsDown(MouseButton.Left)) switch
+            {
+                (true, true)  => ImGuiColor.ButtonActive,
+                (true, false) => ImGuiColor.ButtonHovered,
+                (false, _)    => ImGuiColor.Button,
+            };
+
+        Im.DrawList.Window.Shape.RectangleFilled(upperLeft, lowerRight, headerColor, Im.Style.FrameRounding,
+            ImDrawFlagsRectangle.RoundCornersLeft);
+
+        color.Push(ImGuiColor.Header, Rgba32.Transparent)
+            .Push(ImGuiColor.HeaderHovered, Rgba32.Transparent)
+            .Push(ImGuiColor.HeaderActive,  Rgba32.Transparent);
+
+        return Im.Tree.Header("Color Table"u8, TreeNodeFlags.DefaultOpen);
     }
 
     private void ColorTableCopyAllClipboardButton()
@@ -283,9 +330,7 @@ public partial class MaterialEditor
             disabled || _colorTablePreviewers.Count is 0);
 
         if (wholePairSelectorHighlight || Im.Item.Hovered())
-            HighlightColorTablePair(pairIdx);
-        else if (_highlightedColorTablePair == pairIdx)
-            CancelColorTableHighlight();
+            HighlightColorTableRows(pairIdx << 1, 2);
     }
 
     private void ColorTableRowHighlightButton(int rowIdx, bool disabled)
@@ -295,9 +340,7 @@ public partial class MaterialEditor
             disabled || _colorTablePreviewers.Count is 0);
 
         if (Im.Item.Hovered())
-            HighlightColorTableRow(rowIdx);
-        else if (_highlightedColorTableRow == rowIdx)
-            CancelColorTableHighlight();
+            HighlightColorTableRows(rowIdx, 1);
     }
 
     private static void CtBlendRect(Vector2 rcMin, Vector2 rcMax, Rgba32 topColor, Rgba32 bottomColor)
