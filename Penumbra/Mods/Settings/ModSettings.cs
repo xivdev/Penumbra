@@ -164,7 +164,7 @@ public class ModSettings
             settings.Settings.FixSize(mod);
 
             foreach (var (group, setting) in mod.Groups.Zip(settings.Settings))
-                Settings.Add(group.Name, setting);
+                Settings.TryAdd(group.Name, setting);
         }
 
         // Convert and fix.
@@ -212,11 +212,11 @@ public class ModSettings
             switch (mod.Groups[idx])
             {
                 case { Behaviour: GroupDrawBehaviour.SingleSelection } single when setting.Value < (ulong)single.Options.Count:
-                    dict.Add(single.Name, [single.Options[setting.AsIndex].Name]);
+                    dict.TryAdd(single.Name, [single.Options[setting.AsIndex].Name]);
                     break;
                 case { Behaviour: GroupDrawBehaviour.MultiSelection } multi:
                     var list = multi.Options.Index().Where(p => setting.HasFlag(p.Index)).Select(p => p.Item.Name).ToList();
-                    dict.Add(multi.Name, list);
+                    dict.TryAdd(multi.Name, list);
                     break;
             }
         }

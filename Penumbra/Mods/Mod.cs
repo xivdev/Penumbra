@@ -96,12 +96,14 @@ public sealed class Mod : IMod, IFileSystemValue<Mod>
         if (group is null)
             return;
 
+        if (Groups.Any(g => g.Name == group.Name))
+            throw new InvalidMetaException(this, filePath, $"Multiple groups with the name {group.Name} exist inside this mod.");
+
         Groups.Add(group);
         foreach (var obj in group.Options.Prepend<IModObject>(group))
         {
             if (!SubObjects.TryAdd(obj.Id, obj))
-                throw new InvalidMetaException(this, filePath,
-                    $"Multiple groups or options with the GUID {obj.Id} exist inside this mod.");
+                throw new InvalidMetaException(this, filePath, $"Multiple groups or options with the GUID {obj.Id} exist inside this mod.");
         }
     }
 
