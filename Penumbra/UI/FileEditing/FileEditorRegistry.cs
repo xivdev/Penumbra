@@ -26,7 +26,7 @@ public class FileEditorRegistry : Luna.IUiService
 
     public FileEditorRegistry(EditingConfig config, MaterialEditorFactory materialEditorFactory, ModelEditorFactory modelEditorFactory,
         ShaderPackageEditorFactory shaderPackageEditorFactory, DeformerEditorFactory deformerEditorFactory,
-        CombiningTextureEditorFactory textureEditorFactory)
+        CombiningTextureEditorFactory textureEditorFactory, ShaderParameterViewerFactory shaderParameterViewerFactory)
     {
         _config = config;
 
@@ -35,6 +35,7 @@ public class FileEditorRegistry : Luna.IUiService
         RegisterFactory(shaderPackageEditorFactory);
         RegisterFactory(deformerEditorFactory);
         RegisterFactory(textureEditorFactory);
+        RegisterFactory(shaderParameterViewerFactory);
     }
 
     public void RegisterFactory(IFileEditorFactory editorFactory)

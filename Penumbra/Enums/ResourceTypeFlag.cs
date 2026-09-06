@@ -68,6 +68,7 @@ public enum ResourceTypeFlag : ulong
     Fpeb = 0x0100_0000_0000_0000,
     Kdb  = 0x0200_0000_0000_0000,
     Kdlb = 0x0400_0000_0000_0000,
+    Spm  = 0x0800_0000_0000_0000,
 }
 
 [Flags]
@@ -156,6 +157,7 @@ public static class ResourceExtensions
             ResourceType.Fpeb => ResourceTypeFlag.Fpeb,
             ResourceType.Kdb  => ResourceTypeFlag.Kdb ,
             ResourceType.Kdlb => ResourceTypeFlag.Kdlb,
+            ResourceType.Spm  => ResourceTypeFlag.Spm,
             _                 => 0,
         };
 

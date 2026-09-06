@@ -1,5 +1,6 @@
 using ImSharp;
 using Penumbra.GameData.Enums;
+using Penumbra.GameData.Gui;
 using Penumbra.GameData.Interop;
 
 namespace Penumbra.Interop.Structs;
@@ -10,15 +11,15 @@ public unsafe struct CharacterUtilityData
     public const int IndexHumanPbd               = 63;
     public const int IndexTransparentTex         = 79;
     public const int IndexDecalTex               = 80;
-    public const int IndexTileOrbArrayTex        = 81;
-    public const int IndexTileNormArrayTex       = 82;
+    public const int IndexTileOrbArrayTex        = TextureArraySlicePickers.TileOrbArrayTexIndex;
+    public const int IndexTileNormArrayTex       = TextureArraySlicePickers.TileNormArrayTexIndex;
     public const int IndexIrisShpk               = 83;
     public const int IndexSkinShpk               = 84;
     public const int IndexCharacterStockingsShpk = 85;
     public const int IndexCharacterLegacyShpk    = 86;
     public const int IndexGudStm                 = StainAccessor.GudStmIndex;
     public const int IndexLegacyStm              = StainAccessor.LegacyStmIndex;
-    public const int IndexSphereDArrayTex        = 97;
+    public const int IndexSphereDArrayTex        = TextureArraySlicePickers.SphereDArrayTexIndex;
 
     public static readonly MetaIndex[] EqdpIndices = Enum.GetNames<MetaIndex>()
         .Zip(MetaIndex.Values)
