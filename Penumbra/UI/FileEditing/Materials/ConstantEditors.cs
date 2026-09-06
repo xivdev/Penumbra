@@ -30,7 +30,8 @@ public static class ConstantEditors
         KnownIntConstants = knownIntConstants.ToFrozenSet();
     }
 
-    public static IEditor<byte> DefaultFor(Name name, TextureArraySlicePickers? textureArraySlicePickers = null)
+    public static IEditor<byte> DefaultFor(Name name, TextureArraySlicePickers? textureArraySlicePickers = null,
+        ShaderIdPicker? shaderIdPicker = null)
     {
         if (textureArraySlicePickers is not null)
         {
@@ -39,6 +40,9 @@ public static class ConstantEditors
             if (name == Names.TileIndexConstantName)
                 return textureArraySlicePickers.TileIndexPicker;
         }
+
+        if (shaderIdPicker is not null && name == Names.ShaderIdConstantName)
+            return shaderIdPicker.Picker;
 
         if (name.Value != null && name.Value.EndsWith("Color"))
             return DefaultColor;

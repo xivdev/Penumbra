@@ -26,6 +26,7 @@ public sealed partial class MaterialEditor : IFileEditor
     private readonly StainService             _stainService;
     private readonly ResourceTreeFactory      _resourceTreeFactory;
     private readonly FileDialogService        _fileDialog;
+    private readonly ShaderIdPicker           _shaderIdPicker;
     private readonly TextureArraySlicePickers _textureArraySlicePickers;
     private readonly Configuration            _config;
 
@@ -39,7 +40,7 @@ public sealed partial class MaterialEditor : IFileEditor
     public event Action? SaveRequested;
 
     public MaterialEditor(IDataManager gameData, IFramework framework, ObjectManager objects, CharacterBaseDestructor characterBaseDestructor,
-        StainService stainService, ResourceTreeFactory resourceTreeFactory, FileDialogService fileDialog,
+        StainService stainService, ResourceTreeFactory resourceTreeFactory, FileDialogService fileDialog, ShaderIdPicker shaderIdPicker,
         TextureArraySlicePickers textureArraySlicePickers, Configuration config, FileEditingContext? context, MtrlFile file, string filePath,
         bool writable)
     {
@@ -50,6 +51,7 @@ public sealed partial class MaterialEditor : IFileEditor
         _stainService             = stainService;
         _resourceTreeFactory      = resourceTreeFactory;
         _fileDialog               = fileDialog;
+        _shaderIdPicker           = shaderIdPicker;
         _textureArraySlicePickers = textureArraySlicePickers;
         _config                   = config;
 

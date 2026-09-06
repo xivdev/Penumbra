@@ -101,11 +101,11 @@ public partial class MaterialEditor
 
         /// <summary> Integer encoded as a float. </summary>
         Integer = 1,
-        Color = 2,
-        Enum  = 3,
+        Color   = 2,
+        Enum    = 3,
 
         /// <summary> Native integer. </summary>
-        Int32 = 4,
+        Int32          = 4,
         Int32Enum      = 5,
         Int8           = 6,
         Int8Enum       = 7,
@@ -117,6 +117,7 @@ public partial class MaterialEditor
         Double         = 13,
         TileIndex      = 14,
         SphereMapIndex = 15,
+        ShaderId       = 16,
     }
 
     [UsedImplicitly]
@@ -185,10 +186,11 @@ public partial class MaterialEditor
                 DevkitConstantType.Double         => sizeof(double),
                 DevkitConstantType.TileIndex      => sizeof(float),
                 DevkitConstantType.SphereMapIndex => sizeof(float),
+                DevkitConstantType.ShaderId       => sizeof(float),
                 _                                 => sizeof(float),
             };
 
-        public IEditor<byte>? CreateEditor(TextureArraySlicePickers? textureArraySlicePickers)
+        public IEditor<byte>? CreateEditor(TextureArraySlicePickers? textureArraySlicePickers, ShaderIdPicker? shaderIdPicker)
             => Type switch
             {
                 DevkitConstantType.Hidden         => null,
@@ -208,6 +210,7 @@ public partial class MaterialEditor
                 DevkitConstantType.Double         => CreateFloatEditor<double>().AsByteEditor(),
                 DevkitConstantType.TileIndex      => textureArraySlicePickers?.TileIndexPicker ?? ConstantEditors.DefaultIntAsFloat,
                 DevkitConstantType.SphereMapIndex => textureArraySlicePickers?.SphereMapIndexPicker ?? ConstantEditors.DefaultIntAsFloat,
+                DevkitConstantType.ShaderId       => shaderIdPicker?.Picker ?? ConstantEditors.DefaultIntAsFloat,
                 _                                 => ConstantEditors.DefaultFloat,
             };
 

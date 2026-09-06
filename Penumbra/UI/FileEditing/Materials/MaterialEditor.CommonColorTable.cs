@@ -535,6 +535,16 @@ public partial class MaterialEditor
             0.0f,           Nop);
     }
 
+    private bool CtShaderIdPicker(ReadOnlySpan<byte> label, ReadOnlySpan<byte> description, ushort value, Action<ushort> setter)
+    {
+        var shaderId = (byte)value;
+        if (!_shaderIdPicker.DrawShaderIdPicker(label, description, ref shaderId))
+            return false;
+
+        setter(shaderId);
+        return true;
+    }
+
     private bool CtTileIndexPicker(ReadOnlySpan<byte> label, ReadOnlySpan<byte> description, ushort value, bool compact, Action<ushort> setter)
     {
         if (!_textureArraySlicePickers.DrawTileIndexPicker(label, description, ref value, compact))

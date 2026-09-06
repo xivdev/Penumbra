@@ -19,6 +19,7 @@ public sealed class MaterialEditorFactory(
     StainService stainService,
     ResourceTreeFactory resourceTreeFactory,
     FileDialogService fileDialog,
+    ShaderIdPicker shaderIdPicker,
     TextureArraySlicePickers textureArraySlicePickers,
     Configuration config) : BaseFileEditorFactory(gameData), IUiService
 {
@@ -37,5 +38,5 @@ public sealed class MaterialEditorFactory(
     public override IFileEditor CreateForData(ReadOnlySpan<byte> data, string path, bool writable, string? gamePath,
         FileEditingContext? context)
         => new MaterialEditor(GameData, framework, objects, characterBaseDestructor, stainService, resourceTreeFactory, fileDialog,
-            textureArraySlicePickers, config, context, new MtrlFile(data), path, writable);
+            shaderIdPicker, textureArraySlicePickers, config, context, new MtrlFile(data), path, writable);
 }

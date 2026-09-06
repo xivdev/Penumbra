@@ -355,8 +355,7 @@ public partial class MaterialEditor
         var     dye = dyeTable?[rowIdx] ?? default;
 
         Im.Item.SetNextWidth(scalarSize);
-        ret |= CtDragScalar("Shader ID"u8, default, row.ShaderId, "%d"u8, (ushort)0, (ushort)255, 0.25f,
-            v => table[rowIdx].ShaderId = v);
+        ret |= CtShaderIdPicker("Shader ID"u8, default, row.ShaderId, v => table[rowIdx].ShaderId = v);
 
         Im.Line.Same(subColWidth);
         Im.Item.SetNextWidth(scalarSize);
