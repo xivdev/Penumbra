@@ -43,6 +43,8 @@ public sealed class CollectionManagerAdapterFactory(
 public sealed partial class CollectionManagerAdapter(CollectionManagerAdapterFactory parent, CallerPlugin owner)
     : IpcObjectManager.BasicAdapter(parent, owner, nameof(CollectionManagerAdapter)), IAdapterFactory, IpcObjectManager.IBasicAdapter
 {
+    internal static readonly Version LocalVersion = new(1, 0);
+
     public IpcObjectManager IpcManager
         => Parent.IpcManager;
 
@@ -50,13 +52,14 @@ public sealed partial class CollectionManagerAdapter(CollectionManagerAdapterFac
         => (CollectionManagerAdapterFactory)base.Parent!;
 
     [AdapterMethod(CollectionManagerWrapper.Method.Version, AlwaysAlive = true)]
-    public override (int Major, int Minor) Version
-        => (1, 0);
+    public override Version Version
+        => LocalVersion;
 
-    [AdapterMethod(CollectionManagerWrapper.Method.Alive, AlwaysAlive = true)]
-    public override bool Alive
-        => base.Parent is not null;
+    [AdapterMethod(CollectionManagerWrapper.Method.IsDisposed, AlwaysAlive = true)]
+    public override bool IsDisposed
+        => base.Parent is null;
 
+    /// <inheritdoc cref="IIdDataShareAdapter.Disposed"/>
     [AdapterMethod(CollectionManagerWrapper.Method.DisposedEvent, AlwaysAlive = true)]
     public event Action? Disposed;
 
@@ -319,6 +322,7 @@ public sealed partial class CollectionManagerAdapter(CollectionManagerAdapterFac
     {
         var playerCollection = Parent.Resolver.PlayerCollection();
         var (_, parent) = playerCollection.GetActualSettings(mod.Index);
-        OnModSettingChanged(new ModSettingChanged.Arguments(ModSettingChange.Edited, Parent.Resolver.PlayerCollection(), mod, Setting.Indefinite, -1, parent != playerCollection));
+        OnModSettingChanged(new ModSettingChanged.Arguments(ModSettingChange.Edited, Parent.Resolver.PlayerCollection(), mod,
+            Setting.Indefinite, -1, parent != playerCollection));
     }
 }

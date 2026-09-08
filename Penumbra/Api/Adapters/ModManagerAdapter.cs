@@ -19,13 +19,15 @@ public sealed class ModManagerAdapterFactory(IpcObjectManager ipcManager, ModMan
 public sealed partial class ModManagerAdapter(ModManagerAdapterFactory parent, CallerPlugin owner)
     : IpcObjectManager.BasicAdapter(parent, owner, nameof(ModManagerAdapter)), IAdapterFactory, IpcObjectManager.IBasicAdapter
 {
-    [AdapterMethod(ModManagerWrapper.Method.Version, AlwaysAlive = true)]
-    public override (int Major, int Minor) Version
-        => (1, 0);
+    internal static readonly Version LocalVersion = new(1, 0);
 
-    [AdapterMethod(ModManagerWrapper.Method.Alive, AlwaysAlive = true)]
-    public override bool Alive
-        => base.Parent is not null;
+    [AdapterMethod(ModManagerWrapper.Method.Version, AlwaysAlive = true)]
+    public override Version Version
+        => LocalVersion;
+
+    [AdapterMethod(ModManagerWrapper.Method.IsDisposed, AlwaysAlive = true)]
+    public override bool IsDisposed
+        => base.Parent is null;
 
     [AdapterMethod(ModManagerWrapper.Method.DisposedEvent, AlwaysAlive = true)]
     public event Action? Disposed;

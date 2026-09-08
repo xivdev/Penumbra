@@ -9,12 +9,12 @@ public sealed partial class ModAdapter(ModManagerAdapter parent, Mod mod)
     : IpcObjectManager.BasicAdapter(parent.Parent, parent.Owner, nameof(ModAdapter)), IpcObjectManager.IBasicAdapter
 {
     [AdapterMethod(ModWrapper.Method.Version, AlwaysAlive = true)]
-    public override (int Major, int Minor) Version
-        => (1, 0);
+    public override Version Version
+        => ModManagerAdapter.LocalVersion;
 
-    [AdapterMethod(ModWrapper.Method.Alive, AlwaysAlive = true)]
-    public override bool Alive
-        => Parent is not null;
+    [AdapterMethod(ModWrapper.Method.IsDisposed, AlwaysAlive = true)]
+    public override bool IsDisposed
+        => Parent is null;
 
     [AdapterMethod(ModWrapper.Method.DisposedEvent, AlwaysAlive = true)]
     public event Action? Disposed;

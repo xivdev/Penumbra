@@ -38,16 +38,18 @@ public sealed class GameStateAdapterFactory(
 public sealed partial class GameStateAdapter(GameStateAdapterFactory parent, CallerPlugin owner)
     : IpcObjectManager.BasicAdapter(parent, owner, nameof(GameStateAdapter)), IpcObjectManager.IBasicAdapter
 {
+    internal static readonly Version LocalVersion = new(1, 0);
+
     public new GameStateAdapterFactory Parent
         => (GameStateAdapterFactory)base.Parent!;
 
     [AdapterMethod(GameStateWrapper.Method.Version, AlwaysAlive = true)]
-    public override (int Major, int Minor) Version
-        => (1, 0);
+    public override Version Version
+        => LocalVersion;
 
-    [AdapterMethod(GameStateWrapper.Method.Alive, AlwaysAlive = true)]
-    public override bool Alive
-        => base.Parent is not null;
+    [AdapterMethod(GameStateWrapper.Method.IsDisposed, AlwaysAlive = true)]
+    public override bool IsDisposed
+        => base.Parent is null;
 
     [AdapterMethod(GameStateWrapper.Method.DisposedEvent, AlwaysAlive = true)]
     public event Action? Disposed;
