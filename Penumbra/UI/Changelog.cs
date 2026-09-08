@@ -66,13 +66,14 @@ public class PenumbraChangelog : IUiService
         AddDummy(Changelog);
         Add1_6_0_0(Changelog);
         Add1_6_1_0(Changelog);
-        Add1_7_0_0(Changelog);
+        AddDummy(Changelog);
+        Add1_7_1_0(Changelog);
     }
 
     #region Changelogs
 
-    private static void Add1_7_0_0(Changelog log)
-        => log.NextVersion("Version 1.7.0.0"u8)
+    private static void Add1_7_1_0(Changelog log)
+        => log.NextVersion("Version 1.7.1.0"u8)
             .RegisterImportant("When updating to this version, all installed mods will migrate to a new meta version."u8)
             .RegisterEntry(
                 "This version gets rid of the group- and default option JSON files and instead stores all this information in the meta.json again."u8,
@@ -119,21 +120,35 @@ public class PenumbraChangelog : IUiService
                 "Hostile NPCs like those spawned by quests are no longer considered by Ownership settings unless a separate setting is enabled."u8)
             .RegisterHighlight(
                 "The file watcher for auto import of mods can now be set to peek into archives, recognize mod archives inside those archives, and install the packed mods (thanks Stoia and Ny!)."u8)
+            .RegisterHighlight("Penumbra now supports local Presets and their sharing and application."u8)
+            .RegisterEntry("Presets are sets of group and option states that are stored in the local database, and can be applied via a single click or shared via clipboard."u8, 1)
+            .RegisterEntry("Presets can be mod-specific or generalized, in which case they just try to match per group and option names and apply whatever matches to any mod."u8, 1)
+            .RegisterEntry("Added API/IPC for preset handling."u8, 1)
+            .RegisterEntry("Added new IPC utilities using the DataShareAdapters I added to Dalamud."u8)
             .RegisterEntry("The Enable/Disable/Inherit All Descendants context menu buttons now have misclick prevention."u8)
             .RegisterEntry("The popup to edit option descriptions is now resizable."u8)
+            .RegisterEntry("The mod root directory will now skip any hidden directories when loading mods, instead of complaining about them."u8)
             .RegisterHighlight(
                 "Configurable colors in Penumbra can now be set to reference other colors (like ImGui or Dalamud colors, or other Penumbra colors). Some colors do this in their default options."u8)
             .RegisterEntry(
                 "Color configuration should be migrated and anything that was left on the old default values should be migrated to new defaults, and into a different file."u8,
                 1)
+            .RegisterEntry("Added the option to have color-alternating folder lines, and choose their colors in their corresponding folder settings."u8)
+            .RegisterEntry("Added the option to have display names for folders independent of their path."u8)
+            .RegisterEntry("Significantly updated the material editor (thanks Ny!)."u8)
             .RegisterEntry("The On-Screen tab now has separator lines after top-level entry groups, i.e. approximately per slot."u8)
             .RegisterEntry("Added several plugins, and all plugins that call specific IPC functions, to the support info blob."u8)
             .RegisterEntry("The advanced editing model tab now uses 0-based indexing instead of 1-based, by popular demand."u8)
             .RegisterEntry("Limited the number of concurrent mod installation notifications when using the file system watcher to 3."u8)
+            .RegisterEntry("Added a viewer for SPM files."u8)
             .RegisterEntry("Moved several deserialization and serialization functions to System.Text.JSON for considerable speed increases."u8)
             .RegisterEntry("Use a new recovery strategy for syntactically broken JSON files in several situations (Thanks Ny!)"u8)
             .RegisterEntry(
                 "The 'Failed to Load Resource' log warning will no longer trigger on the deliberately failing path used by EasyEyes."u8)
+            .RegisterEntry("Fixed an issue where reloading mods with temporary settings did not update their UI."u8)
+            .RegisterEntry("Fixed an issue with the mod help popup."u8)
+            .RegisterEntry("Significantly improved writes to the local database."u8)
+            .RegisterEntry("Fixed an issue where null-pointers were stored in the draw object resolver."u8)
             .RegisterEntry("Added safeguards against some import vulnerabilities concerning out-of-folder files."u8)
             .RegisterEntry("Fixed an issue with temporary settings breaking when options are changed."u8)
             .RegisterEntry("Fixed several issues with the automatic backup functionality."u8)
