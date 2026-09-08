@@ -60,7 +60,7 @@ public sealed class Mod : IMod, IFileSystemValue<Mod>
 
     // Meta Data
     public uint                    LoadedVersion         { get; internal set; } = ModMeta.CurrentFileVersion;
-    public Guid                    StableIdentifier      { get; internal set; } = Guid.NewGuid();
+    public Guid                    StableIdentifier      { get; internal set; } = Guid.Empty;
     public string                  Name                  { get; internal set; } = "New Mod";
     public string                  Author                { get; internal set; } = string.Empty;
     public string                  Description           { get; internal set; } = string.Empty;

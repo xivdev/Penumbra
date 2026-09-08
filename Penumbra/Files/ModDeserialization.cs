@@ -52,10 +52,8 @@ public static class ModDeserialization
         }
 
         private static string? CheckCyclicConditions(Mod _)
-        {
             // TODO 20260824 Cyclic Conditions
-            return null;
-        }
+            => null;
 
         private static ICondition<ModSettingContext> Convert(IModObject parent, SettingIdCondition condition)
         {
@@ -89,15 +87,22 @@ public static class ModDeserialization
         if (mod.LoadedVersion > ModSerialization.CurrentFileVersion)
             throw new InvalidMetaException(mod, metaPath,
                 $"The mod version {mod.LoadedVersion} is higher than the highest version supported by this Penumbra version ({ModSerialization.CurrentFileVersion}).");
-        MigrateGroups(files, context);
+
+        // Forces a save.
+        if (MigrateGroups(files, context))
+            return meta;
+
+        // Save if we added an identifier that was not there before without migration.
+        if (meta.HasFlag(ModDataChangeType.AddedIdentifier))
+            files.ImmediateSaveSync(new ModMeta(files, context.Mod));
 
         return meta;
     }
 
-    private static void MigrateGroups(SaveService files, Context context)
+    private static bool MigrateGroups(SaveService files, Context context)
     {
         if (context.Mod.LoadedVersion >= 4)
-            return;
+            return false;
 
         GroupDeserialization.ReadDefaultContainerFile(files, context);
         foreach (var groupFile in files.FileNames.Migration.GetOptionGroupFiles(context.Mod))
@@ -107,6 +112,7 @@ public static class ModDeserialization
         }
 
         files.ImmediateSaveSync(new ModMeta(files, context.Mod));
+        return true;
     }
 
     private static bool CheckControlCharacters(string text)
@@ -316,8 +322,12 @@ public static class ModDeserialization
                     continue;
                 }
 
-                if (ReadGroups(ref reader, filePath, context))
+                if (ReadGroups(ref reader, filePath, context, out var a))
+                {
+                    if (a)
+                        ret |= ModDataChangeType.AddedIdentifier;
                     continue;
+                }
 
                 reader.Skip();
             }
@@ -334,14 +344,15 @@ public static class ModDeserialization
             return new ModMetaData { Changes = ret };
         }
 
-        private static bool ReadGroups(ref Utf8JsonReader reader, string filePath, Context context)
+        private static bool ReadGroups(ref Utf8JsonReader reader, string filePath, Context context, out bool addedId)
         {
+            addedId = false;
             if (!reader.ArrayProperty("Groups"u8, out var arrayReader, true))
                 return false;
 
             while (arrayReader.Read(ref reader))
             {
-                if (GroupDeserialization.ReadGroup(context, ref reader, filePath) is { } group)
+                if (GroupDeserialization.ReadGroup(context, ref reader, filePath, out addedId) is { } group)
                     context.Mod.AddGroup(group, filePath);
             }
 
@@ -361,6 +372,7 @@ public static class ModDeserialization
             {
                 mod.StableIdentifier =  Guid.NewGuid();
                 ret                  |= ModDataChangeType.Identifier;
+                ret                  |= ModDataChangeType.AddedIdentifier;
             }
 
             if (!visited.HasFlag(ModDataChangeType.Author) && mod.Author.Length > 0)

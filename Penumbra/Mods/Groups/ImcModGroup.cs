@@ -1,7 +1,4 @@
-using Dalamud.Interface.ImGuiNotification;
 using Luna;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Structs;
@@ -22,7 +19,7 @@ public class ImcModGroup(Mod mod) : IModGroup
         => Index = index;
 
     public Mod    Mod         { get; }      = mod;
-    public Guid   Id          { get; set; } = Guid.NewGuid();
+    public Guid   Id          { get; set; } = Guid.Empty;
     public string Name        { get; set; } = "Option";
     public string Description { get; set; } = string.Empty;
     public string Image       { get; set; } = string.Empty;

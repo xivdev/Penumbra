@@ -1,6 +1,4 @@
 using Luna;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Data;
 using Penumbra.Meta.Manipulations;
@@ -13,7 +11,7 @@ using Penumbra.Util;
 namespace Penumbra.Mods.Groups;
 
 /// <summary> Groups that allow only one of their available options to be selected. </summary>
-public sealed class SingleModGroup(Mod mod) : IModGroup, ITexToolsGroup
+public sealed class SingleModGroup(Mod mod) : ITexToolsGroup
 {
     public GroupType Type
         => GroupType.Single;
@@ -27,7 +25,7 @@ public sealed class SingleModGroup(Mod mod) : IModGroup, ITexToolsGroup
         => Index = index;
 
     public Mod                            Mod             { get; }      = mod;
-    public Guid                           Id              { get; set; } = Guid.NewGuid();
+    public Guid                           Id              { get; set; } = Guid.Empty;
     public string                         Name            { get; set; } = "Option";
     public string                         Description     { get; set; } = string.Empty;
     public string                         Image           { get; set; } = string.Empty;

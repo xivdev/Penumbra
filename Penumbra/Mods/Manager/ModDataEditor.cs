@@ -32,6 +32,7 @@ public enum ModDataChangeType : uint
     LastConfigEdit        = 0x040000,
     Identifier            = 0x080000,
     PageNames             = 0x100000,
+    AddedIdentifier       = 0x200000,
 }
 
 public class ModDataEditor(SaveService saveService, CommunicatorService communicatorService, ItemData itemData, LocalModDatabase database)

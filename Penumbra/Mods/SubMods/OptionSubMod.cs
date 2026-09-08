@@ -39,7 +39,7 @@ public abstract class OptionSubMod(IModGroup group) : IModOption, IModDataContai
     IModGroup IModDataContainer.Group
         => Group;
 
-    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid Id { get; set; } = Guid.Empty;
 
     IModGroup IModObject.Group
         => Group;

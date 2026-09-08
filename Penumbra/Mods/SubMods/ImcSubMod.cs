@@ -43,7 +43,7 @@ public class ImcSubMod(ImcModGroup group) : IModOption
     IModGroup IModObject.Group
         => Group;
 
-    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid Id { get; set; } = Guid.Empty;
 
     public string Name { get; set; } = "Part";
 

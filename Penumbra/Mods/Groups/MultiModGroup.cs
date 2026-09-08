@@ -1,7 +1,4 @@
-using Dalamud.Interface.ImGuiNotification;
 using Luna;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Data;
 using Penumbra.Meta.Manipulations;
@@ -14,8 +11,7 @@ using Penumbra.Util;
 namespace Penumbra.Mods.Groups;
 
 /// <summary> Groups that allow all available options to be selected at once. </summary>
-public sealed class
-    MultiModGroup(Mod mod) : IModGroup, ITexToolsGroup
+public sealed class MultiModGroup(Mod mod) : ITexToolsGroup
 {
     public GroupType Type
         => GroupType.Multi;
@@ -29,7 +25,7 @@ public sealed class
         => Index = index;
 
     public          Mod                            Mod             { get; }      = mod;
-    public          Guid                           Id              { get; set; } = Guid.NewGuid();
+    public          Guid                           Id              { get; set; } = Guid.Empty;
     public          string                         Name            { get; set; } = "Group";
     public          string                         Description     { get; set; } = string.Empty;
     public          string                         Image           { get; set; } = string.Empty;
