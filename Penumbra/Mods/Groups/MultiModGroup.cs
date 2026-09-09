@@ -61,6 +61,7 @@ public sealed class MultiModGroup(Mod mod) : ITexToolsGroup
         {
             Name        = name,
             Description = description,
+            Id          = Guid.NewGuid(),
         };
         OptionData.Add(subMod);
         return subMod;
@@ -76,6 +77,9 @@ public sealed class MultiModGroup(Mod mod) : ITexToolsGroup
             Image           = Image,
             Page            = Page,
             DefaultSettings = DefaultSettings.TurnMulti(OptionData.Count),
+            Id              = Id,
+            Condition       = Condition,
+            Layout          = Layout,
         };
         single.OptionData.AddRange(OptionData.Select(o => o.ConvertToSingle(single)));
         return single;

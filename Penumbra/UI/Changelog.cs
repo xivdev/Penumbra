@@ -157,7 +157,7 @@ public class PenumbraChangelog : IUiService
             .RegisterEntry("Fixed an issue with collection inheritance display and update."u8)
             .RegisterEntry("Fixed several issues with redundant saving of files."u8)
             .RegisterEntry("Fixed an issue with material suffices during model export."u8)
-            .RegisterEntry("Fiexd a crash when resolving accessory skin materials with the resource tree."u8)
+            .RegisterEntry("Fixed a crash when resolving accessory skin materials with the resource tree."u8)
             .RegisterEntry("Fixed an issue with the folder tree lines in the mod selector."u8)
             .RegisterEntry("Fixed an issue with unclamped values when editing color tables."u8)
             .RegisterEntry("Fixed an issue with the Move to Quick Folder button selection."u8)

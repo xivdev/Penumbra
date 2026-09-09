@@ -69,6 +69,7 @@ public sealed class CombiningModGroup : IModGroup
         {
             Name        = name,
             Description = description,
+            Id          = Guid.NewGuid(),
         };
         return OptionData.AddNewWithPowerSet(Data, subMod, () => new CombinedDataContainer(this), IModGroup.MaxCombiningOptions)
             ? subMod

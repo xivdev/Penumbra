@@ -1,5 +1,4 @@
 using Luna;
-using Newtonsoft.Json.Linq;
 using Penumbra.Mods.Groups;
 using Penumbra.UI.Classes;
 
@@ -27,8 +26,4 @@ public class CombiningSubMod(IModGroup group) : IModOption
 
     public string FullName
         => $"{Group.Name}: {Name}";
-
-    public CombiningSubMod(CombiningModGroup group, JToken json)
-        : this(group)
-        => SubMod.LoadOptionData(json, this);
 }

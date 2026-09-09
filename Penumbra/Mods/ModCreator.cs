@@ -218,11 +218,11 @@ public partial class ModCreator(
             .Where(t => t.Item1);
 
         var container = (OptionSubMod)group.AddOption(option.Name, option.Description)!;
+        container.Id = Guid.NewGuid();
         if (container is MultiSubMod multi)
             multi.Priority = priority;
         foreach (var (_, gamePath, file) in list)
             container.Files.TryAdd(gamePath, file);
-
         IncorporateMetaChanges(container, baseFolder, true);
     }
 

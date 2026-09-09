@@ -57,6 +57,7 @@ public abstract class ModOptionEditor<TGroup, TOption>(
         if (group.AddOption(newName) is not TOption option)
             return null;
 
+        option.Id = Guid.NewGuid();
         SaveService.Save(saveType, option);
         Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionAdded, group.Mod, group, option, null,
             option.Id, -1, null));

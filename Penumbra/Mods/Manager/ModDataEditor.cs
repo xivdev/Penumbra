@@ -46,12 +46,13 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
         string? website, params string[] tags)
     {
         var mod = new Mod(directory);
-        mod.Name        = name.IsNullOrEmpty() ? mod.Name : name;
-        mod.Author      = author ?? mod.Author;
-        mod.Description = description ?? mod.Description;
-        mod.Version     = version ?? mod.Version;
-        mod.Website     = website ?? mod.Website;
-        mod.ModTags     = tags;
+        mod.Name             = name.IsNullOrEmpty() ? mod.Name : name;
+        mod.Author           = author ?? mod.Author;
+        mod.Description      = description ?? mod.Description;
+        mod.Version          = version ?? mod.Version;
+        mod.Website          = website ?? mod.Website;
+        mod.ModTags          = tags;
+        mod.StableIdentifier = Guid.NewGuid();
         return mod;
     }
 

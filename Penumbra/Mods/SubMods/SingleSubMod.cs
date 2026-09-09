@@ -19,6 +19,10 @@ public class SingleSubMod(SingleModGroup singleGroup) : OptionSubMod<SingleModGr
         {
             Name        = Name,
             Description = Description,
+            Layout      = Layout,
+            Color       = Color,
+            Condition   = Condition,
+            Id          = Guid.NewGuid(),
         };
         SubMod.Clone(this, ret);
 
@@ -32,6 +36,10 @@ public class SingleSubMod(SingleModGroup singleGroup) : OptionSubMod<SingleModGr
             Name        = Name,
             Description = Description,
             Priority    = priority,
+            Layout      = Layout,
+            Color       = Color,
+            Condition   = Condition,
+            Id          = Id,
         };
         SubMod.Clone(this, ret);
 

@@ -34,8 +34,9 @@ public sealed class MultiModGroupEditor(CommunicatorService communicator, SaveSe
     protected override MultiModGroup CreateGroup(Mod mod, string newName, ModPriority priority, SaveType saveType = SaveType.ImmediateSync)
         => new(mod)
         {
-            Name = newName,
+            Name     = newName,
             Priority = priority,
+            Id       = Guid.NewGuid(),
         };
 
     protected override MultiSubMod? CloneOption(MultiModGroup group, IModOption option)
@@ -50,8 +51,9 @@ public sealed class MultiModGroupEditor(CommunicatorService communicator, SaveSe
 
         var newOption = new MultiSubMod(group)
         {
-            Name = option.Name,
+            Name        = option.Name,
             Description = option.Description,
+            Id          = Guid.NewGuid(),
         };
 
         if (option is IModDataContainer data)

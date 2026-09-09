@@ -40,6 +40,7 @@ public sealed class ImcModGroupEditor(CommunicatorService communicator, SaveServ
             Name          = name,
             Description   = description,
             AttributeMask = cache.LowestUnsetMask,
+            Id            = Guid.NewGuid(),
         };
         group.OptionData.Add(subMod);
         SaveService.Save(saveType, group);
@@ -122,6 +123,7 @@ public sealed class ImcModGroupEditor(CommunicatorService communicator, SaveServ
         {
             Name     = newName,
             Priority = priority,
+            Id       = Guid.NewGuid(),
         };
 
 
@@ -133,6 +135,7 @@ public sealed class ImcModGroupEditor(CommunicatorService communicator, SaveServ
             Priority     = priority,
             Identifier   = identifier,
             DefaultEntry = defaultEntry,
+            Id           = Guid.NewGuid(),
         };
 
     protected override ImcSubMod? CloneOption(ImcModGroup group, IModOption option)

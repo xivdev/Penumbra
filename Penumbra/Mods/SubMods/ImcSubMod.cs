@@ -1,6 +1,4 @@
 using Luna;
-using Newtonsoft.Json.Linq;
-using Penumbra.GameData.Structs;
 using Penumbra.Mods.Groups;
 using Penumbra.UI.Classes;
 
@@ -14,14 +12,6 @@ public class ImcSubMod(ImcModGroup group) : IModOption
 
     public void SetIndex(int index)
         => Index = index;
-
-    public ImcSubMod(ImcModGroup group, JToken json)
-        : this(group)
-    {
-        SubMod.LoadOptionData(json, this);
-        AttributeMask   = (ushort)((json[nameof(AttributeMask)]?.ToObject<ushort>() ?? 0) & ImcEntry.AttributesMask);
-        IsDisableSubMod = json[nameof(IsDisableSubMod)]?.ToObject<bool>() ?? false;
-    }
 
     public static ImcSubMod DisableSubMod(ImcModGroup group)
         => new(group)

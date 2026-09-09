@@ -14,6 +14,10 @@ public class MultiSubMod(MultiModGroup group) : OptionSubMod<MultiModGroup>(grou
             Name        = Name,
             Description = Description,
             Priority    = Priority,
+            Layout      = Layout,
+            Color       = Color,
+            Condition   = Condition,
+            Id          = Guid.NewGuid(),
         };
         SubMod.Clone(this, ret);
 
@@ -26,6 +30,10 @@ public class MultiSubMod(MultiModGroup group) : OptionSubMod<MultiModGroup>(grou
         {
             Name        = Name,
             Description = Description,
+            Layout      = Layout,
+            Color       = Color,
+            Condition   = Condition,
+            Id          = Id,
         };
         SubMod.Clone(this, ret);
         return ret;

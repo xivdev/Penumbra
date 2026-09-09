@@ -23,16 +23,21 @@ public sealed class SingleModGroupEditor(CommunicatorService communicator, SaveS
     protected override SingleModGroup CreateGroup(Mod mod, string newName, ModPriority priority, SaveType saveType = SaveType.ImmediateSync)
         => new(mod)
         {
-            Name = newName,
+            Name     = newName,
             Priority = priority,
+            Id       = Guid.NewGuid(),
         };
 
     protected override SingleSubMod CloneOption(SingleModGroup group, IModOption option)
     {
         var newOption = new SingleSubMod(group)
         {
-            Name = option.Name,
+            Name        = option.Name,
             Description = option.Description,
+            Id          = Guid.NewGuid(),
+            Layout      = option.Layout,
+            Color       = option.Color,
+            Condition   = option.Condition,
         };
         if (option is IModDataContainer data)
             SubMod.Clone(data, newOption);

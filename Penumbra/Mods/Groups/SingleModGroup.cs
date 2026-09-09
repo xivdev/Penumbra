@@ -53,6 +53,7 @@ public sealed class SingleModGroup(Mod mod) : ITexToolsGroup
         {
             Name        = name,
             Description = description,
+            Id          = Guid.NewGuid(),
         };
         OptionData.Add(subMod);
         return subMod;
@@ -77,6 +78,9 @@ public sealed class SingleModGroup(Mod mod) : ITexToolsGroup
             Image           = Image,
             Page            = Page,
             DefaultSettings = Setting.Multi((int)DefaultSettings.Value),
+            Id              = Id,
+            Condition       = Condition,
+            Layout          = Layout,
         };
         multi.OptionData.AddRange(OptionData.Select((o, i) => o.ConvertToMulti(multi, new ModPriority(i))));
         return multi;

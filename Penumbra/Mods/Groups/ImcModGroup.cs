@@ -46,14 +46,12 @@ public class ImcModGroup(Mod mod) : IModGroup
     public FullPath? FindBestMatch(Utf8GamePath gamePath)
         => null;
 
-    private bool _canBeDisabled;
-
     public bool CanBeDisabled
     {
-        get => _canBeDisabled;
+        get;
         set
         {
-            _canBeDisabled = value;
+            field = value;
             if (!value)
             {
                 OptionData.RemoveAll(m => m.IsDisableSubMod);
@@ -74,6 +72,7 @@ public class ImcModGroup(Mod mod) : IModGroup
             Name          = name,
             Description   = description,
             AttributeMask = 0,
+            Id            = Guid.NewGuid(),
         };
         OptionData.Add(subMod);
         return subMod;
@@ -89,9 +88,6 @@ public class ImcModGroup(Mod mod) : IModGroup
 
     public bool IsOption
         => OptionData.Count > 0;
-
-    public int GetIndex()
-        => ModGroup.GetIndex(this);
 
     public IModGroupEditDrawer EditDrawer(ModGroupEditDrawer editDrawer)
         => new ImcModGroupEditDrawer(editDrawer, this);

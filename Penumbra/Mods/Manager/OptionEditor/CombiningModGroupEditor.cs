@@ -16,6 +16,7 @@ public sealed class CombiningModGroupEditor(CommunicatorService communicator, Sa
         {
             Name     = newName,
             Priority = priority,
+            Id       = Guid.NewGuid(),
         };
 
     protected override CombiningSubMod? CloneOption(CombiningModGroup group, IModOption option)
