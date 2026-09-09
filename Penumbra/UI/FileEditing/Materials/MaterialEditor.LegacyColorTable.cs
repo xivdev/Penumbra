@@ -103,7 +103,7 @@ public partial class MaterialEditor
         Im.Line.SameInner();
         var ret = ColorTablePasteFromClipboardButton(rowIdx, disabled);
         Im.Line.SameInner();
-        ColorTableRowHighlightButton(rowIdx, disabled);
+        ColorTableRowHighlightButton(rowIdx, disabled, false);
 
         Im.Table.NextColumn();
         using (Im.Font.PushMono())
@@ -210,7 +210,7 @@ public partial class MaterialEditor
         Im.Line.SameInner();
         var ret = ColorTablePasteFromClipboardButton(rowIdx, disabled);
         Im.Line.SameInner();
-        ColorTableRowHighlightButton(rowIdx, disabled);
+        ColorTableRowHighlightButton(rowIdx, disabled, false);
 
         Im.Table.NextColumn();
         using (Im.Font.PushMono())
@@ -270,8 +270,8 @@ public partial class MaterialEditor
         if (dyeTable is not null)
         {
             Im.Line.SameInner();
-            ret |= CtApplyStainCheckbox("##dyeShininess"u8, "Apply Gloss Strength on Dye"u8, dye.Scalar3,
-                b => dyeTable[rowIdx].Scalar3 = b);
+            ret |= CtApplyStainCheckbox("##dyeShininess"u8, "Apply Gloss Strength on Dye"u8, dye.Exposure,
+                b => dyeTable[rowIdx].Exposure = b);
         }
 
         Im.Table.NextColumn();

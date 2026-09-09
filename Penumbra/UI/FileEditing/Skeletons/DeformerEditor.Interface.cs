@@ -1,4 +1,5 @@
 using ImSharp;
+using Luna;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.UI.Classes;
@@ -36,7 +37,7 @@ public partial class DeformerEditor
         if (!child)
             return;
 
-        var metaColor = ColorId.ItemId.Value();
+        var metaColor = ColorId.ItemId.Vector;
         foreach (var (index, deformer) in File.Deformers.Index())
         {
             var name     = deformer.GenderRace.ToName();
@@ -46,7 +47,7 @@ public partial class DeformerEditor
                 continue;
 
             using var id    = Im.Id.Push(index);
-            using var color = ImGuiColor.Text.Push(Im.Style[ImGuiColor.TextDisabled], deformer.RacialDeformer.IsEmpty);
+            using var color = ImGuiColor.Text.Push(ImGuiColor.TextDisabled.Vector, deformer.RacialDeformer.IsEmpty);
             if (Im.Selectable(name, deformer.GenderRace == SelectedRaceCode))
             {
                 SelectedRaceCode = deformer.GenderRace;
@@ -128,7 +129,7 @@ public partial class DeformerEditor
         var ret = false;
         ImEx.TextFrameAligned("Copy the values of the bone "u8);
         Im.Line.NoSpacing();
-        using (ImGuiColor.Text.Push(ColorId.NewMod.Value()))
+        using (ImGuiColor.Text.Push(ColorId.NewMod.Vector))
         {
             ImEx.TextFrameAligned(SelectedBone!);
         }
@@ -152,7 +153,7 @@ public partial class DeformerEditor
                 if (!deformer.RacialDeformer.DeformMatrices.TryAdd(NewBoneName, existingMatrix)
                  && deformer.RacialDeformer.DeformMatrices.TryGetValue(NewBoneName, out var newBoneMatrix)
                  && !newBoneMatrix.Equals(existingMatrix))
-                    Penumbra.Messager.AddMessage(new Luna.Notification(
+                    Penumbra.Messager.AddMessage(new Notification(
                         $"Could not add deformer matrix to {deformer.GenderRace.ToName()}, Bone {NewBoneName} because it already has a deformer that differs from the intended one."));
                 else
                     ret = true;
@@ -214,7 +215,7 @@ public partial class DeformerEditor
             ret                                             = true;
         }
 
-        var modifier = configuration.DeleteModModifier.IsActive();
+        var modifier = LunaStyle.Modifier.Destructive.Active;
         Im.Line.Same();
         if (modifier)
         {
@@ -226,7 +227,7 @@ public partial class DeformerEditor
         }
         else
         {
-            ImEx.Button("Delete"u8, size, $"Delete this bone entry. Hold {configuration.DeleteModModifier} to delete.", true);
+            ImEx.Button("Delete"u8, size, $"Delete this bone entry. Hold {LunaStyle.Modifier.Destructive} to delete.", true);
         }
 
         return ret;

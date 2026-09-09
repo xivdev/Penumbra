@@ -22,7 +22,7 @@ public class InheritanceUi(CollectionManager collectionManager, IncognitoService
     {
         using var id = Im.Id.Push("##Inheritance"u8);
         ImEx.TextMultiColored("The Selected Collection "u8)
-            .Then(Name(_active.Current), ColorId.SelectedCollection.Value().FullAlpha().Color)
+            .Then(Name(_active.Current), ColorId.SelectedCollection.Value.FullAlpha())
             .Then(" inherits from:"u8)
             .End();
         Im.Dummy(Vector2.One);
@@ -111,7 +111,7 @@ public class InheritanceUi(CollectionManager collectionManager, IncognitoService
         foreach (var inheritance in collection.Inheritance.FlatHierarchy.Skip(1))
         {
             // Draw the child, already seen collections are colored as conflicts.
-            using var color = ImGuiColor.Text.Push(ColorId.HandledConflictMod.Value(),
+            using var color = ImGuiColor.Text.Push(ColorId.HandledConflictMod.Vector,
                 _seenInheritedCollections.Contains(inheritance));
             _seenInheritedCollections.Add(inheritance);
 
@@ -137,7 +137,7 @@ public class InheritanceUi(CollectionManager collectionManager, IncognitoService
     /// <summary> Draw a single primary inherited collection. </summary>
     private void DrawInheritance(ModCollection collection)
     {
-        using var color = ImGuiColor.Text.Push(ColorId.HandledConflictMod.Value(),
+        using var color = ImGuiColor.Text.Push(ColorId.HandledConflictMod.Vector,
             _seenInheritedCollections.Contains(collection));
         _seenInheritedCollections.Add(collection);
         using var tree = Im.Tree.Node($"{Name(collection)}###{collection.Identity.Name}", TreeNodeFlags.NoTreePushOnOpen);

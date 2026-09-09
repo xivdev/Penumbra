@@ -61,7 +61,7 @@ public class ModSettings
             case ModOptionChangeType.GroupRenamed: return true;
             case ModOptionChangeType.GroupAdded:
                 // Add new empty setting for new mod.
-                Settings.Insert(group!.GetIndex(), group.DefaultSettings);
+                Settings.Insert(group!.Index, group.DefaultSettings);
                 return true;
             case ModOptionChangeType.GroupDeleted:
                 // Remove setting for deleted mod.
@@ -72,7 +72,7 @@ public class ModSettings
                 // Fix settings for a changed group type.
                 // Single -> Multi: set single as enabled, rest as disabled
                 // Multi -> Single: set the first enabled option or 0.
-                var idx    = group!.GetIndex();
+                var idx    = group!.Index;
                 var config = Settings[idx];
                 Settings[idx] = group.Type switch
                 {
@@ -86,7 +86,7 @@ public class ModSettings
             {
                 // Single -> select the previous option if any.
                 // Multi -> excise the corresponding bit.
-                var groupIdx = group!.GetIndex();
+                var groupIdx = group!.Index;
                 var config   = Settings[groupIdx];
                 Settings[groupIdx] = group!.Type switch
                 {
@@ -99,13 +99,13 @@ public class ModSettings
             }
             case ModOptionChangeType.GroupMoved:
                 // Move the group the same way.
-                return Settings.Move(fromIdx, group!.GetIndex());
+                return Settings.Move(fromIdx, group!.Index);
             case ModOptionChangeType.OptionMoved:
             {
                 // Single -> select the moved option if it was currently selected
                 // Multi -> move the corresponding bit
-                var groupIdx = group!.GetIndex();
-                var toIdx    = option!.GetIndex();
+                var groupIdx = group!.Index;
+                var toIdx    = option!.Index;
                 var config   = Settings[groupIdx];
                 Settings[groupIdx] = group!.Type switch
                 {
@@ -164,7 +164,7 @@ public class ModSettings
             settings.Settings.FixSize(mod);
 
             foreach (var (group, setting) in mod.Groups.Zip(settings.Settings))
-                Settings.Add(group.Name, setting);
+                Settings.TryAdd(group.Name, setting);
         }
 
         // Convert and fix.
@@ -212,11 +212,11 @@ public class ModSettings
             switch (mod.Groups[idx])
             {
                 case { Behaviour: GroupDrawBehaviour.SingleSelection } single when setting.Value < (ulong)single.Options.Count:
-                    dict.Add(single.Name, [single.Options[setting.AsIndex].Name]);
+                    dict.TryAdd(single.Name, [single.Options[setting.AsIndex].Name]);
                     break;
                 case { Behaviour: GroupDrawBehaviour.MultiSelection } multi:
                     var list = multi.Options.Index().Where(p => setting.HasFlag(p.Index)).Select(p => p.Item.Name).ToList();
-                    dict.Add(multi.Name, list);
+                    dict.TryAdd(multi.Name, list);
                     break;
             }
         }

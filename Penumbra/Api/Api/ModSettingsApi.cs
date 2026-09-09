@@ -1,6 +1,5 @@
 using Luna;
 using Penumbra.Api.Enums;
-using Penumbra.Api.Helpers;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
@@ -307,6 +306,7 @@ public class ModSettingsApi : IPenumbraApiModSettings, IApiService, IDisposable
             case ModOptionChangeType.OptionFilesAdded:
             case ModOptionChangeType.OptionSwapsChanged:
             case ModOptionChangeType.OptionMetaChanged:
+            case ModOptionChangeType.ConditionChanged:
                 TriggerSettingEdited(arguments.Mod);
                 break;
         }

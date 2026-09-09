@@ -18,8 +18,8 @@ public sealed class OptionSelectCombo : FilterComboBase<OptionSelectCombo.Option
     {
         public readonly IModDataContainer? Container  = container;
         public readonly StringU8           FullName   = new(container.GetFullName());
-        public readonly int                GroupIndex = container.Group?.GetIndex() ?? -1;
-        public readonly int                DataIndex  = container.GetDataIndices().DataIndex;
+        public readonly int                GroupIndex = container.GroupIndex;
+        public readonly int                DataIndex  = container.Index;
     }
 
     private readonly Im.ColorStyleDisposable _border = new();
@@ -53,7 +53,7 @@ public sealed class OptionSelectCombo : FilterComboBase<OptionSelectCombo.Option
             > 8            => ComboFlags.HeightLargest,
             _              => ComboFlags.None,
         };
-        _border.Push(ImStyleBorder.Frame, ColorId.FolderLine.Value());
+        _border.Push(ImStyleBorder.Frame, ColorId.FolderLine.Vector);
     }
 
     protected override void PostDrawCombo(float width)

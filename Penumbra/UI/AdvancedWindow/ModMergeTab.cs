@@ -53,12 +53,12 @@ public sealed class ModMergeTab(ModMerger modMerger, ModComboWithoutCurrent comb
             Im.Line.NoSpacing();
             if (size - textSize < minComboSize)
             {
-                Im.Text("selected mod"u8, ColorId.FolderLine.Value());
+                Im.Text("selected mod"u8, ColorId.FolderLine.Vector);
                 Im.Tooltip.OnHover(ModMerger.MergeFromMod!.Name);
             }
             else
             {
-                Im.Text(ModMerger.MergeFromMod!.Name, ColorId.FolderLine.Value());
+                Im.Text(ModMerger.MergeFromMod!.Name, ColorId.FolderLine.Vector);
             }
 
             Im.Line.NoSpacing();

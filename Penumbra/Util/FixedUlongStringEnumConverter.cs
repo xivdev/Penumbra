@@ -34,7 +34,6 @@ public class FixedUlongStringEnumConverter : StringEnumConverter
         if (reader.MoveToContentAndAssert().TokenType != JsonToken.Integer || reader.ValueType != typeof(BigInteger))
             return base.ReadJson(reader, objectType, existingValue, serializer);
 
-        // Todo: throw an exception if !this.AllowIntegerValues
         // https://www.newtonsoft.com/json/help/html/P_Newtonsoft_Json_Converters_StringEnumConverter_AllowIntegerValues.htm
         var enumType = Nullable.GetUnderlyingType(objectType) ?? objectType;
         if (Enum.GetUnderlyingType(enumType) == typeof(ulong))

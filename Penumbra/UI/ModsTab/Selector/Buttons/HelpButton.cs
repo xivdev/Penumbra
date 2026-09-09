@@ -27,7 +27,7 @@ public sealed class HelpButton(ModFileSystemDrawer drawer) : BaseIconButton<Awes
     protected override void PostDraw()
     {
         drawer.Tutorial.OpenTutorial(BasicTutorialSteps.AdvancedHelp);
-        ImEx.HelpPopup("ExtendedHelp"u8, new Vector2(1000 * Im.Style.GlobalScale, 38.5f * Im.Style.TextHeightWithSpacing), PopupContent);
+        ImEx.HelpPopup("ExHelp"u8, ImEx.ScaledVectorX(1000, 38.5f * Im.Style.TextHeightWithSpacing), PopupContent);
     }
 
     private void PopupContent()
@@ -48,21 +48,21 @@ public sealed class HelpButton(ModFileSystemDrawer drawer) : BaseIconButton<Awes
         Im.BulletText("Select a mod to obtain more information or change settings."u8);
         Im.BulletText("Names are colored according to your config and their current state in the collection:"u8);
         indent.Indent();
-        Im.BulletText("enabled in the current collection."u8,                   ColorId.EnabledMod.Value());
-        Im.BulletText("disabled in the current collection."u8,                  ColorId.DisabledMod.Value());
-        Im.BulletText("enabled due to inheritance from another collection."u8,  ColorId.InheritedMod.Value());
-        Im.BulletText("disabled due to inheritance from another collection."u8, ColorId.InheritedDisabledMod.Value());
-        Im.BulletText("unconfigured in all inherited collections."u8,           ColorId.UndefinedMod.Value());
+        Im.BulletText("enabled in the current collection."u8,                   ColorId.EnabledMod.Vector);
+        Im.BulletText("disabled in the current collection."u8,                  ColorId.DisabledMod.Vector);
+        Im.BulletText("enabled due to inheritance from another collection."u8,  ColorId.InheritedMod.Vector);
+        Im.BulletText("disabled due to inheritance from another collection."u8, ColorId.InheritedDisabledMod.Vector);
+        Im.BulletText("unconfigured in all inherited collections."u8,           ColorId.UndefinedMod.Vector);
         Im.BulletText("enabled and conflicting with another enabled Mod, but on different priorities (i.e. the conflict is solved)."u8,
-            ColorId.HandledConflictMod.Value());
-        Im.BulletText("enabled and conflicting with another enabled Mod on the same priority."u8, ColorId.ConflictingMod.Value());
-        Im.BulletText("expanded mod folder."u8,                                                   ColorId.FolderExpanded.Value());
-        Im.BulletText("collapsed mod folder"u8,                                                   ColorId.FolderCollapsed.Value());
+            ColorId.HandledConflictMod.Vector);
+        Im.BulletText("enabled and conflicting with another enabled Mod on the same priority."u8, ColorId.ConflictingMod.Vector);
+        Im.BulletText("expanded mod folder."u8,                                                   ColorId.FolderExpanded.Vector);
+        Im.BulletText("collapsed mod folder"u8,                                                   ColorId.FolderCollapsed.Vector);
         indent.Unindent();
         Im.BulletText("Middle-click a mod to disable it if it is enabled or enable it if it is disabled."u8);
         indent.Indent();
         Im.BulletText(
-            $"Holding {drawer.Config.DeleteModModifier.ForcedModifier(new DoubleModifier(ModifierHotkey.Control, ModifierHotkey.Shift))} while middle-clicking lets it inherit, discarding settings.");
+            $"Holding {LunaStyle.Modifier.Destructive.Modifier.ForcedModifier(new DoubleModifier(ModifierHotkey.Control, ModifierHotkey.Shift))} while middle-clicking lets it inherit, discarding settings.");
         indent.Unindent();
         Im.BulletText("Right-click a mod to enter its sort order, which is its name by default, possibly with a duplicate number."u8);
         indent.Indent();

@@ -197,7 +197,7 @@
                 },
                 "Type": {
                     "description": "Defaults to Float.",
-                    "enum": ["Hidden", "Float", "Integer", "Color", "Enum", "Int32", "Int32Enum", "Int8", "Int8Enum", "Int16", "Int16Enum", "Int64", "Int64Enum", "Half", "Double", "TileIndex", "SphereMapIndex"]
+                    "enum": ["Hidden", "Float", "Integer", "Color", "Enum", "Int32", "Int32Enum", "Int8", "Int8Enum", "Int16", "Int16Enum", "Int64", "Int64Enum", "Half", "Double", "TileIndex", "SphereMapIndex", "ShaderId"]
                 }
             },
             "not": {
@@ -425,7 +425,7 @@
             "type": "object",
             "properties": {
                 "Type": {
-                    "enum": ["TileIndex", "SphereMapIndex"]
+                    "enum": ["TileIndex", "SphereMapIndex", "ShaderId"]
                 }
             },
             "required": [

@@ -46,7 +46,7 @@ public class LaunchButton : IDisposable, Luna.IUiService
     {
         try
         {
-            // TODO: update when API updated.
+            // TODO 20260824 update when API updated.
             var icon = _textureProvider.GetFromFile(_fileName);
             _entry = _title.AddEntry("Manage Penumbra", icon, OnTriggered);
 

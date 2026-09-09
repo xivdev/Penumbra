@@ -1,3 +1,4 @@
+using ImSharp;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
@@ -106,13 +107,13 @@ public readonly record struct ShpIdentifier(
 
     public bool Validate()
     {
-        if (!Enum.IsDefined(Slot) || Slot is HumanSlot.UnkBonus)
+        if (!Slot.Defined || Slot is HumanSlot.UnkBonus)
             return false;
 
         if (!ShapeAttributeHashSet.GenderRaceIndices.ContainsKey(GenderRaceCondition))
             return false;
 
-        if (!Enum.IsDefined(ConnectorCondition))
+        if (!ConnectorCondition.Defined)
             return false;
 
         if (Slot is HumanSlot.Unknown && Id is not null)
@@ -142,13 +143,27 @@ public readonly record struct ShpIdentifier(
         if (Slot is not HumanSlot.Unknown)
             jObj["Slot"] = Slot.ToString();
         if (Id.HasValue)
-            jObj["Id"] = Id.Value.Id.ToString();
+            jObj["Id"] = Id.Value.Id;
         jObj["Shape"] = Shape.ToString();
         if (ConnectorCondition is not ShapeConnectorCondition.None)
             jObj["ConnectorCondition"] = ConnectorCondition.ToString();
         if (GenderRaceCondition is not GenderRace.Unknown)
             jObj["GenderRaceCondition"] = (uint)GenderRaceCondition;
         return jObj;
+    }
+
+    public System.Text.Json.Utf8JsonWriter AddToJson(System.Text.Json.Utf8JsonWriter j)
+    {
+        if (Slot is not HumanSlot.Unknown)
+            j.WriteString("Slot"u8, Slot.StringU8);
+        if (Id.HasValue)
+            j.WriteNumber("Id"u8, Id.Value.Id);
+        j.WriteString("Shape"u8, Shape.AsSpan);
+        if (ConnectorCondition is not ShapeConnectorCondition.None)
+            j.WriteString("ConnectorCondition"u8, ConnectorCondition.StringU8);
+        if (GenderRaceCondition is not GenderRace.Unknown)
+            j.WriteNumber("GenderRaceCondition"u8, (uint)GenderRaceCondition);
+        return j;
     }
 
     public static ShpIdentifier? FromJson(JObject jObj)

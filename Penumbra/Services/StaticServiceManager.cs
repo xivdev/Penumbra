@@ -24,6 +24,8 @@ public static class StaticServiceManager
             .AddExistingService(penumbra)
             .AddGenericSingleton(typeof(ManagementLog<>));
 
+        services.AddSingleton(p => p.GetRequiredService<UiConfig>().ColorCache);
+        services.AddSingleton(MessageService (p) => p.GetRequiredService<PenumbraMessager>());
         services.AddIServices(typeof(EquipItem).Assembly);
         services.AddIServices(typeof(Penumbra).Assembly);
         services.AddIServices(typeof(IService).Assembly);

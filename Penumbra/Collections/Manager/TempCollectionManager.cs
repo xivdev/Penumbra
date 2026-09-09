@@ -7,7 +7,7 @@ using Penumbra.String;
 
 namespace Penumbra.Collections.Manager;
 
-public class TempCollectionManager : IDisposable, Luna.IService
+public class TempCollectionManager : IDisposable, IService
 {
     public          int                   GlobalChangeCounter { get; private set; }
     public readonly IndividualCollections Collections;
@@ -17,7 +17,7 @@ public class TempCollectionManager : IDisposable, Luna.IService
     private readonly ActorManager                    _actors;
     private readonly Dictionary<Guid, ModCollection> _customCollections = [];
 
-    public TempCollectionManager(Configuration config, CommunicatorService communicator, ActorManager actors, CollectionStorage storage)
+    public TempCollectionManager(BehaviorConfig config, CommunicatorService communicator, ActorManager actors, CollectionStorage storage)
     {
         _communicator = communicator;
         _actors       = actors;
@@ -80,7 +80,8 @@ public class TempCollectionManager : IDisposable, Luna.IService
                 continue;
 
             // Temporary collection assignment removed.
-            _communicator.CollectionChange.Invoke(new CollectionChange.Arguments(CollectionType.Temporary, collection, null, Collections[i].DisplayName));
+            _communicator.CollectionChange.Invoke(new CollectionChange.Arguments(CollectionType.Temporary, collection, null,
+                Collections[i].DisplayName));
             Penumbra.Log.Verbose($"Unassigned temporary collection {collection.Identity.Id} from {Collections[i].DisplayName}.");
             Collections.Delete(i--);
         }
@@ -95,7 +96,8 @@ public class TempCollectionManager : IDisposable, Luna.IService
 
         // Temporary collection assignment added.
         Penumbra.Log.Verbose($"Assigned temporary collection {collection.Identity.AnonymizedName} to {Collections.Last().DisplayName}.");
-        _communicator.CollectionChange.Invoke(new CollectionChange.Arguments(CollectionType.Temporary, null, collection, Collections.Last().DisplayName));
+        _communicator.CollectionChange.Invoke(new CollectionChange.Arguments(CollectionType.Temporary, null, collection,
+            Collections.Last().DisplayName));
         return true;
     }
 

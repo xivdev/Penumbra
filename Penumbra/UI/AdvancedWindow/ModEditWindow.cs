@@ -115,7 +115,7 @@ public sealed partial class ModEditWindow : IndexedWindow, IDisposable
     {
         AppendTask(() =>
         {
-            var (groupIdx, dataIdx) = subMod?.GetDataIndices() ?? (-1, 0);
+            var (groupIdx, dataIdx) = (subMod?.GroupIndex ?? -1, subMod?.Index ?? 0);
             _editor.LoadOption(groupIdx, dataIdx).Wait();
         });
     }
@@ -530,7 +530,7 @@ public sealed partial class ModEditWindow : IndexedWindow, IDisposable
         {
             Im.Line.Same();
             ImEx.TextFramed($"There are {otherSwaps} file swaps configured in other options.", Vector2.Zero,
-                ColorId.RedundantAssignment.Value().Color);
+                ColorId.RedundantAssignment.Value);
         }
 
         using var child = Im.Child.Begin("##swaps"u8, Im.ContentRegion.Available, true);
@@ -610,7 +610,6 @@ public sealed partial class ModEditWindow : IndexedWindow, IDisposable
         _communicator      = communicator;
         _dragDropManager   = dragDropManager;
         _parent            = parent;
-        _fileDialog        = fileDialog;
         _metaDrawers       = metaDrawers;
         _overviewTable     = new OverviewTable(_editor);
         _optionSelect      = new OptionSelectCombo(editor, this);

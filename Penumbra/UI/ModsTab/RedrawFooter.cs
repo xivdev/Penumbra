@@ -10,7 +10,7 @@ using Penumbra.UI.Classes;
 namespace Penumbra.UI.ModsTab;
 
 public sealed class RedrawFooter(
-    Configuration config,
+    UiConfig config,
     TutorialService tutorial,
     ObjectManager objects,
     ITargetManager targets,

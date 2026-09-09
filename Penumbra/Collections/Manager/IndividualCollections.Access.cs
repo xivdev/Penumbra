@@ -2,6 +2,7 @@ using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.Types;
 using Penumbra.GameData.Actors;
 using Penumbra.GameData.Enums;
+using Penumbra.GameData.Interop;
 using Penumbra.String;
 
 namespace Penumbra.Collections.Manager;
@@ -20,9 +21,9 @@ public sealed partial class IndividualCollections : IReadOnlyList<(string Displa
     public (string DisplayName, ModCollection Collection) this[int index]
         => (_assignments[index].DisplayName, _assignments[index].Collection);
 
-    public bool TryGetCollection(ActorIdentifier identifier, [NotNullWhen(true)] out ModCollection? collection)
+    public bool TryGetCollection(ActorIdentifier identifier, [NotNullWhen(true)] out ModCollection? collection, bool hostile)
     {
-        if (Count == 0)
+        if (Count is 0)
         {
             collection = null;
             return false;
@@ -53,7 +54,7 @@ public sealed partial class IndividualCollections : IReadOnlyList<(string Displa
                     return true;
 
                 // Handle Ownership.
-                if (!_config.UseOwnerNameForCharacterCollection)
+                if (!_config.UseOwnerNameForCharacterCollection || hostile && !_config.UseOwnerForHostiles)
                     return false;
 
                 identifier = _actors.CreateIndividualUnchecked(IdentifierType.Player, identifier.PlayerName,
@@ -85,7 +86,7 @@ public sealed partial class IndividualCollections : IReadOnlyList<(string Displa
 
     public (ActorIdentifier, SpecialResult) ConvertSpecialIdentifier(ActorIdentifier identifier)
     {
-        if (identifier.Type != IdentifierType.Special)
+        if (identifier.Type is not IdentifierType.Special)
             return (identifier, SpecialResult.Invalid);
 
         if (_actors.ResolvePartyBannerPlayer(identifier.Special, out var id))
@@ -105,8 +106,7 @@ public sealed partial class IndividualCollections : IReadOnlyList<(string Displa
                 return (_actors.GetCurrentPlayer(), SpecialResult.FittingRoom);
             case ScreenActor.DyePreview when _config.UseCharacterCollectionInTryOn:
                 return (_actors.GetCurrentPlayer(), SpecialResult.DyePreview);
-            case ScreenActor.Portrait when _config.UseCharacterCollectionsInCards:
-                return (_actors.GetCurrentPlayer(), SpecialResult.Portrait);
+            case ScreenActor.Portrait when _config.UseCharacterCollectionsInCards: return (_actors.GetCurrentPlayer(), SpecialResult.Portrait);
             case ScreenActor.ExamineScreen:
             {
                 identifier = _actors.GetInspectPlayer();
@@ -126,10 +126,11 @@ public sealed partial class IndividualCollections : IReadOnlyList<(string Displa
     }
 
     public bool TryGetCollection(IGameObject? gameObject, out ModCollection? collection)
-        => TryGetCollection(_actors.FromObject(gameObject, true, false, false), out collection);
+        => TryGetCollection(_actors.FromObject(gameObject, true, false, false), out collection,
+            gameObject is ICharacter c && c.StatusFlags.HasFlag(StatusFlags.Hostile));
 
     public unsafe bool TryGetCollection(FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* gameObject, out ModCollection? collection)
-        => TryGetCollection(_actors.FromObject(gameObject, out _, true, false, false), out collection);
+        => TryGetCollection(_actors.FromObject(gameObject, out _, true, false, false), out collection, ((Actor)gameObject).IsHostile);
 
     private bool CheckWorlds(ActorIdentifier identifier, out ModCollection? collection)
     {

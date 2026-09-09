@@ -7,7 +7,7 @@ using Penumbra.Mods.Manager;
 
 namespace Penumbra.UI.ManagementTab;
 
-public sealed class DuplicateModsTab(ModConfigUpdater configUpdater, ModManager mods, CollectionStorage collections, Configuration config)
+public sealed class DuplicateModsTab(ModConfigUpdater configUpdater, ModManager mods, CollectionStorage collections)
     : ITab<ManagementTabType>
 {
     public ReadOnlySpan<byte> Label
@@ -45,7 +45,7 @@ public sealed class DuplicateModsTab(ModConfigUpdater configUpdater, ModManager 
         table.HeaderRow();
 
         var       lastDrawnName = StringU8.Empty;
-        var       disabled      = !config.DeleteModModifier.IsActive();
+        var       disabled      = !LunaStyle.Modifier.Destructive.Active;
         using var clipper       = new Im.ListClipper(cache.Items.Count, 0);
         foreach (var (index, item) in cache.Items.Index())
         {
@@ -58,7 +58,7 @@ public sealed class DuplicateModsTab(ModConfigUpdater configUpdater, ModManager 
             }
 
             if (disabled)
-                Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"Hold {config.DeleteModModifier} to delete this mod.");
+                Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"Hold {LunaStyle.Modifier.Destructive} to delete this mod.");
             Im.Line.SameInner();
             if (ImEx.Icon.Button(LunaStyle.FolderIcon, "Open this mod in the file explorer of your choice."u8))
                 Process.Start(new ProcessStartInfo(item.Mod.ModPath.FullName) { UseShellExecute = true });

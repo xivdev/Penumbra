@@ -330,17 +330,13 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
             (nint)shpkState.DefaultShaderPackage);
     }
 
-    // TODO: Remove when CS is fixed.
-    private int GetMaterialIndex(CSModelRenderer.OnRenderMaterialParams* param)
-        => *(int*)((byte*)param + 0x30);
-
     private nint OnRenderHumanMaterial(CharacterBase* human, CSModelRenderer.OnRenderMaterialParams* param)
     {
         // If we don't have any on-screen instances of modded skin.shpk, we don't need the slow path at all.
         if (!Enabled || GetTotalMaterialCountForHumanRender() is 0)
             return _humanOnRenderMaterialHook!.Original(human, param);
 
-        var index        = GetMaterialIndex(param);
+        var index        = param->MaterialIndex;
         var material     = param->Model->Materials[index];
         var mtrlResource = material->MaterialResourceHandle;
         var shpkState    = GetStateForHumanRender(mtrlResource);
@@ -435,7 +431,7 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
 
     private static MaterialResourceHandle* GetMaterialResourceHandle(ModelRendererStructs.UnkPayload* unkPayload)
     {
-        // TODO ClientStructs-ify
+        // TODO 20260824 ClientStructs-ify
         var unkPointer    = *(nint*)((nint)unkPayload->ModelResourceHandle + 0xE8) + unkPayload->UnkIndex * 0x24;
         var materialIndex = *(ushort*)(unkPointer + 8);
         var material      = unkPayload->Params->Model->Materials[materialIndex];

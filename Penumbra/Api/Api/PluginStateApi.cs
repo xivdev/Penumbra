@@ -9,10 +9,10 @@ namespace Penumbra.Api.Api;
 
 public class PluginStateApi : IPenumbraApiPluginState, IApiService, IDisposable
 {
-    private readonly Configuration       _config;
+    private readonly MainConfig          _config;
     private readonly CommunicatorService _communicator;
 
-    public PluginStateApi(Configuration config, CommunicatorService communicator)
+    public PluginStateApi(MainConfig config, CommunicatorService communicator)
     {
         _config       = config;
         _communicator = communicator;
@@ -40,7 +40,7 @@ public class PluginStateApi : IPenumbraApiPluginState, IApiService, IDisposable
     public event Action<bool>? EnabledChange;
 
     public FrozenSet<string> SupportedFeatures
-        => FeatureChecker.SupportedFeatures.ToFrozenSet();
+        => FeatureChecker.SupportedFeaturesU16;
 
     public string[] CheckSupportedFeatures(IEnumerable<string> requiredFeatures)
         => requiredFeatures.Where(f => !FeatureChecker.Supported(f)).ToArray();

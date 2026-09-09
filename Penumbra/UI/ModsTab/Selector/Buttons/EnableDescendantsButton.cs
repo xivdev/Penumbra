@@ -18,6 +18,21 @@ public sealed class SetDescendantsButton(ModFileSystemDrawer drawer, bool setTo,
     });
 
     /// <inheritdoc/>
+    public override bool Enabled(in IFileSystemFolder data)
+        => LunaStyle.Modifier.Misclick.Active;
+
+    /// <inheritdoc/>
+    public override bool HasTooltip
+        => true;
+
+    public override void DrawTooltip(in IFileSystemFolder data)
+    {
+        Im.Text("Perform a bulk action on all mods that are inside this folder or its subfolders."u8);
+        if (!LunaStyle.Modifier.Misclick.Active)
+            Im.Text($"Hold {LunaStyle.Modifier.Misclick} while clicking to execute.");
+    }
+
+    /// <inheritdoc/>
     public override ReadOnlySpan<byte> Label(in IFileSystemFolder folder)
         => _label;
 

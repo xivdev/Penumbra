@@ -17,7 +17,7 @@ public class FileDialogService : IDisposable, IUiService
 
     private readonly Func<object?, object?>? _dialogGetter;
 
-    public FileDialogService(CommunicatorService communicator, Configuration config)
+    public FileDialogService(CommunicatorService communicator, MainConfig config)
     {
         _communicator = communicator;
         _manager      = SetupFileManager(config.ModDirectory);

@@ -1,8 +1,9 @@
 using ImSharp;
+using Luna;
 
 namespace Penumbra.UI.Classes;
 
-public enum ColorId : short
+public enum ColorId
 {
     EnabledMod,
     DisabledMod,
@@ -16,6 +17,7 @@ public enum ColorId : short
     FolderExpanded,
     FolderCollapsed,
     FolderLine,
+    AlternatingFolderLine,
     ItemId,
     IncreasedMetaValue,
     DecreasedMetaValue,
@@ -35,6 +37,27 @@ public enum ColorId : short
     TemporaryModSettingsTint,
     ChangedItemPreferenceStar,
     NoTint,
+    OptionColor1,
+    OptionColor2,
+    OptionColor3,
+    OptionColor4,
+    OptionColor5,
+    OptionColor6,
+    OptionColor7,
+    OptionColor8,
+    OptionTreeLine,
+    GroupLabelBackground,
+    GroupLabelBorder,
+    GroupLabelText,
+    GroupLabelBackgroundExpanded,
+    GroupLabelBorderExpanded,
+    GroupLabelTextExpanded,
+    GroupLabelBackgroundCollapsed,
+    GroupLabelBorderCollapsed,
+    GroupLabelTextCollapsed,
+    OptionBorder,
+    HiddenOptionIndicator,
+    ModSpecificPreset,
 }
 
 public static class Colors
@@ -48,52 +71,26 @@ public static class Colors
     public const           uint    TutorialMarker      = 0xFF20FFFF;
     public const           uint    TutorialBorder      = 0xD00000FF;
 
-    public static (uint DefaultColor, string Name, string Description) Data(this ColorId color)
-        => color switch
-        {
-            // @formatter:off
-            ColorId.EnabledMod                    => ( 0xFFFFFFFF, "Enabled Mod",                           "A mod that is enabled by the currently selected collection." ),
-            ColorId.DisabledMod                   => ( 0xFF686880, "Disabled Mod",                          "A mod that is disabled by the currently selected collection." ),
-            ColorId.UndefinedMod                  => ( 0xFF808080, "Mod With No Settings",                  "A mod that is not configured in the currently selected collection or any of the collections it inherits from, and thus implicitly disabled." ),
-            ColorId.InheritedMod                  => ( 0xFFD0FFFF, "Mod Enabled By Inheritance",            "A mod that is not configured in the currently selected collection, but enabled in a collection it inherits from." ),
-            ColorId.InheritedDisabledMod          => ( 0xFF688080, "Mod Disabled By Inheritance",           "A mod that is not configured in the currently selected collection, but disabled in a collection it inherits from."),
-            ColorId.NewMod                        => ( 0xFF66DD66, "New Mod",                               "A mod that was newly imported or created during this session and has not been enabled yet." ),
-            ColorId.ConflictingMod                => ( 0xFFAAAAFF, "Mod With Unresolved Conflicts",         "An enabled mod that has conflicts with another enabled mod on the same priority level." ),
-            ColorId.HandledConflictMod            => ( 0xFFD0FFD0, "Mod With Resolved Conflicts",           "An enabled mod that has conflicts with another enabled mod on a different priority level." ),
-            ColorId.FolderExpanded                => ( 0xFFFFF0C0, "Expanded Mod Folder",                   "A mod folder that is currently expanded." ),
-            ColorId.FolderCollapsed               => ( 0xFFFFF0C0, "Collapsed Mod Folder",                  "A mod folder that is currently collapsed." ),
-            ColorId.FolderLine                    => ( 0xFFFFF0C0, "Expanded Mod Folder Line",              "The line signifying which descendants belong to an expanded mod folder." ),
-            ColorId.ItemId                        => ( 0xFF808080, "Item Id",                               "The numeric model id of the given item to the right of changed items." ),
-            ColorId.IncreasedMetaValue            => ( 0x80008000, "Increased Meta Manipulation Value",     "An increased meta manipulation value for floats or an enabled toggle where the default is disabled."),
-            ColorId.DecreasedMetaValue            => ( 0x80000080, "Decreased Meta Manipulation Value",     "A decreased meta manipulation value for floats or a disabled toggle where the default is enabled."),
-            ColorId.SelectedCollection            => ( 0x6069C056, "Currently Selected Collection",         "The collection that is currently selected and being edited."),
-            ColorId.RedundantAssignment           => ( 0x6050D0D0, "Redundant Collection Assignment",       "A collection assignment that currently has no effect as it is redundant with more general assignments."),
-            ColorId.NoModsAssignment              => ( 0x50000080, "'Use No Mods' Collection Assignment",   "A collection assignment set to not use any mods at all."),
-            ColorId.NoAssignment                  => ( 0x00000000, "Unassigned Collection Assignment",      "A collection assignment that is not configured to any collection and thus just has no specific treatment."),
-            ColorId.SelectorPriority              => ( 0xFF808080, "Mod Selector Priority",                 "The priority displayed for non-zero priority mods in the mod selector."),
-            ColorId.InGameHighlight               => ( 0xFFEBCF89, "In-Game Highlight (Primary)",           "An in-game element that has been highlighted for ease of editing."),
-            ColorId.InGameHighlight2              => ( 0xFF446CC0, "In-Game Highlight (Secondary)",         "Another in-game element that has been highlighted for ease of editing."),
-            ColorId.ResTreeLocalPlayer            => ( 0xFFFFE0A0, "On-Screen: You",                        "You and what you own (mount, minion, accessory, pets and so on), in the On-Screen tab." ),
-            ColorId.ResTreePlayer                 => ( 0xFFC0FFC0, "On-Screen: Other Players",              "Other players and what they own, in the On-Screen tab." ),
-            ColorId.ResTreeNetworked              => ( 0xFFFFFFFF, "On-Screen: Non-Players (Networked)",    "Non-player entities handled by the game server, in the On-Screen tab." ),
-            ColorId.ResTreeNonNetworked           => ( 0xFFC0C0FF, "On-Screen: Non-Players (Local)",        "Non-player entities handled locally, in the On-Screen tab." ),
-            ColorId.PredefinedTagAdd              => ( 0xFF44AA44, "Predefined Tags: Add Tag",              "A predefined tag that is not present on the current mod and can be added." ),
-            ColorId.PredefinedTagRemove           => ( 0xFF2222AA, "Predefined Tags: Remove Tag",           "A predefined tag that is already present on the current mod and can be removed." ),
-            ColorId.TemporaryModSettingsTint      => ( 0x30FF0000, "Mod with Temporary Settings",           "A mod that has temporary settings. This color is used as a tint for the regular state colors." ),
-            ColorId.NewModTint                    => ( 0x8000FF00, "New Mod Tint",                          "A mod that was newly imported or created during this session and has not been enabled yet. This color is used as a tint for the regular state colors."),
-            ColorId.NoTint                        => ( 0x00000000, "No Tint",                               "The default tint for all mods."),
-            ColorId.ChangedItemPreferenceStar     => ( 0x30FFFFFF, "Preferred Changed Item Star",           "The color of the star button in the mod panel's changed items tab to prioritize specific items."),
-            _                                     => throw new ArgumentOutOfRangeException( nameof( color ), color, null ),
-            // @formatter:on
-        };
+    private static ColorCache<ColorId, ColorIdData> _colors = null!;
 
-    private static Dictionary<ColorId, uint> _colors = [];
+    extension(ColorId color)
+    {
+        public Rgba32 Value
+            => _colors[color];
 
-    /// <summary> Obtain the configured value for a color. </summary>
-    public static Rgba32 Value(this ColorId color)
-        => _colors.TryGetValue(color, out var value) ? value : color.Data().DefaultColor;
+        public Vector4 Vector
+            => _colors[color, true];
+    }
 
-    /// <summary> Set the configurable colors dictionary to a value. </summary>
-    public static void SetColors(Configuration config)
-        => _colors = config.Colors;
+    extension(ImGuiColor color)
+    {
+        public Rgba32 Value
+            => _colors[color];
+
+        public Vector4 Vector
+            => _colors[color, true];
+    }
+
+    internal static void SetCache(ColorCache<ColorId, ColorIdData> cache)
+        => _colors = cache;
 }

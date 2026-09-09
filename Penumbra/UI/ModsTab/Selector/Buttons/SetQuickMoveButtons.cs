@@ -10,35 +10,16 @@ public sealed class SetQuickMoveFoldersButtons(ModFileSystemDrawer drawer) : Bas
 
     public override bool DrawMenuItem(in IFileSystemFolder data)
     {
-        if (Im.Menu.Item("Set as Quick Move Folder #1"u8))
+        for (var i = 0; i < UiConfig.NumQuickMoveFolders; ++i)
         {
-            drawer.Config.QuickMoveFolder1 = data.FullPath;
-            drawer.Config.Save();
+            if (Im.Menu.Item($"Set as Quick Move Folder #{i + 1}"))
+                drawer.Config.Ui.SetQuickMoveFolder(i, data.FullPath);
+            var value = drawer.Config.Ui.QuickMoveFolder(i);
+            Im.Tooltip.OnHover(value.Length is 0
+                ? "Set this folder as a quick move location."u8
+                : $"Set this folder as a quick move location instead of {value}.");
         }
 
-        Im.Tooltip.OnHover(drawer.Config.QuickMoveFolder1.Length is 0
-            ? "Set this folder as a quick move location."u8
-            : $"Set this folder as a quick move location instead of {drawer.Config.QuickMoveFolder1}.");
-
-        if (Im.Menu.Item("Set as Quick Move Folder #2"u8))
-        {
-            drawer.Config.QuickMoveFolder2 = data.FullPath;
-            drawer.Config.Save();
-        }
-
-        Im.Tooltip.OnHover(drawer.Config.QuickMoveFolder2.Length is 0
-            ? "Set this folder as a quick move location."u8
-            : $"Set this folder as a quick move location instead of {drawer.Config.QuickMoveFolder2}.");
-
-        if (Im.Menu.Item("Set as Quick Move Folder #3"u8))
-        {
-            drawer.Config.QuickMoveFolder3 = data.FullPath;
-            drawer.Config.Save();
-        }
-
-        Im.Tooltip.OnHover(drawer.Config.QuickMoveFolder3.Length is 0
-            ? "Set this folder as a quick move location."u8
-            : $"Set this folder as a quick move location instead of {drawer.Config.QuickMoveFolder3}.");
         return false;
     }
 }

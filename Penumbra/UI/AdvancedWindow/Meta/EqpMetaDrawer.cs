@@ -1,6 +1,6 @@
 using ImSharp;
 using Luna;
-using Newtonsoft.Json.Linq;
+using Penumbra.Files;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Meta;
@@ -34,7 +34,8 @@ public sealed class EqpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     protected override void DrawNew()
     {
         Im.Table.NextColumn();
-        CopyToClipboardButton("Copy all current EQP manipulations to clipboard."u8, new Lazy<JToken?>(() => MetaDictionary.SerializeTo([], Editor.Eqp)));
+        CopyToClipboardButton("Copy all current EQP manipulations to clipboard."u8,
+            CreateLazy(j => MetaSerialization.SerializeTo(j, Editor.Eqp)));
 
         Im.Table.NextColumn();
         var canAdd = !Editor.Contains(Identifier);

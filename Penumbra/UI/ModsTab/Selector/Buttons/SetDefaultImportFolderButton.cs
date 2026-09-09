@@ -12,11 +12,5 @@ public sealed class SetDefaultImportFolderButton(ModFileSystemDrawer drawer) : B
 
     /// <inheritdoc/>
     public override void OnClick(in IFileSystemFolder folder)
-    {
-        if (folder.FullPath == drawer.Config.DefaultImportFolder)
-            return;
-
-        drawer.Config.DefaultImportFolder = folder.FullPath;
-        drawer.Config.Save();
-    }
+        => drawer.Config.Io.DefaultImportFolder = folder.FullPath;
 }

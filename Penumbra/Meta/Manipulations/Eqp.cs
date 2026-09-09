@@ -1,3 +1,4 @@
+using ImSharp;
 using Newtonsoft.Json.Linq;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
@@ -20,7 +21,7 @@ public readonly record struct EqpIdentifier(PrimaryId SetId, EquipSlot Slot) : I
     public bool Validate()
     {
         var mask = Eqp.Mask(Slot);
-        if (mask == 0)
+        if (mask is 0)
             return false;
 
         // No check for set id.
@@ -30,7 +31,7 @@ public readonly record struct EqpIdentifier(PrimaryId SetId, EquipSlot Slot) : I
     public int CompareTo(EqpIdentifier other)
     {
         var set = SetId.Id.CompareTo(other.SetId.Id);
-        if (set != 0)
+        if (set is not 0)
             return set;
 
         return Slot.CompareTo(other.Slot);
@@ -46,9 +47,16 @@ public readonly record struct EqpIdentifier(PrimaryId SetId, EquipSlot Slot) : I
 
     public JObject AddToJson(JObject jObj)
     {
-        jObj["SetId"] = SetId.Id.ToString();
-        jObj["Slot"]  = Slot.ToString();
+        jObj["SetId"] = SetId.Id;
+        jObj["Slot"]  = Slot.String;
         return jObj;
+    }
+
+    public System.Text.Json.Utf8JsonWriter AddToJson(System.Text.Json.Utf8JsonWriter j)
+    {
+        j.WriteNumber("SetId"u8, SetId.Id);
+        j.WriteString("Slot"u8, Slot.StringU8);
+        return j;
     }
 
     public MetaManipulationType Type

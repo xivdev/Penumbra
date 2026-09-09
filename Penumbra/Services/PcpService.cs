@@ -14,9 +14,7 @@ using Penumbra.Interop.PathResolving;
 using Penumbra.Interop.ResourceTree;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
-using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager;
-using Penumbra.Mods.SubMods;
 using Penumbra.String.Classes;
 using Penumbra.Util;
 
@@ -25,9 +23,9 @@ namespace Penumbra.Services;
 public class PcpService : IApiService, IDisposable
 {
     public string Extension
-        => _config.PcpSettings.PcpExtension;
+        => _config.PcpExtension;
 
-    private readonly Configuration       _config;
+    private readonly IoConfig            _config;
     private readonly SaveService         _files;
     private readonly ResourceTreeFactory _treeFactory;
     private readonly ObjectManager       _objectManager;
@@ -42,7 +40,7 @@ public class PcpService : IApiService, IDisposable
     private readonly ModFileSystem       _fileSystem;
     private readonly ModManager          _mods;
 
-    public PcpService(Configuration config,
+    public PcpService(IoConfig config,
         SaveService files,
         ResourceTreeFactory treeFactory,
         ObjectManager objectManager,
@@ -91,7 +89,7 @@ public class PcpService : IApiService, IDisposable
 
     private void OnModPathChange(in ModPathChanged.Arguments arguments)
     {
-        if (arguments.Type is not ModPathChangeType.Added || _config.PcpSettings.DisableHandling || arguments.NewDirectory is null)
+        if (arguments.Type is not ModPathChangeType.Added || _config.DisablePcpHandling || arguments.NewDirectory is null)
             return;
 
         try
@@ -115,7 +113,7 @@ public class PcpService : IApiService, IDisposable
             var jObj       = JObject.Parse(text);
             var collection = ModCollection.Empty;
             // Create collection.
-            if (_config.PcpSettings.CreateCollection)
+            if (_config.PcpCreateCollection)
             {
                 var identifier = _actors.FromJson(jObj["Actor"] as JObject);
                 if (identifier.IsValid && jObj["Collection"]?.ToObject<string>() is { } collectionName)
@@ -127,7 +125,7 @@ public class PcpService : IApiService, IDisposable
                         _collections.Editor.SetModState(collection, arguments.Mod, true);
 
                         // Assign collection.
-                        if (_config.PcpSettings.AssignCollection)
+                        if (_config.PcpAssignCollection)
                         {
                             var identifierGroup = _collections.Active.Individuals.GetGroup(identifier);
                             _collections.Active.SetCollection(collection, CollectionType.Individual, identifierGroup);
@@ -141,7 +139,7 @@ public class PcpService : IApiService, IDisposable
             {
                 try
                 {
-                    var folder = _fileSystem.FindOrCreateAllFolders(_config.PcpSettings.FolderName);
+                    var folder = _fileSystem.FindOrCreateAllFolders(_config.PcpFolderName);
                     _fileSystem.Move(node, folder);
                 }
                 catch
@@ -151,7 +149,7 @@ public class PcpService : IApiService, IDisposable
             }
 
             // Invoke IPC.
-            if (_config.PcpSettings.AllowIpc)
+            if (_config.PcpAllowIpc)
                 _communicator.PcpParsing.Invoke(new PcpParsing.Arguments(jObj, arguments.Mod, collection));
         }
         catch (Exception ex)
@@ -187,13 +185,13 @@ public class PcpService : IApiService, IDisposable
                 }
             });
             cancel.ThrowIfCancellationRequested();
-            var time         = DateTime.Now;
-            var modDirectory = CreateMod(identifier, note, time);
-            await CreateDefaultMod(modDirectory, meta, tree, cancel);
-            await CreateCollectionInfo(modDirectory, objectIndex, identifier, note, time, cancel);
-            var file = GetFullZipPath(modDirectory, modPath, Extension);
+            var time = DateTime.Now;
+            var mod  = CreateMod(identifier, note, time);
+            await CreateDefaultMod(mod, meta, tree, cancel);
+            await CreateCollectionInfo(mod.ModPath, objectIndex, identifier, note, time, cancel);
+            var file = GetFullZipPath(mod.ModPath, modPath, Extension);
             _modExport.IgnoreExportedFile(file);
-            ZipUp(modDirectory, file);
+            ZipUp(mod.ModPath, file);
             return (true, file);
         }
         catch (Exception ex)
@@ -231,7 +229,7 @@ public class PcpService : IApiService, IDisposable
         };
         if (note.Length > 0)
             cancel.ThrowIfCancellationRequested();
-        if (_config.PcpSettings.AllowIpc)
+        if (_config.PcpAllowIpc)
             await _framework.Framework.RunOnFrameworkThread(()
                 => _communicator.PcpCreation.Invoke(new PcpCreation.Arguments(jObj, index.Index, directory.FullName)));
         var             filePath = Path.Combine(directory.FullName, "character.json");
@@ -242,7 +240,7 @@ public class PcpService : IApiService, IDisposable
         await jObj.WriteToAsync(json, cancel);
     }
 
-    private DirectoryInfo CreateMod(ActorIdentifier actor, string note, DateTime time)
+    private Mod CreateMod(ActorIdentifier actor, string note, DateTime time)
     {
         var directory = _modExport.ExportDirectory;
         directory.Create();
@@ -262,15 +260,12 @@ public class PcpService : IApiService, IDisposable
         return $"{actorName} - {suffix}";
     }
 
-    private async Task CreateDefaultMod(DirectoryInfo modDirectory, MetaDictionary meta, ResourceTree tree,
+    private async Task CreateDefaultMod(Mod mod, MetaDictionary meta, ResourceTree tree,
         CancellationToken cancel = default)
     {
-        var subDirectory = modDirectory.CreateSubdirectory("files");
-        var subMod = new DefaultSubMod(null!)
-        {
-            Manipulations = meta,
-        };
-
+        var subDirectory = mod.ModPath.CreateSubdirectory("files");
+        var subMod       = mod.Default;
+        subMod.Manipulations = meta;
         foreach (var node in tree.FlatNodes)
         {
             cancel.ThrowIfCancellationRequested();
@@ -294,8 +289,8 @@ public class PcpService : IApiService, IDisposable
 
         cancel.ThrowIfCancellationRequested();
 
-        var saveGroup = new ModSaveGroup(modDirectory, subMod, _config.ReplaceNonAsciiOnImport);
-        var filePath  = _files.FileNames.OptionGroupFile(modDirectory.FullName, -1, string.Empty, _config.ReplaceNonAsciiOnImport);
+        var saveGroup = new ModMeta(_files, mod);
+        var filePath  = _files.FileNames.ModMetaPath(mod);
         cancel.ThrowIfCancellationRequested();
         await using var fileStream = File.Open(filePath, File.Exists(filePath) ? FileMode.Truncate : FileMode.CreateNew);
         saveGroup.Save(fileStream);

@@ -12,11 +12,5 @@ public sealed class ClearDefaultImportFolderButton(ModFileSystemDrawer drawer) :
 
     /// <inheritdoc/>
     public override void OnClick()
-    {
-        if (drawer.Config.DefaultImportFolder.Length is 0)
-            return;
-
-        drawer.Config.DefaultImportFolder = string.Empty;
-        drawer.Config.Save();
-    }
+        => drawer.Config.Io.DefaultImportFolder = string.Empty;
 }

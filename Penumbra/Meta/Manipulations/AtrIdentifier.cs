@@ -1,3 +1,4 @@
+using ImSharp;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Penumbra.Collections.Cache;
@@ -108,6 +109,18 @@ public readonly record struct AtrIdentifier(HumanSlot Slot, PrimaryId? Id, Shape
         if (GenderRaceCondition is not GenderRace.Unknown)
             jObj["GenderRaceCondition"] = (uint)GenderRaceCondition;
         return jObj;
+    }
+
+    public System.Text.Json.Utf8JsonWriter AddToJson(System.Text.Json.Utf8JsonWriter j)
+    {
+        if (Slot is not HumanSlot.Unknown)
+            j.WriteString("Slot"u8, Slot.StringU8);
+        if (Id.HasValue)
+            j.WriteNumber("Id"u8, Id.Value.Id);
+        j.WriteString("Attribute"u8, Attribute.AsSpan);
+        if (GenderRaceCondition is not GenderRace.Unknown)
+            j.WriteNumber("GenderRaceCondition"u8, (uint)GenderRaceCondition);
+        return j;
     }
 
     public static AtrIdentifier? FromJson(JObject jObj)

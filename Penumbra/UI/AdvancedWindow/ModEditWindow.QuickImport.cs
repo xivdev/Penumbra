@@ -8,14 +8,12 @@ using Penumbra.Mods;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.SubMods;
 using Penumbra.String.Classes;
-using Penumbra.UI.Classes;
 using Penumbra.UI.ManagementTab;
 
 namespace Penumbra.UI.AdvancedWindow;
 
 public partial class ModEditWindow
 {
-    private readonly FileDialogService                                         _fileDialog;
     private readonly ResourceTreeFactory                                       _resourceTreeFactory;
     private readonly ResourceTreeViewer                                        _quickImportViewer;
     private readonly Dictionary<(Utf8GamePath, IWritable?), QuickImportAction> _quickImportActions = new();
@@ -70,10 +68,10 @@ public partial class ModEditWindow
         }
 
         var canQuickImport     = quickImport.CanExecute;
-        var quickImportEnabled = canQuickImport && (!resourceNode.Protected || _config.DeleteModModifier.IsActive());
+        var quickImportEnabled = canQuickImport && (!resourceNode.Protected || LunaStyle.Modifier.Destructive);
         if (ImEx.Icon.Button(LunaStyle.ImportIcon,
                 canQuickImport
-                    ? $"Add a copy of this file to {quickImport.OptionName}.{(!quickImportEnabled ? $"\nHold {_config.DeleteModModifier} while clicking to add." : string.Empty)}"
+                    ? $"Add a copy of this file to {quickImport.OptionName}.{(!quickImportEnabled ? $"\nHold {LunaStyle.Modifier.Destructive} while clicking to add." : string.Empty)}"
                     : $"Cannot add a copy of this file to {quickImport.OptionName}:\n{quickImport.NonExecutableReason.Tooltip()}",
                 !quickImportEnabled))
         {
@@ -164,7 +162,7 @@ public partial class ModEditWindow
             if (mod is null)
                 return new QuickImportAction(editor, optionName, gamePath, QuickImportNonExecutableReason.NoTargetMod);
 
-            var (preferredPath, subDirs) = GetPreferredPath(mod, subMod as IModOption, owner._config.ReplaceNonAsciiOnImport);
+            var (preferredPath, subDirs) = GetPreferredPath(mod, subMod as IModOption, owner._config.Io.ReplaceNonAsciiOnImport);
             var targetPath = new FullPath(Path.Combine(preferredPath.FullName, gamePath.ToString())).FullName;
             if (File.Exists(targetPath))
                 return new QuickImportAction(editor, optionName, gamePath, QuickImportNonExecutableReason.FileAlreadyExists);

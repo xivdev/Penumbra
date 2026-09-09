@@ -1,3 +1,4 @@
+using ImSharp;
 using Luna.Generators;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -92,11 +93,21 @@ public readonly record struct EstIdentifier(PrimaryId SetId, EstType Slot, Gende
     public JObject AddToJson(JObject jObj)
     {
         var (gender, race) = GenderRace.Split();
-        jObj["Gender"]     = gender.ToString();
-        jObj["Race"]       = race.ToString();
-        jObj["SetId"]      = SetId.Id.ToString();
-        jObj["Slot"]       = Slot.ToString();
+        jObj["Gender"]     = gender.String;
+        jObj["Race"]       = race.String;
+        jObj["SetId"]      = SetId.Id;
+        jObj["Slot"]       = Slot.String;
         return jObj;
+    }
+
+    public System.Text.Json.Utf8JsonWriter AddToJson(System.Text.Json.Utf8JsonWriter j)
+    {
+        var (gender, race) = GenderRace.Split();
+        j.WriteString("Gender"u8, gender.StringU8);
+        j.WriteString("Race"u8,   race.StringU8);
+        j.WriteNumber("SetId"u8, SetId.Id);
+        j.WriteString("Slot"u8, Slot.StringU8);
+        return j;
     }
 
     public MetaManipulationType Type

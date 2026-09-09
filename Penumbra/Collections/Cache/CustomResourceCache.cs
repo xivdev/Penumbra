@@ -1,7 +1,7 @@
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
+using Luna;
 using Penumbra.Api.Enums;
 using Penumbra.Interop.Hooks.ResourceLoading;
-using Penumbra.Interop.SafeHandles;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Collections.Cache;

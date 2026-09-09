@@ -63,7 +63,7 @@ public enum BetweenSlotTypes
 
 public class ItemSwapTab : IDisposable, ITab
 {
-    private readonly Configuration       _config;
+    private readonly IoConfig            _config;
     private readonly CommunicatorService _communicator;
     private readonly CollectionManager   _collectionManager;
     private readonly ModManager          _modManager;
@@ -71,7 +71,7 @@ public class ItemSwapTab : IDisposable, ITab
 
     public ItemSwapTab(CommunicatorService communicator, ItemData itemService, CollectionManager collectionManager,
         ModManager modManager, ModSelection selection, ObjectIdentification identifier, MetaFileManager metaFileManager,
-        Configuration config)
+        IoConfig config)
     {
         _communicator      = communicator;
         _collectionManager = collectionManager;
@@ -313,7 +313,7 @@ public class ItemSwapTab : IDisposable, ITab
 
     private void CreateMod()
     {
-        var newDir = _modManager.Creator.CreateEmptyMod(_modManager.BasePath, _newModName, CreateDescription(), CreateAuthor());
+        var newDir = _modManager.Creator.CreateEmptyMod(_modManager.BasePath, _newModName, CreateDescription(), CreateAuthor())?.ModPath;
         if (newDir is null)
             return;
 
@@ -352,7 +352,7 @@ public class ItemSwapTab : IDisposable, ITab
             optionFolderName =
                 ModCreator.NewSubFolderName(new DirectoryInfo(Path.Combine(_mod.ModPath.FullName, _selectedGroup?.Name ?? _newGroupName)),
                     _newOptionName, _config.ReplaceNonAsciiOnImport);
-            if (optionFolderName?.Exists == true)
+            if (optionFolderName?.Exists is true)
                 throw new Exception($"The folder {optionFolderName.FullName} for the option already exists.");
 
             if (optionFolderName is not null)
@@ -780,7 +780,8 @@ public class ItemSwapTab : IDisposable, ITab
 
     private void OnModOptionChange(in ModOptionChanged.Arguments arguments)
     {
-        if (arguments.Type is ModOptionChangeType.PrepareChange or ModOptionChangeType.GroupAdded or ModOptionChangeType.OptionAdded
+        if (arguments.Type is ModOptionChangeType.PrepareChange or ModOptionChangeType.PrepareGroupDeletion or ModOptionChangeType.GroupAdded
+                or ModOptionChangeType.OptionAdded or ModOptionChangeType.ConditionChanged
          || arguments.Mod != _mod)
             return;
 

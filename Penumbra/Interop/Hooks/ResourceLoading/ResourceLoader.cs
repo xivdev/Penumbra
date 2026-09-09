@@ -1,9 +1,9 @@
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
+using Luna;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Interop.Hooks.Resources;
 using Penumbra.Interop.PathResolving;
-using Penumbra.Interop.SafeHandles;
 using Penumbra.Interop.Structs;
 using Penumbra.String;
 using Penumbra.String.Classes;
@@ -12,7 +12,7 @@ using FileMode = Penumbra.Interop.Structs.FileMode;
 
 namespace Penumbra.Interop.Hooks.ResourceLoading;
 
-public unsafe class ResourceLoader : IDisposable, Luna.IService
+public unsafe class ResourceLoader : IDisposable, IService
 {
     private readonly ResourceService          _resources;
     private readonly FileReadService          _fileReadService;
@@ -58,7 +58,7 @@ public unsafe class ResourceLoader : IDisposable, Luna.IService
 
     private int PapResourceHandler(void* self, byte* path, int length)
     {
-        if (!_config.EnableMods || !Utf8GamePath.FromPointer(path, MetaDataComputation.CiCrc32, out var gamePath))
+        if (!_config.Main.EnableMods || !Utf8GamePath.FromPointer(path, MetaDataComputation.CiCrc32, out var gamePath))
             return length;
 
         var resolvedData = _resolvedData.Value;
@@ -180,7 +180,7 @@ public unsafe class ResourceLoader : IDisposable, Luna.IService
     private void ResourceHandler(ref ResourceCategory category, ref ResourceType type, ref int hash, ref Utf8GamePath path,
         Utf8GamePath original, GetResourceParameters* parameters, ref bool sync, ref ResourceHandle* returnValue)
     {
-        if (!_config.EnableMods || returnValue is not null)
+        if (!_config.Main.EnableMods || returnValue is not null)
             return;
 
         CompareHash(ComputeHash(path.Path, parameters), hash, path);

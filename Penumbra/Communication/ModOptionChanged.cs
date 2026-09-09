@@ -5,6 +5,7 @@ using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Manager.OptionEditor;
 using Penumbra.Mods.SubMods;
+using Penumbra.UI.ModsTab.Settings;
 
 namespace Penumbra.Communication;
 
@@ -17,17 +18,32 @@ public sealed class ModOptionChanged(LunaLogger log)
         /// <seealso cref="ModSettingsApi.OnModOptionEdited"/>
         Api = int.MinValue,
 
+        /// <seealso cref="Mods.Settings.SettingPresetManager.OnModOptionChange"/>
+        SettingPresetManager = -500,
+
         /// <seealso cref="Collections.Cache.CollectionCacheManager.OnModOptionChange"/>
         CollectionCacheManager = -100,
 
         /// <seealso cref="ModCacheManager.OnModOptionChange"/>
         ModCacheManager = 0,
 
+        /// <seealso cref="ModSettingsCache.OnModOptionChanged"/>
+        ModGroupCache = -5,
+
+        /// <seealso cref="ModSelection.OnModOptionChange"/>
+        ModSelection = 0,
+
         /// <seealso cref="UI.AdvancedWindow.ItemSwapTab.OnModOptionChange"/>
         ItemSwapTab = 0,
 
+        /// <seealso cref="UI.ModsTab.Settings.GroupNameCache.OnModOptionChange"/>
+        GroupNameCache = 0,
+
         /// <seealso cref="Collections.Manager.CollectionStorage.OnModOptionChange"/>
         CollectionStorage = 100,
+
+        /// <seealso cref="LayoutManager.OnModOptionChange"/>
+        LayoutManager = int.MaxValue,
     }
 
     /// <summary> The arguments for a ModOptionChanged event. </summary>
@@ -36,12 +52,15 @@ public sealed class ModOptionChanged(LunaLogger log)
     /// <param name="Group"> The changed group inside the mod, if any. </param>
     /// <param name="Option"> The changed option inside the group or null if it does not concern a specific option. </param>
     /// <param name="Container"> The changed data container inside the group or null if it does not concern a specific data container. </param>
-    /// <param name="DeletedIndex"> The index of the group or option moved or deleted from. </param>
+    /// <param name="Id"> The GUID of the changed object if available, empty otherwise. For <see cref="ModOptionChangeType.GroupIdentifierChanged"/> and <see cref="ModOptionChangeType.OptionIdentifierChanged"/>, the replaced GUID. </param>
+    /// <param name="OldName"> The name prior to the change in case of renames. </param>
     public readonly record struct Arguments(
         ModOptionChangeType Type,
         Mod Mod,
         IModGroup? Group,
         IModOption? Option,
         IModDataContainer? Container,
-        int DeletedIndex);
+        Guid Id,
+        int DeletedIndex, 
+        string? OldName);
 }

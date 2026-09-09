@@ -1,3 +1,4 @@
+using ImSharp;
 using Newtonsoft.Json.Linq;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
@@ -35,16 +36,16 @@ public readonly record struct ImcIdentifier(
         var path = ObjectType switch
         {
             ObjectType.Equipment when allVariants => GamePaths.Mdl.Equipment(PrimaryId, GenderRace.MidlanderMale, EquipSlot),
-            ObjectType.Equipment => GamePaths.Mtrl.Equipment(PrimaryId, GenderRace.MidlanderMale, EquipSlot, Variant, "a"),
+            ObjectType.Equipment                  => GamePaths.Mtrl.Equipment(PrimaryId, GenderRace.MidlanderMale, EquipSlot, Variant, "a"),
             ObjectType.Accessory when allVariants => GamePaths.Mdl.Accessory(PrimaryId, GenderRace.MidlanderMale, EquipSlot),
-            ObjectType.Accessory => GamePaths.Mtrl.Accessory(PrimaryId, GenderRace.MidlanderMale, EquipSlot, Variant, "a"),
-            ObjectType.Weapon => GamePaths.Mtrl.Weapon(PrimaryId, SecondaryId.Id, Variant, "a"),
+            ObjectType.Accessory                  => GamePaths.Mtrl.Accessory(PrimaryId, GenderRace.MidlanderMale, EquipSlot, Variant, "a"),
+            ObjectType.Weapon                     => GamePaths.Mtrl.Weapon(PrimaryId, SecondaryId.Id, Variant, "a"),
             ObjectType.DemiHuman => GamePaths.Mtrl.DemiHuman(PrimaryId, SecondaryId.Id, EquipSlot, Variant,
                 "a"),
             ObjectType.Monster => GamePaths.Mtrl.Monster(PrimaryId, SecondaryId.Id, Variant, "a"),
             _                  => string.Empty,
         };
-        if (path.Length == 0)
+        if (path.Length is 0)
             return;
 
         identifier.Identify(changedItems, path);
@@ -66,8 +67,8 @@ public readonly record struct ImcIdentifier(
         => ObjectType switch
         {
             ObjectType.Equipment or ObjectType.Accessory => $"{PrimaryId} - {EquipSlot.ToName()} - {Variant}",
-            ObjectType.DemiHuman => $"{PrimaryId} - DemiHuman - {SecondaryId} - {EquipSlot.ToName()} - {Variant}",
-            _ => $"{PrimaryId} - {ObjectType.ToName()} - {SecondaryId} - {BodySlot} - {Variant}",
+            ObjectType.DemiHuman                         => $"{PrimaryId} - DemiHuman - {SecondaryId} - {EquipSlot.ToName()} - {Variant}",
+            _                                            => $"{PrimaryId} - {ObjectType.ToName()} - {SecondaryId} - {BodySlot} - {Variant}",
         };
 
     public bool Validate()
@@ -110,32 +111,32 @@ public readonly record struct ImcIdentifier(
     public int CompareTo(ImcIdentifier other)
     {
         var o = ObjectType.CompareTo(other.ObjectType);
-        if (o != 0)
+        if (o is not 0)
             return o;
 
         var i = PrimaryId.Id.CompareTo(other.PrimaryId.Id);
-        if (i != 0)
+        if (i is not 0)
             return i;
 
         if (ObjectType is ObjectType.Equipment or ObjectType.Accessory)
         {
             var e = EquipSlot.CompareTo(other.EquipSlot);
-            return e != 0 ? e : Variant.Id.CompareTo(other.Variant.Id);
+            return e is not 0 ? e : Variant.Id.CompareTo(other.Variant.Id);
         }
 
         if (ObjectType is ObjectType.DemiHuman)
         {
             var e = EquipSlot.CompareTo(other.EquipSlot);
-            if (e != 0)
+            if (e is not 0)
                 return e;
         }
 
         var s = SecondaryId.Id.CompareTo(other.SecondaryId.Id);
-        if (s != 0)
+        if (s is not 0)
             return s;
 
         var b = BodySlot.CompareTo(other.BodySlot);
-        return b != 0 ? b : Variant.Id.CompareTo(other.Variant.Id);
+        return b is not 0 ? b : Variant.Id.CompareTo(other.Variant.Id);
     }
 
     public static ImcIdentifier? FromJson(JObject? jObj)
@@ -182,13 +183,44 @@ public readonly record struct ImcIdentifier(
 
     public JObject AddToJson(JObject jObj)
     {
-        jObj["ObjectType"]  = ObjectType.ToString();
-        jObj["PrimaryId"]   = PrimaryId.Id;
-        jObj["SecondaryId"] = SecondaryId.Id;
-        jObj["Variant"]     = Variant.Id;
-        jObj["EquipSlot"]   = EquipSlot.ToString();
-        jObj["BodySlot"]    = BodySlot.ToString();
+        jObj["ObjectType"] = ObjectType.String;
+        jObj["PrimaryId"]  = PrimaryId.Id;
+        jObj["Variant"]    = Variant.Id;
+        switch (ObjectType)
+        {
+            case ObjectType.Equipment or ObjectType.Accessory: jObj["EquipSlot"] = EquipSlot.String; break;
+            case ObjectType.Monster or ObjectType.Weapon:
+                jObj["SecondaryId"] = SecondaryId.Id;
+                jObj["BodySlot"]    = BodySlot.String;
+                break;
+            case ObjectType.DemiHuman:
+                jObj["SecondaryId"] = SecondaryId.Id;
+                jObj["EquipSlot"]   = EquipSlot.String;
+                break;
+        }
+
         return jObj;
+    }
+
+    public System.Text.Json.Utf8JsonWriter AddToJson(System.Text.Json.Utf8JsonWriter j)
+    {
+        j.WriteString("ObjectType"u8, ObjectType.StringU8);
+        j.WriteNumber("PrimaryId"u8, PrimaryId.Id);
+        j.WriteNumber("Variant"u8,   Variant.Id);
+        switch (ObjectType)
+        {
+            case ObjectType.Equipment or ObjectType.Accessory: j.WriteString("EquipSlot"u8, EquipSlot.StringU8); break;
+            case ObjectType.Monster or ObjectType.Weapon:
+                j.WriteNumber("SecondaryId"u8, SecondaryId.Id);
+                j.WriteString("BodySlot"u8, BodySlot.StringU8);
+                break;
+            case ObjectType.DemiHuman:
+                j.WriteNumber("SecondaryId"u8, SecondaryId.Id);
+                j.WriteString("EquipSlot"u8, EquipSlot.StringU8);
+                break;
+        }
+
+        return j;
     }
 
     public MetaManipulationType Type

@@ -66,14 +66,15 @@ public class ResourceTreeViewer(
         }
         else if (_task.IsCompletedSuccessfully)
         {
-            var debugMode = config.DebugMode;
+            var debugMode = config.Advanced.DebugMode;
             foreach (var (index, tree) in _task.Result.Index())
             {
                 var category = Classify(tree);
-                if (!_categoryFilter.HasFlag(category) || !tree.Name.Contains(config.Filters.OnScreenCharacterFilter, StringComparison.OrdinalIgnoreCase))
+                if (!_categoryFilter.HasFlag(category)
+                 || !tree.Name.Contains(config.Filters.OnScreenCharacterFilter, StringComparison.OrdinalIgnoreCase))
                     continue;
 
-                using (ImGuiColor.Text.Push(CategoryColor(category).Value()))
+                using (ImGuiColor.Text.Push(CategoryColor(category).Vector))
                 {
                     var isOpen = Im.Tree.Header($"{(incognito.IncognitoMode ? tree.AnonymizedName : tree.Name)}###{index}",
                         index is 0 ? TreeNodeFlags.DefaultOpen : 0);
@@ -107,9 +108,9 @@ public class ResourceTreeViewer(
                 if (ImEx.Button("Export To..."u8,
                         "Note that this recomputes the current data of the actor if it still exists, and does not use the cached data."u8))
                     fileDialog.OpenSavePicker("Export PCP...",
-                        $"Penumbra Mod Packs{{.pcp,.pmp}},{config.PcpSettings.PcpExtension},Any File{{.*}}",
+                        $"Penumbra Mod Packs{{.pcp,.pmp}},{config.Io.PcpExtension},Any File{{.*}}",
                         PcpService.ModName(tree.Name, _note, DateTime.Now),
-                        config.PcpSettings.PcpExtension,
+                        config.Io.PcpExtension,
                         (selected, path) =>
                         {
                             if (!selected)
@@ -125,7 +126,7 @@ public class ResourceTreeViewer(
                                     Penumbra.Messager.NotificationMessage(text, NotificationType.Error, false);
                             });
                             _note = string.Empty;
-                        }, config.ExportDirectory, false);
+                        }, config.Io.ExportDirectory, false);
                 Im.Line.SameInner();
                 Im.Item.SetNextWidth(Im.ContentRegion.Available.X);
                 Im.Input.Text("##note"u8, ref _note, "Export note..."u8);
@@ -183,7 +184,7 @@ public class ResourceTreeViewer(
             foreach (var category in TreeCategory.Values)
             {
                 using var id = Im.Id.Push((int)category);
-                using var c  = ImGuiColor.CheckMark.Push(CategoryColor(category).Value());
+                using var c  = ImGuiColor.CheckMark.Push(CategoryColor(category).Vector);
                 Im.Checkbox(StringU8.Empty, ref _categoryFilter, category);
                 Im.Tooltip.OnHover(CategoryFilterDescription(category));
                 Im.Line.Same(0.0f, checkSpacing);
@@ -252,24 +253,26 @@ public class ResourceTreeViewer(
     private void DrawNodes(in Im.TableDisposable table, IEnumerable<ResourceNode> resourceNodes, int level, nint pathHash,
         ChangedItemIconFlag parentFilterIconFlag)
     {
-        var debugMode   = config.DebugMode;
+        var debugMode   = config.Advanced.DebugMode;
         var frameHeight = Im.Style.FrameHeight;
 
         foreach (var (index, resourceNode) in resourceNodes.Index())
         {
             var nodePathHash = unchecked(pathHash + resourceNode.ResourceHandle);
-
-            var visibility = GetNodeVisibility(nodePathHash, resourceNode, parentFilterIconFlag);
+            var visibility   = GetNodeVisibility(nodePathHash, resourceNode, parentFilterIconFlag);
             if (visibility == NodeVisibility.Hidden)
                 continue;
 
             using var mutedColor = ImGuiColor.Text.Push(Im.Style[ImGuiColor.Text].WithAlpha(0.5f), resourceNode.Internal);
 
-            var filterIcon = resourceNode.IconFlag != 0 ? resourceNode.IconFlag : parentFilterIconFlag;
+            var filterIcon = resourceNode.IconFlag is not 0 ? resourceNode.IconFlag : parentFilterIconFlag;
 
             using var id = Im.Id.Push(index);
             table.NextColumn();
             var unfolded = _unfolded.Contains(nodePathHash);
+            if (level is 0 && index is not 0)
+                table.DrawHorizontalSeparator();
+
             using (Im.Indent(level))
             {
                 var hasVisibleChildren = resourceNode.Children.Any(child
@@ -339,7 +342,7 @@ public class ResourceTreeViewer(
                     var       modName = $"[{(hasMod ? mod!.Name : resourceNode.ModName)}]";
                     var       textPos = Im.Cursor.X + Im.Font.CalculateSize(modName).X + Im.Style.ItemInnerSpacing.X;
                     using var group   = Im.Group();
-                    using (ImGuiColor.Text.Push((hasMod ? ColorId.NewMod : ColorId.DisabledMod).Value()))
+                    using (ImGuiColor.Text.Push((hasMod ? ColorId.NewMod : ColorId.DisabledMod).Vector))
                     {
                         Im.Selectable(modName, false, SelectableFlags.AllowOverlap, Im.ContentRegion.Available with { Y = frameHeight });
                     }

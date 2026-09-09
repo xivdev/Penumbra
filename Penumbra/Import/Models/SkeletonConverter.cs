@@ -97,7 +97,7 @@ public static class SkeletonConverter
     /// <summary> Read the bone parent relations for a skeleton. </summary>
     /// <param name="node"> XML node for the skeleton. </param>
     private static int[] ReadParentIndices(XmlNode node)
-        // todo: would be neat to genericise array between bare and children
+        // TODO 20260824 would be neat to genericise array between bare and children
         => CheckExists(node.SelectSingleNode("array[@name='parentIndices']"))
             .InnerText
             .Split((char[]) [' ', '\n'], StringSplitOptions.RemoveEmptyEntries)

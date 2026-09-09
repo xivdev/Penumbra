@@ -37,6 +37,7 @@ public sealed class IntegrationSettingsRegistry : IService, IDisposable
             try
             {
                 draw();
+                Im.Line.Spacing();
             }
             catch (Exception e)
             {

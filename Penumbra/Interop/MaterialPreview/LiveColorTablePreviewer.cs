@@ -1,8 +1,8 @@
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
+using Luna;
 using Penumbra.GameData.Interop;
-using Penumbra.Interop.SafeHandles;
 
 namespace Penumbra.Interop.MaterialPreview;
 
@@ -34,9 +34,9 @@ public sealed unsafe class LiveColorTablePreviewer : LiveMaterialPreviewerBase
             throw new InvalidOperationException("Draw object doesn't have color table textures");
 
         _colorTableTexture = colorSetTextures + (MaterialInfo.ModelSlot * CharacterBase.MaterialsPerSlot + MaterialInfo.MaterialSlot);
-        
 
-        _originalColorTableTexture = new SafeTextureHandle(*_colorTableTexture, true);
+
+        _originalColorTableTexture = new SafeTextureHandle(*_colorTableTexture);
         if (_originalColorTableTexture.Texture == null)
             throw new InvalidOperationException("Material doesn't have a color table");
 

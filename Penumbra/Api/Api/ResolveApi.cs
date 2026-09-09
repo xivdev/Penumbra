@@ -11,7 +11,7 @@ namespace Penumbra.Api.Api;
 public class ResolveApi(
     ModManager modManager,
     CollectionManager collectionManager,
-    Configuration config,
+    MainConfig config,
     CollectionResolver collectionResolver,
     ApiHelpers helpers,
     IFramework framework) : IPenumbraApiResolve, Luna.IApiService

@@ -70,7 +70,7 @@ public sealed class CollectionPanel(
         DrawSimpleCollectionButton(CollectionType.MaleNonPlayerCharacter,   buttonWidth);
         DrawSimpleCollectionButton(CollectionType.FemaleNonPlayerCharacter, buttonWidth);
 
-        ImEx.TextMultiColored("Individual "u8, ColorId.NewMod.Value())
+        ImEx.TextMultiColored("Individual "u8, ColorId.NewMod.Value)
             .Then("Assignments take precedence before anything else and only apply to one specific character or monster."u8)
             .End();
         Im.Dummy(1);
@@ -299,15 +299,15 @@ public sealed class CollectionPanel(
         collection ??= _active.ByType(type, id);
         using var color = ImGuiColor.Button.Push(
                 collection is null
-                    ? ColorId.NoAssignment.Value()
+                    ? ColorId.NoAssignment.Vector
                     : redundancy.Length > 0
-                        ? ColorId.RedundantAssignment.Value()
+                        ? ColorId.RedundantAssignment.Vector
                         : collection == _active.Current
-                            ? ColorId.SelectedCollection.Value()
+                            ? ColorId.SelectedCollection.Vector
                             : collection == ModCollection.Empty
-                                ? ColorId.NoModsAssignment.Value()
-                                : ImGuiColor.Button.Get(), !invalid)
-            .Push(ImGuiColor.Border, borderColor == 0 ? ImGuiColor.TextDisabled.Get().Color : borderColor);
+                                ? ColorId.NoModsAssignment.Vector
+                                : ImGuiColor.Button.Vector, !invalid)
+            .Push(ImGuiColor.Border, borderColor == 0 ? ImGuiColor.TextDisabled.Vector : borderColor);
         using var disabled = Im.Disabled(invalid);
         var       button   = Im.Button(text, width) || Im.Item.RightClicked();
         var       hovered  = redundancy.Length > 0 && Im.Item.Hovered();
@@ -319,7 +319,7 @@ public sealed class CollectionPanel(
             var name    = Name(collection);
             var size    = Im.Font.CalculateSize(name);
             var textPos = Im.Item.LowerRightCorner - size - Im.Style.FramePadding;
-            Im.Window.DrawList.Text(textPos, ImGuiColor.Text.Get().Color, name);
+            Im.Window.DrawList.Text(textPos, ImGuiColor.Text.Value, name);
             DrawContext(button, collection, type, id, text, suffix);
         }
 
@@ -368,7 +368,7 @@ public sealed class CollectionPanel(
                 case CollectionType.Default: Im.Text("Overruled by any other Assignment."u8); break;
                 case CollectionType.Yourself:
                     ImEx.TextMultiColored("Overruled by "u8)
-                        .Then("Individual "u8, ColorId.NewMod.Value().Color)
+                        .Then("Individual "u8, ColorId.NewMod.Value)
                         .Then("Assignments."u8)
                         .End();
                     break;
@@ -376,9 +376,9 @@ public sealed class CollectionPanel(
                     ImEx.TextMultiColored("Overruled by "u8)
                         .Then("Male Racial Player"u8, LunaStyle.DiscordColor)
                         .Then(", "u8)
-                        .Then("Your Character"u8, ColorId.HandledConflictMod.Value().Color)
+                        .Then("Your Character"u8, ColorId.HandledConflictMod.Value)
                         .Then(", or "u8)
-                        .Then("Individual "u8, ColorId.NewMod.Value().Color)
+                        .Then("Individual "u8, ColorId.NewMod.Value)
                         .Then("Assignments."u8)
                         .End();
                     break;
@@ -386,9 +386,9 @@ public sealed class CollectionPanel(
                     ImEx.TextMultiColored("Overruled by "u8)
                         .Then("Female Racial Player"u8, LunaStyle.ReniColorActive)
                         .Then(", "u8)
-                        .Then("Your Character"u8, ColorId.HandledConflictMod.Value().Color)
+                        .Then("Your Character"u8, ColorId.HandledConflictMod.Value)
                         .Then(", or "u8)
-                        .Then("Individual "u8, ColorId.NewMod.Value().Color)
+                        .Then("Individual "u8, ColorId.NewMod.Value)
                         .Then("Assignments."u8)
                         .End();
                     break;
@@ -396,11 +396,11 @@ public sealed class CollectionPanel(
                     ImEx.TextMultiColored("Overruled by "u8)
                         .Then("Male Racial NPC"u8, LunaStyle.DiscordColor)
                         .Then(", "u8)
-                        .Then("Children"u8, ColorId.FolderLine.Value().Color)
+                        .Then("Children"u8, ColorId.FolderLine.Value)
                         .Then(", "u8)
                         .Then("Elderly"u8, Colors.MetaInfoText)
                         .Then(", or "u8)
-                        .Then("Individual "u8, ColorId.NewMod.Value().Color)
+                        .Then("Individual "u8, ColorId.NewMod.Value)
                         .Then("Assignments."u8)
                         .End();
                     break;
@@ -408,11 +408,11 @@ public sealed class CollectionPanel(
                     ImEx.TextMultiColored("Overruled by "u8)
                         .Then("Female Racial NPC"u8, LunaStyle.ReniColorActive)
                         .Then(", "u8)
-                        .Then("Children"u8, ColorId.FolderLine.Value().Color)
+                        .Then("Children"u8, ColorId.FolderLine.Value)
                         .Then(", "u8)
                         .Then("Elderly"u8, Colors.MetaInfoText)
                         .Then(", or "u8)
-                        .Then("Individual "u8, ColorId.NewMod.Value().Color)
+                        .Then("Individual "u8, ColorId.NewMod.Value)
                         .Then("Assignments."u8)
                         .End();
                     break;

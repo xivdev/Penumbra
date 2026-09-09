@@ -1,12 +1,13 @@
 using Dalamud.Plugin;
 using ImSharp;
+using Luna;
 using Penumbra.Api.Enums;
-using Penumbra.Api.Helpers;
 using Penumbra.Api.IpcSubscribers;
+using Penumbra.Api.Wrappers;
 
 namespace Penumbra.Api.IpcTester;
 
-public class ModsIpcTester : Luna.IUiService, IDisposable
+public class ModsIpcTester : IUiService, IDisposable
 {
     private readonly IDalamudPluginInterface _pi;
 
@@ -14,7 +15,7 @@ public class ModsIpcTester : Luna.IUiService, IDisposable
     private string                      _modName        = string.Empty;
     private string                      _pathInput      = string.Empty;
     private string                      _newInstallPath = string.Empty;
-    private int                         _index          = 0;
+    private int                         _index;
     private PenumbraApiEc               _lastReloadEc;
     private PenumbraApiEc               _lastAddEc;
     private PenumbraApiEc               _lastDeleteEc;
@@ -35,7 +36,7 @@ public class ModsIpcTester : Luna.IUiService, IDisposable
     private string         _lastMovedModFrom   = string.Empty;
     private string         _lastMovedModTo     = string.Empty;
 
-    private ModListWrapper? _modAdapter;
+    private ModManagerWrapperOld? _modAdapter;
 
     public ModsIpcTester(IDalamudPluginInterface pi)
     {
@@ -98,11 +99,11 @@ public class ModsIpcTester : Luna.IUiService, IDisposable
             }
         }
 
-        using (IpcTester.DrawIntro(GetModListAdapter.LabelU8, "Mod List Adapter"u8))
+        using (IpcTester.DrawIntro(GetModListAdapterOld.LabelU8, "Mod List Adapter (Old)"u8))
         {
             table.NextColumn();
             if (Im.SmallButton("Get##ModAdapter"u8))
-                _modAdapter = new GetModListAdapter(_pi).Invoke();
+                _modAdapter = new GetModListAdapterOld(_pi).Invoke();
             if (_modAdapter is not null)
             {
                 Im.Line.Same();

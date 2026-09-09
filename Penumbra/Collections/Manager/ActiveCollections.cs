@@ -41,7 +41,7 @@ public class ActiveCollections : ISavable, IDisposable, IService
         Current       = storage.DefaultNamed;
         Default       = storage.DefaultNamed;
         Interface     = storage.DefaultNamed;
-        Individuals   = new IndividualCollections(actors, config, false);
+        Individuals   = new IndividualCollections(actors, config.Behavior, false);
         _communicator.CollectionChange.Subscribe(OnCollectionChange, CollectionChange.Priority.ActiveCollections);
         LoadCollections();
         UpdateCurrentCollectionInUse();
@@ -80,7 +80,7 @@ public class ActiveCollections : ISavable, IDisposable, IService
 
     /// <summary> Get the collection assigned to an individual or Default if unassigned. </summary>
     public ModCollection Individual(ActorIdentifier identifier)
-        => Individuals.TryGetCollection(identifier, out var c) ? c : Default;
+        => Individuals.TryGetCollection(identifier, out var c, false) ? c : Default;
 
     /// <summary> The list of group assignments. </summary>
     private ModCollection?[] SpecialCollections
@@ -318,7 +318,7 @@ public class ActiveCollections : ISavable, IDisposable, IService
         if (!_storage.ByName(defaultName, out var defaultCollection))
         {
             Penumbra.Messager.NotificationMessage(
-                $"Last choice of {"Base Collection"} {defaultName} is not available, reset to {ModCollection.Empty.Identity.Name}.",
+                $"Last choice of Base Collection {defaultName} is not available, reset to {ModCollection.Empty.Identity.Name}.",
                 NotificationType.Warning);
             Default       = ModCollection.Empty;
             configChanged = true;
@@ -362,7 +362,7 @@ public class ActiveCollections : ISavable, IDisposable, IService
         foreach (var (type, name, _) in CollectionTypeExtensions.Special)
         {
             var typeName = jObject[type.ToString()]?.ToObject<string>();
-            if (typeName != null)
+            if (typeName is not null)
             {
                 if (!_storage.ByName(typeName, out var typeCollection))
                 {
@@ -393,7 +393,7 @@ public class ActiveCollections : ISavable, IDisposable, IService
         if (!_storage.ById(defaultId, out var defaultCollection))
         {
             Penumbra.Messager.NotificationMessage(
-                $"Last choice of {"Base Collection"} {defaultId} is not available, reset to {ModCollection.Empty.Identity.Name}.",
+                $"Last choice of Base Collection {defaultId} is not available, reset to {ModCollection.Empty.Identity.Name}.",
                 NotificationType.Warning);
             Default       = ModCollection.Empty;
             configChanged = true;
@@ -408,7 +408,7 @@ public class ActiveCollections : ISavable, IDisposable, IService
         if (!_storage.ById(interfaceId, out var interfaceCollection))
         {
             Penumbra.Messager.NotificationMessage(
-                $"Last choice of {"Interface Collection"} {interfaceId} is not available, reset to {ModCollection.Empty.Identity.Name}.",
+                $"Last choice of Interface Collection {interfaceId} is not available, reset to {ModCollection.Empty.Identity.Name}.",
                 NotificationType.Warning);
             Interface     = ModCollection.Empty;
             configChanged = true;
@@ -515,28 +515,28 @@ public class ActiveCollections : ISavable, IDisposable, IService
     public string RedundancyCheck(CollectionType type, ActorIdentifier id)
     {
         var checkAssignment = ByType(type, id);
-        if (checkAssignment == null)
+        if (checkAssignment is null)
             return string.Empty;
 
         switch (type)
         {
             case CollectionType.Yourself:
                 var yourself = ByType(CollectionType.Yourself);
-                if (yourself == null)
+                if (yourself is null)
                     return string.Empty;
 
                 var racial = false;
                 foreach (var race in SubRace.Values.Skip(1))
                 {
                     var m = ByType(CollectionTypeExtensions.FromParts(race, Gender.Male, false));
-                    if (m != null && m != yourself)
+                    if (m is not null && m != yourself)
                         return string.Empty;
 
                     var f = ByType(CollectionTypeExtensions.FromParts(race, Gender.Female, false));
-                    if (f != null && f != yourself)
+                    if (f is not null && f != yourself)
                         return string.Empty;
 
-                    racial |= m != null || f != null;
+                    racial |= m is not null || f is not null;
                 }
 
                 var racialString = racial ? " and Racial Assignments" : string.Empty;
@@ -547,16 +547,16 @@ public class ActiveCollections : ISavable, IDisposable, IService
                     return
                         $"Assignment is redundant due to overwriting Male Players and Female Players{racialString} with an identical collection.\nYou can remove it.";
 
-                if (male == null)
+                if (male is null)
                 {
-                    if (female == null && @base == yourself)
+                    if (female is null && @base == yourself)
                         return
                             $"Assignment is redundant due to overwriting Base{racialString} with an identical collection.\nYou can remove it.";
                     if (female == yourself && @base == yourself)
                         return
                             $"Assignment is redundant due to overwriting Base and Female Players{racialString} with an identical collection.\nYou can remove it.";
                 }
-                else if (male == yourself && female == null && @base == yourself)
+                else if (male == yourself && female is null && @base == yourself)
                 {
                     return
                         $"Assignment is redundant due to overwriting Base and Male Players{racialString} with an identical collection.\nYou can remove it.";
@@ -570,7 +570,7 @@ public class ActiveCollections : ISavable, IDisposable, IService
                     case IdentifierType.Player when id.HomeWorld != ushort.MaxValue:
                     {
                         var global = ByType(CollectionType.Individual, _actors.CreatePlayer(id.PlayerName, ushort.MaxValue));
-                        return (global != null ? global.Identity.Index : null) == checkAssignment.Identity.Index
+                        return global?.Identity.Index == checkAssignment.Identity.Index
                             ? "Assignment is redundant due to an identical Any-World assignment existing.\nYou can remove it."
                             : string.Empty;
                     }
@@ -579,12 +579,12 @@ public class ActiveCollections : ISavable, IDisposable, IService
                         {
                             var global = ByType(CollectionType.Individual,
                                 _actors.CreateOwned(id.PlayerName, ushort.MaxValue, id.Kind, id.DataId));
-                            if ((global != null ? global.Identity.Index : null) == checkAssignment.Identity.Index)
+                            if (global?.Identity.Index == checkAssignment.Identity.Index)
                                 return "Assignment is redundant due to an identical Any-World assignment existing.\nYou can remove it.";
                         }
 
                         var unowned = ByType(CollectionType.Individual, _actors.CreateNpc(id.Kind, id.DataId));
-                        return (unowned != null ? unowned.Identity.Index : null) == checkAssignment.Identity.Index
+                        return unowned?.Identity.Index == checkAssignment.Identity.Index
                             ? "Assignment is redundant due to an identical unowned NPC assignment existing.\nYou can remove it."
                             : string.Empty;
                 }
@@ -606,7 +606,7 @@ public class ActiveCollections : ISavable, IDisposable, IService
                     collection1 = CollectionType.Default;
                 }
 
-                if (femaleNpc == null)
+                if (femaleNpc is null)
                 {
                     femaleNpc = Default;
                     if (femaleNpc.Identity.Index != checkAssignment.Identity.Index)
@@ -626,7 +626,7 @@ public class ActiveCollections : ISavable, IDisposable, IService
                 foreach (var parentType in group)
                 {
                     var assignment = ByType(parentType);
-                    if (assignment == null)
+                    if (assignment is null)
                         continue;
 
                     if (assignment.Identity.Index == checkAssignment.Identity.Index)

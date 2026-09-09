@@ -1,7 +1,7 @@
 using ImSharp;
 using Luna;
-using Newtonsoft.Json.Linq;
 using Penumbra.Collections.Cache;
+using Penumbra.Files;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Meta;
@@ -40,7 +40,7 @@ public sealed class AtrMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     {
         Im.Table.NextColumn();
         CopyToClipboardButton("Copy all current ATR manipulations to clipboard."u8,
-            new Lazy<JToken?>(() => MetaDictionary.SerializeTo([], Editor.Atr)));
+            CreateLazy(j => MetaSerialization.SerializeTo(j, Editor.Atr)));
 
         Im.Table.NextColumn();
         var canAdd = !Editor.Contains(Identifier) && _identifierValid;

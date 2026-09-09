@@ -1,7 +1,10 @@
+using System.Buffers;
+using System.Text.Json;
 using ImSharp;
 using Luna;
 using Penumbra.Api.Api;
 using Penumbra.Api.Enums;
+using Penumbra.Files;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.Meta.Manipulations;
@@ -12,7 +15,7 @@ namespace Penumbra.UI.AdvancedWindow;
 
 public partial class ModEditWindow
 {
-    private const    int                  _numTabs = 10;
+    private const    int                  NumTabs = 10;
     private readonly MetaDrawers          _metaDrawers;
     private          MetaManipulationType _selected = MetaManipulationType.Eqp;
 
@@ -52,7 +55,7 @@ public partial class ModEditWindow
         Im.Cursor.Y += Im.Style.ItemSpacing.Y;
 
         // Reinvent tab-bar to support button padding for border numbers.
-        var buttonSize = new Vector2((Im.ContentRegion.Available.X - (_numTabs - 1) * Im.Style.ItemInnerSpacing.X) / _numTabs,
+        var buttonSize = new Vector2((Im.ContentRegion.Available.X - (NumTabs - 1) * Im.Style.ItemInnerSpacing.X) / NumTabs,
             Im.Style.TextHeight + Im.Style.FramePadding.Y);
         using (ImStyleDouble.FramePadding.PushY(0).PushY(ImStyleDouble.ButtonTextAlign, 0.5f))
         {
@@ -142,13 +145,13 @@ public partial class ModEditWindow
         if (drawer.Count > 0)
         {
             var position = Im.Item.UpperLeftCorner + Im.Style.FramePadding;
-            Im.Window.DrawList.Text(position, ColorId.NewMod.Value().FullAlpha(), $"({drawer.Count})");
+            Im.Window.DrawList.Text(position, ColorId.NewMod.Value.FullAlpha(), $"({drawer.Count})");
         }
 
         if (otherData.TotalCount > 0)
         {
             var position = Im.Item.LowerRightCorner - Im.Style.FramePadding - Im.Font.CalculateSize($"({otherData.TotalCount})");
-            Im.Window.DrawList.Text(position, ColorId.RedundantAssignment.Value().FullAlpha(), $"({otherData.TotalCount})");
+            Im.Window.DrawList.Text(position, ColorId.RedundantAssignment.Value.FullAlpha(), $"({otherData.TotalCount})");
         }
 
         if (Im.Item.Hovered())
@@ -191,7 +194,13 @@ public partial class ModEditWindow
         if (!ImEx.Icon.Button(LunaStyle.ToClipboardIcon, tooltip, iconSize))
             return;
 
-        var text = CompressionFunctions.ToCompressedBase64(manipulations, 0);
+        var array = new ArrayBufferWriter<byte>();
+        using (var j = new Utf8JsonWriter(array, JsonFunctions.UnformattedOptions))
+        {
+            MetaSerialization.WriteMetaDictionary(j, manipulations);
+        }
+
+        var text = CompressionFunctions.ToCompressedBase64(array.WrittenSpan, 0);
         if (text.Length > 0)
             Im.Clipboard.Set(text);
     }

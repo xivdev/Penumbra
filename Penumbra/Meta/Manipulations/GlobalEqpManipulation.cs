@@ -1,3 +1,5 @@
+using System.Text.Json;
+using ImSharp;
 using Newtonsoft.Json.Linq;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
@@ -13,7 +15,7 @@ public readonly struct GlobalEqpManipulation : IMetaIdentifier
 
     public bool Validate()
     {
-        if (!Enum.IsDefined(Type))
+        if (!Type.Defined)
             return false;
 
         if (Type.HasCondition())
@@ -25,8 +27,17 @@ public readonly struct GlobalEqpManipulation : IMetaIdentifier
     public JObject AddToJson(JObject jObj)
     {
         jObj[nameof(Type)]      = Type.ToString();
-        jObj[nameof(Condition)] = Condition.Id;
+        if (Type.HasCondition() && Condition.Id is not 0)
+            jObj[nameof(Condition)] = Condition.Id;
         return jObj;
+    }
+
+    public Utf8JsonWriter AddToJson(Utf8JsonWriter j)
+    {
+        j.WriteString("Type"u8, Type.StringU8);
+        if(Type.HasCondition() && Condition.Id is not 0)
+            j.WriteNumber("Condition"u8, Condition.Id);
+        return j;
     }
 
     public static GlobalEqpManipulation? FromJson(JObject? jObj)
@@ -52,7 +63,7 @@ public readonly struct GlobalEqpManipulation : IMetaIdentifier
     public int CompareTo(GlobalEqpManipulation other)
     {
         var typeComp = Type.CompareTo(other);
-        return typeComp != 0 ? typeComp : Condition.Id.CompareTo(other.Condition.Id);
+        return typeComp is not 0 ? typeComp : Condition.Id.CompareTo(other.Condition.Id);
     }
 
     public override bool Equals(object? obj)

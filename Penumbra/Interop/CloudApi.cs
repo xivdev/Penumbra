@@ -8,7 +8,7 @@ public static unsafe partial class CloudApi
     /// <remarks> Can be expensive. Callers should cache the result when relevant. </remarks>
     public static bool IsCloudSynced(string path)
     {
-        // TODO: Fix when Wine gets its shit together I guess?
+        // TODO 20260824 Fix when Wine gets its shit together I guess?
         if (Dalamud.Utility.Util.IsWine())
             return false;
 

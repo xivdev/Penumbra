@@ -10,8 +10,8 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.Services;
 
-public class MessageService(LunaLogger log, IChatGui chat, INotificationManager notificationManager)
-    : Luna.MessageService(log, chat, notificationManager), IService
+public class PenumbraMessager(LunaLogger log, IChatGui chat, INotificationManager notificationManager)
+    : MessageService(log, chat, notificationManager), IService
 {
     public void LinkItem(in Item item)
     {

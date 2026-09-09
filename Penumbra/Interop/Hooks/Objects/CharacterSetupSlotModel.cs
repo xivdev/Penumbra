@@ -4,20 +4,16 @@ using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using FFXIVClientStructs.Interop;
 using Luna;
-using Penumbra.GameData;
 
 namespace Penumbra.Interop.Hooks.Objects;
 
-// TODO ClientStructs-ify (aers/FFXIVClientStructs#1805)
-public sealed unsafe class CharacterSetupSlotModel : FastHook<CharacterSetupSlotModel.Delegate>
+public sealed unsafe class CharacterSetupSlotModel : FastHook<CharacterBase.Delegates.SetupSlotModel>
 {
     public CharacterSetupSlotModel(HookManager hooks)
     {
-        Task = hooks.CreateHook<Delegate>("CharacterBase.SetupSlotModel", Sigs.CharacterSetupSlotModel, Detour,
-            !HookOverrides.Instance.Objects.CharacterSetupSlotModel);
+        Task = hooks.CreateHook<CharacterBase.Delegates.SetupSlotModel>("CharacterBase.SetupSlotModel",
+            CharacterBase.Addresses.SetupSlotModel.Value, Detour, !HookOverrides.Instance.Objects.CharacterSetupSlotModel);
     }
-
-    public delegate nint Delegate(CharacterBase* pThis, uint slot);
 
     public nint Detour(CharacterBase* pThis, uint slot)
     {

@@ -29,6 +29,15 @@ public sealed class ModFileSystemCache : FileSystemCache<ModFileSystemCache.ModD
         Parent.Communicator.ModDataChanged.Subscribe(OnModDataChange, ModDataChanged.Priority.ModFileSystemCache);
     }
 
+    public override void Update()
+    {
+        if (ColorsDirty)
+            foreach (var node in AllNodes.Values)
+                node.Dirty = true;
+
+        base.Update();
+    }
+
     private void OnModDataChange(in ModDataChanged.Arguments arguments)
     {
         if (arguments.Type.HasFlag(ModDataChangeType.Deletion))
@@ -139,19 +148,18 @@ public sealed class ModFileSystemCache : FileSystemCache<ModFileSystemCache.ModD
         {
             var modManager = ((ModFileSystemDrawer)cache.Parent).ModManager;
             var tint = (Settings.IsTemporary() ? ColorId.TemporaryModSettingsTint :
-                modManager.IsNew(Node.Value)   ? ColorId.NewModTint : ColorId.NoTint).Value().ToVector();
+                modManager.IsNew(Node.Value)   ? ColorId.NewModTint : ColorId.NoTint).Vector;
             if (Settings is null)
-                return Rgba32.TintColor(ColorId.UndefinedMod.Value().ToVector(), tint);
+                return Rgba32.TintColor(ColorId.UndefinedMod.Vector, tint);
 
             if (!Settings.Enabled)
-                return Rgba32.TintColor((Collection != current ? ColorId.InheritedDisabledMod : ColorId.DisabledMod).Value().ToVector(), tint);
+                return Rgba32.TintColor((Collection != current ? ColorId.InheritedDisabledMod : ColorId.DisabledMod).Vector, tint);
 
             var conflicts = current.Conflicts(Node.Value);
             if (conflicts.Count is 0)
-                return Rgba32.TintColor((Collection != current ? ColorId.InheritedMod : ColorId.EnabledMod).Value().ToVector(), tint);
+                return Rgba32.TintColor((Collection != current ? ColorId.InheritedMod : ColorId.EnabledMod).Vector, tint);
 
-            return Rgba32.TintColor((conflicts.Any(c => !c.Solved) ? ColorId.ConflictingMod : ColorId.HandledConflictMod).Value().ToVector(),
-                tint);
+            return Rgba32.TintColor((conflicts.Any(c => !c.Solved) ? ColorId.ConflictingMod : ColorId.HandledConflictMod).Vector, tint);
         }
 
         protected override void DrawInternal(FileSystemCache<ModData> cache, IFileSystemNode node)
@@ -175,7 +183,7 @@ public sealed class ModFileSystemCache : FileSystemCache<ModFileSystemCache.ModD
 
             modManager.SetKnown(Node.Value);
             var (setting, collection) = collectionManager.Active.Current.GetActualSettings(Node.Value.Index);
-            if (config.DeleteModModifier.ForcedModifier(new DoubleModifier(ModifierHotkey.Control, ModifierHotkey.Shift)).IsActive())
+            if (LunaStyle.Modifier.Destructive.Modifier.ForcedModifier(new DoubleModifier(ModifierHotkey.Control, ModifierHotkey.Shift)).IsActive())
             {
                 // Delete temporary settings if they exist, regardless of mode, or set to inheriting if none exist.
                 if (collectionManager.Active.Current.GetTempSettings(Node.Value.Index) is not null)
@@ -185,7 +193,7 @@ public sealed class ModFileSystemCache : FileSystemCache<ModFileSystemCache.ModD
             }
             else
             {
-                if (config.DefaultTemporaryMode)
+                if (config.Main.DefaultTemporaryMode)
                 {
                     var settings = new TemporaryModSettings(Node.Value, setting) { ForceInherit = false };
                     settings.Enabled = !settings.Enabled;
@@ -207,7 +215,7 @@ public sealed class ModFileSystemCache : FileSystemCache<ModFileSystemCache.ModD
                 return;
 
             var config = ((ModFileSystemDrawer)cache.Parent).Config;
-            if (config.HidePrioritiesInSelector)
+            if (config.Ui.HidePrioritiesInSelector)
                 return;
 
             var line           = Im.Item.UpperLeftCorner.Y;
@@ -219,7 +227,7 @@ public sealed class ModFileSystemCache : FileSystemCache<ModFileSystemCache.ModD
                 offset -= Im.Style.ItemInnerSpacing.X;
 
             if (offset > Im.Style.ItemSpacing.X)
-                Im.Window.DrawList.Text(new Vector2(itemPos + offset, line), ColorId.SelectorPriority.Value().Color, PriorityText);
+                Im.Window.DrawList.Text(new Vector2(itemPos + offset, line), ColorId.SelectorPriority.Value, PriorityText);
         }
     }
 

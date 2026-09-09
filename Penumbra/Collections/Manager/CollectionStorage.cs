@@ -1,5 +1,6 @@
 using Dalamud.Interface.ImGuiNotification;
 using Luna;
+using Penumbra.Api.Enums;
 using Penumbra.Communication;
 using Penumbra.Files;
 using Penumbra.Mods.Manager;
@@ -253,22 +254,22 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
 
             var collection  = CreateFromData(id, name, version, settings, inheritance);
             var correctName = _saveService.FileNames.CollectionFile(collection);
-            if (file.FullName != correctName)
+            if (file != correctName)
                 try
                 {
                     if (version >= 2)
                     {
                         try
                         {
-                            File.Move(file.FullName, correctName, false);
+                            File.Move(file, correctName, false);
                             Penumbra.Messager.NotificationMessage(
-                                $"Collection {file.Name} does not correspond to {collection.Identity.Identifier}, renamed.",
+                                $"Collection {Path.GetFileNameWithoutExtension(file)} does not correspond to {collection.Identity.Identifier}, renamed.",
                                 NotificationType.Warning);
                         }
                         catch (Exception ex)
                         {
                             Penumbra.Messager.NotificationMessage(
-                                $"Collection {file.Name} does not correspond to {collection.Identity.Identifier}, rename failed:\n{ex}",
+                                $"Collection {Path.GetFileNameWithoutExtension(file)} does not correspond to {collection.Identity.Identifier}, rename failed:\n{ex}",
                                 NotificationType.Warning);
                         }
                     }
@@ -277,7 +278,7 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
                         _saveService.ImmediateSaveSync(new ModCollectionSave(_modStorage, collection));
                         try
                         {
-                            File.Move(file.FullName, file.FullName + ".bak", true);
+                            File.Move(file, file + ".bak", true);
                             Penumbra.Log.Information($"Migrated collection {name} to Guid {id} with backup of old file.");
                         }
                         catch (Exception ex)
@@ -289,7 +290,7 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
                 catch (Exception e)
                 {
                     Penumbra.Messager.NotificationMessage(e,
-                        $"Collection {file.Name} does not correspond to {collection.Identity.Identifier}, but could not rename.",
+                        $"Collection {Path.GetFileNameWithoutExtension(file)} does not correspond to {collection.Identity.Identifier}, but could not rename.",
                         NotificationType.Error);
                 }
 
@@ -357,7 +358,12 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
                 {
                     if (collection.GetOwnSettings(arguments.Mod.Index)?.Settings.FixAll(arguments.Mod) ?? false)
                         _saveService.QueueSave(new ModCollectionSave(_modStorage, collection));
-                    collection.Settings.SetTemporary(arguments.Mod.Index, null);
+                    if (collection.Settings.Settings[arguments.Mod.Index].TempSettings is not null)
+                    {
+                        collection.Settings.SetTemporary(arguments.Mod.Index, null);
+                        _communicator.ModSettingChanged.Invoke(new ModSettingChanged.Arguments(ModSettingChange.TemporarySetting, collection,
+                            arguments.Mod, Setting.Indefinite, -1, false));
+                    }
                 }
 
                 break;

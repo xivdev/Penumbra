@@ -3,7 +3,6 @@ using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using Luna;
 using Penumbra.Api.Enums;
 using Penumbra.GameData;
-using Penumbra.Interop.SafeHandles;
 using Penumbra.Interop.Structs;
 using Penumbra.String;
 using Penumbra.String.Classes;

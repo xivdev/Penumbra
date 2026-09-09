@@ -1,5 +1,6 @@
 using Dalamud.Interface;
 using Dalamud.Plugin.Services;
+using Penumbra.Collections.Cache;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
 using Penumbra.Services;
@@ -12,30 +13,30 @@ public class DalamudSubstitutionProvider : IDisposable, Luna.IApiService
     private readonly ITextureSubstitutionProvider _substitution;
     private readonly IUiBuilder                   _uiBuilder;
     private readonly ActiveCollectionData         _activeCollectionData;
+    private readonly CollectionCacheManager       _caches; // May be required to not be disposed on disposal.
     private readonly Configuration                _config;
     private readonly CommunicatorService          _communicator;
 
-    public bool Enabled
-        => _config.UseDalamudUiTextureRedirection;
-
     public DalamudSubstitutionProvider(ITextureSubstitutionProvider substitution, ActiveCollectionData activeCollectionData,
-        Configuration config, CommunicatorService communicator, IUiBuilder ui)
+        Configuration config, CommunicatorService communicator, IUiBuilder ui, CollectionCacheManager caches)
     {
-        _substitution         = substitution;
-        _uiBuilder            = ui;
-        _activeCollectionData = activeCollectionData;
-        _config               = config;
-        _communicator         = communicator;
-        if (Enabled)
+        _substitution                               =  substitution;
+        _uiBuilder                                  =  ui;
+        _caches                                     =  caches;
+        _activeCollectionData                       =  activeCollectionData;
+        _config                                     =  config;
+        _communicator                               =  communicator;
+        _config.Behavior.DalamudSubstitutionChanged += OnDalamudSubstitutionChanged;
+        if (_config.Behavior.UseDalamudUiTextureRedirection)
             Subscribe();
     }
 
-    public void Set(bool value)
+    private void OnDalamudSubstitutionChanged(bool newValue, bool oldValue)
     {
-        if (value)
-            Enable();
+        if (newValue)
+            Subscribe();
         else
-            Disable();
+            Unsubscribe();
     }
 
     public void ResetSubstitutions(IEnumerable<Utf8GamePath> paths)
@@ -43,34 +44,24 @@ public class DalamudSubstitutionProvider : IDisposable, Luna.IApiService
         if (!_uiBuilder.UiPrepared)
             return;
 
-        var transformed = paths
-            .Where(p => (p.Path.StartsWith("ui/"u8) || p.Path.StartsWith("common/font/"u8)) && p.Path.EndsWith(".tex"u8))
-            .Select(p => p.ToString());
-        _substitution.InvalidatePaths(transformed);
-    }
-
-    public void Enable()
-    {
-        if (Enabled)
-            return;
-
-        _config.UseDalamudUiTextureRedirection = true;
-        _config.Save();
-        Subscribe();
-    }
-
-    public void Disable()
-    {
-        if (!Enabled)
-            return;
-
-        Unsubscribe();
-        _config.UseDalamudUiTextureRedirection = false;
-        _config.Save();
+        try
+        {
+            var transformed = paths
+                .Where(p => (p.Path.StartsWith("ui/"u8) || p.Path.StartsWith("common/font/"u8)) && p.Path.EndsWith(".tex"u8))
+                .Select(p => p.ToString());
+            _substitution.InvalidatePaths(transformed);
+        }
+        catch (Exception ex)
+        {
+            Penumbra.Log.Error($"Failed to reset texture substitutions:\n{ex}");
+        }
     }
 
     public void Dispose()
-        => Unsubscribe();
+    {
+        _config.Behavior.DalamudSubstitutionChanged -= OnDalamudSubstitutionChanged;
+        Unsubscribe();
+    }
 
     private void OnCollectionChange(in CollectionChange.Arguments arguments)
     {
@@ -112,11 +103,11 @@ public class DalamudSubstitutionProvider : IDisposable, Luna.IApiService
     private void Substitute(string path, ref string? replacementPath)
     {
         // Do not replace when not enabled.
-        if (!_config.EnableMods)
+        if (!_config.Main.EnableMods)
             return;
 
         // Let other plugins prioritize replacement paths.
-        if (replacementPath != null)
+        if (replacementPath is not null)
             return;
 
         // Only replace interface textures.

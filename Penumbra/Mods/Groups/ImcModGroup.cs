@@ -1,7 +1,4 @@
-using Dalamud.Interface.ImGuiNotification;
 using Luna;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Structs;
@@ -10,13 +7,19 @@ using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
 using Penumbra.String.Classes;
-using Penumbra.UI.ModsTab.Groups;
+using Penumbra.UI.ModsTab.Settings;
 
 namespace Penumbra.Mods.Groups;
 
 public class ImcModGroup(Mod mod) : IModGroup
 {
+    public int Index { get; private set; } = -1;
+
+    public void SetIndex(int index)
+        => Index = index;
+
     public Mod    Mod         { get; }      = mod;
+    public Guid   Id          { get; set; } = Guid.Empty;
     public string Name        { get; set; } = "Option";
     public string Description { get; set; } = string.Empty;
     public string Image       { get; set; } = string.Empty;
@@ -30,7 +33,8 @@ public class ImcModGroup(Mod mod) : IModGroup
     public ModPriority                    Priority        { get; set; } = ModPriority.Default;
     public int                            Page            { get; set; }
     public Setting                        DefaultSettings { get; set; } = Setting.Zero;
-    public string?                        ParentSetting   { get; set; }
+    public ModSettingsLayout              Layout          { get; set; }
+    public IModObject?                    ParentSetting   { get; set; }
     public ICondition<ModSettingContext>? Condition       { get; set; }
 
     public ImcIdentifier Identifier;
@@ -63,15 +67,8 @@ public class ImcModGroup(Mod mod) : IModGroup
         }
     }
 
-    public bool DefaultDisabled
-        => IsDisabled(DefaultSettings);
-
-    public IModOption? AddOption(string name, string description = "")
+    public IModOption AddOption(string name, string description = "")
     {
-        var groupIdx = Mod.Groups.IndexOf(this);
-        if (groupIdx < 0)
-            return null;
-
         var subMod = new ImcSubMod(this)
         {
             Name          = name,
@@ -82,7 +79,7 @@ public class ImcModGroup(Mod mod) : IModGroup
         return subMod;
     }
 
-    public readonly List<ImcSubMod> OptionData = [];
+    public readonly IndexList<ImcSubMod> OptionData = [];
 
     public IReadOnlyList<IModOption> Options
         => OptionData;
@@ -111,16 +108,20 @@ public class ImcModGroup(Mod mod) : IModGroup
         return DefaultEntry with { AttributeMask = mask };
     }
 
-    public void AddData(Setting setting, Dictionary<Utf8GamePath, FullPath> redirections, MetaDictionary manipulations)
+    public void AddData(ModSettings settings, Setting setting, Dictionary<Utf8GamePath, FullPath> redirections, MetaDictionary manipulations)
     {
-        if (IsDisabled(setting))
+        var context = new ModSettingContext(Mod, settings);
+        if (IsDisabled(context, setting))
             return;
 
-        var mask = GetCurrentMask(setting);
+        if (Condition is not null && !Condition.Evaluate(context))
+            return;
+
+        var mask = GetCurrentMask(context, setting);
         if (AllVariants)
         {
             var count = ImcChecker.GetVariantCount(Identifier);
-            if (count == 0)
+            if (count is 0)
                 manipulations.TryAdd(Identifier, GetEntry(Identifier.Variant, mask));
             else
                 for (var i = 0; i <= count; ++i)
@@ -138,111 +139,28 @@ public class ImcModGroup(Mod mod) : IModGroup
     public Setting FixSetting(Setting setting)
         => new(setting.Value & ((1ul << OptionData.Count) - 1));
 
-    public void WriteJson(JsonTextWriter jWriter, JsonSerializer serializer, DirectoryInfo? basePath = null)
-    {
-        ModSaveGroup.WriteJsonBase(jWriter, this);
-        var jObj = Identifier.AddToJson(new JObject());
-        jWriter.WritePropertyName(nameof(Identifier));
-        jObj.WriteTo(jWriter);
-        jWriter.WritePropertyName(nameof(DefaultEntry));
-        serializer.Serialize(jWriter, DefaultEntry);
-        jWriter.WritePropertyName(nameof(AllVariants));
-        jWriter.WriteValue(AllVariants);
-        jWriter.WritePropertyName(nameof(OnlyAttributes));
-        jWriter.WriteValue(OnlyAttributes);
-        jWriter.WritePropertyName("Options");
-        jWriter.WriteStartArray();
-        foreach (var option in OptionData)
-        {
-            jWriter.WriteStartObject();
-            SubMod.WriteModOption(jWriter, option);
-            if (option.IsDisableSubMod)
-            {
-                jWriter.WritePropertyName(nameof(option.IsDisableSubMod));
-                jWriter.WriteValue(true);
-            }
-            else
-            {
-                jWriter.WritePropertyName(nameof(option.AttributeMask));
-                jWriter.WriteValue(option.AttributeMask);
-            }
-
-            jWriter.WriteEndObject();
-        }
-
-        jWriter.WriteEndArray();
-    }
-
     public (int Redirections, int Swaps, int Manips) GetCounts()
         => (0, 0, 1);
 
-    public static ImcModGroup? Load(Mod mod, JObject json)
-    {
-        var options    = json["Options"];
-        var identifier = ImcIdentifier.FromJson(json[nameof(Identifier)] as JObject);
-        var ret = new ImcModGroup(mod)
-        {
-            DefaultEntry   = json[nameof(DefaultEntry)]?.ToObject<ImcEntry>() ?? new ImcEntry(),
-            AllVariants    = json[nameof(AllVariants)]?.ToObject<bool>() ?? false,
-            OnlyAttributes = json[nameof(OnlyAttributes)]?.ToObject<bool>() ?? false,
-        };
-        if (!ModSaveGroup.ReadJsonBase(json, ret))
-            return null;
-
-        if (!identifier.HasValue || ret.DefaultEntry.MaterialId == 0)
-        {
-            Penumbra.Messager.NotificationMessage($"Could not add IMC group {ret.Name} because the associated IMC Entry is invalid.",
-                NotificationType.Warning);
-            return null;
-        }
-
-        var rollingMask = 0ul;
-        if (options != null)
-            foreach (var child in options.Children())
-            {
-                var subMod = new ImcSubMod(ret, child);
-
-                if (subMod.IsDisableSubMod)
-                    ret._canBeDisabled = true;
-
-                if (subMod.IsDisableSubMod && ret.OptionData.FirstOrDefault(m => m.IsDisableSubMod) is { } disable)
-                {
-                    Penumbra.Messager.NotificationMessage(
-                        $"Could not add IMC option {subMod.Name} to {ret.Name} because it already contains {disable.Name} as disable option.",
-                        NotificationType.Warning);
-                }
-                else if ((subMod.AttributeMask & rollingMask) != 0)
-                {
-                    Penumbra.Messager.NotificationMessage(
-                        $"Could not add IMC option {subMod.Name} to {ret.Name} because it contains attributes already in use.",
-                        NotificationType.Warning);
-                }
-                else
-                {
-                    rollingMask |= subMod.AttributeMask;
-                    ret.OptionData.Add(subMod);
-                }
-            }
-
-        ret.Identifier      = identifier.Value;
-        ret.DefaultSettings = ret.FixSetting(ret.DefaultSettings);
-        return ret;
-    }
-
-    private bool IsDisabled(Setting setting)
+    private bool IsDisabled(in ModSettingContext context, Setting setting)
     {
         if (!CanBeDisabled)
             return false;
 
         var idx = OptionData.IndexOf(m => m.IsDisableSubMod);
         if (idx >= 0)
-            return setting.HasFlag(idx);
+        {
+            if (OptionData[idx].Condition is not { } condition || condition.Evaluate(context))
+                return setting.HasFlag(idx);
+
+            return false;
+        }
 
         Penumbra.Log.Warning("A IMC Group should be able to be disabled, but does not contain a disable option.");
         return false;
     }
 
-    private ushort GetCurrentMask(Setting setting)
+    private ushort GetCurrentMask(in ModSettingContext context, Setting setting)
     {
         var mask = DefaultEntry.AttributeMask;
         for (var i = 0; i < OptionData.Count; ++i)
@@ -251,7 +169,8 @@ public class ImcModGroup(Mod mod) : IModGroup
                 continue;
 
             var option = OptionData[i];
-            mask ^= option.AttributeMask;
+            if (option.Condition is null || option.Condition.Evaluate(context))
+                mask ^= option.AttributeMask;
         }
 
         return mask;

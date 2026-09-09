@@ -1,7 +1,7 @@
 using Dalamud.Game.ClientState.Objects.Types;
 using Newtonsoft.Json.Linq;
+using Penumbra.Api;
 using Penumbra.Api.Enums;
-using Penumbra.Api.Helpers;
 using Penumbra.String.Classes;
 using Penumbra.UI.Classes;
 

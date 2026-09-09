@@ -22,7 +22,7 @@ public abstract class FileEditingContext
     /// </summary>
     /// <remarks>
     /// Tries to resolve from the current collection first and chooses the currently resolved file if any exists.
-    /// If none exists, goes through all options in the currently selected mod (if any) in order of priority and resolves in them. 
+    /// If none exists, goes through all options in the currently selected mod (if any) in order of priority and resolves in them.
     /// If no redirection is found in either of those options, returns the original path.
     /// </remarks>
     public FullPath FindBestMatch(Utf8GamePath path)
@@ -67,6 +67,20 @@ public abstract class FileEditingContext
             }
 
         return ret;
+    }
+
+    public IEnumerable<IModDataContainer>? GetModDataContainers()
+    {
+        if (Mod is not { } mod)
+            return null;
+
+        if (Option is not { } option)
+            return mod.AllDataContainers;
+
+        // Filter then prepend the current option to ensure it's chosen first.
+        return mod.AllDataContainers
+            .Where(subMod => subMod != option)
+            .Prepend(option);
     }
 
     public abstract FileRegistry? TryFindFileRegistry(Mod mod, Utf8RelPath relPath);

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Newtonsoft.Json.Linq;
 using Penumbra.GameData.Data;
 using Penumbra.Interop.Structs;
@@ -28,6 +29,7 @@ public interface IMetaIdentifier
     public bool Validate();
 
     public JObject AddToJson(JObject jObj);
+    public Utf8JsonWriter AddToJson(Utf8JsonWriter j);
 
     public MetaManipulationType Type { get; }
 

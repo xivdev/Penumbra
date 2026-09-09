@@ -2,10 +2,10 @@ using Dalamud.Hooking;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
+using Luna;
 using Penumbra.Api.Enums;
 using Penumbra.Interop.Hooks.ResourceLoading;
 using Penumbra.Interop.PathResolving;
-using Penumbra.Interop.SafeHandles;
 using Penumbra.String;
 using Penumbra.String.Classes;
 using CharacterUtility = Penumbra.Interop.Services.CharacterUtility;
@@ -62,7 +62,7 @@ public sealed unsafe class PreBoneDeformerReplacer : IDisposable, Luna.IRequired
         if (!_framework.IsInFrameworkUpdateThread)
             Penumbra.Log.Warning(
                 $"{nameof(PreBoneDeformerReplacer)}.{nameof(SetupHssReplacements)}(0x{(nint)drawObject:X}, {slotIndex}) called out of framework thread");
-        
+
         var preBoneDeformer = GetPreBoneDeformerForCharacter(drawObject);
         try
         {

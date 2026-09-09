@@ -37,8 +37,8 @@ public static partial class ModMigration
         if (fileVersion > 1)
             return false;
 
-        if (!saveService.FileNames.GetOptionGroupFiles(mod).All(g => GroupRegex().IsMatch(g.Name)))
-            foreach (var (index, group) in saveService.FileNames.GetOptionGroupFiles(mod).Index().ToArray())
+        if (!saveService.FileNames.Migration.GetOptionGroupFiles(mod).All(g => GroupRegex().IsMatch(g.Name)))
+            foreach (var (index, group) in saveService.FileNames.Migration.GetOptionGroupFiles(mod).Index().ToArray())
             {
                 var newName = GroupStartRegex().Replace(group.Name, $"group_{index + 1:D3}_");
                 try
@@ -82,7 +82,7 @@ public static partial class ModMigration
             mod.Default.FileSwaps.Add(gamePath, swapPath);
 
         creator.IncorporateAllMetaChanges(mod, true, true);
-        saveService.SaveAllOptionGroups(mod, false, creator.Config.ReplaceNonAsciiOnImport);
+        // Here we previously saved all option groups, which is skipped now since the meta save later handles that.
 
         // Delete meta files.
         foreach (var file in seenMetaFiles.Where(f => f.Exists))
@@ -110,7 +110,7 @@ public static partial class ModMigration
             }
 
         fileVersion = 1;
-        saveService.ImmediateSave(new ModSaveGroup(mod.ModPath, mod.Default, creator.Config.ReplaceNonAsciiOnImport));
+        saveService.ImmediateSaveSync(new ModMeta(saveService, mod));
 
         return true;
     }

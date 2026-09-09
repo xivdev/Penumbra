@@ -47,7 +47,7 @@ public sealed unsafe class GetCachedScheduleResource : FastHook<GetCachedSchedul
     }
 
 
-    // #TODO: remove when fixed in CS.
+    // #TODO: 20260824 remove when fixed in CS.
     public static ResourceHandle* Resource(SchedulerResource* r)
         => ((ResourceHandle**)r)[3];
 }

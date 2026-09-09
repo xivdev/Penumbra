@@ -9,7 +9,7 @@ using MtrlFile = Penumbra.GameData.Files.MtrlFile;
 
 namespace Penumbra.Services;
 
-public class MigrationManager(Configuration config) : IService
+public class MigrationManager(IoConfig config) : IService
 {
     public enum TaskType : byte
     {
@@ -244,7 +244,7 @@ public class MigrationManager(Configuration config) : IService
             return;
         }
 
-        var       path = Path.Combine(directory, reader.Entry.Key!);
+        var       path = Path.CombineSafely(directory, reader.Entry.Key!);
         using var s    = new MemoryStream();
         using var e    = reader.OpenEntryStream();
         e.CopyTo(s);
@@ -270,13 +270,13 @@ public class MigrationManager(Configuration config) : IService
 
     public void MigrateMtrlDuringExtraction(ArchiveUtility.ReaderShim reader, string directory)
     {
-        if (!config.MigrateImportedMaterialsToLegacy || true) // TODO change when this is working
+        if (!config.MigrateImportedMaterialsToLegacy || true) // TODO 20260824 change when this is working
         {
             reader.WriteEntryToDirectory(directory);
             return;
         }
 
-        var       path = Path.Combine(directory, reader.Entry.Key);
+        var       path = Path.CombineSafely(directory, reader.Entry.Key);
         using var s    = new MemoryStream();
         using var e    = reader.OpenEntryStream();
         e.CopyTo(s);
@@ -299,7 +299,7 @@ public class MigrationManager(Configuration config) : IService
 
     public void FixMipMaps(ArchiveUtility.ReaderShim reader, string directory)
     {
-        var       path = Path.Combine(directory, reader.Entry.Key!);
+        var       path = Path.CombineSafely(directory, reader.Entry.Key!);
         using var s    = new MemoryStream();
         using var e    = reader.OpenEntryStream();
         e.CopyTo(s);
@@ -348,7 +348,7 @@ public class MigrationManager(Configuration config) : IService
     /// <summary> Update the data of a .mtrl file during TTMP extraction. Returns either the existing array or a new one. </summary>
     public byte[] MigrateTtmpMaterial(string path, byte[] data)
     {
-        if (!config.MigrateImportedMaterialsToLegacy || true) // TODO fix when this is working
+        if (!config.MigrateImportedMaterialsToLegacy || true) // TODO 20260824 fix when this is working
             return data;
 
         try

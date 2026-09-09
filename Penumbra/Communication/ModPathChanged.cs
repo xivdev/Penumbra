@@ -3,6 +3,7 @@ using Penumbra.Api.Api;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
+using Penumbra.UI.ModsTab.Settings;
 
 namespace Penumbra.Communication;
 
@@ -21,11 +22,14 @@ public sealed class ModPathChanged(LunaLogger log)
         /// <seealso cref="ModSettingsApi.OnModPathChange"/>
         ApiModSettings = int.MinValue + 1,
 
-        /// <seealso cref="EphemeralConfig.OnModPathChanged"/>
-        EphemeralConfig = -500,
+        /// <seealso cref="Mods.Settings.SettingPresetManager.OnModOptionChange"/>
+        SettingPresetManager = -500,
 
         /// <seealso cref="Collections.Cache.CollectionCacheManager.OnModChangeAddition"/>
         CollectionCacheManagerAddition = -100,
+
+        /// <seealso cref="ModSettingsCache.OnModPathChanged"/>
+        ModGroupCache = -5,
 
         /// <seealso cref="Mods.Manager.ModCacheManager.OnModPathChange"/>
         ModCacheManager = 0,

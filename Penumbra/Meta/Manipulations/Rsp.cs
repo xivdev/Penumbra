@@ -1,3 +1,4 @@
+using ImSharp;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Penumbra.GameData.Data;
@@ -27,6 +28,13 @@ public readonly record struct RspIdentifier(SubRace SubRace, RspAttribute Attrib
         return jObj;
     }
 
+    public System.Text.Json.Utf8JsonWriter AddToJson(System.Text.Json.Utf8JsonWriter j)
+    {
+        j.WriteString("SubRace"u8, SubRace.StringU8);
+        j.WriteString("Attribute"u8, Attribute.StringU8);
+        return j;
+    }
+
     public static RspIdentifier? FromJson(JObject? jObj)
     {
         if (jObj == null)
@@ -37,6 +45,8 @@ public readonly record struct RspIdentifier(SubRace SubRace, RspAttribute Attrib
         var ret       = new RspIdentifier(subRace, attribute);
         return ret.Validate() ? ret : null;
     }
+
+    
 
     public MetaManipulationType Type
         => MetaManipulationType.Rsp;

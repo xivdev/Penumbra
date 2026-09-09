@@ -1,9 +1,9 @@
-﻿using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
+using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using Luna;
 
 namespace Penumbra.Interop.Hooks.PostProcessing;
 
-// TODO: "SetupScaling" does not seem to only set up scaling -> find a better name?
+// TODO 20260824 "SetupScaling" does not seem to only set up scaling -> find a better name?
 public unsafe class HumanSetupScalingHook : FastHook<HumanSetupScalingHook.Delegate>
 {
     private const int ReplacementCapacity = 2;

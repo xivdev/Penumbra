@@ -56,7 +56,7 @@ public class ModPanelTabBar : TabBar<ModPanelTab>, IDisposable
         public override void OnClick()
         {
             if (parent._lastMod is { } mod)
-                editFactory.OpenForMod(mod, editFactory.UnpinnedWindow is null && !parent._config.DefaultEditWindowModPinned);
+                editFactory.OpenForMod(mod, editFactory.UnpinnedWindow is null && !parent._config.Editing.DefaultEditWindowModPinned);
         }
 
         public override bool HasTooltip

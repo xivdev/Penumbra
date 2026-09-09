@@ -67,12 +67,11 @@ public class ModPanelConflictsTab(CollectionManager collectionManager, ModSelect
 
     private void DrawCurrentRow(in Im.TableDisposable table, float priorityWidth)
     {
-        using var c = ImGuiColor.Text.Push(ColorId.FolderLine.Value());
+        using var c = ImGuiColor.Text.Push(ColorId.FolderLine.Vector);
         table.DrawFrameColumn(selection.Mod!.Name);
         table.NextColumn();
         var actualSettings = collectionManager.Active.Current.GetActualSettings(selection.Mod!.Index).Settings!;
         var priority       = actualSettings.Priority.Value;
-        // TODO
         using (Im.Disabled(actualSettings is TemporaryModSettings))
         {
             if (ImEx.InputOnDeactivation.Scalar("##priority"u8, ref priority))
@@ -149,7 +148,7 @@ public class ModPanelConflictsTab(CollectionManager collectionManager, ModSelect
 
     private int DrawPriorityInput(ModConflicts conflict, float priorityWidth)
     {
-        using var color = ImGuiColor.Text.Push(conflict.HasPriority ? ColorId.HandledConflictMod.Value() : ColorId.ConflictingMod.Value());
+        using var color = ImGuiColor.Text.Push(conflict.HasPriority ? ColorId.HandledConflictMod.Vector : ColorId.ConflictingMod.Vector);
         using var disabled = Im.Disabled(conflict.Mod2.Index < 0);
         var       priority = GetPriority(conflict).Value;
         var       originalPriority = priority;

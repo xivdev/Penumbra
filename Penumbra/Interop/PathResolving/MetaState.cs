@@ -36,7 +36,7 @@ namespace Penumbra.Interop.PathResolving;
 // GMP Entries seem to be only used by "48 8B ?? 53 55 57 48 83 ?? ?? 48 8B", which is SetupVisor.
 public sealed unsafe class MetaState : IDisposable, IService
 {
-    public readonly  Configuration       Config;
+    public readonly  MainConfig          Config;
     private readonly CommunicatorService _communicator;
     private readonly CollectionResolver  _collectionResolver;
     private readonly ResourceLoader      _resources;
@@ -57,7 +57,7 @@ public sealed unsafe class MetaState : IDisposable, IService
     private DisposableContainer _characterBaseCreateMetaChanges = DisposableContainer.Empty;
 
     public MetaState(CommunicatorService communicator, CollectionResolver collectionResolver,
-        ResourceLoader resources, CreateCharacterBase createCharacterBase, CharacterUtility characterUtility, Configuration config)
+        ResourceLoader resources, CreateCharacterBase createCharacterBase, CharacterUtility characterUtility, MainConfig config)
     {
         _communicator        = communicator;
         _collectionResolver  = collectionResolver;
@@ -97,7 +97,8 @@ public sealed unsafe class MetaState : IDisposable, IService
         _lastCreatedCollection = _collectionResolver.IdentifyLastGameObjectCollection(true);
         if (_lastCreatedCollection.Valid && _lastCreatedCollection.AssociatedGameObject != nint.Zero)
             _communicator.CreatingCharacterBase.Invoke(new CreatingCharacterBase.Arguments(_lastCreatedCollection.AssociatedGameObject,
-                _lastCreatedCollection.ModCollection, (nint)Unsafe.AsPointer(ref arguments.ModelCharaId), (nint)arguments.Customize, (nint)arguments.Equipment));
+                _lastCreatedCollection.ModCollection, (nint)Unsafe.AsPointer(ref arguments.ModelCharaId), (nint)arguments.Customize,
+                (nint)arguments.Equipment));
 
         var decal = new DecalReverter(Config, _characterUtility, _resources, _lastCreatedCollection,
             UsesDecal(arguments.ModelCharaId, (nint)arguments.Customize));

@@ -7,7 +7,7 @@ namespace Penumbra.UI;
 
 public static class Combos
 {
-    public static readonly EnumCombo<ModelRace> ModelRace = new(ModelRaceExtensions.ToNameU8, ModelRaceExtensions.ToName);
+    public static readonly EnumCombo<ModelRace> ModelRace = new(ModelRaceExtensions.ToNameU8, ModelRaceExtensions.ToName, null, GameData.Enums.ModelRace.Values.Skip(1).ToArray());
     public static readonly EnumCombo<ModelRace> TailedRace = new(ModelRaceExtensions.ToNameU8, ModelRaceExtensions.ToName, null, [GameData.Enums.ModelRace.Miqote, GameData.Enums.ModelRace.AuRa, GameData.Enums.ModelRace.Hrothgar]);
     public static readonly EnumCombo<Gender>    Gender    = new(GenderExtensions.ToNameU8, GenderExtensions.ToName);
 

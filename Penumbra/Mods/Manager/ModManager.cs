@@ -50,7 +50,7 @@ public sealed class ModManager : ModStorage, IDisposable, IService
         DataEditor    = dataEditor;
         OptionEditor  = optionEditor;
         Creator       = creator;
-        SetBaseDirectory(config.ModDirectory, true, out _);
+        SetBaseDirectory(config.Main.ModDirectory, true, out _);
         _communicator.ModPathChanged.Subscribe(OnModPathChange, ModPathChanged.Priority.ModManager);
         DiscoverMods();
     }
@@ -155,7 +155,7 @@ public sealed class ModManager : ModStorage, IDisposable, IService
         }
 
         _communicator.ModPathChanged.Invoke(new ModPathChanged.Arguments(ModPathChangeType.Reloaded, mod, mod.ModPath, mod.ModPath));
-        if (metaChange != ModDataChangeType.None)
+        if (metaChange is not ModDataChangeType.None)
             _communicator.ModDataChanged.Invoke(new ModDataChanged.Arguments(metaChange, mod, oldName));
     }
 
@@ -231,7 +231,7 @@ public sealed class ModManager : ModStorage, IDisposable, IService
         if (oldName == newName)
             return NewDirectoryState.Identical;
 
-        var fixedNewName = newName.ReplaceBadXivSymbols(_config.ReplaceNonAsciiOnImport);
+        var fixedNewName = newName.ReplaceBadXivSymbols(_config.Io.ReplaceNonAsciiOnImport);
         if (fixedNewName != newName)
             return NewDirectoryState.ContainsInvalidSymbols;
 
@@ -275,14 +275,14 @@ public sealed class ModManager : ModStorage, IDisposable, IService
     private void SetBaseDirectory(string newPath, bool firstTime, out string resultNewDir)
     {
         resultNewDir = newPath;
-        if (!firstTime && string.Equals(newPath, _config.ModDirectory, StringComparison.Ordinal))
+        if (!firstTime && string.Equals(newPath, _config.Main.ModDirectory, StringComparison.Ordinal))
             return;
 
         if (newPath.Length is 0)
         {
             Valid    = false;
             BasePath = new DirectoryInfo(".");
-            if (_config.ModDirectory != BasePath.FullName)
+            if (_config.Main.ModDirectory != BasePath.FullName)
                 TriggerModDirectoryChange(string.Empty, false);
         }
         else
@@ -302,7 +302,7 @@ public sealed class ModManager : ModStorage, IDisposable, IService
             BasePath     = newDir;
             Valid        = Directory.Exists(newDir.FullName);
             resultNewDir = BasePath.FullName;
-            if (!firstTime && _config.ModDirectory != BasePath.FullName)
+            if (!firstTime && _config.Main.ModDirectory != BasePath.FullName)
                 TriggerModDirectoryChange(BasePath.FullName, Valid);
         }
 
@@ -312,9 +312,8 @@ public sealed class ModManager : ModStorage, IDisposable, IService
 
     private void TriggerModDirectoryChange(string newPath, bool valid)
     {
-        _config.ModDirectory = newPath;
-        _config.Save();
-        Penumbra.Log.Information($"Set new mod base directory from {_config.ModDirectory} to {newPath}.");
+        _config.Main.ModDirectory = newPath;
+        Penumbra.Log.Information($"Set new mod base directory from {_config.Main.ModDirectory} to {newPath}.");
         _communicator.ModDirectoryChanged.Invoke(new ModDirectoryChanged.Arguments(newPath, valid));
     }
 
@@ -327,7 +326,7 @@ public sealed class ModManager : ModStorage, IDisposable, IService
     {
         try
         {
-            var options = new ParallelOptions()
+            var options = new ParallelOptions
             {
                 MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount),
             };
@@ -336,12 +335,17 @@ public sealed class ModManager : ModStorage, IDisposable, IService
             {
                 try
                 {
-                    if (Creator.LoadMod(dir, false, false) is {} mod)
+                    // Skip hidden directories.
+                    if (dir.IsHidden())
+                        return;
+
+                    if (Creator.LoadMod(dir, false, false) is { } mod)
                         queue.Enqueue(mod);
                 }
                 catch (Exception ex)
                 {
-                    Penumbra.Messager.NotificationMessage(ex, $"Failed to load mod {dir.Name}.", $"Failed to load mod at {dir.FullName}", NotificationType.Error);
+                    Penumbra.Messager.NotificationMessage(ex, $"Failed to load mod {dir.Name}.", $"Failed to load mod at {dir.FullName}",
+                        NotificationType.Error);
                 }
             });
 

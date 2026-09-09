@@ -2,35 +2,41 @@ using Dalamud.Interface;
 using Dalamud.Interface.ImGuiNotification;
 using ImSharp;
 using Luna;
-using Penumbra.Communication;
 using Penumbra.Files;
 using Penumbra.Mods;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Settings;
-using Penumbra.UI.ModsTab.Groups;
+using Penumbra.Services;
+using Penumbra.UI.ModsTab.Settings;
 
 namespace Penumbra.UI.ModsTab;
 
 public class ModPanelEditTab(
     ModManager modManager,
     ModFileSystem fileSystem,
-    Services.MessageService messager,
+    ModSelection selection,
+    CommunicatorService communicator,
+    Services.PenumbraMessager messager,
     FilenameService filenames,
     ModExportManager modExportManager,
-    Configuration config,
     PredefinedTagManager predefinedTagManager,
     ModGroupEditDrawer groupEditDrawer,
     DescriptionEditPopup descriptionPopup,
+    LayoutEditPopup layoutPopup,
+    ConditionEditPopup conditionPopup,
     AddGroupDrawer addGroupDrawer)
     : ITab<ModPanelTab>
 {
-    private IFileSystemData<Mod> _leaf             = null!;
-    private Mod                  _mod              = null!;
-    private bool                 _groupReorderMode = false;
-    private IModGroup?           _draggedGroup     = null;
+    private bool       _groupReorderMode;
+    private IModGroup? _draggedGroup;
 
+    private IFileSystemData<Mod> Leaf
+        => Mod.Node!;
+
+    private Mod Mod
+        => selection.Mod!;
 
     public ReadOnlySpan<byte> Label
         => "Edit Mod"u8;
@@ -38,14 +44,61 @@ public class ModPanelEditTab(
     public ModPanelTab Identifier
         => ModPanelTab.Edit;
 
+    private void DrawGroupNameEdit(GroupNameCache cache)
+    {
+        using var id = Im.Id.Push("##names"u8);
+        if (cache.Pages.Count is 1)
+        {
+            Draw();
+        }
+        else
+        {
+            using var tree = Im.Tree.Node("Page Names"u8, TreeNodeFlags.DefaultOpen);
+            if (tree)
+                Draw();
+        }
+
+        return;
+
+        void Draw()
+        {
+            foreach (var (page, data) in cache.Pages)
+            {
+                id.Push(page);
+                ImEx.TextFramed(data.DefaultName.Utf8, ImEx.ScaledVectorX(75, Im.Style.FrameHeight));
+                if (Im.Item.Hovered())
+                {
+                    using var tt = Im.Tooltip.Begin();
+                    Im.Text("Currently used by the following groups:"u8);
+                    foreach (var group in data.Groups)
+                        Im.BulletText(group.Name);
+                }
+
+                Im.Line.SameInner();
+                Im.Item.SetNextWidthScaled(200);
+                if (ImEx.InputOnDeactivation.Text("##name"u8, data.CustomName ? data.Name.Utf8 : StringU8.Empty, out string newName,
+                        "Custom Name..."u8))
+                    modManager.DataEditor.ChangePageName(Mod, page, newName); //
+                Im.Tooltip.OnHover("Clear the name to revert to default naming."u8);
+                if (!data.Visible)
+                {
+                    Im.Line.SameInner();
+                    ImEx.TextFrameAligned("(Not Displayed)"u8);
+                }
+
+                id.Pop();
+            }
+
+            UiHelpers.DefaultLineSpace();
+        }
+    }
+
     public void DrawContent()
     {
+        var       cache = CacheManager.Instance.GetOrCreateCache(Im.Id.Current, () => new GroupNameCache(communicator, selection));
         using var child = Im.Child.Begin("##editChild"u8, Im.ContentRegion.Available);
         if (!child)
             return;
-
-        _leaf = (IFileSystemData<Mod>)fileSystem.Selection.Selection!;
-        _mod  = _leaf.Value;
 
         EditButtons();
         EditRegularMeta();
@@ -53,10 +106,10 @@ public class ModPanelEditTab(
         EditLocalData();
         UiHelpers.DefaultLineSpace();
 
-        if (Input.Text("Mod Path"u8, Input.Path, Input.None, _leaf.FullPath, out var newPath, UiHelpers.InputTextWidth.X))
+        if (Input.Text("Mod Path"u8, Input.Path, Input.None, Leaf.FullPath, out var newPath, UiHelpers.InputTextWidth.X))
             try
             {
-                fileSystem.RenameAndMove(_leaf, newPath);
+                fileSystem.RenameAndMove(Leaf, newPath);
             }
             catch (Exception e)
             {
@@ -65,25 +118,26 @@ public class ModPanelEditTab(
 
         UiHelpers.DefaultLineSpace();
 
-        FeatureChecker.DrawFeatureFlagInput(modManager.DataEditor, _mod, UiHelpers.InputTextWidth.X);
+        FeatureChecker.DrawFeatureFlagInput(modManager.DataEditor, Mod, UiHelpers.InputTextWidth.X);
 
         UiHelpers.DefaultLineSpace();
         var sharedTagsEnabled     = predefinedTagManager.Enabled;
         var sharedTagButtonOffset = sharedTagsEnabled ? Im.Style.FrameHeight + Im.Style.FramePadding.X : 0;
-        var tagIdx = TagButtons.Draw("Mod Tags: "u8, "Edit tags by clicking them, or add new tags. Empty tags are removed."u8, _mod.ModTags,
+        var tagIdx = TagButtons.Draw("Mod Tags: "u8, "Edit tags by clicking them, or add new tags. Empty tags are removed."u8, Mod.ModTags,
             out var editedTag, rightEndOffset: sharedTagButtonOffset);
         if (tagIdx >= 0)
-            modManager.DataEditor.ChangeModTag(_mod, tagIdx, editedTag);
+            modManager.DataEditor.ChangeModTag(Mod, tagIdx, editedTag);
 
         if (sharedTagsEnabled)
-            predefinedTagManager.DrawAddFromSharedTagsAndUpdateTags(_mod, false);
+            predefinedTagManager.DrawAddFromSharedTagsAndUpdateTags(Mod, false);
 
         UiHelpers.DefaultLineSpace();
         if (Im.Tree.Header("Group Editing"u8))
         {
             UiHelpers.DefaultLineSpace();
-            addGroupDrawer.Draw(_mod, UiHelpers.InputTextWidth.X);
-            UiHelpers.DefaultLineSpace();
+            DrawGroupNameEdit(cache);
+
+            addGroupDrawer.Draw(Mod, UiHelpers.InputTextWidth.X);
 
             if (Im.RadioButton("Group Edit Mode"u8, !_groupReorderMode))
                 _groupReorderMode = false;
@@ -94,12 +148,14 @@ public class ModPanelEditTab(
             UiHelpers.DefaultLineSpace();
 
             if (_groupReorderMode)
-                DrawGroupReordering(_mod);
+                DrawGroupReordering(Mod);
             else
-                groupEditDrawer.Draw(_mod);
+                groupEditDrawer.Draw(cache, Mod);
         }
 
         descriptionPopup.Draw();
+        layoutPopup.Draw();
+        conditionPopup.Draw();
     }
 
     public void Reset()
@@ -110,7 +166,7 @@ public class ModPanelEditTab(
 
     private void DrawGroupReordering(Mod mod)
     {
-        using var table = Im.Table.Begin("##reorder"u8, 5, TableFlags.BordersOuter | TableFlags.RowBackground);
+        using var table = Im.Table.Begin("##reorder"u8, 7, TableFlags.BordersOuter | TableFlags.RowBackground);
         if (!table)
             return;
 
@@ -118,10 +174,12 @@ public class ModPanelEditTab(
         table.SetupColumn("Group"u8,             TableColumnFlags.WidthStretch);
         table.SetupColumn("Type"u8,              TableColumnFlags.WidthFixed, Im.Font.CalculateSize("Combining  "u8).X);
         table.SetupColumn("Options"u8,           TableColumnFlags.WidthFixed, Im.Font.CalculateSize("1000 Options  "u8).X);
-        table.SetupColumn("Priority##actions"u8, TableColumnFlags.WidthFixed, Im.Style.FrameHeight * 3 + Im.Style.ItemInnerSpacing.X);
+        table.SetupColumn("Priority##actions"u8, TableColumnFlags.WidthFixed, Im.Style.FrameHeight * 2);
+        table.SetupColumn("Page"u8,              TableColumnFlags.WidthFixed, Im.Style.TextHeight * 2);
+        table.SetupColumn("##actions"u8,         TableColumnFlags.WidthFixed, Im.Style.FrameHeight);
         table.HeaderRow();
 
-        var        active   = config.DeleteModModifier.IsActive();
+        var        active   = LunaStyle.Modifier.Destructive.Active;
         using var  clip     = new Im.ListClipper(mod.Groups.Count, Im.Style.FrameHeightWithSpacing);
         IModGroup? deletion = null;
         foreach (var i in clip)
@@ -160,12 +218,27 @@ public class ModPanelEditTab(
             Im.Item.SetNextWidth(2 * Im.Style.FrameHeight);
             if (ImEx.InputOnDeactivation.Scalar("##prio"u8, group.Priority.Value, out var newPriority))
                 modManager.OptionEditor.ChangeGroupPriority(group, new ModPriority(newPriority));
-            Im.Line.SameInner();
+
+            table.NextColumn();
+            Im.Item.SetNextWidth(2 * Im.Style.TextHeight);
+            if (ImEx.InputOnDeactivation.Drag("##page"u8, group.Page + 1, out var newPage, 0, null, 0.02f))
+                modManager.OptionEditor.SetPage(group, newPage - 1);
+
+            if (Im.Item.Hovered())
+            {
+                using var tt = Im.Tooltip.Begin();
+                Im.Text(group.Mod.PageNames.TryGetValue(group.Page, out var name) ? name : $"Page {group.Page + 1}");
+                LunaStyle.DrawSeparator();
+                Im.Text(
+                    "The page this group is to be placed in. If this group has a parent, this setting is ignored.\n\nNote that the number seen here is offset by 1 compared to the number stored in the JSON file."u8);
+            }
+
+            table.NextColumn();
             if (ImEx.Icon.Button(LunaStyle.DeleteIcon, "Delete this option group."u8, !active))
                 deletion = group;
 
             if (!active)
-                Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"Hold {config.DeleteModModifier} to delete.");
+                Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"Hold {LunaStyle.Modifier.Destructive} to delete.");
         }
 
         if (deletion is not null)
@@ -176,27 +249,27 @@ public class ModPanelEditTab(
     private void EditButtons()
     {
         var buttonSize   = new Vector2(150 * Im.Style.GlobalScale, 0);
-        var folderExists = Directory.Exists(_mod.ModPath.FullName);
+        var folderExists = Directory.Exists(Mod.ModPath.FullName);
         if (ImEx.Button("Open Mod Directory"u8, buttonSize, folderExists
-                ? $"Open \"{_mod.ModPath.FullName}\" in the file explorer of your choice."
-                : $"Mod directory \"{_mod.ModPath.FullName}\" does not exist.", !folderExists))
-            Process.Start(new ProcessStartInfo(_mod.ModPath.FullName) { UseShellExecute = true });
+                ? $"Open \"{Mod.ModPath.FullName}\" in the file explorer of your choice."
+                : $"Mod directory \"{Mod.ModPath.FullName}\" does not exist.", !folderExists))
+            Process.Start(new ProcessStartInfo(Mod.ModPath.FullName) { UseShellExecute = true });
 
         Im.Line.Same();
         if (ImEx.Button("Reload Mod"u8, buttonSize, "Reload the current mod from its files.\n"u8
               + "If the mod directory or meta file do not exist anymore or if the new mod name is empty, the mod is deleted instead."u8,
                 false))
-            modManager.ReloadMod(_mod);
+            modManager.ReloadMod(Mod);
 
         BackupButtons(buttonSize);
-        MoveDirectory.Draw(modManager, _mod, buttonSize);
+        MoveDirectory.Draw(modManager, Mod, buttonSize);
 
         UiHelpers.DefaultLineSpace();
     }
 
     private void BackupButtons(Vector2 buttonSize)
     {
-        var backup = new ModBackup(modExportManager, _mod);
+        var backup = new ModBackup(modExportManager, Mod);
         if (ImEx.Button("Export Mod"u8, buttonSize, ModBackup.CreatingBackup
                 ? "Already exporting a mod."
                 : backup.Exists
@@ -209,14 +282,14 @@ public class ModPanelEditTab(
 
         Im.Line.Same();
         if (ImEx.Button("Delete Export"u8, buttonSize, backup.Exists
-                ? $"Delete existing mod export \"{backup.Name}\" (hold {config.DeleteModModifier} while clicking)."
-                : $"Exported mod \"{backup.Name}\" does not exist.", !backup.Exists || !config.DeleteModModifier.IsActive()))
+                ? $"Delete existing mod export \"{backup.Name}\" (hold {LunaStyle.Modifier.Destructive} while clicking)."
+                : $"Exported mod \"{backup.Name}\" does not exist.", !backup.Exists || !LunaStyle.Modifier.Destructive.Active))
             backup.Delete();
 
         Im.Line.Same();
         if (ImEx.Button("Restore From Export"u8, buttonSize, backup.Exists
-                ? $"Restore mod from exported file \"{backup.Name}\" (hold {config.DeleteModModifier} while clicking)."
-                : $"Exported mod \"{backup.Name}\" does not exist.", !backup.Exists || !config.DeleteModModifier.IsActive()))
+                ? $"Restore mod from exported file \"{backup.Name}\" (hold {LunaStyle.Modifier.Destructive} while clicking)."
+                : $"Exported mod \"{backup.Name}\" does not exist.", !backup.Exists || !LunaStyle.Modifier.Destructive.Active))
             backup.Restore(modManager);
         if (backup.Exists)
         {
@@ -236,39 +309,43 @@ public class ModPanelEditTab(
     /// <summary> Anything about editing the regular meta information about the mod. </summary>
     private void EditRegularMeta()
     {
-        if (Input.Text("Name"u8, Input.Name, Input.None, _mod.Name, out var newName, UiHelpers.InputTextWidth.X))
-            modManager.DataEditor.ChangeModName(_mod, newName);
+        if (Input.Text("Name"u8, Input.Name, Input.None, Mod.Name, out var newName, UiHelpers.InputTextWidth.X))
+            modManager.DataEditor.ChangeModName(Mod, newName);
 
-        if (Input.Text("Author"u8, Input.Author, Input.None, _mod.Author, out var newAuthor, UiHelpers.InputTextWidth.X))
-            modManager.DataEditor.ChangeModAuthor(_mod, newAuthor);
+        if (Input.Text("Author"u8, Input.Author, Input.None, Mod.Author, out var newAuthor, UiHelpers.InputTextWidth.X))
+            modManager.DataEditor.ChangeModAuthor(Mod, newAuthor);
 
-        if (Input.Text("Version"u8, Input.Version, Input.None, _mod.Version, out var newVersion,
+        if (Input.Text("Version"u8, Input.Version, Input.None, Mod.Version, out var newVersion,
                 UiHelpers.InputTextWidth.X))
-            modManager.DataEditor.ChangeModVersion(_mod, newVersion);
+            modManager.DataEditor.ChangeModVersion(Mod, newVersion);
 
-        if (Input.Text("Website"u8, Input.Website, Input.None, _mod.Website, out var newWebsite,
+        if (Input.Text("Website"u8, Input.Website, Input.None, Mod.Website, out var newWebsite,
                 UiHelpers.InputTextWidth.X))
-            modManager.DataEditor.ChangeModWebsite(_mod, newWebsite);
+            modManager.DataEditor.ChangeModWebsite(Mod, newWebsite);
 
-        using var style = ImStyleDouble.ItemSpacing.Push(new Vector2(Im.Style.GlobalScale * 3));
+        Guid? guid = Mod.StableIdentifier;
+        if (ImEx.GuidInput("##modGuid"u8, ref guid, UiHelpers.InputTextMinusButtonInner) && guid.HasValue)
+            modManager.DataEditor.ForceIdentifier(Mod, guid.Value);
+        Im.Line.SameInner();
+        if (ImEx.Icon.Button(LunaStyle.RefreshIcon, "Set a new GUID for this mod."u8))
+            modManager.DataEditor.ForceIdentifier(Mod, Guid.NewGuid());
+        Im.Line.SameInner();
+        ImEx.TextFrameAligned("Stable Identifier (GUID)"u8);
 
-        var reducedSize = new Vector2(UiHelpers.InputTextMinusButton3, 0);
+        var reducedSize = new Vector2(UiHelpers.InputTextMinusButtonInner, 0);
         if (Im.Button("Edit Description"u8, reducedSize))
-            descriptionPopup.Open(_mod);
+            descriptionPopup.Open(Mod);
 
-
-        Im.Line.Same();
-        var fileExists = File.Exists(filenames.ModMetaPath(_mod));
+        Im.Line.SameInner();
+        var fileExists = File.Exists(filenames.ModMetaPath(Mod));
         var tt = fileExists
-            ? "Open the metadata json file in the text editor of your choice."u8
-            : "The metadata json file does not exist."u8;
+            ? "Open the metadata JSON file in the text editor of your choice."u8
+            : "The metadata JSON file does not exist."u8;
         using (Im.Id.Push("meta"u8))
         {
             if (ImEx.Icon.Button(LunaStyle.FileExportIcon, tt, !fileExists))
-                Process.Start(new ProcessStartInfo(filenames.ModMetaPath(_mod)) { UseShellExecute = true });
+                Process.Start(new ProcessStartInfo(filenames.ModMetaPath(Mod)) { UseShellExecute = true });
         }
-
-        DrawOpenDefaultMod();
     }
 
     private void EditLocalData()
@@ -280,19 +357,19 @@ public class ModPanelEditTab(
     private void DrawImportDate()
     {
         using var id = Im.Id.Push(1);
-        ImEx.TextFramed($"{DateTimeOffset.FromUnixTimeMilliseconds(_mod.ImportDate).ToLocalTime():yyyy/MM/dd HH:mm}",
-            new Vector2(UiHelpers.InputTextMinusButton3, 0), ImGuiColor.FrameBackground.Get(0.5f));
+        ImEx.TextFramed($"{DateTimeOffset.FromUnixTimeMilliseconds(Mod.ImportDate).ToLocalTime():yyyy/MM/dd HH:mm}",
+            new Vector2(UiHelpers.InputTextMinusButtonInner, 0), ImGuiColor.FrameBackground.Get(0.5f));
         if (Im.Item.Clicked())
-            Im.Clipboard.Set($"{_mod.ImportDate}");
-        Im.Tooltip.OnHover($"Click to copy timestamp: {_mod.ImportDate}");
+            Im.Clipboard.Set($"{Mod.ImportDate}");
+        Im.Tooltip.OnHover($"Click to copy timestamp: {Mod.ImportDate}");
 
-        Im.Line.Same(0, 3 * Im.Style.GlobalScale);
-        var canRefresh = config.DeleteModModifier.IsActive();
+        Im.Line.SameInner();
+        var canRefresh = LunaStyle.Modifier.Destructive.Active;
         if (ImEx.Icon.Button(LunaStyle.RefreshIcon, canRefresh
                     ? "Reset the import date to the current date and time."u8
-                    : $"Reset the import date to the current date and time.\nHold {config.DeleteModModifier} while clicking to refresh.",
+                    : $"Reset the import date to the current date and time.\nHold {LunaStyle.Modifier.Destructive} while clicking to refresh.",
                 !canRefresh))
-            modManager.DataEditor.ChangeModImportDate(_mod, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+            modManager.DataEditor.ChangeModImportDate(Mod, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
 
         Im.Line.SameInner();
         Im.Text("Import Date"u8);
@@ -301,35 +378,23 @@ public class ModPanelEditTab(
     private void DrawConfigEditDate()
     {
         using var id = Im.Id.Push(2);
-        ImEx.TextFramed($"{DateTimeOffset.FromUnixTimeMilliseconds(_mod.LastConfigEdit).ToLocalTime():yyyy/MM/dd HH:mm}",
-            new Vector2(UiHelpers.InputTextMinusButton3, 0), ImGuiColor.FrameBackground.Get(0.5f));
+        ImEx.TextFramed($"{DateTimeOffset.FromUnixTimeMilliseconds(Mod.LastConfigEdit).ToLocalTime():yyyy/MM/dd HH:mm}",
+            new Vector2(UiHelpers.InputTextMinusButtonInner, 0), ImGuiColor.FrameBackground.Get(0.5f));
         if (Im.Item.Clicked())
-            Im.Clipboard.Set($"{_mod.LastConfigEdit}");
-        Im.Tooltip.OnHover($"Click to copy timestamp: {_mod.LastConfigEdit}");
+            Im.Clipboard.Set($"{Mod.LastConfigEdit}");
+        Im.Tooltip.OnHover($"Click to copy timestamp: {Mod.LastConfigEdit}");
 
-        Im.Line.Same(0, 3 * Im.Style.GlobalScale);
-        var canRefresh = config.IncognitoModifier.IsActive();
+        Im.Line.SameInner();
+        var canRefresh = LunaStyle.Modifier.Misclick.Active;
         if (ImEx.Icon.Button(LunaStyle.RefreshIcon, canRefresh
                     ? "Reset the last config edit date to the current date and time."u8
-                    : $"Reset the last config edit date to the current date and time.\nHold {config.IncognitoModifier} while clicking to refresh.",
+                    : $"Reset the last config edit date to the current date and time.\nHold {LunaStyle.Modifier.Misclick} while clicking to refresh.",
                 !canRefresh))
-            modManager.DataEditor.ChangeLastConfigEdit(_mod, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+            modManager.DataEditor.ChangeLastConfigEdit(Mod, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
 
         Im.Line.SameInner();
         Im.Text("Last Config Edit"u8);
     }
-
-    private void DrawOpenDefaultMod()
-    {
-        var file       = filenames.OptionGroupFile(_mod, -1, false);
-        var fileExists = File.Exists(file);
-        var tt = fileExists
-            ? "Open the default mod data file in the text editor of your choice."u8
-            : "The default mod data file does not exist."u8;
-        if (ImEx.Button("Open Default Data"u8, UiHelpers.InputTextWidth, tt, !fileExists))
-            Process.Start(new ProcessStartInfo(file) { UseShellExecute = true });
-    }
-
 
     /// <summary> A text input for the new directory name and a button to apply the move. </summary>
     private static class MoveDirectory

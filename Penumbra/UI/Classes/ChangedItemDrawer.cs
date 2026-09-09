@@ -149,7 +149,7 @@ public class ChangedItemDrawer : IDisposable, IUiService
             return;
 
         Im.Line.Same();
-        using var color = ImGuiColor.Text.Push(ColorId.ItemId.Value());
+        using var color = ImGuiColor.Text.Push(ColorId.ItemId.Vector);
         Im.Cursor.Y += (height - Im.Style.TextHeight) / 2;
         ImEx.TextRightAligned(additionalData, Im.Style.ItemInnerSpacing.X);
     }
@@ -161,7 +161,7 @@ public class ChangedItemDrawer : IDisposable, IUiService
             return;
 
         Im.Line.Same();
-        using var color = ImGuiColor.Text.Push(ColorId.ItemId.Value());
+        using var color = ImGuiColor.Text.Push(ColorId.ItemId.Vector);
         Im.Cursor.Y += (height - Im.Style.TextHeight) / 2;
         ImEx.TextRightAligned(text, Im.Style.ItemInnerSpacing.X);
     }
@@ -169,7 +169,7 @@ public class ChangedItemDrawer : IDisposable, IUiService
     /// <summary> Draw a header line with the different icon types to filter them. </summary>
     public void DrawTypeFilter(bool global)
     {
-        if (_config.HideChangedItemFilters)
+        if (_config.Ui.HideChangedItemFilters)
             return;
 
         var typeFilter = global ? _config.Filters.ChangedItemTypeFilter : _config.Filters.ModChangedItemTypeFilter;
@@ -271,9 +271,9 @@ public class ChangedItemDrawer : IDisposable, IUiService
         Add(ChangedItemIconFlag.Neck,           equipTypeIcons.LoadTexturePart("ui/uld/ArmouryBoard_hr1.tex", 9));
         Add(ChangedItemIconFlag.Wrists,         equipTypeIcons.LoadTexturePart("ui/uld/ArmouryBoard_hr1.tex", 10));
         Add(ChangedItemIconFlag.Finger,         equipTypeIcons.LoadTexturePart("ui/uld/ArmouryBoard_hr1.tex", 11));
-        Add(ChangedItemIconFlag.Monster,        textureProvider.CreateFromTexFile(gameData.GetFile<TexFile>("ui/icon/062000/062044_hr1.tex")!));
-        Add(ChangedItemIconFlag.Demihuman,      textureProvider.CreateFromTexFile(gameData.GetFile<TexFile>("ui/icon/062000/062043_hr1.tex")!));
-        Add(ChangedItemIconFlag.Customization,  textureProvider.CreateFromTexFile(gameData.GetFile<TexFile>("ui/icon/062000/062045_hr1.tex")!));
+        Add(ChangedItemIconFlag.Monster,        textureProvider.CreateFromTexFile(gameData.GetFile<TexFile>("ui/icon/062000/062047_hr1.tex")!));
+        Add(ChangedItemIconFlag.Demihuman,      textureProvider.CreateFromTexFile(gameData.GetFile<TexFile>("ui/icon/062000/062044_hr1.tex")!));
+        Add(ChangedItemIconFlag.Customization,  textureProvider.CreateFromTexFile(gameData.GetFile<TexFile>("ui/icon/062000/062046_hr1.tex")!));
         Add(ChangedItemIconFlag.Action,         textureProvider.CreateFromTexFile(gameData.GetFile<TexFile>("ui/icon/062000/062001_hr1.tex")!));
         Add(ChangedItemIconFlag.Emote,          LoadEmoteTexture(gameData, textureProvider));
         Add(ChangedItemIconFlag.Unknown,        LoadUnknownTexture(gameData, textureProvider));

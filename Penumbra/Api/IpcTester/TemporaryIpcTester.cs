@@ -293,7 +293,7 @@ public class TemporaryIpcTester(
                     .FirstOrDefault()
              ?? "Unknown";
             if (_debug && Im.Button("Save##Collection"u8))
-                TemporaryMod.SaveTempCollection(config, saveService, modManager, collection, character);
+                TemporaryMod.SaveTempCollection(config.Io, saveService, modManager, collection, character);
 
             table.NextColumn();
             LunaStyle.DrawGuid(collection.Identity.Id);

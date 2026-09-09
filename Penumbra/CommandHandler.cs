@@ -1,7 +1,6 @@
 using Dalamud.Game.Command;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Plugin.Services;
-using ImSharp;
 using Luna;
 using Penumbra.Api.Api;
 using Penumbra.Api.Enums;
@@ -28,13 +27,11 @@ public class CommandHandler : IDisposable, IApiService
     private readonly ActorManager      _actors;
     private readonly ModManager        _modManager;
     private readonly CollectionManager _collectionManager;
-    private readonly Penumbra          _penumbra;
     private readonly CollectionEditor  _collectionEditor;
     private readonly KnowledgeWindow   _knowledgeWindow;
 
     public CommandHandler(IFramework framework, ICommandManager commandManager, IChatGui chat, RedrawService redrawService,
         Configuration config, MainWindow mainWindow, ModManager modManager, CollectionManager collectionManager, ActorManager actors,
-        Penumbra penumbra,
         CollectionEditor collectionEditor, KnowledgeWindow knowledgeWindow)
     {
         _commandManager    = commandManager;
@@ -45,7 +42,6 @@ public class CommandHandler : IDisposable, IApiService
         _collectionManager = collectionManager;
         _actors            = actors;
         _chat              = chat;
-        _penumbra          = penumbra;
         _collectionEditor  = collectionEditor;
         _knowledgeWindow   = knowledgeWindow;
         framework.RunOnFrameworkThread(() =>
@@ -169,22 +165,21 @@ public class CommandHandler : IDisposable, IApiService
 
     private bool SetDebug(string arguments)
     {
-        var value = ParseTrueFalseToggle(arguments) ?? !_config.DebugMode;
-        if (value == _config.DebugMode)
+        var value = ParseTrueFalseToggle(arguments) ?? !_config.Advanced.DebugMode;
+        if (value == _config.Advanced.DebugMode)
             return false;
 
         Print(value ? "Debug mode enabled." : "Debug mode disabled.");
 
-        _config.DebugMode = value;
-        _config.Save();
+        _config.Advanced.DebugMode = value;
         return true;
     }
 
     private bool SetPenumbraState(string _, bool? newValue)
     {
-        var value = newValue ?? !_config.EnableMods;
+        var value = newValue ?? !_config.Main.EnableMods;
 
-        if (value == _config.EnableMods)
+        if (value == _config.Main.EnableMods)
         {
             Print(value
                 ? "Your mods are already enabled. To disable your mods, please run the following command instead: /penumbra disable"
@@ -195,23 +190,22 @@ public class CommandHandler : IDisposable, IApiService
         Print(value
             ? "Your mods have been enabled."
             : "Your mods have been disabled.");
-        return _penumbra.SetEnabled(value);
+        _config.Main.EnableMods = value;
+        return true;
     }
 
     private bool SetUiMinimumSize(string _)
     {
-        if (_config.MinimumSize.X == Configuration.Constants.MinimumSizeX && _config.MinimumSize.Y == Configuration.Constants.MinimumSizeY)
+        if (_config.Advanced.MinimumSize.X == AdvancedConfig.MinimumSizeX && _config.Advanced.MinimumSize.Y == AdvancedConfig.MinimumSizeY)
             return false;
 
-        _config.MinimumSize.X = Configuration.Constants.MinimumSizeX;
-        _config.MinimumSize.Y = Configuration.Constants.MinimumSizeY;
-        _config.Save();
+        _config.Advanced.MinimumSize = new Vector2(AdvancedConfig.MinimumSizeX, AdvancedConfig.MinimumSizeY);
         return true;
     }
 
     private bool SetCollection(string arguments)
     {
-        if (arguments.Length == 0)
+        if (arguments.Length is 0)
         {
             _chat.Print(new SeStringBuilder().AddText("Use with /penumbra collection ").AddBlue("[Collection Type]")
                 .AddText(" | ").AddYellow("[Collection Name]")
@@ -439,11 +433,11 @@ public class CommandHandler : IDisposable, IApiService
             case PenumbraApiEc.OptionGroupMissing:
                 _chat.Print(new SeStringBuilder().AddText("The mod ").AddRed(nameSplit[1], true).AddText(" has no group ")
                     .AddGreen(groupName, true).AddText(".").BuiltString);
-                return false;
+                break;
             case PenumbraApiEc.OptionMissing:
                 _chat.Print(new SeStringBuilder().AddText("Not all set options in the mod ").AddRed(nameSplit[1], true)
                     .AddText(" could be found in group ").AddGreen(groupName, true).AddText(".").BuiltString);
-                return false;
+                break;
             case PenumbraApiEc.Success:
                 _collectionEditor.SetModSetting(collection!, mod, groupIndex, setting);
                 Print(() => new SeStringBuilder().AddText("Changed settings of group ").AddGreen(groupName, true).AddText(" in mod ")
@@ -643,23 +637,23 @@ public class CommandHandler : IDisposable, IApiService
 
     private void Print(string text)
     {
-        if (_config.PrintSuccessfulCommandsToChat)
+        if (_config.Main.PrintSuccessfulCommandsToChat)
             _chat.Print(text);
     }
 
     private void Print(DefaultInterpolatedStringHandler text)
     {
-        if (_config.PrintSuccessfulCommandsToChat)
+        if (_config.Main.PrintSuccessfulCommandsToChat)
             _chat.Print(text.ToStringAndClear());
     }
 
     private void Print(Func<SeString> text)
     {
-        if (_config.PrintSuccessfulCommandsToChat)
+        if (_config.Main.PrintSuccessfulCommandsToChat)
             _chat.Print(text());
     }
 
-    private bool HandleKnowledge(string arguments)
+    private bool HandleKnowledge(string _)
     {
         _knowledgeWindow.Toggle();
         return true;

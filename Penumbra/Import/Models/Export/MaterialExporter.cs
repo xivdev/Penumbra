@@ -85,7 +85,7 @@ public class MaterialExporter
             var maskOperation = new ProcessCharacterMaskOperation(maskTexture);
             ParallelRowIterator.IterateRows(ImageSharpConfiguration.Default, maskTexture.Bounds, in maskOperation);
 
-            // TODO: consider using the occusion gltf material property.
+            // TODO 20260824 consider using the occusion gltf material property.
             MultiplyOperation.Execute(baseColor, maskOperation.Occlusion);
 
             // Similar to base color's alpha, this is a pretty wasteful operation for a single channel.
@@ -154,9 +154,9 @@ public class MaterialExporter
     
     private readonly struct ProcessCharacterNormalOperation(Image<Rgba32> normal) : IRowOperation
     {
-        // TODO: Consider omitting the alpha channel here.
+        // TODO 20260824 Consider omitting the alpha channel here.
         public Image<Rgba32> Normal { get; } = normal.Clone();
-        // TODO: We only really need the alpha here, however using A8 will result in the multiply later zeroing out the RGB channels.
+        // TODO 20260824 We only really need the alpha here, however using A8 will result in the multiply later zeroing out the RGB channels.
         public Image<Rgba32> BaseColorOpacity { get; } = new(normal.Width, normal.Height);
 
         private Buffer2D<Rgba32> NormalBuffer
@@ -277,7 +277,7 @@ public class MaterialExporter
             .WithAlpha(AlphaMode.BLEND);
     }
 
-    // TODO: These are hardcoded colours - I'm not keen on supporting highly customizable exports, but there's possibly some more sensible values to use here.
+    // TODO 20260824 These are hardcoded colours - I'm not keen on supporting highly customizable exports, but there's possibly some more sensible values to use here.
     private static readonly Vector4 DefaultHairColor      = new Vector4(130, 64,  13,  255) / new Vector4(255);
     private static readonly Vector4 DefaultHighlightColor = new Vector4(77,  126, 240, 255) / new Vector4(255);
 
@@ -366,8 +366,8 @@ public class MaterialExporter
         var isFace = !material.Mtrl.ShaderPackage.ShaderKeys
             .Any(key => key.Key == categorySkinType && key.Value != valueFace);
 
-        // TODO: There's more nuance to skin than this, but this should be enough for a baseline reference.
-        // TODO: Specular?
+        // TODO 20260824 There's more nuance to skin than this, but this should be enough for a baseline reference.
+        // TODO 20260824 Specular?
         var diffuse = material.Textures[TextureUsage.SamplerDiffuse];
         var normal  = material.Textures[TextureUsage.SamplerNormal];
 
@@ -414,7 +414,7 @@ public class MaterialExporter
     /// <summary> Build a material pre-configured with settings common to all XIV materials/shaders. </summary>
     private static MaterialBuilder BuildSharedBase(Material material, string name)
     {
-        // TODO: Move this and potentially the other known stuff into MtrlFile?
+        // TODO 20260824 Move this and potentially the other known stuff into MtrlFile?
         const uint backfaceMask  = 0x1;
         var        showBackfaces = (material.Mtrl.ShaderPackage.Flags & backfaceMask) == 0;
 

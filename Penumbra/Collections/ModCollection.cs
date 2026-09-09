@@ -1,5 +1,9 @@
+using ImSharp;
+using Penumbra.Api.Enums;
+using Penumbra.Api.Preset;
 using Penumbra.Collections.Manager;
 using Penumbra.Files;
+using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Settings;
 
@@ -125,6 +129,59 @@ public partial class ModCollection
         Debug.Assert(index >= 0, "Empty collection created with negative index.");
         return new ModCollection(ModCollectionIdentity.New(name, localId, index), 0, CurrentVersion, ModSettingProvider.Empty(modCount),
             new ModCollectionInheritance());
+    }
+
+    public SettingPresetData? GetPreset(Mod mod, PresetQueryMode mode, int _)
+    {
+        // In order:
+        // - use null settings if we do not care about actual settings (IgnoreSettings, GetDefault)
+        // - use the own setting configuration of the collection, or null settings if not configured, if we ignore temporary and inheritance
+        // - use the own or inherited setting configuration of the collection or null settings if not configured nor inherited, if we ignore temporary.
+        // - use the actual temporary settings if those are not set to inherited, or null if they are, or the own settings, or null if they are not configured, if we ignore inheritance
+        // - use the actual settings (which may be null) if we ignore nothing.
+        var relevantSettings = ModSettings.Empty;
+        if (!mode.CheckAny(PresetQueryMode.GetDefault | PresetQueryMode.IgnoreSettings))
+        {
+            if (mode.HasFlag(PresetQueryMode.IgnoreTemporary))
+            {
+                relevantSettings = mode.HasFlag(PresetQueryMode.IgnoreInheritance)
+                    ? GetOwnSettings(mod.Index)
+                    : GetInheritedSettings(mod.Index).Settings;
+            }
+            else
+            {
+                if (mode.HasFlag(PresetQueryMode.IgnoreInheritance))
+                    relevantSettings = GetTempSettings(mod.Index) is { } s
+                        ? s.ForceInherit ? null : s
+                        : GetOwnSettings(mod.Index);
+                else
+                    relevantSettings = GetActualSettings(mod.Index).Settings;
+            }
+        }
+
+        var preset = SettingPresetData.FromMod(mod, relevantSettings);
+        if (mode.HasFlag(PresetQueryMode.IgnoreDisabled))
+            foreach (var group in preset.Settings.Values)
+            {
+                var tmp = group.Options.Where(g => g.Value is not (byte)OptionState.Disabled).ToList();
+                group.Options.Clear();
+                foreach (var (option, value) in tmp)
+                    group.Options.Add(option, value);
+            }
+
+        if (mode.HasFlag(PresetQueryMode.IgnoreSettings))
+        {
+            foreach (var group in preset.Settings.Values)
+            {
+                foreach (var option in group.Options.Keys)
+                    group.Options[option] = (byte)OptionState.Ignored;
+            }
+
+            preset._hasPriority = false;
+            preset._state       = (byte)ModState.Ignored;
+        }
+
+        return preset;
     }
 
     private ModCollection(ModCollectionIdentity identity, int changeCounter, int version, ModSettingProvider settings,

@@ -1,7 +1,5 @@
 using ImSharp;
 using OtterTex;
-using SixLabors.ImageSharp;
-using Rgba32 = SixLabors.ImageSharp.PixelFormats.Rgba32;
 
 namespace Penumbra.Import.Textures;
 
@@ -12,28 +10,28 @@ public readonly struct BaseImage : IDisposable, IEquatable<BaseImage>, IEquality
     public BaseImage(ScratchImage scratch)
         => Image = scratch;
 
-    public BaseImage(Image<Rgba32> image)
+    public BaseImage(CustomBitmap image)
         => Image = image;
 
     public static implicit operator BaseImage(ScratchImage scratch)
         => new(scratch);
 
-    public static implicit operator BaseImage(Image<Rgba32> img)
+    public static implicit operator BaseImage(CustomBitmap img)
         => new(img);
 
     public ScratchImage? AsDds
         => Image as ScratchImage;
 
-    public Image<Rgba32>? AsPng
-        => Image as Image<Rgba32>;
+    public CustomBitmap? AsPng
+        => Image as CustomBitmap;
 
     public TextureType Type
         => Image switch
         {
-            null          => TextureType.Unknown,
-            ScratchImage  => TextureType.Dds,
-            Image<Rgba32> => TextureType.Png,
-            _             => TextureType.Unknown,
+            null         => TextureType.Unknown,
+            ScratchImage => TextureType.Dds,
+            CustomBitmap => TextureType.Png,
+            _            => TextureType.Unknown,
         };
 
     public void Dispose()
@@ -60,13 +58,8 @@ public readonly struct BaseImage : IDisposable, IEquatable<BaseImage>, IEquality
                 return (rgba.Pixels[..(f.Meta.Width * f.Meta.Height * (f.Meta.Format.BitsPerPixel() / 8))].ToArray(), f.Meta.Width,
                     f.Meta.Height);
             }
-            case Image<Rgba32> img:
-            {
-                var ret = new byte[img.Height * img.Width * 4];
-                img.CopyPixelDataTo(ret);
-                return (ret, img.Width, img.Height);
-            }
-            default: return ([], 0, 0);
+            case CustomBitmap img: return img.GetPixelData();
+            default:               return ([], 0, 0);
         }
     }
 
@@ -82,7 +75,7 @@ public readonly struct BaseImage : IDisposable, IEquatable<BaseImage>, IEquality
             return ColorParameter.Default;
 
         if (rgba.Length < 8)
-            return Unsafe.As<byte, ImSharp.Rgba32>(ref rgba[0]);
+            return Unsafe.As<byte, Rgba32>(ref rgba[0]);
 
         var startValue = Unsafe.As<byte, uint>(ref rgba[0]);
         if ((rgba.Length & 7) is 0)
@@ -105,7 +98,7 @@ public readonly struct BaseImage : IDisposable, IEquatable<BaseImage>, IEquality
                 return ColorParameter.Default;
         }
 
-        return new ImSharp.Rgba32(startValue);
+        return new Rgba32(startValue);
     }
 
     public unsafe BaseImage AtLevelOfDetail(int lod)
@@ -116,7 +109,7 @@ public readonly struct BaseImage : IDisposable, IEquatable<BaseImage>, IEquality
 
         switch (Image)
         {
-            case null or Image<Rgba32>: throw new ArgumentOutOfRangeException(nameof(lod));
+            case null or CustomBitmap: throw new ArgumentOutOfRangeException(nameof(lod));
             case ScratchImage scratch:
                 ref readonly var meta = ref scratch.Meta;
                 ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(lod, meta.MipLevels);
@@ -124,7 +117,7 @@ public readonly struct BaseImage : IDisposable, IEquatable<BaseImage>, IEquality
                     throw new NotImplementedException();
 
                 ref readonly var image = ref scratch.Images[lod];
-                var downscaled = ScratchImage.Initialize2D(meta.Format, image.Width , image.Height, meta.ArraySize, meta.MipLevels - lod);
+                var downscaled = ScratchImage.Initialize2D(meta.Format, image.Width, image.Height, meta.ArraySize, meta.MipLevels - lod);
                 fixed (byte* ptr = downscaled.Pixels)
                 {
                     var span = new Span<byte>(ptr, downscaled.Pixels.Length);
@@ -141,7 +134,7 @@ public readonly struct BaseImage : IDisposable, IEquatable<BaseImage>, IEquality
         {
             null                 => (0, 0),
             ScratchImage scratch => (scratch.Meta.Width, scratch.Meta.Height),
-            Image<Rgba32> img    => (img.Width, img.Height),
+            CustomBitmap img     => img.Dimensions,
             _                    => (0, 0),
         };
 
@@ -165,7 +158,7 @@ public readonly struct BaseImage : IDisposable, IEquatable<BaseImage>, IEquality
         {
             null           => DXGIFormat.Unknown,
             ScratchImage s => s.Meta.Format,
-            Image<Rgba32>  => DXGIFormat.B8G8R8X8UNorm,
+            CustomBitmap   => CustomBitmap.Dxgi,
             _              => DXGIFormat.Unknown,
         };
 

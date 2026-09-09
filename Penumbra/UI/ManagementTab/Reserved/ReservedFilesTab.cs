@@ -6,10 +6,10 @@ using Penumbra.Mods.Manager;
 
 namespace Penumbra.UI.ManagementTab;
 
-public sealed class ReservedFilesTab(ModManager mods, TextureManager textures, UiNavigator navigator, Configuration config, ReservedFiles service, ManagementLog<ReservedFiles> log)
+public sealed class ReservedFilesTab(ModManager mods, TextureManager textures, UiNavigator navigator, ReservedFiles service, ManagementLog<ReservedFiles> log)
     : ITab<ManagementTabType>
 {
-    private readonly ReservedFilesTable _table = new(mods, textures, navigator, config, service, log);
+    private readonly ReservedFilesTable _table = new(mods, textures, navigator, service, log);
 
     public void PostTabButton()
     {

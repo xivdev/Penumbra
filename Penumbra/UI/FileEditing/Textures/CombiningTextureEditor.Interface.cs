@@ -119,7 +119,7 @@ public partial class CombiningTextureEditor
                 {
                     TextureDrawer.PathInputBox(_textures, tex, ref tex.TmpPath, "##input"u8, "Import Image..."u8,
                         "Can import game paths as well as your own files."u8, _context?.Mod?.ModPath.FullName, _fileDialog,
-                        _config.DefaultModImportPath);
+                        _config.Io.DefaultModImportPath);
                     if (_textureSelectCombo is not null
                      && _textureSelectCombo.Draw("##combo"u8,
                             "Select the textures included in this mod on your drive or the ones they replace from the game files."u8, tex.Path,
@@ -208,7 +208,7 @@ public partial class CombiningTextureEditor
             var canSaveInPlace = Path.IsPathRooted(_left.Path)
              && _left.Type is TextureType.Tex or TextureType.Dds or TextureType.Png
              && _writable;
-            var isActive    = _config.DeleteModModifier.IsActive();
+            var isActive    = LunaStyle.Modifier.Destructive.Active;
             var buttonSize2 = new Vector2((Im.ContentRegion.Available.X - Im.Style.ItemSpacing.X) / 2,     0);
             var buttonSize3 = new Vector2((Im.ContentRegion.Available.X - Im.Style.ItemSpacing.X * 2) / 3, 0);
 
@@ -217,7 +217,7 @@ public partial class CombiningTextureEditor
                 if (ImEx.Button("Save in place"u8, buttonSize2,
                         isActive
                             ? "This saves the texture in place. This is not revertible."u8
-                            : $"This saves the texture in place. This is not revertible. Hold {_config.DeleteModModifier} to save.",
+                            : $"This saves the texture in place. This is not revertible. Hold {LunaStyle.Modifier.Destructive} to save.",
                         !isActive
                      || !canSaveInPlace
                      || _center.IsLeftCopy && _currentSaveAs is (int)CombinedTexture.TextureSaveType.AsIs && _left.LevelOfDetail is 0))

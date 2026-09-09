@@ -33,8 +33,14 @@ public readonly record struct GmpIdentifier(PrimaryId SetId) : IMetaIdentifier, 
 
     public JObject AddToJson(JObject jObj)
     {
-        jObj["SetId"] = SetId.Id.ToString();
+        jObj["SetId"] = SetId.Id;
         return jObj;
+    }
+
+    public System.Text.Json.Utf8JsonWriter AddToJson(System.Text.Json.Utf8JsonWriter j)
+    {
+        j.WriteNumber("SetId"u8, SetId.Id);
+        return j;
     }
 
     public MetaManipulationType Type

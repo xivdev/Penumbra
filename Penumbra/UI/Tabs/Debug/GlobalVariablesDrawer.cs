@@ -171,7 +171,7 @@ public unsafe class GlobalVariablesDrawer(
         if (!table)
             return;
 
-        // TODO Remove cast when it'll have the right type in CS.
+        // TODO 20260824 Remove cast when it'll have the right type in CS.
         var map   = (StdMap<int, FFXIVClientStructs.Interop.Pointer<SchedulerResource>>*)&scheduler.Scheduler->Resources;
         var total = 0;
         _shownResourcesMap = 0;

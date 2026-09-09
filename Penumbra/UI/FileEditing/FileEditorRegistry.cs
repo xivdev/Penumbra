@@ -11,7 +11,7 @@ namespace Penumbra.UI.FileEditing;
 /// <remarks> While not nominally implementing <see cref="IFileEditorFactory"/>, this structurally implements as much of it as reasonable. </remarks>
 public class FileEditorRegistry : Luna.IUiService
 {
-    private readonly Configuration _config;
+    private readonly EditingConfig _config;
 
     private readonly Dictionary<IFileEditorFactory, FactoryMetadata> _factories = [];
 
@@ -24,9 +24,9 @@ public class FileEditorRegistry : Luna.IUiService
             ? null
             : from entry in _factoriesByType where entry.Value.Count > 0 select entry.Key;
 
-    public FileEditorRegistry(Configuration config, MaterialEditorFactory materialEditorFactory, ModelEditorFactory modelEditorFactory,
+    public FileEditorRegistry(EditingConfig config, MaterialEditorFactory materialEditorFactory, ModelEditorFactory modelEditorFactory,
         ShaderPackageEditorFactory shaderPackageEditorFactory, DeformerEditorFactory deformerEditorFactory,
-        CombiningTextureEditorFactory textureEditorFactory)
+        CombiningTextureEditorFactory textureEditorFactory, ShaderParameterViewerFactory shaderParameterViewerFactory)
     {
         _config = config;
 
@@ -35,6 +35,7 @@ public class FileEditorRegistry : Luna.IUiService
         RegisterFactory(shaderPackageEditorFactory);
         RegisterFactory(deformerEditorFactory);
         RegisterFactory(textureEditorFactory);
+        RegisterFactory(shaderParameterViewerFactory);
     }
 
     public void RegisterFactory(IFileEditorFactory editorFactory)

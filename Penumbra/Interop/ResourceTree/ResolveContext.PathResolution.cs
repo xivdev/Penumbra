@@ -95,7 +95,7 @@ internal partial record ResolveContext
         // Resolving a material path through the game's code can dereference null pointers for materials that involve IMC metadata.
         return ModelType switch
         {
-            ModelType.Human when IsEquipmentOrAccessorySlot(SlotIndex) && mtrlFileName[8] != (byte)'b'
+            ModelType.Human when IsEquipmentOrAccessorySlot(SlotIndex) && (SlotIndex >= 5 || mtrlFileName[8] != (byte)'b')
                 => ResolveEquipmentMaterialPath(modelPath, imc, mtrlFileName),
             ModelType.DemiHuman => ResolveEquipmentMaterialPath(modelPath, imc, mtrlFileName),
             ModelType.Weapon    => ResolveWeaponMaterialPath(modelPath, imc, mtrlFileName),

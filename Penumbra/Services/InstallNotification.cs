@@ -6,8 +6,11 @@ using Penumbra.Mods.Manager;
 
 namespace Penumbra.Services;
 
-public class InstallNotification(ModImportManager modImportManager, string filePath) : Luna.IMessage
+public class InstallNotification(ModImportManager modImportManager, string filePath, TaskCompletionSource<ModImportResult[]> tcs)
+    : Luna.INotificationAwareMessage
 {
+    private bool _reportCancellationOnDismissal = true;
+
     public NotificationType NotificationType
         => NotificationType.Info;
 
@@ -37,12 +40,23 @@ public class InstallNotification(ModImportManager modImportManager, string fileP
         var buttonSize = new Vector2((region.X - Im.Style.ItemSpacing.X) / 2, 0);
         if (Im.Button("Install"u8, buttonSize))
         {
-            modImportManager.AddUnpack(filePath);
+            _reportCancellationOnDismissal = false;
+            modImportManager.AddUnpack(filePath)
+                .ContinueWith(tcs.SetFromTask);
             args.Notification.DismissNow();
         }
 
         Im.Line.Same();
         if (Im.Button("Ignore"u8, buttonSize))
             args.Notification.DismissNow();
+    }
+
+    public void OnNotificationCreated(IActiveNotification notification)
+    {
+        notification.Dismiss += _ =>
+        {
+            if (_reportCancellationOnDismissal)
+                tcs.SetResult([]);
+        };
     }
 }

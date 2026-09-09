@@ -90,7 +90,7 @@ public class ModConfigUpdater : IDisposable, IRequiredService
         {
             mod.LastConfigEdit = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             _communicator.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.LastConfigEdit, mod, null));
-            _localModDatabase.UpsertLastConfigEdit(mod);
+            _localModDatabase.UpsertModProperty(mod, p => new LocalModDatabase.ModData { LastConfigEdit = mod.LastConfigEdit });
         }
     }
 

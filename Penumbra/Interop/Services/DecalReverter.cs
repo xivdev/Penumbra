@@ -19,7 +19,7 @@ public sealed unsafe class DecalReverter : IDisposable
     private readonly Structs.TextureResourceHandle* _decal;
     private readonly Structs.TextureResourceHandle* _transparent;
 
-    public DecalReverter(Configuration config, CharacterUtility utility, ResourceLoader resources, ResolveData resolveData, bool doDecal)
+    public DecalReverter(MainConfig config, CharacterUtility utility, ResourceLoader resources, ResolveData resolveData, bool doDecal)
     {
         _utility = utility;
         var ptr = _utility.Address;

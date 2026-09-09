@@ -11,7 +11,6 @@ namespace Penumbra.UI.ManagementTab;
 public sealed class UnusedModsTab(
     ModConfigUpdater modConfigUpdater,
     ModManager manager,
-    Configuration config,
     ModExportManager exports,
     UiNavigator navigator) : ITab<ManagementTabType>
 {
@@ -21,7 +20,7 @@ public sealed class UnusedModsTab(
     public ManagementTabType Identifier
         => ManagementTabType.UnusedMods;
 
-    private readonly Table _table       = new(modConfigUpdater, manager, config, exports, navigator);
+    private readonly Table _table       = new(modConfigUpdater, manager, exports, navigator);
     private          int   _defaultDays = 30;
 
     public void PostTabButton()
@@ -31,7 +30,7 @@ public sealed class UnusedModsTab(
 
         using var tt = Im.Tooltip.Begin();
         ImEx.TextMultiColored("Here you can list mods that are not currently enabled or have temporary settings in "u8)
-            .Then("any "u8, ColorId.NewMod.Value()).Then(" collection."u8).End();
+            .Then("any "u8, ColorId.NewMod.Value).Then(" collection."u8).End();
         Im.Text(
             "Other Plugins subscribing to Penumbras API can mark mods as 'in use' so that they do not appear, or add custom notes to them while still displaying them."u8);
     }
@@ -61,10 +60,9 @@ public sealed class UnusedModsTab(
     private sealed class Table(
         ModConfigUpdater modConfigUpdater,
         ModManager manager,
-        Configuration config,
         ModExportManager exports,
         UiNavigator navigator) : TableBase<CacheItem, Table.Cache>(new StringU8("unused"u8),
-        new ButtonColumn(manager, config, exports),
+        new ButtonColumn(manager, exports),
         new NameColumn(navigator), new LastEditColumn(), new ModSizeColumn(), new PathColumn(), new NotesColumn())
     {
         public bool HideNodes
@@ -112,9 +110,7 @@ public sealed class UnusedModsTab(
 
         protected override void PreDraw(in Cache cache)
         {
-            var buttons = (ButtonColumn)Columns[0];
-            buttons.DeleteList.Clear();
-            var disabled = !config.DeleteModModifier.IsActive();
+            var disabled = !LunaStyle.Modifier.Destructive.Active;
             Im.Line.Same();
             if (ImEx.Button("Update View"u8,
                     "The table does not automatically update, so click this to update the visible mods without changing the time limit."u8))
@@ -130,16 +126,15 @@ public sealed class UnusedModsTab(
                 }
 
             if (disabled)
-                Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"\nHold {config.DeleteModModifier} to delete the mods.");
+                Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"\nHold {LunaStyle.Modifier.Destructive} to delete the mods.");
         }
 
         protected override void PostDraw(in Cache cache)
         {
             base.PostDraw(in cache);
             var buttons = (ButtonColumn)Columns[0];
-            foreach (var item in buttons.DeleteList)
-                cache.DeleteSingleItem(item);
-            buttons.DeleteList.Clear();
+            while (buttons.DeleteList.TryDequeue(out var index))
+                cache.DeleteSingleItem(index);
 
             if (cache.Loading)
                 return;
@@ -244,18 +239,16 @@ public sealed class UnusedModsTab(
 
     private sealed class ButtonColumn : BasicColumn<CacheItem>
     {
-        public readonly HashSet<int> DeleteList = [];
+        public readonly ConcurrentQueue<int> DeleteList = [];
 
         private readonly ModManager       _manager;
-        private readonly Configuration    _config;
         private readonly ModExportManager _exports;
 
         public Mod? Exporting { get; private set; }
 
-        public ButtonColumn(ModManager manager, Configuration config, ModExportManager exports)
+        public ButtonColumn(ModManager manager, ModExportManager exports)
         {
             _manager =  manager;
-            _config  =  config;
             _exports =  exports;
             Label    =  StringU8.Empty;
             Flags    |= TableColumnFlags.NoSort;
@@ -263,17 +256,17 @@ public sealed class UnusedModsTab(
 
         public override void DrawColumn(in CacheItem item, int globalIndex)
         {
-            var inactive      = !_config.DeleteModModifier.IsActive();
+            var inactive      = !LunaStyle.Modifier.Destructive.Active;
             var exportingThis = Exporting == item.Mod;
             if (ImEx.Icon.Button(LunaStyle.DeleteIcon, "Delete this mod from Penumbra and your drive. This is NOT reversible."u8,
                     inactive || exportingThis))
             {
                 _manager.DeleteMod(item.Mod);
-                DeleteList.Add(globalIndex);
+                DeleteList.Enqueue(globalIndex);
             }
 
             if (inactive)
-                Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"\nHold {_config.DeleteModModifier} to delete.");
+                Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"\nHold {LunaStyle.Modifier.Destructive} to delete.");
             if (exportingThis)
                 Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, "\nCurrently exporting and deleting this mod, please wait."u8);
 
@@ -287,13 +280,13 @@ public sealed class UnusedModsTab(
                 _exports.CreateAsync(Exporting).ContinueWith(_ =>
                 {
                     _manager.DeleteMod(Exporting);
-                    DeleteList.Add(globalIndex);
+                    DeleteList.Enqueue(globalIndex);
                     Exporting = null;
                 });
             }
 
             if (inactive)
-                Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"\nHold {_config.DeleteModModifier} to delete.");
+                Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"\nHold {LunaStyle.Modifier.Destructive} to delete.");
             if (exporting)
                 Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, "Already exporting and deleting a mod, please wait."u8);
 
@@ -312,9 +305,9 @@ public sealed class UnusedModsTab(
 
         public NameColumn(UiNavigator navigator)
         {
-            _navigator = navigator;
-            Label         =  new StringU8("Mod Name"u8);
-            Flags         |= TableColumnFlags.WidthStretch;
+            _navigator =  navigator;
+            Label      =  new StringU8("Mod Name"u8);
+            Flags      |= TableColumnFlags.WidthStretch;
         }
 
         protected override string ComparisonText(in CacheItem item, int globalIndex)
@@ -520,7 +513,7 @@ public sealed class UnusedModsTab(
         Im.Text("Notes"u8);
         if (!hovered && !Im.Item.Hovered())
             return;
-        
+
         using var tt = Im.Tooltip.Begin();
         DrawNote(notes[0]);
         foreach (var note in notes.Skip(1))
@@ -528,9 +521,9 @@ public sealed class UnusedModsTab(
             Im.Separator();
             DrawNote(note);
         }
-        
+
         return;
-        
+
         static void DrawNote((StringPair, StringPair) note)
         {
             using (Im.Group())

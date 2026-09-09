@@ -11,7 +11,7 @@ public sealed class OnScreenTab : ITab<TabType>
     public OnScreenTab(Configuration config, ResourceTreeViewerFactory resourceTreeViewerFactory)
     {
         // Hack to handle config settings because no specific filters have been made yet.
-        if (!config.RememberOnScreenFilters)
+        if (!config.Ui.RememberOnScreenFilters)
             config.Filters.ClearOnScreenFilters();
 
         _viewer = resourceTreeViewerFactory.Create(0, delegate { }, delegate { });

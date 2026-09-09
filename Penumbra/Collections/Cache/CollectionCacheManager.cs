@@ -279,7 +279,7 @@ public class CollectionCacheManager : IDisposable, IService
     /// <summary> Prepare Changes by removing mods from caches with collections or add or reload mods. </summary>
     private void OnModOptionChange(in ModOptionChanged.Arguments arguments)
     {
-        if (arguments.Type is ModOptionChangeType.PrepareChange)
+        if (arguments.Type is ModOptionChangeType.PrepareChange or ModOptionChangeType.PrepareGroupDeletion)
         {
             var index = arguments.Mod.Index;
             foreach (var collection in _storage.Where(collection

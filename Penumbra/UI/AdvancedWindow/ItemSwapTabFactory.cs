@@ -16,7 +16,7 @@ public class ItemSwapTabFactory(
     ModSelection selection,
     ObjectIdentification identifier,
     MetaFileManager metaFileManager,
-    Configuration config) : IUiService
+    IoConfig config) : IUiService
 {
     public ItemSwapTab Create()
         => new(communicator, itemService, collectionManager, modManager, selection, identifier, metaFileManager, config);

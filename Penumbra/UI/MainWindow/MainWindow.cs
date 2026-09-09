@@ -34,7 +34,7 @@ public sealed class MainWindow : Window
         _navigator.ToggleMainWindow += OnToggleMainWindow;
         RespectCloseHotkey          =  true;
         tutorial.UpdateTutorialStep();
-        IsOpen = _config.OpenWindowAtStart;
+        IsOpen = _config.Ui.OpenWindowAtStart;
     }
 
     public void OpenSettings()
@@ -57,7 +57,7 @@ public sealed class MainWindow : Window
     {
         SizeConstraints = new WindowSizeConstraints
         {
-            MinimumSize = _config.MinimumSize,
+            MinimumSize = _config.Advanced.MinimumSize,
             MaximumSize = new Vector2(4096, 2160),
         };
     }

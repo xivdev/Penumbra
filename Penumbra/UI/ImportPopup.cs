@@ -8,7 +8,7 @@ using Penumbra.Api.Enums;
 using Penumbra.Communication;
 using Penumbra.Import.Structs;
 using Penumbra.Mods.Manager;
-using MessageService = Penumbra.Services.MessageService;
+using Penumbra.Services;
 using MouseButton = ImSharp.MouseButton;
 using Notification = Luna.Notification;
 
@@ -20,8 +20,8 @@ public sealed class ImportPopup : OverlayWindow, INotificationAwareMessage
     public const string WindowLabel = "Penumbra Import Status";
 
     private readonly ModImportManager _modImportManager;
-    private readonly MessageService   _messageService;
-    private readonly Configuration    _configuration;
+    private readonly PenumbraMessager   _messageService;
+    private readonly IoConfig    _configuration;
     private readonly UiNavigator      _navigator;
 
     private static readonly Vector2 OneHalf = Vector2.One / 2;
@@ -40,7 +40,7 @@ public sealed class ImportPopup : OverlayWindow, INotificationAwareMessage
     public bool WasDrawn      { get; private set; }
     public bool PopupWasDrawn { get; private set; }
 
-    public ImportPopup(ModImportManager modImportManager, MessageService messageService, Configuration configuration, UiNavigator navigator)
+    public ImportPopup(ModImportManager modImportManager, PenumbraMessager messageService, IoConfig configuration, UiNavigator navigator)
         : base(WindowLabel,
             WindowFlags.NoCollapse
           | WindowFlags.NoDecoration

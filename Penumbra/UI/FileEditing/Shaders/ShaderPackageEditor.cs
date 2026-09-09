@@ -88,7 +88,7 @@ public sealed partial class ShaderPackageEditor : IFileEditor
     }
 
     public          (string Name, string Tooltip, short Index, ColorType Color)[,] Matrix              = null!;
-    public readonly List<string>                                                   MalformedParameters = new();
+    public readonly List<string>                                                   MalformedParameters = [];
     public readonly HashSet<uint>                                                  UsedIds             = new(16);
     public readonly List<(string Name, short Index)>                               Orphans             = new(16);
 

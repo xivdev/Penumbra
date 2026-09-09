@@ -3,7 +3,6 @@ using Luna;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Penumbra.Files;
-using Penumbra.Services;
 
 namespace Penumbra.Collections.Manager;
 
@@ -19,7 +18,7 @@ public static class ActiveCollectionMigration
         {
             var oldName = type.ToString()[4..];
             var value   = jObject[oldName];
-            if (value == null)
+            if (value is null)
                 continue;
 
             jObject.Remove(oldName);

@@ -51,7 +51,7 @@ public class MetaApi(IFramework framework, CollectionResolver collectionResolver
     internal static string CompressMetaManipulations(ModCollection collection)
         => CompressMetaManipulationsV1(collection);
 
-    private static string CompressMetaManipulationsV0(ModCollection collection)
+    private static byte[] CompressMetaManipulationsV0(ModCollection collection)
     {
         var array = new JArray();
         if (collection.MetaCache is { } cache)
@@ -518,7 +518,7 @@ public class MetaApi(IFramework framework, CollectionResolver collectionResolver
         var count      = dict.Count;
 
         var watch  = Stopwatch.StartNew();
-        var v0     = CompressMetaManipulationsV0(collection);
+        var v0     = Encoding.UTF8.GetString(CompressMetaManipulationsV0(collection));
         var v0Time = watch.ElapsedMilliseconds;
 
         watch.Restart();

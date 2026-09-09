@@ -12,15 +12,14 @@ public class PenumbraApi(
     ResolveApi resolve,
     ResourceTreeApi resourceTree,
     TemporaryApi temporary,
-    UiApi ui) : IDisposable, Luna.IApiService, IPenumbraApi
+    UiApi ui,
+    PresetApi presets) : IDisposable, Luna.IApiService, IPenumbraApi
 {
     public const int BreakingVersion = 5;
-    public const int FeatureVersion  = 15;
+    public const int FeatureVersion  = 19;
 
     public void Dispose()
-    {
-        Valid = false;
-    }
+        => Valid = false;
 
     public (int Breaking, int Feature) ApiVersion
         => (BreakingVersion, FeatureVersion);
@@ -38,4 +37,5 @@ public class PenumbraApi(
     public IPenumbraApiResourceTree ResourceTree { get; }              = resourceTree;
     public IPenumbraApiTemporary    Temporary    { get; }              = temporary;
     public IPenumbraApiUi           Ui           { get; }              = ui;
+    public IPenumbraApiPresets      Presets      { get; }              = presets;
 }

@@ -234,14 +234,14 @@ public sealed class ModPanelChangedItemsTab(
             .Push(ImGuiColor.ButtonHovered, Rgba32.Transparent);
 
         var state = Im.State.Storage;
-        cache.Update(_mod, drawer, config.Filters.ModChangedItemTypeFilter, config.ChangedItemDisplay);
+        cache.Update(_mod, drawer, config.Filters.ModChangedItemTypeFilter, config.Ui.ChangedItemDisplay);
         using var table = Im.Table.Begin("##changedItems"u8, cache.AnyExpandable ? 2 : 1, TableFlags.RowBackground | TableFlags.ScrollY,
             Im.ContentRegion.Available);
         if (!table)
             return;
 
         using var clipper = new Im.ListClipper(cache.Data.Count, _buttonSize.Y);
-        _starColor = ColorId.ChangedItemPreferenceStar.Value();
+        _starColor = ColorId.ChangedItemPreferenceStar.Value;
         var idx = 0;
         if (cache.AnyExpandable)
         {
@@ -263,7 +263,7 @@ public sealed class ModPanelChangedItemsTab(
         Im.Table.NextColumn();
         if (obj.Expandable)
         {
-            if (ImEx.Icon.Button(obj.Expanded ? LunaStyle.TreeExpandIcon : LunaStyle.TreeCollapseIcon,
+            if (ImEx.Icon.Button(obj.Expanded ? LunaStyle.TreeCollapseIcon : LunaStyle.TreeExpandIcon,
                     obj.Expanded     ? "Hide the other items using the same model."u8 :
                     obj.Children > 1 ? $"Show {obj.Children} other items using the same model." :
                                        "Show one other item using the same model."u8,

@@ -79,14 +79,8 @@ public class ModMetaEditor(
         {
             var changes = false;
             foreach (var container in mod.AllDataContainers)
-            {
-                if (!DeleteDefaultValues(metaFileManager, container.Manipulations))
-                    continue;
-
-                saveService?.ImmediateSaveSync(new ModSaveGroup(container, metaFileManager.Config.ReplaceNonAsciiOnImport));
-                changes = true;
-            }
-
+                changes |= DeleteDefaultValues(metaFileManager, container.Manipulations);
+            saveService?.ImmediateSaveSync(new ModMeta(saveService, mod));
             return changes;
         }
 
@@ -115,14 +109,7 @@ public class ModMetaEditor(
             }
         }
 
-        if (saveService is not null)
-        {
-            if (defaultMod is not null)
-                saveService.ImmediateSaveSync(new ModSaveGroup(defaultMod, metaFileManager.Config.ReplaceNonAsciiOnImport));
-            foreach (var group in groups)
-                saveService.ImmediateSaveSync(new ModSaveGroup(group, metaFileManager.Config.ReplaceNonAsciiOnImport));
-        }
-
+        saveService?.ImmediateSaveSync(new ModMeta(saveService, mod));
         return defaultMod is not null || groups.Count > 0;
     }
 

@@ -1,13 +1,12 @@
 using Luna;
 using Penumbra.Files;
-using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.SubMods;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Mods.Editor;
 
-public class DuplicateManager(ModManager modManager, SaveService saveService, Configuration config) : Luna.IService
+public class DuplicateManager(ModManager modManager, SaveService saveService) : IService
 {
     private readonly SHA256                                           _hasher     = SHA256.Create();
     private readonly List<(FullPath[] Paths, long Size, byte[] Hash)> _duplicates = [];
@@ -88,7 +87,7 @@ public class DuplicateManager(ModManager modManager, SaveService saveService, Co
             else
             {
                 subMod.Files = dict;
-                saveService.ImmediateSaveSync(new ModSaveGroup(mod.ModPath, subMod, config.ReplaceNonAsciiOnImport));
+                saveService.ImmediateSaveSync(new ModMeta(saveService, mod));
             }
         }
     }
@@ -226,10 +225,6 @@ public class DuplicateManager(ModManager modManager, SaveService saveService, Co
                 mod = new Mod(modDirectory);
                 modManager.Creator.ReloadMod(mod, true, true, out _);
             }
-
-            // No deduplication in V4 possible.
-            if (mod.FileVersion is 4)
-                return;
 
             Clear();
             var files = new ModFileCollection();

@@ -16,7 +16,7 @@ public class ModImportManager(
     FileCompactor compactor) : IDisposable, IService
 {
     private readonly  Dictionary<string, DateTime> _uniqueModsToUnpack = new(StringComparer.OrdinalIgnoreCase);
-    internal readonly Queue<List<string>>          ModsToUnpack        = new();
+    internal readonly Queue<UnpackRequest>         ModsToUnpack        = new();
 
     /// <summary> Mods need to be added thread-safely outside of iteration. </summary>
     private readonly ConcurrentQueue<DirectoryInfo> _modsToAdd = new();
@@ -31,14 +31,14 @@ public class ModImportManager(
         if (Importing && _import!.State is not ImporterState.Done)
             return;
 
-        List<string> newMods;
+        UnpackRequest newMods;
         lock (ModsToUnpack)
         {
-            if (!ModsToUnpack.TryDequeue(out newMods!))
+            if (!ModsToUnpack.TryDequeue(out newMods))
                 return;
         }
 
-        var files = newMods.Where(s =>
+        var files = newMods.Paths.Where(s =>
         {
             if (File.Exists(s))
                 return true;
@@ -50,10 +50,13 @@ public class ModImportManager(
 
         Penumbra.Log.Debug($"Unpacking mods: {string.Join("\n\t", files.Select(f => f.FullName))}.");
         if (files.Length == 0)
+        {
+            newMods.TaskCompletionSource.SetResult([]);
             return;
+        }
 
-        _import = new TexToolsImporter(files.Length, files, AddNewMod, config, duplicates, modNormalizer, modManager, compactor,
-            migrationManager, _import);
+        _import = new TexToolsImporter(files.Length, files, AddNewMod, newMods.TaskCompletionSource, config, duplicates, modNormalizer,
+            modManager, compactor, migrationManager, _import);
     }
 
     public bool Importing
@@ -65,10 +68,7 @@ public class ModImportManager(
         return _import != null;
     }
 
-    public void AddUnpack(IEnumerable<string> paths)
-        => AddUnpack(paths.ToList());
-
-    public void AddUnpack(params List<string> paths)
+    public Task<ModImportResult[]> AddUnpack(params List<string> paths)
     {
         lock (ModsToUnpack)
         {
@@ -95,9 +95,13 @@ public class ModImportManager(
             if (paths.Count > 0)
             {
                 Penumbra.Log.Debug($"Adding mods to install: {string.Join("\n\t", paths)}");
-                ModsToUnpack.Enqueue(paths);
+                var tcs = new TaskCompletionSource<ModImportResult[]>();
+                ModsToUnpack.Enqueue(new UnpackRequest(paths, tcs));
+                return tcs.Task;
             }
         }
+
+        return Task.FromResult(Array.Empty<ModImportResult>());
     }
 
     public void ClearImport()
@@ -135,9 +139,9 @@ public class ModImportManager(
     /// </summary>
     private void AddNewMod(FileInfo file, DirectoryInfo? dir, Exception? error)
     {
-        if (error != null)
+        if (error is not null)
         {
-            if (dir != null && Directory.Exists(dir.FullName))
+            if (dir is not null && Directory.Exists(dir.FullName))
                 try
                 {
                     Directory.Delete(dir.FullName, true);
@@ -150,10 +154,12 @@ public class ModImportManager(
             if (error is not OperationCanceledException)
                 Penumbra.Log.Error($"Error extracting {file.FullName}, mod skipped:\n{error}");
         }
-        else if (dir != null)
+        else if (dir is not null)
         {
             Penumbra.Log.Debug($"Adding newly installed mod to queue: {dir.FullName}");
             _modsToAdd.Enqueue(dir);
         }
     }
+
+    internal readonly record struct UnpackRequest(List<string> Paths, TaskCompletionSource<ModImportResult[]> TaskCompletionSource);
 }

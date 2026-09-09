@@ -9,13 +9,13 @@ namespace Penumbra.UI.Tabs;
 public sealed class CollectionsTab : TwoPanelLayout, ITab<TabType>
 {
     private readonly TutorialService _tutorial;
-    private readonly UiConfig        _config;
+    private readonly EphemeralConfig _config;
 
     public TabType Identifier
         => TabType.Collections;
 
     public CollectionsTab(TutorialService tutorial, CollectionButtonFooter leftFooter, CollectionSelector leftPanel, CollectionFilter filter,
-        CollectionModeHeader rightHeader, CollectionPanel rightPanel, UiConfig config)
+        CollectionModeHeader rightHeader, CollectionPanel rightPanel, EphemeralConfig config)
     {
         LeftHeader  = new FilterHeader<CollectionSelector.Entry>(filter, new StringU8("Filter..."u8));
         LeftPanel   = leftPanel;

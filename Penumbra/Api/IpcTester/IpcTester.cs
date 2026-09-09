@@ -15,6 +15,7 @@ public class IpcTester(
     MetaIpcTester metaIpcTester,
     ModsIpcTester modsIpcTester,
     ModSettingsIpcTester modSettingsIpcTester,
+    PresetIpcTester presetIpcTester,
     EditingIpcTester editingIpcTester,
     TemporaryIpcTester temporaryIpcTester,
     ResourceTreeIpcTester resourceTreeIpcTester,
@@ -36,6 +37,7 @@ public class IpcTester(
             gameStateIpcTester.Draw();
             metaIpcTester.Draw();
             modSettingsIpcTester.Draw();
+            presetIpcTester.Draw();
             modsIpcTester.Draw();
             pluginStateIpcTester.Draw();
             redrawingIpcTester.Draw();

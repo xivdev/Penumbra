@@ -456,7 +456,7 @@ public sealed class CollectionCache : IDisposable
                 AddItems(mod);
             }
 
-            if (_manager.Config.HideMachinistOffhandFromChangedItems)
+            if (_manager.Config.Ui.HideMachinistOffhandFromChangedItems)
                 _changedItems.RemoveMachinistOffhands();
         }
         catch (Exception e)

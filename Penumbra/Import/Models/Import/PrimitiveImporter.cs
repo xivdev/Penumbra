@@ -55,7 +55,7 @@ public class PrimitiveImporter
 
     private Primitive Create()
     {
-        // TODO: This structure is verging on a little silly. Reconsider.
+        // TODO 20260824 This structure is verging on a little silly. Reconsider.
         BuildIndices();
         BuildVertexAttributes();
         BuildVertices();
@@ -87,7 +87,7 @@ public class PrimitiveImporter
 
     private void BuildIndices()
     {
-        // TODO: glTF supports a bunch of primitive types, ref. Schema2.PrimitiveType. All this code is currently assuming that it's using plain triangles (4). It should probably be generalised to other formats - I _suspect_ we should be able to get away with evaluating the indices to triangles with GetTriangleIndices, but will need investigation.
+        // TODO 20260824 glTF supports a bunch of primitive types, ref. Schema2.PrimitiveType. All this code is currently assuming that it's using plain triangles (4). It should probably be generalised to other formats - I _suspect_ we should be able to get away with evaluating the indices to triangles with GetTriangleIndices, but will need investigation.
         _indices = _primitive.GetIndices().Select(idx => (ushort)idx).ToArray();
     }
 

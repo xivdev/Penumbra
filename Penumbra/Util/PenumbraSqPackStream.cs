@@ -57,7 +57,7 @@ public class PenumbraSqPackStream : IDisposable
                 RawFileSize = modelFileInfo.RawFileSize,
                 Offset      = offset,
 
-                // todo: is this useful?
+                // TODO 20260824 is this useful?
                 ModelBlock = modelFileInfo,
             };
         }
@@ -122,7 +122,7 @@ public class PenumbraSqPackStream : IDisposable
         var baseOffset = resource.FileInfo.Offset + resource.FileInfo.HeaderSize;
 
         // 1/1/3/3/3 stack/runtime/vertex/egeo/index
-        // TODO: consider testing if this is more reliable than the Explorer method
+        // TODO 20260824 consider testing if this is more reliable than the Explorer method
         // of adding mdlBlock.IndexBufferDataBlockIndex[2] + mdlBlock.IndexBufferDataBlockNum[2]
         // i don't want to move this to that method right now, because i know sometimes the index is 0
         // but it seems to work fine in explorer...
