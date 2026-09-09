@@ -334,6 +334,9 @@ public class ConfigMigrationService(
     {
         try
         {
+            if (!File.Exists(path))
+                return null;
+
             var json = IJsonParsable.ReadJson<ParsableJsonDocument>(saveService, path, false);
             return json.Document;
         }
