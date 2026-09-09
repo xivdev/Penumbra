@@ -435,14 +435,14 @@ public static class ModDeserialization
 }
 
 public sealed class MetaMissingException(Mod mod, string metaPath)
-    : FileNotFoundException($"No meta file {metaPath} for {mod.Name} found.")
+    : FileNotFoundException($"No meta file {metaPath} for {mod.ModPath.Name} found.")
 {
     public          Mod    Mod { get; } = mod;
     public readonly string MetaPath = metaPath;
 }
 
 public sealed class InvalidMetaException(Mod mod, string filePath, string reason)
-    : JsonException($"Failure reading {filePath} for {mod.Name}: {reason}")
+    : JsonException($"Failure reading {filePath} for {mod.ModPath.Name}: {reason}")
 {
     public          Mod    Mod { get; } = mod;
     public readonly string FilePath = filePath;
