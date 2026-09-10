@@ -58,6 +58,8 @@ public enum ColorId
     OptionBorder,
     HiddenOptionIndicator,
     ModSpecificPreset,
+    FileOnPlayer,
+    FileIsGamePath,
 }
 
 public static class Colors

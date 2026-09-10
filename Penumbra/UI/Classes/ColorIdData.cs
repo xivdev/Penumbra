@@ -45,7 +45,7 @@ public readonly struct ColorIdData : IColorData<ColorId>
             "A mod that is not configured in the currently selected collection, but disabled in a collection it inherits from."u8, modSelector);
         ret[(int)NewMod] = new ColorData<ColorId>(DalamudColor.SuccessForeground, "New Mod"u8,
             "A mod that was newly imported or created during this session and has not been enabled yet."u8, modSelector);
-        ret[(int)ConflictingMod] = new ColorData<ColorId>(DalamudColor.WarningBackground, "Mod With Unresolved Conflicts"u8,
+        ret[(int)ConflictingMod] = new ColorData<ColorId>(DalamudColor.WarningForeground, "Mod With Unresolved Conflicts"u8,
             "An enabled mod that has conflicts with another enabled mod on the same priority level."u8, modSelector);
         ret[(int)NewModTint] = new ColorData<ColorId>(DalamudColor.SuccessForeground, "New Mod Tint"u8,
             "A mod that was newly imported or created during this session and has not been enabled yet. This color is used as a tint for the regular state colors."u8,
@@ -86,6 +86,10 @@ public readonly struct ColorIdData : IColorData<ColorId>
             "Another in-game element that has been highlighted for ease of editing."u8, metadata);
         ret[(int)ModSpecificPreset] = new ColorData<ColorId>(DalamudColor.HealerGreen, "Mod-Specific Setting Preset"u8,
             "The color of a setting preset specific to this mod as opposed to a generic setting preset in the preset combo."u8, metadata);
+        ret[(int)FileOnPlayer] = new ColorData<ColorId>(HandledConflictMod, "File In Use"u8,
+            "The color of a file that is currently in use on the player character in the file editor combos."u8, metadata);
+        ret[(int)FileIsGamePath] = new ColorData<ColorId>(FolderLine, "File Is Game Path"u8,
+            "The color of a file that is not a modded file on your drive, but a path to a unmodded game file in the texture selection combos."u8, metadata);
 
         // Collections
         ret[(int)SelectedCollection] = new ColorData<ColorId>(0x6069C056, "Currently Selected Collection"u8,

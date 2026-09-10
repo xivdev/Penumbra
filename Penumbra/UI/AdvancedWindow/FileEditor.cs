@@ -360,7 +360,7 @@ public sealed class FileEditor(
         protected override bool DrawItem(in FileRegistry item, int globalIndex, bool selected)
         {
             bool ret;
-            using (ImGuiColor.Text.Push(ColorId.HandledConflictMod.Vector, item.IsOnPlayer))
+            using (ImGuiColor.Text.Push(ColorId.FileOnPlayer.Vector, item.IsOnPlayer))
             {
                 ret = Im.Selectable(item.RelPath.Path.Span, selected);
             }
