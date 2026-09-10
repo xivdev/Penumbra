@@ -50,6 +50,7 @@ public sealed class ModSettingsCache : BasicCache
         _communicator = communicator;
         _storage      = storage.Pointer;
         _selection.Subscribe(OnSelectionChanged, ModSelection.Priority.ModPanel);
+        _communicator.ModDataChanged.Subscribe(OnModDataChanged, ModDataChanged.Priority.ModGroupCache);
         _communicator.ModOptionChanged.Subscribe(OnModOptionChanged, ModOptionChanged.Priority.ModGroupCache);
         _communicator.ModSettingChanged.Subscribe(OnModSettingChanged, ModSettingChanged.Priority.ModGroupCache);
         _communicator.ModPathChanged.Subscribe(OnModPathChanged, ModPathChanged.Priority.ModGroupCache);
@@ -429,7 +430,7 @@ public sealed class ModSettingsCache : BasicCache
         foreach (var group in mod.Groups)
         {
             CreateGroupCache(group);
-            SetupPage(mod, group.Page);
+            SetupPage(mod, mod.IgnorePages ? 0 : group.Page);
         }
 
         UpdateParentage();
@@ -517,7 +518,7 @@ public sealed class ModSettingsCache : BasicCache
         {
             if (group.Group.ParentSetting is null)
             {
-                _pages[group.Group.Page].Groups.Add(group);
+                _pages[_selection.Mod!.IgnorePages ? 0 : group.Group.Page].Groups.Add(group);
             }
             else
             {
@@ -555,6 +556,12 @@ public sealed class ModSettingsCache : BasicCache
             Dirty |= IManagedCache.DirtyFlags.Custom;
     }
 
+    private void OnModDataChanged(in ModDataChanged.Arguments arguments)
+    {
+        if (arguments.Type.HasFlag(ModDataChangeType.IgnorePages) && arguments.Mod == _selection.Mod)
+            Dirty |= IManagedCache.DirtyFlags.Custom;
+    }
+
     private void OnSelectionChanged(in ModSelection.Arguments arguments)
         => Dirty |= IManagedCache.DirtyFlags.Custom;
 
@@ -565,6 +572,7 @@ public sealed class ModSettingsCache : BasicCache
     protected override void Dispose(bool disposing)
     {
         _selection.Unsubscribe(OnSelectionChanged);
+        _communicator.ModDataChanged.Unsubscribe(OnModDataChanged);
         _communicator.ModPathChanged.Unsubscribe(OnModPathChanged);
         _communicator.ModOptionChanged.Unsubscribe(OnModOptionChanged);
         _communicator.ModSettingChanged.Unsubscribe(OnModSettingChanged);

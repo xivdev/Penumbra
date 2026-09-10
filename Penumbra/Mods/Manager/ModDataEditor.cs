@@ -33,6 +33,7 @@ public enum ModDataChangeType : uint
     Identifier            = 0x080000,
     PageNames             = 0x100000,
     AddedIdentifier       = 0x200000,
+    IgnorePages           = 0x400000,
 }
 
 public class ModDataEditor(SaveService saveService, CommunicatorService communicatorService, ItemData itemData, LocalModDatabase database)
@@ -142,6 +143,16 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
         mod.Favorite = state;
         database.UpsertModProperty(mod, p => new LocalModDatabase.ModData { Favorite = mod.Favorite });
         communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.Favorite, mod, null));
+    }
+
+    public void ChangeIgnorePages(Mod mod, bool value)
+    {
+        if (mod.IgnorePages == value)
+            return;
+
+        mod.IgnorePages = value;
+        database.UpsertModProperty(mod, p => new LocalModDatabase.ModData { IgnorePages = mod.IgnorePages });
+        communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.IgnorePages, mod, null));
     }
 
     public void ChangeModImportDate(Mod mod, long timeStamp)

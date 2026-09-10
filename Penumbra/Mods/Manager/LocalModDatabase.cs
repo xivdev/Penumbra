@@ -394,6 +394,7 @@ public sealed class LocalModDatabase(ServiceManager services) : IDisposable, ISe
         public long            ImportDate     = DateTimeOffset.UnixEpoch.ToUnixTimeMilliseconds();
         public long            LastConfigEdit = DateTimeOffset.UnixEpoch.ToUnixTimeMilliseconds();
         public bool            Favorite;
+        public bool            IgnorePages;
         public string          Note                  = string.Empty;
         public HashSet<string> LocalTags             = [];
         public HashSet<ulong>  PreferredChangedItems = [];
@@ -421,6 +422,7 @@ public sealed class LocalModDatabase(ServiceManager services) : IDisposable, ISe
             PreferredChangedItems = old.PreferredChangedItems.ToHashSet();
             Folder                = old.Folder;
             SortOrderName         = old.SortOrderName;
+            IgnorePages           = old.IgnorePages;
         }
 
         public ModData Update(Mod mod)
@@ -436,6 +438,7 @@ public sealed class LocalModDatabase(ServiceManager services) : IDisposable, ISe
             PreferredChangedItems = mod.PreferredChangedItems.Select(i => i.Id).ToHashSet();
             Folder                = mod.Path.Folder;
             SortOrderName         = mod.Path.SortName;
+            IgnorePages           = mod.IgnorePages;
             return this;
         }
 

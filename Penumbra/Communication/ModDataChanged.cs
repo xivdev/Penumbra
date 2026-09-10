@@ -1,6 +1,7 @@
 using Luna;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
+using Penumbra.UI.ModsTab.Settings;
 
 namespace Penumbra.Communication;
 
@@ -11,6 +12,9 @@ public sealed class ModDataChanged(LunaLogger log) : EventBase<ModDataChanged.Ar
     {
         /// <seealso cref="UI.ModsTab.Selector.ModFileSystemCache.OnModDataChange"/>
         ModFileSystemCache = -10,
+
+        /// <seealso cref="ModSettingsCache.OnModDataChanged"/>
+        ModGroupCache = 0,
 
         /// <seealso cref="Mods.Manager.ModCacheManager.OnModDataChange"/>
         ModCacheManager = 0,

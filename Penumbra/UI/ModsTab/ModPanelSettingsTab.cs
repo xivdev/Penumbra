@@ -109,6 +109,8 @@ public class ModPanelSettingsTab(
             Im.Line.Same();
             DrawPriorityInput();
             tutorial.OpenTutorial(BasicTutorialSteps.Priority);
+            Im.Line.Same();
+            DrawModConfigButton();
             DrawRemoveSettings();
         }
     }
@@ -284,13 +286,30 @@ public class ModPanelSettingsTab(
           + "That means, if Mod A should overwrite changes from Mod B, Mod A should have a higher priority number than Mod B."u8);
     }
 
+    private void DrawModConfigButton()
+    {
+        using var id = Im.Id.Push("Config"u8);
+        if (ImEx.Icon.Button(LunaStyle.ConfigIcon, "Edit the local configuration of this mod."u8) || Im.Item.RightClicked())
+            Im.Popup.Open("ModConfig"u8);
+
+        using var popup = Im.Popup.Begin("ModConfig"u8, WindowFlags.NoSavedSettings);
+        if (!popup)
+            return;
+
+        if (Im.Menu.Item(selection.Mod!.Favorite ? "Remove Favorite Mark"u8 : "Mark as Favorite"u8))
+            modManager.DataEditor.ChangeModFavorite(selection.Mod, !selection.Mod.Favorite);
+
+        if (Im.Menu.Item(selection.Mod!.IgnorePages ? "Show Pages for this Mod"u8 : "Ignore Pages for this Mod"u8))
+            modManager.DataEditor.ChangeIgnorePages(selection.Mod, !selection.Mod.IgnorePages);
+    }
+
     /// <summary>
     /// Draw a button to remove the current settings and inherit them instead
     /// in the top-right corner of the window/tab.
     /// </summary>
     private void DrawRemoveSettings()
     {
-        var drawInherited = !selection.Inherited && !selection.Settings.IsEmpty;
+        var drawInherited = selection is { Inherited: false, Settings.IsEmpty: false };
         var buttonSize    = Im.Font.CalculateButtonSize("Turn Permanent"u8).X;
         var offset = drawInherited
             ? buttonSize + Im.Font.CalculateButtonSize("Inherit Settings"u8).X + Im.Style.ItemSpacing.X
