@@ -290,6 +290,8 @@ public sealed class ModSettingsCache : BasicCache
         UpdateVisibilities(context);
         if (WidestLabel > _config.ModSettingMaximumExtendLabelWidth * Im.Style.GlobalScale)
             WidestLabel = _config.ModSettingMaximumExtendLabelWidth * Im.Style.GlobalScale;
+        if (WidestCombo > _config.ModSettingMaximumExtendComboWidth * Im.Style.GlobalScale)
+            WidestCombo = _config.ModSettingMaximumExtendComboWidth * Im.Style.GlobalScale;
         DrawDirty = true;
     }
 
@@ -377,7 +379,7 @@ public sealed class ModSettingsCache : BasicCache
                 // Group children of options have been checked for visibility before.
                 if (group.IsCombo)
                 {
-                    group.ComboWidth = 100 * Im.Style.GlobalScale;
+                    group.ComboWidth = _config.ModSettingMinimumComboWidth * Im.Style.GlobalScale;
                     for (var i = 0; i < group.NumOptions; ++i)
                     {
                         var option = (ModSettingOption)group.VisibleChildren[i];

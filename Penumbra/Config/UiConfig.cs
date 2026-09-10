@@ -125,6 +125,12 @@ public sealed partial class UiConfig : ConfigurationFile<FilenameService>
     private float _modSettingMaximumExtendLabelWidth = 200f;
 
     [ConfigProperty]
+    private float _modSettingMaximumExtendComboWidth = 300f;
+
+    [ConfigProperty]
+    private float _modSettingMinimumComboWidth = 100f;
+
+    [ConfigProperty]
     private float _modSettingLabelAlignment;
 
     [ConfigProperty]
@@ -195,6 +201,8 @@ public sealed partial class UiConfig : ConfigurationFile<FilenameService>
             tempObject.WriteIfNot("BorderScale"u8,             ModSettingBorderScale,             2f);
             tempObject.WriteIfNot("LineScale"u8,               ModSettingLineScale,               2f);
             tempObject.WriteIfNot("MaximumExtendLabelWidth"u8, ModSettingMaximumExtendLabelWidth, 200f);
+            tempObject.WriteIfNot("MaximumExtendComboWidth"u8, ModSettingMaximumExtendComboWidth, 300f);
+            tempObject.WriteIfNot("MinimumComboWidth"u8,       ModSettingMinimumComboWidth,       100f);
             tempObject.WriteIfNot("LabelAlignment"u8,          ModSettingLabelAlignment,          0f);
             tempObject.WriteIfNot("ComboAlignment"u8,          ModSettingComboAlignment,          0f);
         }
@@ -258,6 +266,8 @@ public sealed partial class UiConfig : ConfigurationFile<FilenameService>
             ModSettingBorderScale             = modConfig.PropertyOrDefault("BorderScale"u8,             ModSettingBorderScale);
             ModSettingLineScale               = modConfig.PropertyOrDefault("LineScale"u8,               ModSettingLineScale);
             ModSettingMaximumExtendLabelWidth = modConfig.PropertyOrDefault("MaximumExtendLabelWidth"u8, ModSettingMaximumExtendLabelWidth);
+            ModSettingMaximumExtendComboWidth = modConfig.PropertyOrDefault("MaximumExtendComboWidth"u8, ModSettingMaximumExtendComboWidth);
+            ModSettingMinimumComboWidth       = modConfig.PropertyOrDefault("MinimumComboWidth"u8,       ModSettingMinimumComboWidth);
             ModSettingLabelAlignment          = modConfig.PropertyOrDefault("LabelAlignment"u8,          ModSettingLabelAlignment);
             ModSettingComboAlignment          = modConfig.PropertyOrDefault("ComboAlignment"u8,          ModSettingComboAlignment);
         }

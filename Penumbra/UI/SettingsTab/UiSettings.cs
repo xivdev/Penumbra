@@ -224,6 +224,20 @@ public sealed class UiSettings(UiConfig config, IUiBuilder uiBuilder) : IUiServi
           + "Labels are sized according to the largest group label available, up to this value. "u8
           + "If a group label requires more space than this, it is an outlier and other labels are not extended to its width."u8);
 
+        Im.Item.SetNextWidth(UiHelpers.InputTextWidth.X);
+        if (ImEx.InputOnDeactivation.Drag("##comboHomo"u8, config.ModSettingMaximumExtendComboWidth, out var newComboHomo, "%.0f"u8, -1))
+            config.ModSettingMaximumExtendComboWidth = newComboHomo;
+        LunaStyle.DrawAlignedHelpMarkerLabel("Maximum Option Combo Preview Homogenization"u8,
+            "The maximum width in unscaled pixels that single selection group combo previews are extended in the settings screen. "u8
+          + "Combo previews are sized according to the largest option name available across all combos, up to this value. "u8
+          + "If a combo contains longer option names than this, it is an outlier and other combos are not extended to its width."u8);
+
+        Im.Item.SetNextWidth(UiHelpers.InputTextWidth.X);
+        if (ImEx.InputOnDeactivation.Drag("##comboMin"u8, config.ModSettingMinimumComboWidth, out var newComboMin, "%.0f"u8, 10, 500))
+            config.ModSettingMinimumComboWidth = newComboMin;
+        LunaStyle.DrawAlignedHelpMarkerLabel("Minimum Option Combo Preview Width"u8,
+            "The minimum width used for single selection group combo previews, regardless of the length of their option names."u8);
+
         DrawSingleSelectRadioMax();
     }
 
