@@ -24,8 +24,8 @@ public sealed class SingleGroupCombo : FilterComboBase<ModSettingOption>, IUiSer
         => new Cache(this);
 
     private readonly WeakReference<ModSettingGroup> _group = new(null!);
-    private          Setting                                       _currentOption;
-    private          Vector4                                       _currentColor;
+    private          Setting                        _currentOption;
+    private          Vector4                        _currentColor;
 
     public void Draw(ModGroupDrawer parent, ModSettingGroup group, Setting currentOption, float width)
     {
@@ -39,6 +39,24 @@ public sealed class SingleGroupCombo : FilterComboBase<ModSettingOption>, IUiSer
         _group.SetTarget(group);
         if (base.Draw(StringU8.Empty, currentValue.Name, StringU8.Empty, width, out var newOption))
             parent.SetModSetting(group.Group, Setting.Single(newOption.Data.Index));
+        var textTooLong = currentValue.Width > width - Im.Style.FrameHeight - 2 * Im.Style.FramePadding.X;
+        if ((!currentValue.Description.IsEmpty || textTooLong) && Im.Item.Hovered(HoveredFlags.AllowWhenDisabled))
+        {
+            using var tt = Im.Tooltip.Begin();
+            if (textTooLong)
+            {
+                Im.Text(currentValue.Name);
+                if (!currentValue.Description.IsEmpty)
+                {
+                    LunaStyle.DrawSeparator();
+                    Im.Text(currentValue.Description);
+                }
+            }
+            else
+            {
+                Im.Text(currentValue.Description);
+            }
+        }
     }
 
     protected override void PreDrawCombo(float width)

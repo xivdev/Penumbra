@@ -125,7 +125,13 @@ public sealed partial class UiConfig : ConfigurationFile<FilenameService>
     private float _modSettingMaximumExtendLabelWidth = 200f;
 
     [ConfigProperty]
+    private float _modSettingMaximumLabelWidth = 1000f;
+
+    [ConfigProperty]
     private float _modSettingMaximumExtendComboWidth = 300f;
+
+    [ConfigProperty]
+    private float _modSettingMaximumComboWidth = 1000f;
 
     [ConfigProperty]
     private float _modSettingMinimumComboWidth = 100f;
@@ -174,6 +180,7 @@ public sealed partial class UiConfig : ConfigurationFile<FilenameService>
         {
             tempObject.WriteIfNot("HideChangedItemFilters"u8,               HideChangedItemFilters,               false);
             tempObject.WriteIfNot("HideRedrawBar"u8,                        HideRedrawBar,                        false);
+            tempObject.WriteIfNot("HidePresetBar"u8,                        HidePresetBar,                        false);
             tempObject.WriteIfNot("HideMachinistOffhandFromChangedItems"u8, HideMachinistOffhandFromChangedItems, true);
             tempObject.WriteEnumIfNot("ChangedItemDisplay"u8, ChangedItemDisplay, ChangedItemMode.GroupedCollapsed);
         }
@@ -201,7 +208,9 @@ public sealed partial class UiConfig : ConfigurationFile<FilenameService>
             tempObject.WriteIfNot("BorderScale"u8,             ModSettingBorderScale,             2f);
             tempObject.WriteIfNot("LineScale"u8,               ModSettingLineScale,               2f);
             tempObject.WriteIfNot("MaximumExtendLabelWidth"u8, ModSettingMaximumExtendLabelWidth, 200f);
+            tempObject.WriteIfNot("MaximumLabelWidth"u8,       ModSettingMaximumLabelWidth,       200f);
             tempObject.WriteIfNot("MaximumExtendComboWidth"u8, ModSettingMaximumExtendComboWidth, 300f);
+            tempObject.WriteIfNot("MaximumComboWidth"u8,       ModSettingMaximumComboWidth,       300f);
             tempObject.WriteIfNot("MinimumComboWidth"u8,       ModSettingMinimumComboWidth,       100f);
             tempObject.WriteIfNot("LabelAlignment"u8,          ModSettingLabelAlignment,          0f);
             tempObject.WriteIfNot("ComboAlignment"u8,          ModSettingComboAlignment,          0f);
@@ -235,6 +244,7 @@ public sealed partial class UiConfig : ConfigurationFile<FilenameService>
         {
             HideChangedItemFilters = display.PropertyOrDefault("HideChangedItemFilters"u8, HideChangedItemFilters);
             HideRedrawBar          = display.PropertyOrDefault("HideRedrawBar"u8,          HideRedrawBar);
+            HidePresetBar          = display.PropertyOrDefault("HidePresetBar"u8,          HidePresetBar);
             HideMachinistOffhandFromChangedItems =
                 display.PropertyOrDefault("HideMachinistOffhandFromChangedItems"u8, HideMachinistOffhandFromChangedItems);
             ChangedItemDisplay = display.EnumOrDefault("ChangedItemDisplay"u8, ChangedItemDisplay);
@@ -265,7 +275,9 @@ public sealed partial class UiConfig : ConfigurationFile<FilenameService>
             ModSettingItemSpacingFactor       = modConfig.PropertyOrDefault("ItemSpacingFactor"u8,       ModSettingItemSpacingFactor);
             ModSettingBorderScale             = modConfig.PropertyOrDefault("BorderScale"u8,             ModSettingBorderScale);
             ModSettingLineScale               = modConfig.PropertyOrDefault("LineScale"u8,               ModSettingLineScale);
+            ModSettingMaximumLabelWidth       = modConfig.PropertyOrDefault("MaximumLabelWidth"u8,       ModSettingMaximumLabelWidth);
             ModSettingMaximumExtendLabelWidth = modConfig.PropertyOrDefault("MaximumExtendLabelWidth"u8, ModSettingMaximumExtendLabelWidth);
+            ModSettingMaximumComboWidth       = modConfig.PropertyOrDefault("MaximumComboWidth"u8,       ModSettingMaximumComboWidth);
             ModSettingMaximumExtendComboWidth = modConfig.PropertyOrDefault("MaximumExtendComboWidth"u8, ModSettingMaximumExtendComboWidth);
             ModSettingMinimumComboWidth       = modConfig.PropertyOrDefault("MinimumComboWidth"u8,       ModSettingMinimumComboWidth);
             ModSettingLabelAlignment          = modConfig.PropertyOrDefault("LabelAlignment"u8,          ModSettingLabelAlignment);

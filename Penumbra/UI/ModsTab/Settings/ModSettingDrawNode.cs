@@ -30,6 +30,8 @@ public readonly struct ModSettingDrawNode
     public Vector2 LabelWidth { get; init; }
     public Vector2 ComboWidth { get; init; }
 
+    public          float OwnLabelWidth     { get; init; }
+    public          float OwnComboWidth     { get; init; }
     public          float Indent            { get; init; }
     public          float SecondItemOffset  { get; init; }
     public          float IncomingLineWidth { get; init; }
@@ -102,7 +104,7 @@ public readonly struct ModSettingDrawNode
     private bool DrawLabel(ModGroupDrawer _, ModSettingsCache cache)
     {
         Im.Cursor.X += Indent;
-
+        var showFullNameTooltip = OwnLabelWidth > LabelWidth.X;
         if (!Collapsible)
         {
             using var position = ImStyleBorder.Frame.Push(ColorId.GroupLabelBorder.Vector, cache.BorderWidth)
@@ -111,6 +113,8 @@ public readonly struct ModSettingDrawNode
             {
                 ImEx.TextFramed(Node.Name, LabelWidth, ColorId.GroupLabelBackground.Value, ColorId.GroupLabelText.Value,
                     ColorId.GroupLabelBorder.Value);
+                if (showFullNameTooltip)
+                    Im.Tooltip.OnHover(Node.Name);
             }
             else
             {
@@ -123,7 +127,17 @@ public readonly struct ModSettingDrawNode
                     Im.Item.LowerRightCorner
                   - new Vector2(cache.HelpIconSize + Im.Style.FramePadding.X, cache.Height - Im.Style.FramePadding.Y),
                     ImGuiColor.TextDisabled.Get(), LunaStyle.HelpMarker.Span);
-                Im.Tooltip.OnHover(Node.Description);
+                if ((Node.Description.Length > 0 || showFullNameTooltip) && Im.Item.Hovered())
+                {
+                    using var tt = Im.Tooltip.Begin();
+                    if (showFullNameTooltip)
+                    {
+                        Im.Text(Node.Name);
+                        LunaStyle.DrawSeparator();
+                    }
+
+                    Im.Text(Node.Description);
+                }
             }
 
             return true;
@@ -159,7 +173,7 @@ public readonly struct ModSettingDrawNode
         if (Node.HasHiddenChildren && ColorId.HiddenOptionIndicator.Vector.W is not 0)
         {
             var start = (Im.Item.UpperLeftCorner + new Vector2(LabelWidth.X / 6f, Im.Style.FrameHeight - cache.BorderWidth / 2)).Round();
-            var end = (start with { X = start.X + LabelWidth.X * 2f / 3f }).Round();
+            var end   = (start with { X = start.X + LabelWidth.X * 2f / 3f }).Round();
             Im.Window.DrawList.Shape.Line(start, end, ColorId.HiddenOptionIndicator.Value, cache.BorderWidth);
         }
 
@@ -251,8 +265,9 @@ public readonly struct ModSettingDrawNode
 
         if (option.HasHiddenChildren && ColorId.HiddenOptionIndicator.Vector.W is not 0)
         {
-            var start = (Im.Item.UpperLeftCorner + new Vector2(Im.Style.FrameHeight / 6f, Im.Style.FrameHeight - cache.BorderWidth / 2)).Round();
-            var end   = (start with { X = start.X + Im.Style.FrameHeight * 2f / 3f }).Round();
+            var start = (Im.Item.UpperLeftCorner + new Vector2(Im.Style.FrameHeight / 6f, Im.Style.FrameHeight - cache.BorderWidth / 2))
+                .Round();
+            var end = (start with { X = start.X + Im.Style.FrameHeight * 2f / 3f }).Round();
             Im.Window.DrawList.Shape.Line(start, end, ColorId.HiddenOptionIndicator.Value, cache.BorderWidth);
         }
 
@@ -280,8 +295,9 @@ public readonly struct ModSettingDrawNode
         if (Node.HasHiddenChildren && ColorId.HiddenOptionIndicator.Vector.W is not 0)
         {
             var radioCenter = Rectangle.FromSize(Im.Item.UpperLeftCorner, new Vector2(Im.Style.FrameHeight + 1)).Center.Round();
-            var radius = (Im.Style.FrameHeight - cache.BorderWidth / 2) / 2;
-            Im.Window.DrawList.Path.ArcTo(radioCenter, radius, MathF.PI / 4f, 3 * MathF.PI / 4f).FinishStroke(ColorId.HiddenOptionIndicator.Value, ImDrawFlagsPath.None, cache.BorderWidth);
+            var radius      = (Im.Style.FrameHeight - cache.BorderWidth / 2) / 2;
+            Im.Window.DrawList.Path.ArcTo(radioCenter, radius, MathF.PI / 4f, 3 * MathF.PI / 4f)
+                .FinishStroke(ColorId.HiddenOptionIndicator.Value, ImDrawFlagsPath.None, cache.BorderWidth);
         }
 
         if (!option.Description.IsEmpty)

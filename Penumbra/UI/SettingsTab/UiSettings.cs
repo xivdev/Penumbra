@@ -216,8 +216,15 @@ public sealed class UiSettings(UiConfig config, IUiBuilder uiBuilder) : IUiServi
             "The alignment of the preview text in single select combos. A value of 0 means the text is left-aligned, and a value of 1 means it is right-aligned. "u8);
 
         Im.Item.SetNextWidth(UiHelpers.InputTextWidth.X);
+        if (ImEx.InputOnDeactivation.Drag("##groupWidth"u8, config.ModSettingMaximumLabelWidth,
+                out var newLabelWidth, "%.0f"u8, 50, 2000, 1f, SliderFlags.AlwaysClamp))
+            config.ModSettingMaximumLabelWidth = newLabelWidth;
+        LunaStyle.DrawAlignedHelpMarkerLabel("Maximum Group Label Width"u8,
+            "The maximum width in unscaled pixels that group label are allowed to use."u8);
+
+        Im.Item.SetNextWidth(UiHelpers.InputTextWidth.X);
         if (ImEx.InputOnDeactivation.Drag("##groupHomo"u8, config.ModSettingMaximumExtendLabelWidth,
-                out var newExtend, "%.0f"u8, -1))
+                out var newExtend, "%.0f"u8, -1, 2000, 1f, SliderFlags.AlwaysClamp))
             config.ModSettingMaximumExtendLabelWidth = newExtend;
         LunaStyle.DrawAlignedHelpMarkerLabel("Maximum Group Label Homogenization"u8,
             "The maximum width in unscaled pixels that group labels are extended in the settings screen. "u8
@@ -225,7 +232,14 @@ public sealed class UiSettings(UiConfig config, IUiBuilder uiBuilder) : IUiServi
           + "If a group label requires more space than this, it is an outlier and other labels are not extended to its width."u8);
 
         Im.Item.SetNextWidth(UiHelpers.InputTextWidth.X);
-        if (ImEx.InputOnDeactivation.Drag("##comboHomo"u8, config.ModSettingMaximumExtendComboWidth, out var newComboHomo, "%.0f"u8, -1))
+        if (ImEx.InputOnDeactivation.Drag("##comboWidth"u8, config.ModSettingMaximumComboWidth,
+                out var newComboWidth, "%.0f"u8, 50, 2000, 1f, SliderFlags.AlwaysClamp))
+            config.ModSettingMaximumComboWidth = newComboWidth;
+        LunaStyle.DrawAlignedHelpMarkerLabel("Maximum Option Combo Preview Width"u8,
+            "The maximum width in unscaled pixels that option previews are allowed to use."u8);
+
+        Im.Item.SetNextWidth(UiHelpers.InputTextWidth.X);
+        if (ImEx.InputOnDeactivation.Drag("##comboHomo"u8, config.ModSettingMaximumExtendComboWidth, out var newComboHomo, "%.0f"u8, -1, 2000, 1f, SliderFlags.AlwaysClamp))
             config.ModSettingMaximumExtendComboWidth = newComboHomo;
         LunaStyle.DrawAlignedHelpMarkerLabel("Maximum Option Combo Preview Homogenization"u8,
             "The maximum width in unscaled pixels that single selection group combo previews are extended in the settings screen. "u8
@@ -233,7 +247,7 @@ public sealed class UiSettings(UiConfig config, IUiBuilder uiBuilder) : IUiServi
           + "If a combo contains longer option names than this, it is an outlier and other combos are not extended to its width."u8);
 
         Im.Item.SetNextWidth(UiHelpers.InputTextWidth.X);
-        if (ImEx.InputOnDeactivation.Drag("##comboMin"u8, config.ModSettingMinimumComboWidth, out var newComboMin, "%.0f"u8, 10, 500))
+        if (ImEx.InputOnDeactivation.Drag("##comboMin"u8, config.ModSettingMinimumComboWidth, out var newComboMin, "%.0f"u8, 50, 500, 1f, SliderFlags.AlwaysClamp))
             config.ModSettingMinimumComboWidth = newComboMin;
         LunaStyle.DrawAlignedHelpMarkerLabel("Minimum Option Combo Preview Width"u8,
             "The minimum width used for single selection group combo previews, regardless of the length of their option names."u8);

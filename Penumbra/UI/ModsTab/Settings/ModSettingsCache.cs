@@ -158,7 +158,7 @@ public sealed class ModSettingsCache : BasicCache
         if (!skippedHeader)
         {
             // One less indentation.
-            var labelWidth = Math.Max(group.LabelExtend, WidestLabel) - indent;
+            var labelWidth = MathF.Min(MathF.Max(group.LabelExtend, WidestLabel) - indent, _config.ModSettingMaximumLabelWidth);
             indent                += Indentation;
             currentIndex          =  list.Count;
             parentOfChildrenIndex =  currentIndex.Value;
@@ -166,7 +166,7 @@ public sealed class ModSettingsCache : BasicCache
             {
                 ModSettingDrawNode.Mode.Label => (labelWidth, 0f, indent + labelWidth + CenterSpacing),
                 ModSettingDrawNode.Mode.CheckboxLabel or ModSettingDrawNode.Mode.ComboLabel => (labelWidth,
-                    MathF.Max(group.ComboWidth, WidestCombo),
+                    MathF.Min(MathF.Max(group.ComboWidth, WidestCombo), _config.ModSettingMaximumComboWidth),
                     indent + labelWidth + CenterSpacing),
                 ModSettingDrawNode.Mode.Checkbox or ModSettingDrawNode.Mode.Combo => (0, MathF.Max(group.ComboWidth, WidestCombo),
                     currentIndex is 0 ? 0 : list[parentIndex].SecondItemOffset),
@@ -186,6 +186,8 @@ public sealed class ModSettingsCache : BasicCache
                 Expanded          = expanded,
                 Indent            = indent,
                 IncomingLineWidth = incomingLine,
+                OwnLabelWidth     = group.LabelExtend - indent,
+                OwnComboWidth     = group.ComboWidth,
                 LabelWidth        = new Vector2(labelWidth, Height),
                 ComboWidth        = new Vector2(comboWidth, Height),
                 SecondItemOffset  = secondItemOffset,

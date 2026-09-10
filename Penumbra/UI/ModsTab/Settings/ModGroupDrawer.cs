@@ -69,7 +69,6 @@ public sealed class ModGroupDrawer(
         {
             Im.Dummy(UiHelpers.DefaultSpace);
 
-
             using (ImStyleDouble.ItemSpacing.Push(cache.ScaledSpacing))
             {
                 using var clipper = new Im.ListClipper(page.Drawing.Count, Im.Style.FrameHeightWithSpacing);
