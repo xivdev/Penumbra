@@ -148,14 +148,10 @@ public sealed class ModSettingsCache : BasicCache
         // Groups that are not actually drawn as groups and only group their settings require special consideration.
         // Hidden header labels further complicate that.
         var hideHeader = group.HideHeader && parentIndex >= 0 && list[parentIndex].DrawMode is not ModSettingDrawNode.Mode.PageHeader;
-        var drawMode = group.IsCombo
-            ? hideHeader ? ModSettingDrawNode.Mode.Combo : ModSettingDrawNode.Mode.ComboLabel
-            : group.IsSameLineOption
-                ? hideHeader ? ModSettingDrawNode.Mode.Checkbox : ModSettingDrawNode.Mode.CheckboxLabel
-                : ModSettingDrawNode.Mode.Label;
-
+        var drawMode = GetDrawMode(group, hideHeader, _config.ModSettingNeverSameLine);
         var parentOfChildrenIndex = parentIndex;
-        var skippedHeader         = drawMode is ModSettingDrawNode.Mode.Label && hideHeader;
+        var skippedHeader = drawMode is ModSettingDrawNode.Mode.Label && hideHeader;
+
         if (!skippedHeader)
         {
             // One less indentation.
@@ -199,6 +195,7 @@ public sealed class ModSettingsCache : BasicCache
         if (expanded)
         {
             var lineOffset = skippedHeader ? HalfHeight : CaretTipSpacing;
+            HandleNeverSameLine(group, list, hideHeader, indent, lineOffset, ref lastIndex);
             foreach (var child in group.VisibleChildren)
             {
                 if (child is ModSettingGroup childGroup)
@@ -215,6 +212,67 @@ public sealed class ModSettingsCache : BasicCache
             AddSpace(list);
 
         return hideHeader && lastIndex >= 0 ? lastIndex : currentIndex;
+    }
+
+    private static ModSettingDrawNode.Mode GetDrawMode(ModSettingGroup group, bool hideHeader, bool neverSameLine)
+    {
+        if (group.IsCombo)
+        {
+            // A combo on the right side without a header.
+            if (hideHeader)
+                return ModSettingDrawNode.Mode.Combo;
+
+            // A label for the combo on the next line.
+            if (neverSameLine)
+                return ModSettingDrawNode.Mode.Label;
+
+            // A label with a combo on the same line.
+            return ModSettingDrawNode.Mode.ComboLabel;
+        }
+
+        if (group.IsSameLineOption)
+        {
+            // A checkbox on the right side without a header.
+            if (hideHeader)
+                return ModSettingDrawNode.Mode.Checkbox;
+
+            // A label for a single checkbox on the next line.
+            if (neverSameLine)
+                return ModSettingDrawNode.Mode.Label;
+
+            // A label with a checkbox on the same line.
+            return ModSettingDrawNode.Mode.CheckboxLabel;
+        }
+
+        // A label.
+        return ModSettingDrawNode.Mode.Label;
+    }
+
+    private void HandleNeverSameLine(ModSettingGroup group, List<ModSettingDrawNode> list, bool hideHeader, float indent, float lineOffset,
+        ref int lastIndex)
+    {
+        if (!_config.ModSettingNeverSameLine || hideHeader)
+            return;
+
+        if (group is { IsSameLineOption: false, IsCombo: false })
+            return;
+
+        lastIndex = list.Count;
+        list.Add(new ModSettingDrawNode
+        {
+            Id                = Im.Id.Get("##c"u8),
+            DrawMode          = group.IsSameLineOption ? ModSettingDrawNode.Mode.Checkbox : ModSettingDrawNode.Mode.Combo,
+            Node              = group,
+            Collapsible       = false,
+            Expanded          = false,
+            Indent            = indent + Indentation,
+            IncomingLineWidth = Indentation - lineOffset,
+            OwnLabelWidth     = 0,
+            OwnComboWidth     = group.ComboWidth,
+            LabelWidth        = new Vector2(0,                                        Height),
+            ComboWidth        = new Vector2(MathF.Max(group.ComboWidth, WidestCombo), Height),
+            SecondItemOffset  = indent + Indentation,
+        });
     }
 
     private int AddOption(List<ModSettingDrawNode> list, List<ModSettingsDrawLine> lines, ModSettingOption option, float parentIndent,
@@ -373,7 +431,9 @@ public sealed class ModSettingsCache : BasicCache
                 // Multi groups are visible if they have any children at all.
                 group.Visible = group.VisibleChildren.Count > 0;
                 // Multi groups are collapsible if they are not same-line or have additional group children.
-                group.Collapsible = !group.IsSameLineOption || group.VisibleChildren.Count > 1;
+                group.Collapsible = _config.ModSettingNeverSameLine && group.VisibleChildren.Count > 0
+                 || !group.IsSameLineOption
+                 || group.VisibleChildren.Count > 1;
                 break;
             }
             case GroupDrawBehaviour.SingleSelection:
@@ -396,7 +456,7 @@ public sealed class ModSettingsCache : BasicCache
 
                 // A single group is collapsible if it is not a combo or if it has any group children
                 // If it has no options or children itself, collapsibility is irrelevant due to visibility.
-                group.Collapsible = !group.IsCombo || group.VisibleChildren.Count > group.NumOptions;
+                group.Collapsible = _config.ModSettingNeverSameLine || !group.IsCombo || group.VisibleChildren.Count > group.NumOptions;
                 // A single group is visible if it has at least 2 options or group children.
                 group.Visible = group.NumOptions > 1 || group.VisibleChildren.Count > group.NumOptions;
                 break;

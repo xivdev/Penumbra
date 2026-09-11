@@ -178,6 +178,11 @@ public sealed class UiSettings(UiConfig config, IUiBuilder uiBuilder) : IUiServi
                 config.DisplayPages))
             config.DisplayPages ^= true;
 
+        if (SettingsTab.Checkbox("Never Put Options on the Same Line"u8,
+                "When this is on, both single selection group combos as well as multi-groups with single checkboxes will never be placed on the same line as the label, and instead be put on the next line."u8,
+                config.ModSettingNeverSameLine))
+            config.ModSettingNeverSameLine ^= true;
+
         Im.Item.SetNextWidth(UiHelpers.InputTextWidth.X);
         if (ImEx.InputOnDeactivation.Drag("##groupLine"u8, config.ModSettingLineScale,
                 out var newLine, "%.2f"u8, 0, 4, 0.005f, SliderFlags.AlwaysClamp))
@@ -239,7 +244,8 @@ public sealed class UiSettings(UiConfig config, IUiBuilder uiBuilder) : IUiServi
             "The maximum width in unscaled pixels that option previews are allowed to use."u8);
 
         Im.Item.SetNextWidth(UiHelpers.InputTextWidth.X);
-        if (ImEx.InputOnDeactivation.Drag("##comboHomo"u8, config.ModSettingMaximumExtendComboWidth, out var newComboHomo, "%.0f"u8, -1, 2000, 1f, SliderFlags.AlwaysClamp))
+        if (ImEx.InputOnDeactivation.Drag("##comboHomo"u8, config.ModSettingMaximumExtendComboWidth, out var newComboHomo, "%.0f"u8, -1, 2000,
+                1f, SliderFlags.AlwaysClamp))
             config.ModSettingMaximumExtendComboWidth = newComboHomo;
         LunaStyle.DrawAlignedHelpMarkerLabel("Maximum Option Combo Preview Homogenization"u8,
             "The maximum width in unscaled pixels that single selection group combo previews are extended in the settings screen. "u8
@@ -247,7 +253,8 @@ public sealed class UiSettings(UiConfig config, IUiBuilder uiBuilder) : IUiServi
           + "If a combo contains longer option names than this, it is an outlier and other combos are not extended to its width."u8);
 
         Im.Item.SetNextWidth(UiHelpers.InputTextWidth.X);
-        if (ImEx.InputOnDeactivation.Drag("##comboMin"u8, config.ModSettingMinimumComboWidth, out var newComboMin, "%.0f"u8, 50, 500, 1f, SliderFlags.AlwaysClamp))
+        if (ImEx.InputOnDeactivation.Drag("##comboMin"u8, config.ModSettingMinimumComboWidth, out var newComboMin, "%.0f"u8, 50, 500, 1f,
+                SliderFlags.AlwaysClamp))
             config.ModSettingMinimumComboWidth = newComboMin;
         LunaStyle.DrawAlignedHelpMarkerLabel("Minimum Option Combo Preview Width"u8,
             "The minimum width used for single selection group combo previews, regardless of the length of their option names."u8);

@@ -142,6 +142,9 @@ public sealed partial class UiConfig : ConfigurationFile<FilenameService>
     [ConfigProperty]
     private float _modSettingComboAlignment;
 
+    [ConfigProperty]
+    private bool _modSettingNeverSameLine;
+
     /// <inheritdoc/>
     public UiConfig(SaveService saveService, PenumbraMessager messages)
         : base(saveService, messages)
@@ -214,6 +217,7 @@ public sealed partial class UiConfig : ConfigurationFile<FilenameService>
             tempObject.WriteIfNot("MinimumComboWidth"u8,       ModSettingMinimumComboWidth,       100f);
             tempObject.WriteIfNot("LabelAlignment"u8,          ModSettingLabelAlignment,          0f);
             tempObject.WriteIfNot("ComboAlignment"u8,          ModSettingComboAlignment,          0f);
+            tempObject.WriteIfNot("NeverSameLine"u8,           ModSettingNeverSameLine,           false);
         }
 
         j.WritePropertyName("Colors"u8);
@@ -282,6 +286,7 @@ public sealed partial class UiConfig : ConfigurationFile<FilenameService>
             ModSettingMinimumComboWidth       = modConfig.PropertyOrDefault("MinimumComboWidth"u8,       ModSettingMinimumComboWidth);
             ModSettingLabelAlignment          = modConfig.PropertyOrDefault("LabelAlignment"u8,          ModSettingLabelAlignment);
             ModSettingComboAlignment          = modConfig.PropertyOrDefault("ComboAlignment"u8,          ModSettingComboAlignment);
+            ModSettingNeverSameLine           = modConfig.PropertyOrDefault("NeverSameLine"u8,           ModSettingNeverSameLine);
         }
 
         if (j.TryReadObject("Colors"u8, out var colors))
