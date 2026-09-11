@@ -129,8 +129,8 @@ public sealed class ModFileSystemDrawer : FileSystemDrawer<ModFileSystemCache.Mo
         DataContext.RemoveButtons<RenameModInput>();
         switch (newField)
         {
-            case RenameField.RenameSearchPath: DataContext.AddButton(new RenameModInput(this), -1000); break;
-            case RenameField.RenameData:       DataContext.AddButton(new MoveModInput(this),   -1000); break;
+            case RenameField.RenameSearchPath: DataContext.AddButton(new MoveModInput(this), -1000); break;
+            case RenameField.RenameData:       DataContext.AddButton(new RenameModInput(this),   -1000); break;
             case RenameField.BothSearchPathPrio:
                 DataContext.AddButton(new RenameModInput(this), -1000);
                 DataContext.AddButton(new MoveModInput(this),   -1001);
