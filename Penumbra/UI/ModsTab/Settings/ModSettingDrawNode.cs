@@ -102,7 +102,6 @@ public readonly struct ModSettingDrawNode
     }
 
 
-
     private bool DrawLabel(ModGroupDrawer _, ModSettingsCache cache)
     {
         Im.Cursor.X += Indent;
@@ -137,10 +136,12 @@ public readonly struct ModSettingDrawNode
                         Im.Text(Node.Name);
                         LunaStyle.DrawSeparator();
                     }
+
                     Im.Text(Node.Description);
                 }
             }
-            AddUniqueNameTooltip();
+
+            AddUniqueNameTooltip(Node);
 
             return true;
         }
@@ -172,7 +173,7 @@ public readonly struct ModSettingDrawNode
             cache.DrawDirty = true;
         }
 
-        AddUniqueNameTooltip();
+        AddUniqueNameTooltip(Node);
 
         if (Node.HasHiddenChildren && ColorId.HiddenOptionIndicator.Vector.W is not 0)
         {
@@ -194,17 +195,18 @@ public readonly struct ModSettingDrawNode
         return true;
     }
 
-    private void AddUniqueNameTooltip()
+    internal static void AddUniqueNameTooltip(ModSettingDataNode node, bool isHovered = false)
     {
-        if (!Node.HasDisplayName || !Im.Item.Hovered())
+        if (!node.HasDisplayName || !(isHovered || Im.Item.Hovered(HoveredFlags.AllowWhenDisabled)))
             return;
 
-        using var tt = Im.Tooltip.Begin();
-        if (Im.Cursor.Y > 0)
+        using var style = Im.Style.PushDefault();
+        using var tt    = Im.Tooltip.Begin();
+        if (Im.Cursor.Y != Im.Cursor.StartPosition.Y)
             LunaStyle.DrawSeparator();
         Im.Text("Unique Name: "u8);
         Im.Line.NoSpacing();
-        Im.Text(Node.OriginalName, DalamudColor.AttentionForeground.Value);
+        Im.Text(node.OriginalName, DalamudColor.AttentionForeground.Value);
     }
 
     private static void DrawConnector(ModSettingsCache cache)
@@ -290,8 +292,14 @@ public readonly struct ModSettingDrawNode
 
         if (!option.Description.IsEmpty)
         {
+            var treatAsHovered = Im.Item.Hovered(HoveredFlags.AllowWhenDisabled);
             Im.Line.SameInner();
-            LunaStyle.DrawAlignedHelpMarker(option.Description, treatAsHovered: Im.Item.Hovered(HoveredFlags.AllowWhenDisabled));
+            LunaStyle.DrawAlignedHelpMarker(option.Description, treatAsHovered: treatAsHovered);
+            AddUniqueNameTooltip(option, treatAsHovered);
+        }
+        else
+        {
+            AddUniqueNameTooltip(option);
         }
     }
 
@@ -319,8 +327,14 @@ public readonly struct ModSettingDrawNode
 
         if (!option.Description.IsEmpty)
         {
+            var treatAsHovered = Im.Item.Hovered(HoveredFlags.AllowWhenDisabled);
             Im.Line.SameInner();
-            LunaStyle.DrawAlignedHelpMarker(option.Description, treatAsHovered: Im.Item.Hovered(HoveredFlags.AllowWhenDisabled));
+            LunaStyle.DrawAlignedHelpMarker(option.Description, treatAsHovered: treatAsHovered);
+            AddUniqueNameTooltip(option, treatAsHovered);
+        }
+        else
+        {
+            AddUniqueNameTooltip(option);
         }
 
         return true;

@@ -57,6 +57,7 @@ public sealed class SingleGroupCombo : FilterComboBase<ModSettingOption>, IUiSer
                 Im.Text(currentValue.Description);
             }
         }
+        ModSettingDrawNode.AddUniqueNameTooltip(currentValue);
     }
 
     protected override void PreDrawCombo(float width)
@@ -90,8 +91,14 @@ public sealed class SingleGroupCombo : FilterComboBase<ModSettingOption>, IUiSer
 
         if (item.Description.Length > 0)
         {
+            var hovered = Im.Item.Hovered(HoveredFlags.AllowWhenDisabled);
             Im.Line.SameInner();
-            LunaStyle.DrawHelpMarker(item.Description, treatAsHovered: Im.Item.Hovered(HoveredFlags.AllowWhenDisabled));
+            LunaStyle.DrawHelpMarker(item.Description, treatAsHovered: hovered);
+            ModSettingDrawNode.AddUniqueNameTooltip(item, hovered);
+        }
+        else
+        {
+            ModSettingDrawNode.AddUniqueNameTooltip(item);
         }
 
         return ret;

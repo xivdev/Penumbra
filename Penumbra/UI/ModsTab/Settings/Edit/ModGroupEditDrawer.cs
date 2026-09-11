@@ -429,11 +429,12 @@ public sealed class ModGroupEditDrawer(
             }
         }
 
-        using (Im.Disabled(@object.Layout is 0))
+        using (Im.Disabled(@object.Layout is 0 && string.IsNullOrWhiteSpace(@object.DisplayName)))
         {
             if (Im.Menu.Item("Clear"u8))
             {
                 ModManager.OptionEditor.SetLayout(@object, 0);
+                ModManager.OptionEditor.SetDisplayName(@object, null);
                 if (@object is IModGroup g)
                     ModManager.OptionEditor.SetParent(g, null);
                 if (@object is IModOption o)
