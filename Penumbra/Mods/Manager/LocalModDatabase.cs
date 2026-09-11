@@ -26,8 +26,7 @@ public sealed class LocalModDatabase(ServiceManager services) : IDisposable, ISe
             if (_collection is { } collection && _presets is { } presets)
                 return (collection, presets);
 
-            _database = new LiteDatabase(
-                $"Filename={FilePath};Connection=Shared;Timeout=00:00:02");
+            _database                            = new LiteDatabase($"Filename={FilePath};Connection=Shared;Timeout=00:00:02");
             _database.Mapper.EmptyStringToNull   = false;
             _database.Mapper.IncludeFields       = true;
             _database.Mapper.SerializeNullValues = false;
