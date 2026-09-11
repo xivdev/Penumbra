@@ -232,12 +232,12 @@ public sealed partial class UiConfig : ConfigurationFile<FilenameService>
 
         if (j.TryReadObject("Filters"u8, out var filters))
         {
-            RememberModFilters              = filters.PropertyOrDefault("RememberModFilters"u8,              RememberModFilters);
-            RememberCollectionFilters       = filters.PropertyOrDefault("RememberCollectionFilters"u8,       RememberCollectionFilters);
-            RememberOnScreenFilters         = filters.PropertyOrDefault("RememberOnScreenFilters"u8,         RememberOnScreenFilters);
-            RememberChangedItemFilters      = filters.PropertyOrDefault("RememberChangedItemFilters"u8,      RememberChangedItemFilters);
-            RememberEffectiveChangesFilters = filters.PropertyOrDefault("RememberEffectiveChangesFilters"u8, RememberEffectiveChangesFilters);
-            RememberResourceManagerFilters  = filters.PropertyOrDefault("RememberResourceManagerFilters"u8,  RememberResourceManagerFilters);
+            RememberModFilters              = filters.PropertyOrDefault("RememberMod"u8,              RememberModFilters);
+            RememberCollectionFilters       = filters.PropertyOrDefault("RememberCollection"u8,       RememberCollectionFilters);
+            RememberOnScreenFilters         = filters.PropertyOrDefault("RememberOnScreen"u8,         RememberOnScreenFilters);
+            RememberChangedItemFilters      = filters.PropertyOrDefault("RememberChangedItem"u8,      RememberChangedItemFilters);
+            RememberEffectiveChangesFilters = filters.PropertyOrDefault("RememberEffectiveChanges"u8, RememberEffectiveChangesFilters);
+            RememberResourceManagerFilters  = filters.PropertyOrDefault("RememberResourceManager"u8,  RememberResourceManagerFilters);
         }
 
         if (j.TryReadObject("Display"u8, out var display))
