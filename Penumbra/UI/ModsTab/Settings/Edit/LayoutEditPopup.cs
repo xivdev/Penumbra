@@ -20,6 +20,7 @@ public sealed class LayoutEditPopup(ModManager mods) : ObjectEditPopup, IUiServi
     private void DrawGroup(IModGroup group)
     {
         DrawIdentifier(group);
+        DrawDisplayName(group);
         _parentCombo.Draw("Parent Setting"u8, group, ImEx.GuidInputWidth + Im.Style.ItemInnerSpacing.X + Im.Style.FrameHeight);
         var layout = group.Layout;
         if (Im.Checkbox("Hide When Condition Not Met"u8, ref layout, ModSettingsLayout.Hide))
@@ -52,9 +53,23 @@ public sealed class LayoutEditPopup(ModManager mods) : ObjectEditPopup, IUiServi
         ImEx.TextFrameAligned("Identifier"u8);
     }
 
+    private void DrawDisplayName(IModObject @object)
+    {
+        Im.Item.SetNextWidth(ImEx.GuidInputWidth);
+        if (ImEx.InputOnDeactivation.Text("##display"u8, @object.DisplayName ?? string.Empty, out string newDisplay, "Display Name..."u8))
+            mods.OptionEditor.SetDisplayName(@object, newDisplay);
+        Im.Tooltip.OnHover("Set an optional, non-unique display name for this object that is shown in the settings page. If left blank, the regular name of the object is used."u8);
+        Im.Line.SameInner();
+        if (ImEx.Icon.Button(LunaStyle.DeleteIcon, "Clear this display name back to default."u8, string.IsNullOrEmpty(@object.DisplayName)))
+            mods.OptionEditor.SetDisplayName(@object, null);
+        Im.Line.SameInner();
+        ImEx.TextFrameAligned("Display Name"u8);
+    }
+
     private void DrawOption(IModOption option)
     {
         DrawIdentifier(option);
+        DrawDisplayName(option);
         DrawColorCombo(option);
         var layout = option.Layout;
         if (option is SingleSubMod)

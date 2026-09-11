@@ -6,6 +6,17 @@ namespace Penumbra.UI.ModsTab.Settings;
 
 public record ModSettingDataNode(StringU8 Name, StringU8 Description)
 {
+    public StringU8 OriginalName
+    {
+        get => field;
+        set
+        {
+            field          = value;
+            HasDisplayName = field != Name;
+        }
+    } = Name;
+
+    public bool HasDisplayName { get; private set; }
     public bool Visible;
     public bool Disabled;
     public bool HasHiddenChildren;

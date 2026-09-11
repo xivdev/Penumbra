@@ -18,11 +18,12 @@ public class ImcModGroup(Mod mod) : IModGroup
     public void SetIndex(int index)
         => Index = index;
 
-    public Mod    Mod         { get; }      = mod;
-    public Guid   Id          { get; set; } = Guid.Empty;
-    public string Name        { get; set; } = "Option";
-    public string Description { get; set; } = string.Empty;
-    public string Image       { get; set; } = string.Empty;
+    public Mod     Mod         { get; }      = mod;
+    public Guid    Id          { get; set; } = Guid.Empty;
+    public string  Name        { get; set; } = "Option";
+    public string? DisplayName { get; set; }
+    public string  Description { get; set; } = string.Empty;
+    public string  Image       { get; set; } = string.Empty;
 
     public GroupType Type
         => GroupType.Imc;

@@ -171,7 +171,7 @@ public sealed class ModGroupEditDrawer(
     private void DrawGroupLayout(IModGroup group)
     {
         if (ImEx.Icon.Button(LunaStyle.LayoutIcon, "Edit group layout settings."u8,
-                textColor: group.Layout is not 0 || group.ParentSetting is not null ? LunaStyle.FavoriteColor : ColorParameter.Default))
+                textColor: group.Layout is not 0 || group.ParentSetting is not null || !string.IsNullOrWhiteSpace(group.DisplayName) ? LunaStyle.FavoriteColor : ColorParameter.Default))
             layoutPopup.Open(group);
         DrawLayoutInteraction(group);
     }
@@ -259,7 +259,7 @@ public sealed class ModGroupEditDrawer(
     private void DrawOptionLayout(IModOption option)
     {
         if (ImEx.Icon.Button(LunaStyle.LayoutIcon, "Edit option layout settings."u8,
-                textColor: option.Layout is not 0 || option.ColorAsInteger is not 0 ? LunaStyle.FavoriteColor : ColorParameter.Default))
+                textColor: option.Layout is not 0 || option.ColorAsInteger is not 0 || !string.IsNullOrWhiteSpace(option.DisplayName) ? LunaStyle.FavoriteColor : ColorParameter.Default))
             layoutPopup.Open(option);
         DrawLayoutInteraction(option);
     }

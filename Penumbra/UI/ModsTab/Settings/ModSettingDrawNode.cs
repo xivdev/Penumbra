@@ -101,6 +101,8 @@ public readonly struct ModSettingDrawNode
         return true;
     }
 
+
+
     private bool DrawLabel(ModGroupDrawer _, ModSettingsCache cache)
     {
         Im.Cursor.X += Indent;
@@ -135,10 +137,10 @@ public readonly struct ModSettingDrawNode
                         Im.Text(Node.Name);
                         LunaStyle.DrawSeparator();
                     }
-
                     Im.Text(Node.Description);
                 }
             }
+            AddUniqueNameTooltip();
 
             return true;
         }
@@ -170,6 +172,8 @@ public readonly struct ModSettingDrawNode
             cache.DrawDirty = true;
         }
 
+        AddUniqueNameTooltip();
+
         if (Node.HasHiddenChildren && ColorId.HiddenOptionIndicator.Vector.W is not 0)
         {
             var start = (Im.Item.UpperLeftCorner + new Vector2(LabelWidth.X / 6f, Im.Style.FrameHeight - cache.BorderWidth / 2)).Round();
@@ -188,6 +192,19 @@ public readonly struct ModSettingDrawNode
         DrawConnector(cache);
         DoDrawCheckbox(drawer, cache, option);
         return true;
+    }
+
+    private void AddUniqueNameTooltip()
+    {
+        if (!Node.HasDisplayName || !Im.Item.Hovered())
+            return;
+
+        using var tt = Im.Tooltip.Begin();
+        if (Im.Cursor.Y > 0)
+            LunaStyle.DrawSeparator();
+        Im.Text("Unique Name: "u8);
+        Im.Line.NoSpacing();
+        Im.Text(Node.OriginalName, DalamudColor.AttentionForeground.Value);
     }
 
     private static void DrawConnector(ModSettingsCache cache)

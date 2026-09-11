@@ -56,6 +56,26 @@ public sealed class ModSettingsCache : BasicCache
         _communicator.ModPathChanged.Subscribe(OnModPathChanged, ModPathChanged.Priority.ModGroupCache);
     }
 
+    public void ToggleAllGroups(bool toggle)
+    {
+        using var id = Im.Id.Empty();
+        foreach (var page in _pages.Values)
+        {
+            id.Push(page.Id);
+            Storage.SetBool(Im.Id.Get("Page"u8), toggle);
+            foreach (var group in page.Groups)
+            {
+                id.Push(group.Group.Index);
+                Storage.SetBool(Im.Id.Current, toggle);
+                id.Pop();
+            }
+
+            id.Pop();
+        }
+
+        DrawDirty = true;
+    }
+
     /// <summary>
     ///   Structure is:
     ///     - Data is set dirty and subsequently updated when anything in the mod or option or config changes or the cache is not drawn for a frame.
@@ -522,15 +542,17 @@ public sealed class ModSettingsCache : BasicCache
 
     private void CreateGroupCache(IModGroup group)
     {
-        var groupCache = new ModSettingGroup(group, new StringU8(group.Name), new StringU8(group.Description))
+        var originalName = new StringU8(group.Name);
+        var name         = group.DisplayName is null ? originalName : new StringU8(group.DisplayName);
+        var groupCache = new ModSettingGroup(group, name, new StringU8(group.Description))
         {
-            Visible     = true,
-            Collapsible = true,
-            HideHeader  = group.Layout.HasFlag(ModSettingsLayout.ParentHeader),
-            Space       = group.Layout.HasFlag(ModSettingsLayout.Space),
-            IsCombo =
-                group is SingleModGroup g
-             && g.Options.Count > _config.SingleGroupRadioMax, // Single options are never hidden, so this is independent of visibility
+            OriginalName = originalName,
+            Visible      = true,
+            Collapsible  = true,
+            HideHeader   = group.Layout.HasFlag(ModSettingsLayout.ParentHeader),
+            Space        = group.Layout.HasFlag(ModSettingsLayout.Space),
+            // Single options are never hidden, so this is independent of visibility
+            IsCombo = group is SingleModGroup g && g.Options.Count > _config.SingleGroupRadioMax,
         };
         groupCache.NameWidth = groupCache.Name.CalculateSize().X + 2 * Im.Style.FramePadding.X;
         if (!groupCache.Description.IsEmpty)
@@ -549,13 +571,16 @@ public sealed class ModSettingsCache : BasicCache
 
     private ModSettingOption CreateOptionCache(IModOption option)
     {
-        var ret = new ModSettingOption(option, new StringU8(option.Name), new StringU8(option.Description))
+        var originalName = new StringU8(option.Name);
+        var name         = option.DisplayName is null ? originalName : new StringU8(option.DisplayName);
+        var ret = new ModSettingOption(option, name, new StringU8(option.Description))
         {
-            Color     = option.ColorValue,
-            Separator = option.Layout.HasFlag(ModSettingsLayout.Separator),
-            HideLabel = option.Layout.HasFlag(ModSettingsLayout.HideOptionLabel),
-            Space     = option.Layout.HasFlag(ModSettingsLayout.Space),
-            Radio     = option is SingleSubMod,
+            OriginalName = originalName,
+            Color        = option.ColorValue,
+            Separator    = option.Layout.HasFlag(ModSettingsLayout.Separator),
+            HideLabel    = option.Layout.HasFlag(ModSettingsLayout.HideOptionLabel),
+            Space        = option.Layout.HasFlag(ModSettingsLayout.Space),
+            Radio        = option is SingleSubMod,
         };
         ret.Width = ret.Name.CalculateSize().X;
         if (!ret.Description.IsEmpty)

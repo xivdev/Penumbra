@@ -519,6 +519,12 @@ public static class GroupDeserialization
             return true;
         }
 
+        if (j.StringProperty("DisplayName"u8, out string? displayName, true))
+        {
+            @object.DisplayName = displayName;
+            return true;
+        }
+
         if (j.StringProperty("Description"u8, out string? description, true))
         {
             @object.Description = description ?? string.Empty;

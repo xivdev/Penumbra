@@ -20,6 +20,7 @@ public abstract class OptionSubMod(IModGroup group) : IModOption, IModDataContai
         => Index = index;
 
     public string            Name        { get; set; } = "Option";
+    public string?           DisplayName { get; set; }
     public string            Description { get; set; } = string.Empty;
     public ModSettingsLayout Layout      { get; set; }
 

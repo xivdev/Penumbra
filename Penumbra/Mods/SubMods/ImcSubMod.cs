@@ -35,7 +35,8 @@ public class ImcSubMod(ImcModGroup group) : IModOption
 
     public Guid Id { get; set; } = Guid.Empty;
 
-    public string Name { get; set; } = "Part";
+    public string  Name        { get; set; } = "Part";
+    public string? DisplayName { get; set; }
 
     public ColorId Color     { get; set; }
 

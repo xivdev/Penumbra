@@ -42,6 +42,10 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 8
+        },
+        "DisplayName": {
+            "description": "An optional display name for the option. If null or empty, the normal name is used.",
+            "type": [ "null", "string" ]
         }
     },
 	"required": [ "Name" ]

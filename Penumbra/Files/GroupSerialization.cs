@@ -137,6 +137,7 @@ public static class GroupSerialization
     {
         j.WriteString("Id"u8,   @object.Id);
         j.WriteString("Name"u8, @object.Name);
+        j.WriteNonEmptyString("DisplayName"u8, @object.DisplayName);
         j.WriteNonEmptyString("Description"u8, @object.Description);
         if (@object.Layout is not ModSettingsLayout.None)
         {

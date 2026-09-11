@@ -24,6 +24,7 @@ public interface IModObject : CycleChecker.IHasParent<IModObject>, IEquatable<IM
     public IModGroup                      Group       { get; }
     public Guid                           Id          { get; set; }
     public string                         Name        { get; set; }
+    public string?                        DisplayName { get; set; }
     public string                         Description { get; set; }
     public ModSettingsLayout              Layout      { get; set; }
     public ICondition<ModSettingContext>? Condition   { get; set; }
@@ -89,6 +90,9 @@ public interface IModOption : IModObject, IIndexed
 
 public static class ModSettingsLayoutExtensions
 {
+    public static string GetDisplayName(this IModObject obj)
+        => string.IsNullOrEmpty(obj.DisplayName) ? obj.Name : obj.DisplayName;
+
     public const ModSettingsLayout GroupValid = ModSettingsLayout.Hide
       | ModSettingsLayout.Space
       | ModSettingsLayout.ParentHeader

@@ -27,6 +27,7 @@ public sealed class CombiningModGroup : IModGroup
     public          Mod                              Mod             { get; }
     public          Guid                             Id              { get; set; } = Guid.Empty;
     public          string                           Name            { get; set; } = "Group";
+    public          string?                          DisplayName     { get; set; }
     public          string                           Description     { get; set; } = string.Empty;
     public          string                           Image           { get; set; } = string.Empty;
     public          ModPriority                      Priority        { get; set; }

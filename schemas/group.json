@@ -52,6 +52,10 @@
             "description": "Conditions on the full settings of this mod to control whether this group is visible and applied.",
             "type": [ "null", "object" ],
             "$ref": "structs/condition.json"
+        },
+        "DisplayName": {
+            "description": "An optional display name for the group. If null or empty, the normal name is used.",
+            "type": [ "null", "string" ]
         }
     },
     "required": [

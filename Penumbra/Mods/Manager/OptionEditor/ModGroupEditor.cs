@@ -127,6 +127,20 @@ public class ModGroupEditor(
         return true;
     }
 
+    public bool SetDisplayName(IModObject @object, string? displayName)
+    {
+        var isNull = string.IsNullOrWhiteSpace(displayName);
+        if (isNull && string.IsNullOrWhiteSpace(@object.DisplayName) || displayName == @object.DisplayName)
+            return false;
+
+        var oldName = @object.DisplayName;
+        @object.DisplayName = isNull ? null : displayName;
+        saveService.ImmediateSaveSync(@object);
+        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.DisplayChange, @object.Mod, @object.Group,
+            @object as IModOption, null, @object.Id, -1, oldName));
+        return true;
+    }
+
     public void SetCondition(IModObject @object, ICondition<ModSettingContext>? condition, bool force)
     {
         if (!force && (condition?.Equals(@object.Condition) ?? @object.Condition is null))
