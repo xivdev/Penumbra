@@ -68,9 +68,32 @@ public class PenumbraChangelog : IUiService
         Add1_6_1_0(Changelog);
         AddDummy(Changelog);
         Add1_7_1_0(Changelog);
+        Add1_7_2_0(Changelog);
     }
 
     #region Changelogs
+
+    private static void Add1_7_2_0(Changelog log)
+        => log.NextVersion("Version 1.7.2.0"u8)
+            .RegisterHighlight("Added a Display Name field for options and groups, so that a non-unique display name can be chosen by mod creators while keeping a unique group name."u8)
+            .RegisterEntry("The original, unique name will be displayed in the tooltip if a display name is set."u8, 1)
+            .RegisterHighlight("Added a setting to never put single select combos or checkboxes on the same line as their group label."u8)
+            .RegisterEntry("Fixed the context menu rename fields for mods being inverted."u8)
+            .RegisterEntry("Fixed that filter-remembrance settings are not loaded correctly."u8)
+            .RegisterEntry("Fixed parsing of Not-Conditions in options and groups."u8)
+            .RegisterHighlight("Added a new config button (with gear icon) next to mod priority configuration (1.7.1.3)."u8)
+            .RegisterEntry("When clicked, the button opens a context menu in which you can configure local settings for this mod."u8, 1)
+            .RegisterEntry("These local settings allow you to ignore pagination entirely for this mod, mainly for old TexTools mods that have every setting in a separate page etc."u8, 1)
+            .RegisterHighlight("Added configuration for total maximum width of group labels and option combos (1.7.1.3)."u8)
+            .RegisterEntry("Names are cut off when exceeding the width, but the full name is displayed on hover."u8, 1)
+            .RegisterEntry("Updated Battle NPC names for 7.56 (1.7.1.2)."u8)
+            .RegisterEntry("Added distinct colors for files in combos that are game paths or on the player, instead of using unrelated colors (1.7.1.2)."u8)
+            .RegisterHighlight("Added configuration for maximum homogenization for mod setting combos (1.7.1.2)."u8)
+            .RegisterEntry("Fixed a broken ImGui assertion when selecting options in Advanced Editing (1.7.1.2)."u8)
+            .RegisterEntry("Fixed issues with newly created options and groups not having IDs assigned (1.7.1.1)."u8)
+            .RegisterEntry("Fixed some log statements using New Mod as mod names (1.7.1.1)."u8)
+            .RegisterEntry("Fixed migration checks for non-existent files (1.7.1.1)."u8)
+            .RegisterEntry("Fixed label caret sizing for non-default global scales (1.7.1.1)."u8);
 
     private static void Add1_7_1_0(Changelog log)
         => log.NextVersion("Version 1.7.1.0"u8)
