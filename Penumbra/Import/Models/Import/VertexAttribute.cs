@@ -486,16 +486,39 @@ public class VertexAttribute
     {
         if (!accessors.TryGetValue("_FFXIV_TANGENT_2", out var accessor))
             return null;
+
+        if (!accessors.TryGetValue("NORMAL", out var normalAccessor) || !accessors.TryGetValue("TANGENT", out var tangentAccessor))
+            return null;
+
         var element = new MdlStructs.VertexElement()
         {
             Stream = 1,
             Type   = (byte)MdlFile.VertexType.NByte4,
             Usage  = (byte)MdlFile.VertexUsage.Tangent2,
         };
-        var values = accessor.AsVector4Array();
+
+        var normals  = normalAccessor.AsVector3Array();
+        var tangents = tangentAccessor.AsVector4Array();
+        var tangent2Values = accessor.AsVector4Array();
+
         return new VertexAttribute(
             element,
-            index => BuildNByte4(values[index])
+            index =>
+            {
+                // Reconstructs Tangent2 back from tangent-angle-space to model-space using normals and tangents.
+                var normal    = Vector3.Normalize(normals[index]);
+                var tangent1  = Vector3.Normalize(tangents[index].AsVector3());
+                var bitangent = Vector3.Normalize(Vector3.Cross(normal, tangent1));
+
+                var cosSinTheta = tangent2Values[index];
+                var cosTheta    = MathF.FusedMultiplyAdd(cosSinTheta.X, 2f, -1);
+                var sinTheta    = MathF.FusedMultiplyAdd(cosSinTheta.Y, 2f, -1);
+
+                var tangent2 = Vector3.Normalize(cosTheta * tangent1 + sinTheta * bitangent);
+                var scaled   = Vector3.FusedMultiplyAdd(tangent2, new Vector3(0.5f), new Vector3(0.5f));
+
+                return BuildNByte4(new Vector4(scaled, 1f));
+            }
         );
     }
 

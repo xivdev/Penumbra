@@ -538,32 +538,32 @@ public class MeshExporter
 
         if (_materialType == typeof(VertexTangent2Ffxiv))
         {
-            var tangent = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Tangent2));
+            var tangent = EncodeTangent2Relative(attributes);
             return new VertexTangent2Ffxiv(tangent);
         }
 
         if (_materialType == typeof(VertexColorTangent2Ffxiv))
         {
-            var tangent = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Tangent2));
+            var tangent = EncodeTangent2Relative(attributes);
             return new VertexColorTangent2Ffxiv(ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Color)), tangent);
         }
 
         if (_materialType == typeof(VertexColor2Tangent2Ffxiv))
         {
             var (color0, color1) = GetBothSafe(attributes, MdlFile.VertexUsage.Color);
-            var tangent = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Tangent2));
+            var tangent = EncodeTangent2Relative(attributes);
             return new VertexColor2Tangent2Ffxiv(ToVector4(color0), ToVector4(color1), tangent);
         }
 
         if (_materialType == typeof(VertexTexture1Tangent2Ffxiv))
         {
-            var tangent = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Tangent2));
+            var tangent = EncodeTangent2Relative(attributes);
             return new VertexTexture1Tangent2Ffxiv(ToVector2(GetFirstSafe(attributes, MdlFile.VertexUsage.UV)), tangent);
         }
 
         if (_materialType == typeof(VertexTexture1ColorTangent2Ffxiv))
         {
-            var tangent = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Tangent2));
+            var tangent = EncodeTangent2Relative(attributes);
             return new VertexTexture1ColorTangent2Ffxiv(
                 ToVector2(GetFirstSafe(attributes, MdlFile.VertexUsage.UV)),
                 ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Color)),
@@ -574,7 +574,7 @@ public class MeshExporter
         if (_materialType == typeof(VertexTexture1Color2Tangent2Ffxiv))
         {
             var (color0, color1) = GetBothSafe(attributes, MdlFile.VertexUsage.Color);
-            var tangent = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Tangent2));
+            var tangent = EncodeTangent2Relative(attributes);
             return new VertexTexture1Color2Tangent2Ffxiv(
                 ToVector2(GetFirstSafe(attributes, MdlFile.VertexUsage.UV)),
                 ToVector4(color0),
@@ -588,7 +588,7 @@ public class MeshExporter
         if (_materialType == typeof(VertexTexture2Tangent2Ffxiv))
         {
             var uv = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.UV));
-            var tangent = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Tangent2));
+            var tangent = EncodeTangent2Relative(attributes);
             return new VertexTexture2Tangent2Ffxiv(
                 new Vector2(uv.X, uv.Y),
                 new Vector2(uv.Z, uv.W),
@@ -599,7 +599,7 @@ public class MeshExporter
         if (_materialType == typeof(VertexTexture2ColorTangent2Ffxiv))
         {
             var uv = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.UV));
-            var tangent = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Tangent2));
+            var tangent = EncodeTangent2Relative(attributes);
             return new VertexTexture2ColorTangent2Ffxiv(
                 new Vector2(uv.X, uv.Y),
                 new Vector2(uv.Z, uv.W),
@@ -612,7 +612,7 @@ public class MeshExporter
         {
             var uv = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.UV));
             var (color0, color1) = GetBothSafe(attributes, MdlFile.VertexUsage.Color);
-            var tangent = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Tangent2));
+            var tangent = EncodeTangent2Relative(attributes);
 
             return new VertexTexture2Color2Tangent2Ffxiv(
                 new Vector2(uv.X, uv.Y),
@@ -628,7 +628,7 @@ public class MeshExporter
             // Not 100% sure about this
             var uv0 = ToVector4(attributes[MdlFile.VertexUsage.UV][0]);
             var uv1 = ToVector4(attributes[MdlFile.VertexUsage.UV][1]);
-            var tangent = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Tangent2));
+            var tangent = EncodeTangent2Relative(attributes);
             return new VertexTexture3Tangent2Ffxiv(
                 new Vector2(uv0.X, uv0.Y),
                 new Vector2(uv0.Z, uv0.W),
@@ -641,7 +641,7 @@ public class MeshExporter
         {
             var uv0 = ToVector4(attributes[MdlFile.VertexUsage.UV][0]);
             var uv1 = ToVector4(attributes[MdlFile.VertexUsage.UV][1]);
-            var tangent = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Tangent2));
+            var tangent = EncodeTangent2Relative(attributes);
             return new VertexTexture3ColorTangent2Ffxiv(
                 new Vector2(uv0.X, uv0.Y),
                 new Vector2(uv0.Z, uv0.W),
@@ -656,7 +656,7 @@ public class MeshExporter
             var uv0 = ToVector4(attributes[MdlFile.VertexUsage.UV][0]);
             var uv1 = ToVector4(attributes[MdlFile.VertexUsage.UV][1]);
             var (color0, color1) = GetBothSafe(attributes, MdlFile.VertexUsage.Color);
-            var tangent = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Tangent2));
+            var tangent = EncodeTangent2Relative(attributes);
 
             return new VertexTexture3Color2Tangent2Ffxiv(
                 new Vector2(uv0.X, uv0.Y),
@@ -670,6 +670,29 @@ public class MeshExporter
 
 
         throw _notifier.Exception($"Unknown material type {_skinningType}");
+    }
+
+    /// <summary> Encodes the Tangent2 attribute as vector in tangent-space relative to tangent and bitangent. </summary>
+    private Vector4 EncodeTangent2Relative(IReadOnlyDictionary<MdlFile.VertexUsage, List<object>> attributes)
+    {
+        var normal = Vector3.Normalize(ToVector3(GetFirstSafe(attributes, MdlFile.VertexUsage.Normal)));
+        
+        var tangent1       = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Tangent1)).AsVector3();
+        var tangent1Scaled = Vector3.Normalize(Vector3.FusedMultiplyAdd(tangent1, new Vector3(2f), new Vector3(-1f)));
+        
+        var bitangent = Vector3.Normalize(Vector3.Cross(normal, tangent1Scaled));
+
+        var tangent2        = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Tangent2)).AsVector3();
+        var tangent2Scaled  = Vector3.Normalize(Vector3.FusedMultiplyAdd(tangent2, new Vector3(2f), new Vector3(-1f)));
+
+        var cosTheta = Vector3.Dot(tangent2Scaled, tangent1Scaled);
+        var sinTheta = Vector3.Dot(tangent2Scaled, bitangent);
+
+        return new Vector4(
+            MathF.FusedMultiplyAdd(cosTheta, 0.5f, 0.5f),
+            MathF.FusedMultiplyAdd(sinTheta, 0.5f, 0.5f),
+            0.5f,
+            1f);
     }
 
     /// <summary> Get the vertex skinning type for this mesh's vertex usages. </summary>
