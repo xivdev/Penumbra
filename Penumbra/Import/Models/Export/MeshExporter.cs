@@ -390,26 +390,40 @@ public class MeshExporter
 
         usages.TryGetValue(MdlFile.VertexUsage.Color, out var colours);
         var nColors = colours?.Count ?? 0;
+        var hasTangent2 = usages.ContainsKey(MdlFile.VertexUsage.Tangent2);
 
         var materialUsages = (
             uvCount,
-            nColors
+            nColors,
+            hasTangent2
         );
 
         return materialUsages switch
         {
-            (3, 2) => typeof(VertexTexture3Color2Ffxiv),
-            (3, 1) => typeof(VertexTexture3ColorFfxiv),
-            (3, 0) => typeof(VertexTexture3),
-            (2, 2) => typeof(VertexTexture2Color2Ffxiv),
-            (2, 1)  => typeof(VertexTexture2ColorFfxiv),
-            (2, 0) => typeof(VertexTexture2),
-            (1, 2) => typeof(VertexTexture1Color2Ffxiv),
-            (1, 1)  => typeof(VertexTexture1ColorFfxiv),
-            (1, 0) => typeof(VertexTexture1),
-            (0, 2) => typeof(VertexColor2Ffxiv),
-            (0, 1)  => typeof(VertexColorFfxiv),
-            (0, 0) => typeof(VertexEmpty),
+            (3, 2, false) => typeof(VertexTexture3Color2Ffxiv),
+            (3, 1, false) => typeof(VertexTexture3ColorFfxiv),
+            (3, 0, false) => typeof(VertexTexture3),
+            (2, 2, false) => typeof(VertexTexture2Color2Ffxiv),
+            (2, 1, false) => typeof(VertexTexture2ColorFfxiv),
+            (2, 0, false) => typeof(VertexTexture2),
+            (1, 2, false) => typeof(VertexTexture1Color2Ffxiv),
+            (1, 1, false) => typeof(VertexTexture1ColorFfxiv),
+            (1, 0, false) => typeof(VertexTexture1),
+            (0, 2, false) => typeof(VertexColor2Ffxiv),
+            (0, 1, false) => typeof(VertexColorFfxiv),
+            (0, 0, false) => typeof(VertexEmpty),
+            (3, 2, true) => typeof(VertexTexture3Color2Tangent2Ffxiv),
+            (3, 1, true) => typeof(VertexTexture3ColorTangent2Ffxiv),
+            (3, 0, true) => typeof(VertexTexture3Tangent2Ffxiv),
+            (2, 2, true) => typeof(VertexTexture2Color2Tangent2Ffxiv),
+            (2, 1, true) => typeof(VertexTexture2ColorTangent2Ffxiv),
+            (2, 0, true) => typeof(VertexTexture2Tangent2Ffxiv),
+            (1, 2, true) => typeof(VertexTexture1Color2Tangent2Ffxiv),
+            (1, 1, true) => typeof(VertexTexture1ColorTangent2Ffxiv),
+            (1, 0, true) => typeof(VertexTexture1Tangent2Ffxiv),
+            (0, 2, true) => typeof(VertexColor2Tangent2Ffxiv),
+            (0, 1, true) => typeof(VertexColorTangent2Ffxiv),
+            (0, 0, true) => typeof(VertexTangent2Ffxiv),
 
             _ => throw _notifier.Exception($"Unhandled UV/color count of {uvCount}/{nColors} encountered."),
         };
@@ -521,6 +535,139 @@ public class MeshExporter
                 ToVector4(color1)
             );
         }
+
+        if (_materialType == typeof(VertexTangent2Ffxiv))
+        {
+            var tangent = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Tangent2));
+            return new VertexTangent2Ffxiv(tangent);
+        }
+
+        if (_materialType == typeof(VertexColorTangent2Ffxiv))
+        {
+            var tangent = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Tangent2));
+            return new VertexColorTangent2Ffxiv(ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Color)), tangent);
+        }
+
+        if (_materialType == typeof(VertexColor2Tangent2Ffxiv))
+        {
+            var (color0, color1) = GetBothSafe(attributes, MdlFile.VertexUsage.Color);
+            var tangent = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Tangent2));
+            return new VertexColor2Tangent2Ffxiv(ToVector4(color0), ToVector4(color1), tangent);
+        }
+
+        if (_materialType == typeof(VertexTexture1Tangent2Ffxiv))
+        {
+            var tangent = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Tangent2));
+            return new VertexTexture1Tangent2Ffxiv(ToVector2(GetFirstSafe(attributes, MdlFile.VertexUsage.UV)), tangent);
+        }
+
+        if (_materialType == typeof(VertexTexture1ColorTangent2Ffxiv))
+        {
+            var tangent = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Tangent2));
+            return new VertexTexture1ColorTangent2Ffxiv(
+                ToVector2(GetFirstSafe(attributes, MdlFile.VertexUsage.UV)),
+                ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Color)),
+                tangent
+            );
+        }
+
+        if (_materialType == typeof(VertexTexture1Color2Tangent2Ffxiv))
+        {
+            var (color0, color1) = GetBothSafe(attributes, MdlFile.VertexUsage.Color);
+            var tangent = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Tangent2));
+            return new VertexTexture1Color2Tangent2Ffxiv(
+                ToVector2(GetFirstSafe(attributes, MdlFile.VertexUsage.UV)),
+                ToVector4(color0),
+                ToVector4(color1),
+                tangent
+            );
+        }
+
+        // XIV packs two UVs into a single vec4 attribute.
+
+        if (_materialType == typeof(VertexTexture2Tangent2Ffxiv))
+        {
+            var uv = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.UV));
+            var tangent = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Tangent2));
+            return new VertexTexture2Tangent2Ffxiv(
+                new Vector2(uv.X, uv.Y),
+                new Vector2(uv.Z, uv.W),
+                tangent
+            );
+        }
+
+        if (_materialType == typeof(VertexTexture2ColorTangent2Ffxiv))
+        {
+            var uv = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.UV));
+            var tangent = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Tangent2));
+            return new VertexTexture2ColorTangent2Ffxiv(
+                new Vector2(uv.X, uv.Y),
+                new Vector2(uv.Z, uv.W),
+                ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Color)),
+                tangent
+            );
+        }
+
+        if (_materialType == typeof(VertexTexture2Color2Tangent2Ffxiv))
+        {
+            var uv = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.UV));
+            var (color0, color1) = GetBothSafe(attributes, MdlFile.VertexUsage.Color);
+            var tangent = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Tangent2));
+
+            return new VertexTexture2Color2Tangent2Ffxiv(
+                new Vector2(uv.X, uv.Y),
+                new Vector2(uv.Z, uv.W),
+                ToVector4(color0),
+                ToVector4(color1),
+                tangent
+            );
+        }
+
+        if (_materialType == typeof(VertexTexture3Tangent2Ffxiv))
+        {
+            // Not 100% sure about this
+            var uv0 = ToVector4(attributes[MdlFile.VertexUsage.UV][0]);
+            var uv1 = ToVector4(attributes[MdlFile.VertexUsage.UV][1]);
+            var tangent = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Tangent2));
+            return new VertexTexture3Tangent2Ffxiv(
+                new Vector2(uv0.X, uv0.Y),
+                new Vector2(uv0.Z, uv0.W),
+                new Vector2(uv1.X, uv1.Y),
+                tangent
+            );
+        }
+
+        if (_materialType == typeof(VertexTexture3ColorTangent2Ffxiv))
+        {
+            var uv0 = ToVector4(attributes[MdlFile.VertexUsage.UV][0]);
+            var uv1 = ToVector4(attributes[MdlFile.VertexUsage.UV][1]);
+            var tangent = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Tangent2));
+            return new VertexTexture3ColorTangent2Ffxiv(
+                new Vector2(uv0.X, uv0.Y),
+                new Vector2(uv0.Z, uv0.W),
+                new Vector2(uv1.X, uv1.Y),
+                ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Color)),
+                tangent
+            );
+        }
+
+        if (_materialType == typeof(VertexTexture3Color2Tangent2Ffxiv))
+        {
+            var uv0 = ToVector4(attributes[MdlFile.VertexUsage.UV][0]);
+            var uv1 = ToVector4(attributes[MdlFile.VertexUsage.UV][1]);
+            var (color0, color1) = GetBothSafe(attributes, MdlFile.VertexUsage.Color);
+            var tangent = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Tangent2));
+
+            return new VertexTexture3Color2Tangent2Ffxiv(
+                new Vector2(uv0.X, uv0.Y),
+                new Vector2(uv0.Z, uv0.W),
+                new Vector2(uv1.X, uv1.Y),
+                ToVector4(color0),
+                ToVector4(color1),
+                tangent
+            );
+        }
+
 
         throw _notifier.Exception($"Unknown material type {_skinningType}");
     }
