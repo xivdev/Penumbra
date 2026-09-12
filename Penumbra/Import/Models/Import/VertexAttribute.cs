@@ -481,6 +481,23 @@ public class VertexAttribute
             index => BuildNByte4(values?[index] ?? Vector4.One)
         );
     }
+    
+    public static VertexAttribute? Tangent2(Accessors accessors)
+    {
+        if (!accessors.TryGetValue("_FFXIV_TANGENT_2", out var accessor))
+            return null;
+        var element = new MdlStructs.VertexElement()
+        {
+            Stream = 1,
+            Type   = (byte)MdlFile.VertexType.NByte4,
+            Usage  = (byte)MdlFile.VertexUsage.Tangent2,
+        };
+        var values = accessor.AsVector4Array();
+        return new VertexAttribute(
+            element,
+            index => BuildNByte4(values[index])
+        );
+    }
 
     private static byte[] BuildSingle2(Vector2 input)
         =>
