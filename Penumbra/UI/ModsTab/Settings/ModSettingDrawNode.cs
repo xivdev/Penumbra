@@ -1,5 +1,6 @@
 using ImSharp;
 using Luna;
+using Penumbra.Mods.Groups;
 using Penumbra.Mods.Settings;
 using Penumbra.UI.Classes;
 
@@ -102,7 +103,7 @@ public readonly struct ModSettingDrawNode
     }
 
 
-    private bool DrawLabel(ModGroupDrawer _, ModSettingsCache cache)
+    private bool DrawLabel(ModGroupDrawer drawer, ModSettingsCache cache)
     {
         Im.Cursor.X += Indent;
         var showFullNameTooltip = OwnLabelWidth > LabelWidth.X;
@@ -174,6 +175,7 @@ public readonly struct ModSettingDrawNode
         }
 
         AddUniqueNameTooltip(Node);
+        DrawContextMenu(drawer, this);
 
         if (Node.HasHiddenChildren && ColorId.HiddenOptionIndicator.Vector.W is not 0)
         {
@@ -184,6 +186,24 @@ public readonly struct ModSettingDrawNode
 
         return true;
     }
+
+    private static void DrawContextMenu(ModGroupDrawer drawer, in ModSettingDrawNode node)
+    {
+        if (node.Node.Disabled || node.Node is not ModSettingGroup group)
+            return;
+
+        drawer.ApplyMultiState(group);
+
+        using var context = Im.Popup.BeginContextItem();
+        if (!context)
+            return;
+
+        if (Im.Menu.Item("Enable All Child Options"u8))
+            drawer.SetMultiState(group.Group, true);
+        if (Im.Menu.Item("Disable All Child Options"u8))
+            drawer.SetMultiState(group.Group, false);
+    }
+
 
     private bool DrawCheckboxLabel(ModGroupDrawer drawer, ModSettingsCache cache)
     {

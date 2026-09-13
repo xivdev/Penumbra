@@ -23,6 +23,56 @@ public sealed class ModGroupDrawer(
     private         TemporaryModSettings? _tempSettings;
     private         ModSettingContext     _context;
 
+    private bool       _setMultiState;
+    private IModGroup? _setStateGroup;
+
+    public void SetMultiState(IModGroup group, bool state)
+    {
+        _setStateGroup = group;
+        _setMultiState = state;
+    }
+
+    public void ApplyMultiState(ModSettingGroup group)
+    {
+        if (_setStateGroup != group.Group)
+            return;
+
+        if (SetAllOptions(this, group, _setMultiState))
+            return;
+
+        _setStateGroup = null;
+    }
+
+    private static bool SetAllOptions(ModGroupDrawer drawer, ModSettingDataNode node, bool state)
+    {
+        if (node is not ModSettingGroup group || group.Disabled)
+            return false;
+
+        var initialSetting = drawer.GetModSetting(group.Group);
+        var setting        = initialSetting;
+        var changes        = false;
+        foreach (var child in group.VisibleChildren)
+        {
+            if (child is ModSettingOption option)
+            {
+                if (option is { Radio: false, Disabled: false })
+                    setting = setting.SetBit(option.Data.Index, state);
+
+                foreach (var subgroup in option.VisibleChildren)
+                    changes |= SetAllOptions(drawer, subgroup, state);
+            }
+            else if (child is ModSettingGroup subgroup)
+            {
+                changes |= SetAllOptions(drawer, subgroup, state);
+            }
+        }
+
+        changes |= setting != initialSetting;
+        drawer.SetModSetting(group.Group, setting);
+        return changes;
+    }
+
+
     public void Draw(ModSettingsCache cache, Mod mod, ModSettings settings, TemporaryModSettings? tempSettings)
     {
         if (cache.VisiblePages.Count is 0)

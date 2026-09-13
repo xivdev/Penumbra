@@ -11,7 +11,7 @@ namespace Penumbra.UI.ModsTab.Selector;
 public sealed class ModFilter : TokenizedFilter<ModFilterTokenType, ModFileSystemCache.ModData, ModFilterToken>,
     IFileSystemFilter<ModFileSystemCache.ModData>
 {
-    private          ModTypeFilter     _stateFilter;
+    private          ModTypeFilter     _stateFilter = ModTypeFilterExtensions.UnfilteredStateMods;
     private readonly ModManager        _modManager;
     private readonly ActiveCollections _collections;
 
