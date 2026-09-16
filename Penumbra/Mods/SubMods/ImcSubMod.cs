@@ -19,6 +19,7 @@ public class ImcSubMod(ImcModGroup group) : IModOption
             Name            = "Disable",
             AttributeMask   = 0,
             IsDisableSubMod = true,
+            Id              = Guid.NewGuid(),
         };
 
     public Mod Mod
@@ -38,7 +39,7 @@ public class ImcSubMod(ImcModGroup group) : IModOption
     public string  Name        { get; set; } = "Part";
     public string? DisplayName { get; set; }
 
-    public ColorId Color     { get; set; }
+    public ColorId Color { get; set; }
 
     public string FullName
         => $"{Group.Name}: {Name}";
