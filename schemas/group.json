@@ -48,6 +48,11 @@
                 "enum": [ "Hide", "Space", "ParentHeader", "DefaultClosed" ]
             }
         },
+        "ParentSetting": {
+            "description": "A unique identifier to reference another group or option that this group is parented to.",
+            "type": "string",
+            "format": "uuid"
+        },
         "Condition": {
             "description": "Conditions on the full settings of this mod to control whether this group is visible and applied.",
             "type": [ "null", "object" ],
