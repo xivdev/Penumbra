@@ -12,5 +12,5 @@
 	branch = main
 [submodule "Luna"]
 	path = Luna
-	url = git@github.com:Ottermandias/Luna.git
+	url = https://github.com/Ottermandias/Luna.git
 	branch = main
