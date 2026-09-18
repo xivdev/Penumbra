@@ -76,7 +76,12 @@ public sealed class ModFilter : TokenizedFilter<ModFilterTokenType, ModFileSyste
 
     public override bool DrawFilter(ReadOnlySpan<byte> label, Vector2 availableRegion)
     {
-        var ret = base.DrawFilter(label, availableRegion with { X = availableRegion.X - Im.Style.FrameHeight });
+        bool ret;
+        using (ImStyleBorder.Frame.Push(ColorId.ModTextFilterBorder.Vector, Im.Style.GlobalScale, Text.Length > 0))
+        {
+            ret = base.DrawFilter(label, availableRegion with { X = availableRegion.X - Im.Style.FrameHeight });
+        }
+
         Im.Line.NoSpacing();
         ret |= DrawFilterCombo();
         return ret;
@@ -85,7 +90,7 @@ public sealed class ModFilter : TokenizedFilter<ModFilterTokenType, ModFileSyste
     private bool DrawFilterCombo()
     {
         var       everything = _stateFilter is not ModTypeFilterExtensions.UnfilteredStateMods;
-        using var color      = ImGuiColor.Button.Push(Colors.FilterActive, everything);
+        using var color      = ImGuiColor.Button.Push(ColorId.ModComboFilterActive.Vector, everything);
         using var combo = Im.Combo.Begin("##combo"u8, StringU8.Empty,
             ComboFlags.NoPreview | ComboFlags.HeightLargest | ComboFlags.PopupAlignLeft);
 

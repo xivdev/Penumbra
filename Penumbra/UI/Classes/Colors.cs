@@ -60,6 +60,8 @@ public enum ColorId
     ModSpecificPreset,
     FileOnPlayer,
     FileIsGamePath,
+    ModTextFilterBorder,
+    ModComboFilterActive,
 }
 
 public static class Colors
@@ -69,7 +71,6 @@ public static class Colors
     public static readonly Vector4 RegexWarningBorder  = new(0.7f, 0, 0, 1);
     public static readonly Vector4 MetaInfoText        = new(1, 1, 1, 2f / 3);
     public const           uint    RedTableBgTint      = 0x40000080;
-    public const           uint    FilterActive        = 0x807070FF;
     public const           uint    TutorialMarker      = 0xFF20FFFF;
     public const           uint    TutorialBorder      = 0xD00000FF;
 

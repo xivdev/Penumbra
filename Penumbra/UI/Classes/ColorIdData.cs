@@ -66,6 +66,10 @@ public readonly struct ColorIdData : IColorData<ColorId>
             "A mod that has temporary settings. This color is used as a tint for the regular state colors."u8, modSelector);
         ret[(int)NoTint] = new ColorData<ColorId>(Rgba32.Transparent, "No Tint"u8,
             "The default tint for all mods."u8, modSelector);
+        ret[(int)ModTextFilterBorder] = new ColorData<ColorId>(DalamudColor.AttentionForeground, "Border of Mod Filter When Set"u8,
+            "The color of a border around the mod filter text input when a filter is set."u8, metadata);
+        ret[(int)ModComboFilterActive] = new ColorData<ColorId>(DalamudColor.AttentionBackground, "Background of Mod Filter Combo When Set"u8,
+            "The color of a the expandable combo arrow when any mod filter within it is set."u8, metadata);
 
         // Meta stuff
         ret[(int)ItemId] = new ColorData<ColorId>(ImGuiColor.TextDisabled, "Item Id"u8,
@@ -89,7 +93,8 @@ public readonly struct ColorIdData : IColorData<ColorId>
         ret[(int)FileOnPlayer] = new ColorData<ColorId>(HandledConflictMod, "File In Use"u8,
             "The color of a file that is currently in use on the player character in the file editor combos."u8, metadata);
         ret[(int)FileIsGamePath] = new ColorData<ColorId>(FolderLine, "File Is Game Path"u8,
-            "The color of a file that is not a modded file on your drive, but a path to a unmodded game file in the texture selection combos."u8, metadata);
+            "The color of a file that is not a modded file on your drive, but a path to a unmodded game file in the texture selection combos."u8,
+            metadata);
 
         // Collections
         ret[(int)SelectedCollection] = new ColorData<ColorId>(0x6069C056, "Currently Selected Collection"u8,
