@@ -1,10 +1,10 @@
 using Dalamud.Game.ClientState.Conditions;
-using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
+using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using Penumbra.Api;
 using Penumbra.Api.Enums;
 using Penumbra.Communication;
@@ -13,6 +13,7 @@ using Penumbra.GameData.Interop;
 using Penumbra.Interop.Structs;
 using Penumbra.Services;
 using Character = FFXIVClientStructs.FFXIV.Client.Game.Character.Character;
+using ObjectKind = Dalamud.Game.ClientState.Objects.Enums.ObjectKind;
 
 namespace Penumbra.Interop.Services;
 
@@ -37,6 +38,9 @@ public unsafe partial class RedrawService : Luna.IService
 
     private static void EnableDraw(IGameObject actor)
         => ((delegate* unmanaged<nint, void >**)actor.Address)[0][VolatileOffsets.RedrawService.EnableDrawVFunc](actor.Address);
+
+    private static void UpdateFurniture(GameObject* furniture)
+        => ((delegate* unmanaged<void*, void>**)furniture)[0][VolatileOffsets.RedrawService.UpdateFurniture](furniture);
 
     // Check whether we currently are in GPose.
     // Also clear the name list.
@@ -424,6 +428,7 @@ public sealed unsafe partial class RedrawService : IDisposable
                 continue;
 
             gameObject->DisableDraw();
+            UpdateFurniture(gameObject);
         }
     }
 

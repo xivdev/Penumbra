@@ -31,5 +31,6 @@ public static class VolatileOffsets
     {
         public const int EnableDrawVFunc  = 12;
         public const int DisableDrawVFunc = 13;
+        public const int UpdateFurniture  = 37;
     }
 }
