@@ -1,0 +1,15 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "required": [ "Type", "Setting" ],
+    "properties": {
+        "Type": {
+            "const": "Setting"
+        },
+        "Setting": {
+            "description": "An identifier to reference an option in the containing mod.",
+            "type": "string",
+            "format": "uuid"
+        }
+    }
+}

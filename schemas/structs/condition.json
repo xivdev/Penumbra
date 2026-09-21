@@ -7,7 +7,6 @@
 		{ "$ref": "../../Luna/schemas/not_condition.json" },
 		{ "$ref": "../../Luna/schemas/true_condition.json" },
 		{ "$ref": "../../Luna/schemas/false_condition.json" },
-		{ "$ref": "any_setting_condition.json" },
-		{ "$ref": "all_settings_condition.json" }
+		{ "$ref": "setting_condition.json" }
 	]
 }

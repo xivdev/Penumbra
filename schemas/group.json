@@ -20,7 +20,7 @@
             "type": [ "string", "null" ]
         },
         "Page": {
-            "description": "TexTools page of the group. Unused by Penumbra, present for round-trip import/export of TexTools-generated mods.",
+            "description": "TexTools page of the group.",
             "type": "integer"
         },
         "Priority": {
