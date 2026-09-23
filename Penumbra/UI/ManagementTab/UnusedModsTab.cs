@@ -30,7 +30,7 @@ public sealed class UnusedModsTab(
 
         using var tt = Im.Tooltip.Begin();
         ImEx.TextMultiColored("Here you can list mods that are not currently enabled or have temporary settings in "u8)
-            .Then("any "u8, ColorId.NewMod.Value).Then(" collection."u8).End();
+            .Then("any"u8, ColorId.NewMod.Value).Then(" collection."u8).End();
         Im.Text(
             "Other Plugins subscribing to Penumbras API can mark mods as 'in use' so that they do not appear, or add custom notes to them while still displaying them."u8);
     }
