@@ -211,9 +211,9 @@ public sealed partial class UiConfig : ConfigurationFile<FilenameService>
             tempObject.WriteIfNot("BorderScale"u8,             ModSettingBorderScale,             2f);
             tempObject.WriteIfNot("LineScale"u8,               ModSettingLineScale,               2f);
             tempObject.WriteIfNot("MaximumExtendLabelWidth"u8, ModSettingMaximumExtendLabelWidth, 200f);
-            tempObject.WriteIfNot("MaximumLabelWidth"u8,       ModSettingMaximumLabelWidth,       200f);
+            tempObject.WriteIfNot("MaximumLabelWidth"u8,       ModSettingMaximumLabelWidth,       1000f);
             tempObject.WriteIfNot("MaximumExtendComboWidth"u8, ModSettingMaximumExtendComboWidth, 300f);
-            tempObject.WriteIfNot("MaximumComboWidth"u8,       ModSettingMaximumComboWidth,       300f);
+            tempObject.WriteIfNot("MaximumComboWidth"u8,       ModSettingMaximumComboWidth,       1000f);
             tempObject.WriteIfNot("MinimumComboWidth"u8,       ModSettingMinimumComboWidth,       100f);
             tempObject.WriteIfNot("LabelAlignment"u8,          ModSettingLabelAlignment,          0f);
             tempObject.WriteIfNot("ComboAlignment"u8,          ModSettingComboAlignment,          0f);
