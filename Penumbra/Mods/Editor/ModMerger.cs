@@ -58,7 +58,7 @@ public sealed class ModMerger : IDisposable, IConstructedService
     public bool CanMerge
         => MergeToMod is not null && MergeToMod != MergeFromMod;
 
-    public void Merge()
+    public void Merge(int page = 0)
     {
         if (MergeFromMod is null || MergeToMod is null || MergeFromMod == MergeToMod)
             return;
@@ -68,9 +68,9 @@ public sealed class ModMerger : IDisposable, IConstructedService
             Error = null;
             DataCleanup();
             if (MergeFromMod.HasOptions)
-                MergeWithOptions();
+                MergeWithOptions(page);
             else
-                MergeIntoOption(OptionGroupName, OptionName);
+                MergeIntoOption(OptionGroupName, OptionName, page);
 
             _duplicates.DeduplicateMod(MergeToMod.ModPath, true);
         }
@@ -84,7 +84,7 @@ public sealed class ModMerger : IDisposable, IConstructedService
         }
     }
 
-    private void MergeWithOptions()
+    private void MergeWithOptions(int page)
     {
         MergeIntoOption([MergeFromMod!.Default], MergeToMod!.Default, false);
 
@@ -106,7 +106,7 @@ public sealed class ModMerger : IDisposable, IConstructedService
                         group.Description     = originalGroup.Description;
                         group.Image           = originalGroup.Image;
                         group.DefaultSettings = originalGroup.DefaultSettings;
-                        group.Page            = originalGroup.Page;
+                        group.Page            = page;
                         group.Priority        = originalGroup.Priority;
                     }
 
@@ -143,7 +143,7 @@ public sealed class ModMerger : IDisposable, IConstructedService
                     group.Description     = imc.Description;
                     group.Image           = imc.Image;
                     group.DefaultSettings = imc.DefaultSettings;
-                    group.Page            = imc.Page;
+                    group.Page            = page;
                     group.Priority        = imc.Priority;
                     foreach (var originalOption in imc.OptionData)
                     {
@@ -177,7 +177,7 @@ public sealed class ModMerger : IDisposable, IConstructedService
                     group.Description     = combining.Description;
                     group.Image           = combining.Image;
                     group.DefaultSettings = combining.DefaultSettings;
-                    group.Page            = combining.Page;
+                    group.Page            = page;
                     group.Priority        = combining.Priority;
                     foreach (var originalOption in combining.OptionData)
                     {
@@ -208,7 +208,7 @@ public sealed class ModMerger : IDisposable, IConstructedService
         CopyFiles(MergeToMod!.ModPath);
     }
 
-    private void MergeIntoOption(string groupName, string optionName)
+    private void MergeIntoOption(string groupName, string optionName, int page)
     {
         if (groupName.Length is 0 && optionName.Length is 0)
         {
@@ -222,7 +222,11 @@ public sealed class ModMerger : IDisposable, IConstructedService
 
         var (group, groupCreated) = _groupEditor.FindOrAddModGroup(MergeToMod!, GroupType.Multi, groupName, SaveType.None);
         if (groupCreated)
-            _createdGroups.Add(group!.Index);
+        {
+            group!.Page = page;
+            _createdGroups.Add(group.Index);
+        }
+
         var (option, optionCreated) = _groupEditor.FindOrAddOption(group!, optionName, SaveType.None);
         if (optionCreated)
             _createdOptions.Add(option!);

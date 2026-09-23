@@ -5,6 +5,7 @@ using Penumbra.GameData.Structs;
 using Penumbra.Meta;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
+using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Manager.OptionEditor;
 using Penumbra.UI.AdvancedWindow.Meta;
@@ -17,6 +18,7 @@ public class AddGroupDrawer : Luna.IUiService
     private string _groupName = string.Empty;
     private bool   _groupNameValid;
 
+    private          int           _defaultPage   = 1;
     private          ImcIdentifier _imcIdentifier = ImcIdentifier.Default;
     private          ImcEntry      _defaultEntry;
     private          bool          _imcFileExists;
@@ -52,6 +54,13 @@ public class AddGroupDrawer : Luna.IUiService
         Im.Line.SameInner();
         DrawMultiGroupButton(mod, buttonWidth);
         DrawCombiningGroupButton(mod, buttonWidth);
+        Im.Line.SameInner();
+        Im.Item.SetNextWidth(buttonWidth.X - Im.Style.ItemInnerSpacing.X - Im.Font.CalculateSize("Page"u8, false).X);
+        if (mod.PageNames.TryGetValue(_defaultPage - 1, out var name))
+            Im.Drag("Page##new"u8, ref _defaultPage, name, null, null, 0.02f);
+        else
+            Im.Drag("Page##new"u8, ref _defaultPage, null, null, 0.02f);
+        Im.Tooltip.OnHover("The page any newly created group should be placed in. When editing as text, enter the page number, not the name."u8);
     }
 
     private void DrawSingleGroupButton(Mod mod, Vector2 width)
@@ -62,6 +71,7 @@ public class AddGroupDrawer : Luna.IUiService
             return;
 
         _modManager.OptionEditor.AddModGroup(mod, GroupType.Single, _groupName);
+        SetDefaultPage(mod.Groups[^1]);
         _groupName      = string.Empty;
         _groupNameValid = false;
     }
@@ -74,6 +84,7 @@ public class AddGroupDrawer : Luna.IUiService
             return;
 
         _modManager.OptionEditor.AddModGroup(mod, GroupType.Multi, _groupName);
+        SetDefaultPage(mod.Groups[^1]);
         _groupName      = string.Empty;
         _groupNameValid = false;
     }
@@ -86,8 +97,15 @@ public class AddGroupDrawer : Luna.IUiService
             return;
 
         _modManager.OptionEditor.AddModGroup(mod, GroupType.Combining, _groupName);
+        SetDefaultPage(mod.Groups[^1]);
         _groupName      = string.Empty;
         _groupNameValid = false;
+    }
+
+    private void SetDefaultPage(IModGroup group)
+    {
+        if (_defaultPage is not 1)
+            _modManager.OptionEditor.SetPage(group, _defaultPage - 1);
     }
 
     private void DrawImcInput(float width)
@@ -137,6 +155,7 @@ public class AddGroupDrawer : Luna.IUiService
                     : "Add a new multi selection option group to this mod."u8, !_groupNameValid || _entryInvalid))
         {
             _modManager.OptionEditor.ImcEditor.AddModGroup(mod, _groupName, _imcIdentifier, _defaultEntry);
+            SetDefaultPage(mod.Groups[^1]);
             _groupName      = string.Empty;
             _groupNameValid = false;
         }

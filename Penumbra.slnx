@@ -37,14 +37,13 @@
     <File Path="schemas/structs/option.json" />
   </Folder>
   <Folder Name="/Solution Items/Schemas/Structs/Conditions/">
-    <File Path="schemas/structs/all_settings_condition.json" />
-    <File Path="schemas/structs/any_setting_condition.json" />
     <File Path="schemas/structs/condition.json" />
     <File Path="Luna/schemas/and_condition.json" />
     <File Path="Luna/schemas/or_condition.json" />
     <File Path="Luna/schemas/not_condition.json" />
     <File Path="Luna/schemas/true_condition.json" />
     <File Path="Luna/schemas/false_condition.json" />
+    <File Path="schemas/structs/setting_condition.json" />
   </Folder>
   <Project Path="Luna/Luna.Generators/Luna.Generators.csproj">
     <Platform Project="x64" />
