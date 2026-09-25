@@ -685,8 +685,8 @@ public class MeshExporter
         var tangent2        = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Tangent2)).AsVector3();
         var tangent2Scaled  = Vector3.Normalize(Vector3.FusedMultiplyAdd(tangent2, new Vector3(2f), new Vector3(-1f)));
 
-        var cosTheta = Vector3.Dot(tangent2Scaled, tangent1Scaled);
-        var sinTheta = Vector3.Dot(tangent2Scaled, bitangent);
+        var cosTheta = Math.Clamp(Vector3.Dot(tangent2Scaled, tangent1Scaled), -1f, 1f);
+        var sinTheta = Math.Clamp(Vector3.Dot(tangent2Scaled, bitangent), -1f, 1f);
 
         return new Vector4(
             MathF.FusedMultiplyAdd(cosTheta, 0.5f, 0.5f),
