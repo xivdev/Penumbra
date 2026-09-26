@@ -16,7 +16,8 @@ internal readonly struct TreeBuildCache(ObjectManager? objects, IDataManager dat
 {
     private readonly Dictionary<FullPath, IReadOnlyDictionary<uint, Name>?> _shaderPackageNames = [];
 
-    private readonly IGameObject? _player = objects?.GetDalamudObject(0);
+    private readonly IGameObject? _player   = objects?.GetDalamudObject(0);
+    private readonly uint         _playerId = objects?.GetDalamudObject(0)?.EntityId ?? 0u;
 
     public unsafe bool IsLocalPlayerRelated(FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* gameObject)
     {
@@ -28,7 +29,7 @@ internal readonly struct TreeBuildCache(ObjectManager? objects, IDataManager dat
         return actualIndex switch
         {
             < 2                              => true,
-            < (int)ScreenActor.CutsceneStart => gameObject->OwnerId == _player.EntityId,
+            < (int)ScreenActor.CutsceneStart => gameObject->OwnerId == _playerId,
             _                                => false,
         };
     }
@@ -47,10 +48,9 @@ internal readonly struct TreeBuildCache(ObjectManager? objects, IDataManager dat
         if (minion is not null)
             yield return (ICharacter)minion;
 
-        var playerId = _player.EntityId;
         for (var i = 2; i < ObjectIndex.CutsceneStart.Index; i += 2)
         {
-            if (objects.GetDalamudObject(i) is ICharacter owned && owned.OwnerId == playerId)
+            if (objects.GetDalamudObject(i) is ICharacter owned && owned.OwnerId == _playerId)
                 yield return owned;
         }
 
@@ -64,7 +64,7 @@ internal readonly struct TreeBuildCache(ObjectManager? objects, IDataManager dat
             if (parent < 0)
                 continue;
 
-            if (parent is 0 or 1 || objects.GetDalamudObject(parent)?.OwnerId == playerId)
+            if (parent is 0 or 1 || objects.GetDalamudObject(parent)?.OwnerId == _playerId)
                 yield return character;
         }
     }
