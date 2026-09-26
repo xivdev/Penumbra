@@ -8,6 +8,7 @@ using Penumbra.GameData.Actors;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Interop;
+using Penumbra.GameData.Structs;
 using Penumbra.Interop.PathResolving;
 using Penumbra.Meta;
 using Penumbra.Mods.Manager;
@@ -50,7 +51,7 @@ public class ResourceTreeFactory(
         var (cache, characters) = framework.RunOnFrameworkThread(() =>
         {
             var cache = CreateTreeBuildCache();
-            var characters = ((flags & Flags.LocalPlayerRelatedOnly) != 0 ? cache.GetLocalPlayerRelatedCharacters() : cache.GetCharacters())
+            var characters = (flags.HasFlag(Flags.LocalPlayerRelatedOnly) ? cache.GetLocalPlayerRelatedCharacters() : cache.GetCharacters())
                 .SelectWhere(character
                     => !CharacterInfo.TryFromCharacter(character, out var info)
                         ? (false, default)
@@ -61,7 +62,7 @@ public class ResourceTreeFactory(
         foreach (var (character, info) in characters)
         {
             var tree = FromCharacter(in info, cache, flags);
-            if (tree != null)
+            if (tree is not null)
                 yield return (character, tree);
         }
     }
@@ -76,7 +77,7 @@ public class ResourceTreeFactory(
                 continue;
 
             var tree = FromCharacter(in info, cache, flags);
-            if (tree != null)
+            if (tree is not null)
                 yield return (character, tree);
         }
     }
@@ -94,12 +95,12 @@ public class ResourceTreeFactory(
 
         var localPlayerRelated = cache.IsLocalPlayerRelated(character.GameObject);
         var (name, anonymizedName, related) = GetCharacterName(character.GameObject);
-        var networked = character.EntityId != 0xE0000000;
+        var networked = character.EntityId != EntityId.Invalid;
         var tree = new ResourceTree(name, anonymizedName, character.ObjectIndex, (nint)character.GameObject, (nint)character.DrawObject,
             localPlayerRelated, related, networked, collectionResolveData.ModCollection.Identity.Name,
             collectionResolveData.ModCollection.Identity.AnonymizedName);
         var globalContext = new GlobalResolveContext(metaFileManager, objectIdentifier, collectionResolveData.ModCollection,
-            cache, (flags & Flags.WithUiData) != 0);
+            cache, flags.HasFlag(Flags.WithUiData));
         using (var _ = pathState.EnterInternalResolve())
         {
             tree.LoadResources(globalContext);
@@ -222,12 +223,12 @@ public class ResourceTreeFactory(
             _                     => false,
         };
 
-    private unsafe struct CharacterInfo(GameObject* gameObject, DrawObject* drawObject, uint entityId, ushort objectIndex)
+    private unsafe struct CharacterInfo(GameObject* gameObject, DrawObject* drawObject, EntityId entityId, ObjectIndex objectIndex)
     {
         public readonly GameObject* GameObject  = gameObject;
         public readonly DrawObject* DrawObject  = drawObject;
-        public readonly uint        EntityId    = entityId;
-        public readonly ushort      ObjectIndex = objectIndex;
+        public readonly EntityId    EntityId    = entityId;
+        public readonly ObjectIndex ObjectIndex = objectIndex;
 
         public static bool TryFromCharacter(ICharacter character, out CharacterInfo info)
         {
