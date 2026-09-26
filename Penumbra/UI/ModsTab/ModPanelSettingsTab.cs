@@ -185,7 +185,7 @@ public class ModPanelSettingsTab(
             return;
 
         using var id = Im.Id.Push("presets"u8);
-        if (ImEx.Icon.Button(LunaStyle.FromClipboardIcon, "Try to import a setting preset from the clipboard."u8))
+        if (ImEx.Icon.Button(LunaStyle.FromClipboardIcon, "Try to import a setting preset from the clipboard."u8, _locked))
             if (SettingPresetData.FromClipboard(out var data))
                 collectionManager.Editor.ApplyPreset(collectionManager.Active.Current, selection.Mod!, data,
                     config.Main.DefaultTemporaryMode || _temporary);

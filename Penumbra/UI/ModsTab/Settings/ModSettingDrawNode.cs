@@ -198,10 +198,13 @@ public readonly struct ModSettingDrawNode
         if (!context)
             return;
 
-        if (Im.Menu.Item("Enable All Child Options"u8))
-            drawer.SetMultiState(group.Group, true);
-        if (Im.Menu.Item("Disable All Child Options"u8))
-            drawer.SetMultiState(group.Group, false);
+        using (Im.Disabled(drawer.Locked))
+        {
+            if (Im.Menu.Item("Enable All Child Options"u8))
+                drawer.SetMultiState(group.Group, true);
+            if (Im.Menu.Item("Disable All Child Options"u8))
+                drawer.SetMultiState(group.Group, false);
+        }
     }
 
 
@@ -244,7 +247,7 @@ public readonly struct ModSettingDrawNode
         DrawConnector(cache);
         using (ImStyleBorder.Frame.Push(ColorId.OptionBorder.Vector, cache.BorderWidth))
         {
-            using var disabled = Im.Disabled(group.Disabled);
+            using var disabled = Im.Disabled(group.Disabled || drawer.Locked);
             drawer.Combo.PreviewAlignment = new Vector2(cache.ComboAlignment);
             drawer.Combo.Draw(drawer, group, drawer.GetModSetting(group.Group), ComboWidth.X);
         }
