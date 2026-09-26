@@ -12,6 +12,12 @@ public sealed class EnabledChanged(LunaLogger log) : EventBase<EnabledChanged.Ar
 
         /// <seealso cref="Api.DalamudSubstitutionProvider.OnEnabledChange"/>
         DalamudSubstitutionProvider = 0,
+
+        /// <seealso cref="global::Penumbra.Interop.Services.ResidentResourceManager.OnEnabledChange"/>
+        ResidentResourceManager = -1,
+
+        /// <seealso cref="global::Penumbra.Interop.Services.RedrawService.OnEnabledChanged"/>
+        RedrawService = -2,
     }
 
     /// <summary> The arguments for a EnabledChanged event. </summary>

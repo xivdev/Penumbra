@@ -3,6 +3,7 @@ using ImSharp;
 using Penumbra.Communication;
 using Penumbra.GameData;
 using Penumbra.Interop.Structs;
+using Penumbra.Services;
 
 namespace Penumbra.Interop.Services;
 

@@ -146,19 +146,27 @@ public sealed unsafe partial class RedrawService : IDisposable
         _communicator     =  communicator;
         _framework.Update += OnUpdateEvent;
         _communicator.ModFileChanged.Subscribe(OnModFileChanged, ModFileChanged.Priority.RedrawService);
+        _communicator.EnabledChanged.Subscribe(OnEnabledChanged, EnabledChanged.Priority.RedrawService);
+    }
+
+    private void OnEnabledChanged(in EnabledChanged.Arguments arguments)
+    {
+        if (_objects.Finished)
+            RedrawAll(RedrawType.Redraw);
     }
 
     public void Dispose()
     {
         _framework.Update -= OnUpdateEvent;
         _communicator.ModFileChanged.Unsubscribe(OnModFileChanged);
+        _communicator.EnabledChanged.Unsubscribe(OnEnabledChanged);
     }
 
     public static DrawState* ActorDrawState(IGameObject actor)
-        => (DrawState*)&((FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject*)actor.Address)->RenderFlags;
+        => (DrawState*)&((GameObject*)actor.Address)->RenderFlags;
 
     private static int ObjectTableIndex(IGameObject actor)
-        => ((FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject*)actor.Address)->ObjectIndex;
+        => ((GameObject*)actor.Address)->ObjectIndex;
 
     private void WriteInvisible(IGameObject? actor)
     {
@@ -285,7 +293,7 @@ public sealed unsafe partial class RedrawService : IDisposable
 
     private static uint GetCurrentAnimationId(IGameObject obj)
     {
-        var gameObj = (FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject*)obj.Address;
+        var gameObj = (GameObject*)obj.Address;
         if (gameObj == null || !gameObj->IsCharacter())
             return 0;
 

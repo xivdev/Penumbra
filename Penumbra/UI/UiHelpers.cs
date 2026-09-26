@@ -1,30 +1,10 @@
-using Dalamud.Interface.ImGuiNotification;
 using ImSharp;
-using Luna;
 using ImGuiId = ImSharp.ImGuiId;
 
 namespace Penumbra.UI;
 
 public static class UiHelpers
 {
-    /// <summary> The longest support button text. </summary>
-    public static ReadOnlySpan<byte> SupportInfoButtonText
-        => "Copy Support Info to Clipboard"u8;
-
-    /// <summary>
-    /// Draw a button that copies the support info to clipboards.
-    /// </summary>
-    /// <param name="penumbra"></param>
-    public static void DrawSupportButton(Penumbra penumbra)
-    {
-        if (!Im.Button(SupportInfoButtonText))
-            return;
-
-        var text = penumbra.GatherSupportInformation();
-        Im.Clipboard.Set(text);
-        Penumbra.Messager.NotificationMessage("Copied Support Info to Clipboard.", NotificationType.Success, false);
-    }
-
     /// <summary> Draw a button to open a specific directory in a file explorer.</summary>
     /// <param name="id">Specific ID for the given type of directory.</param>
     /// <param name="directory">The directory to open.</param>

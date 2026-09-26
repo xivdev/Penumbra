@@ -1,4 +1,4 @@
-﻿using Penumbra.GameData;
+using Penumbra.GameData;
 
 namespace Penumbra.Interop.Hooks.ResourceLoading;
 

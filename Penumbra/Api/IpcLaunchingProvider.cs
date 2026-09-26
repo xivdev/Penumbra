@@ -4,9 +4,10 @@ using Penumbra.Api.Api;
 
 namespace Penumbra.Api;
 
-public sealed class IpcLaunchingProvider : IApiService
+public sealed class IpcLaunchingProvider(IDalamudPluginInterface pi, LunaLogger log) : IApiService
 {
-    public IpcLaunchingProvider(IDalamudPluginInterface pi, LunaLogger log)
+    /// <summary> Inform subscribed plugins that Penumbra starts launching. </summary>
+    public void Invoke()
     {
         try
         {

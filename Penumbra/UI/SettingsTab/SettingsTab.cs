@@ -1,6 +1,7 @@
 using ImSharp;
 using Luna;
 using Penumbra.Api.Enums;
+using Penumbra.Services;
 using Penumbra.UI.Classes;
 using Penumbra.UI.Integration;
 
@@ -18,7 +19,8 @@ public sealed class SettingsTab(
     PredefinedTagManager predefinedTagManager,
     MigrationSectionDrawer migrationDrawer,
     IntegrationSettingsRegistry integrationSettings,
-    Penumbra penumbra)
+    PenumbraChangelog changelog,
+    PenumbraSupportInfo supportInfo)
     : ITab<TabType>
 {
     public TabType Identifier
@@ -135,14 +137,14 @@ public sealed class SettingsTab(
     /// <summary> Draw the support button group on the right-hand side of the window. </summary>
     private void DrawSupportButtons()
     {
-        var width = Im.Font.CalculateSize(UiHelpers.SupportInfoButtonText).X + Im.Style.FramePadding.X * 2;
+        var width = Im.Font.CalculateSize(PenumbraSupportInfo.SupportInfoButtonText).X + Im.Style.FramePadding.X * 2;
         var xPos  = Im.Window.Width - width;
         // Respect the scroll bar width.
         if (Im.Scroll.MaximumY > 0)
             xPos -= Im.Style.ScrollbarSize + Im.Style.FramePadding.X;
 
         Im.Cursor.Position = new Vector2(xPos, Im.Style.FrameHeightWithSpacing);
-        UiHelpers.DrawSupportButton(penumbra);
+        supportInfo.DrawSupportButton();
 
         Im.Cursor.Position = new Vector2(xPos, 0);
         SupportButton.Discord(Penumbra.Messager, width);
@@ -159,7 +161,7 @@ public sealed class SettingsTab(
 
         Im.Cursor.Position = new Vector2(xPos, 4 * Im.Style.FrameHeightWithSpacing);
         if (Im.Button("Show Changelogs"u8, new Vector2(width, 0)))
-            penumbra.ForceChangelogOpen();
+            changelog.Changelog.ForceOpen = true;
 
         Im.Cursor.Position = new Vector2(xPos, 5 * Im.Style.FrameHeightWithSpacing);
         SupportButton.KoFiPatreon(Penumbra.Messager, new Vector2(width, 0));

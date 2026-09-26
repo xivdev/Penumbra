@@ -1,370 +1,173 @@
-using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using ImSharp;
 using Lumina.Excel.Sheets;
 using Luna;
+using Microsoft.Extensions.DependencyInjection;
 using Penumbra.Api;
-using Penumbra.Api.Enums;
-using Penumbra.Collections;
-using Penumbra.Collections.Cache;
+using Penumbra.Api.Api;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
+using Penumbra.GameData.Actors;
 using Penumbra.GameData.Data;
-using Penumbra.Interop;
+using Penumbra.GameData.Structs;
 using Penumbra.Interop.Hooks;
-using Penumbra.Interop.Hooks.PostProcessing;
 using Penumbra.Interop.PathResolving;
 using Penumbra.Interop.Services;
+using Penumbra.Meta;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.UI;
 using Penumbra.UI.AdvancedWindow;
 using Penumbra.UI.MainWindow;
-using ChangedItemClick = Penumbra.Communication.ChangedItemClick;
-using ChangedItemHover = Penumbra.Communication.ChangedItemHover;
-using DynamisIpc = Luna.DynamisIpc;
+using Penumbra.UI.ManagementTab;
 using MouseButton = Penumbra.Api.Enums.MouseButton;
-using Notification = Luna.Notification;
-using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManager;
 
 namespace Penumbra;
 
-public class Penumbra : IDalamudPlugin
+public sealed class Penumbra : IPluginDefinition<Penumbra>, IAsyncDisposable
 {
-    public static readonly MainLogger     Log = new("Penumbra");
-    public static          PenumbraMessager Messager { get; private set; } = null!;
-    public static          DynamisIpc     Dynamis  { get; private set; } = null!;
+    public static MainLogger       Log      { get; private set; } = null!;
+    public static PenumbraMessager Messager { get; private set; } = null!;
+    public static DynamisIpc       Dynamis  { get; private set; } = null!;
 
-    private readonly ValidityChecker         _validityChecker     = null!;
-    private readonly ResidentResourceManager _residentResources   = null!;
-    private readonly TempModManager          _tempMods            = null!;
-    private readonly TempCollectionManager   _tempCollections     = null!;
-    private readonly ModManager              _modManager          = null!;
-    private readonly CollectionManager       _collectionManager   = null!;
-    private readonly Configuration           _config              = null!;
-    private readonly CharacterUtility        _characterUtility    = null!;
-    private readonly RedrawService           _redrawService       = null!;
-    private readonly CommunicatorService     _communicatorService = null!;
-    private readonly IDataManager            _gameData            = null!;
-    private          PenumbraWindowSystem?   _windowSystem;
-    private          bool                    _disposed;
-
-    private readonly ServiceManager _services = null!;
-
-    private ErrorWindow? _errorWindow;
-
-    public Penumbra(IDalamudPluginInterface pluginInterface)
+    public static ServiceManager CreateServiceManager(IDalamudPluginInterface pluginInterface, MainLogger log)
     {
-        try
-        {
-            HookOverrides.Instance = HookOverrides.LoadFile(pluginInterface);
-            _services              = StaticServiceManager.CreateProvider(this, pluginInterface, Log);
-            // Invoke the IPC Penumbra.Launching method before any hooks or other services are created.
-            _services.GetService<IpcLaunchingProvider>();
-            Messager         = _services.GetService<PenumbraMessager>();
-            Dynamis          = _services.GetService<DynamisIpc>();
-            _validityChecker = _services.GetService<ValidityChecker>();
-            _services.GetService<BackupService>(); // Initialize early to create backups.
-            _services.GetService<ConfigMigrationService>().MigrateOldConfigStyle();
-            _services.EnsureRequiredServices();
+        var services = new ServiceManager(log, log.PluginName)
+            .AddDalamudServices(pluginInterface)
+            .AddExistingService(log)
+            .AddGenericSingleton(typeof(ManagementLog<>));
 
-            var startup = _services.GetService<DalamudConfigService>()
-                .GetDalamudConfig(DalamudConfigService.WaitingForPluginsOption, out bool s)
-                ? s.ToString()
-                : "Unknown";
-            Log.Information(
-                $"Loading Penumbra Version {_validityChecker.Version}, Commit #{_validityChecker.CommitHash} with Waiting For Plugins: {startup}...");
-            _services.GetService<ImSharpDalamudContext>();
-            _config                  =  _services.GetService<Configuration>();
-            _config.Main.ModsEnabled += SetEnabled;
-            _characterUtility        =  _services.GetService<CharacterUtility>();
-            _tempMods                =  _services.GetService<TempModManager>();
-            _residentResources       =  _services.GetService<ResidentResourceManager>();
-            _modManager              =  _services.GetService<ModManager>();
-            _collectionManager       =  _services.GetService<CollectionManager>();
-            _tempCollections         =  _services.GetService<TempCollectionManager>();
-            _redrawService           =  _services.GetService<RedrawService>();
-            _communicatorService     =  _services.GetService<CommunicatorService>();
-            _gameData                =  _services.GetService<IDataManager>();
-            _collectionManager.Caches.CreateNecessaryCaches();
-            _services.GetService<PathResolver>();
+        services.AddSingleton(p => p.GetRequiredService<UiConfig>().ColorCache);
+        services.AddSingleton(MessageService (p) => p.GetRequiredService<PenumbraMessager>());
+        services.AddIServices(typeof(EquipItem).Assembly);
+        services.AddIServices(typeof(Penumbra).Assembly);
+        services.AddIServices(typeof(IService).Assembly);
 
-            _services.GetService<DalamudSubstitutionProvider>(); // Initialize before Interface.
-
-            foreach (var service in _services.GetServicesImplementing<IAwaitedService>())
-                service.Awaiter.Wait();
-
-            SetupInterface();
-            SetupApi();
-
-            Log.Information(
-                $"Penumbra Version {_validityChecker.Version}, Commit #{_validityChecker.CommitHash} successfully Loaded from {pluginInterface.SourceRepository}.");
-            OtterTex.NativeDll.Initialize(pluginInterface.AssemblyLocation.DirectoryName);
-            Log.Information($"Loading native OtterTex assembly from {OtterTex.NativeDll.Directory}.");
-
-            if (_characterUtility.Ready)
-                _residentResources.Reload();
-
-            if (pluginInterface.Reason is PluginLoadReason.Update)
-                Messager.AddMessage(
-                    new Notification(
-                        "Penumbra seems to have been updated right now.\n\nIf you encounter any issues, please try restarting the game before reporting them.",
-                        TimeSpan.FromSeconds(30), NotificationType.Info), false, true, false, true);
-
-            if (_services.GetService<HookManager>().LogExceptions(Log))
-                throw new Exception("Not all hooks could be created.");
-        }
-        catch (Exception ex)
-        {
-            Log.Error($"Error constructing Penumbra, Disposing again:\n{ex}");
-            Dispose();
-            _errorWindow = new PenumbraErrorWindow(pluginInterface);
-        }
-    }
-
-    private void SetupApi()
-    {
-        _services.GetService<IpcProviders>();
-        var itemSheet = _services.GetService<IDataManager>().GetExcelSheet<Item>();
-        _communicatorService.ChangedItemHover.Subscribe((in args) =>
-        {
-            if (args.Data is IdentifiedItem { Item.Id.IsItem: true })
-                Im.Text("Left Click to create an item link in chat."u8);
-        }, ChangedItemHover.Priority.Link);
-
-        _communicatorService.ChangedItemClick.Subscribe((in args) =>
-        {
-            if (args is { Button: MouseButton.Left, Data: IdentifiedItem item } && itemSheet.GetRow(item.Item.ItemId.Id) is { } i)
-                Messager.LinkItem(i);
-        }, ChangedItemClick.Priority.Link);
-    }
-
-    private void SetupInterface()
-    {
-        Task.Run(() =>
+        services.AddSingleton(p =>
             {
-                var system = _services.GetService<PenumbraWindowSystem>();
-                system.Window.Setup(this, _services.GetService<MainTabBar>());
-                _services.GetService<CommandHandler>();
-                if (!_disposed)
-                {
-                    _windowSystem = system;
-                    if (_config is { Ui.OpenWindowAtStart: true, Ephemeral.AdvancedEditingOpenForModPaths.Count: > 0 })
-                    {
-                        var mods              = _services.GetService<ModManager>();
-                        var editWindowFactory = _services.GetService<ModEditWindowFactory>();
-                        var modFileSystem     = _services.GetService<ModFileSystem>();
-                        foreach (var identifier in _config.Ephemeral.AdvancedEditingOpenForModPaths)
-                        {
-                            if (identifier is ModEditWindowFactory.UnpinnedWindowLabel
-                             && modFileSystem.Selection.Selection?.GetValue<Mod>() is { } selectedMod)
-                                editWindowFactory.OpenForMod(selectedMod, true);
-                            if (mods.TryGetMod(identifier, out var mod))
-                                editWindowFactory.OpenForMod(mod, false);
-                        }
-                    }
-                }
-                else
-                {
-                    system.Dispose();
-                }
-            }
-        ).ContinueWith(state =>
+                var cutsceneService = p.GetRequiredService<CutsceneService>();
+                return new CutsceneResolver(cutsceneService.GetParentIndex);
+            })
+            .AddSingleton(p => p.GetRequiredService<MetaFileManager>().ImcChecker)
+            .AddSingleton(s => (ModStorage)s.GetRequiredService<ModManager>())
+            .AddSingleton<IPenumbraApi>(x => x.GetRequiredService<PenumbraApi>());
+        return services;
+    }
+
+    public static Task PreInitializeAsync(PluginLoader<Penumbra> loader, CancellationToken cancel)
+    {
+        HookOverrides.Instance = HookOverrides.LoadFile(loader.PluginInterface);
+        loader.Services.GetService<IpcLaunchingProvider>().Invoke();
+        return Task.CompletedTask;
+    }
+
+    public static Task InitializeLoggingAsync(PluginLoader<Penumbra> loader, CancellationToken cancel)
+    {
+        Log                       = loader.Log;
+        Messager                  = loader.Services.GetService<PenumbraMessager>();
+        Dynamis                   = loader.Services.GetService<DynamisIpc>();
+        return Task.CompletedTask;
+    }
+
+    public static Task<IIntermediaryPlugin<Penumbra>> LaunchIntermediaryAsync(PluginLoader<Penumbra> loader,
+        CancellationToken cancel)
+        => Task.FromResult<IIntermediaryPlugin<Penumbra>>(new PenumbraIntermediary((PenumbraLoader)loader));
+
+    public static Task<Penumbra> LaunchPluginAsync(PluginLoader<Penumbra> loader, CancellationToken cancel)
+        => Task.FromResult(new Penumbra());
+
+    public Task LoadGameDataAsync(PluginLoader<Penumbra> loader, CancellationToken cancel)
+        => Task.CompletedTask;
+
+    public Task CreateBackupsAsync(PluginLoader<Penumbra> loader, CancellationToken cancel)
+    {
+        var backup = loader.Services.GetService<BackupService>();
+        return backup.Awaiter;
+    }
+
+    public Task LoadAndMigrateConfigurationAsync(PluginLoader<Penumbra> loader, CancellationToken cancel)
+    {
+        return Task.Run(() =>
         {
-            if (!state.IsFaulted)
+            loader.Services.GetService<ConfigMigrationService>().MigrateOldConfigStyle();
+            loader.Services.GetService<Configuration>();
+        }, cancel);
+    }
+
+    public Task LoadPluginObjectsAsync(PluginLoader<Penumbra> loader, CancellationToken cancel)
+    {
+        return Task.Run(() =>
+        {
+            var tempModManager        = loader.Services.GetService<TempModManager>();
+            var modManager            = loader.Services.GetService<ModManager>();
+            var collectionManager     = loader.Services.GetService<CollectionManager>();
+            var tempCollectionManager = loader.Services.GetService<TempCollectionManager>();
+            collectionManager.Caches.CreateNecessaryCaches();
+        }, cancel);
+    }
+
+    public Task CreateGameInteropAsync(PluginLoader<Penumbra> loader, CancellationToken cancel)
+    {
+        return Task.Run(() =>
+        {
+            var characterUtility  = loader.Services.GetService<CharacterUtility>();
+            var residentResources = loader.Services.GetService<ResidentResourceManager>();
+            var redrawService     = loader.Services.GetService<RedrawService>();
+            var resolver          = loader.Services.GetService<PathResolver>();
+            loader.Services.EnsureRequiredServices();
+        }, cancel);
+    }
+
+    public async Task CreateUiAsync(PluginLoader<Penumbra> loader, CancellationToken cancel)
+    {
+        var substitution = loader.Services.GetService<DalamudSubstitutionProvider>();
+        await Task.WhenAll(loader.Services.GetServicesImplementing<IAwaitedService>().Select(s => s.Awaiter)).ConfigureAwait(false);
+        await Task.Run(() =>
+        {
+            var system = loader.Services.GetService<PenumbraWindowSystem>();
+            system.Window.Setup(loader.Services.GetService<MainTabBar>());
+            loader.Services.GetService<CommandHandler>();
+            var config = loader.Services.GetService<Configuration>();
+            if (config is not { Ui.OpenWindowAtStart: true, Ephemeral.AdvancedEditingOpenForModPaths.Count: > 0 })
                 return;
 
-            if (_errorWindow is not null)
-                return;
-
-            var pi = _services.GetService<IDalamudPluginInterface>();
-            Log.Error($"Error constructing Penumbra, Disposing again:\n{state.Exception}");
-            Dispose();
-            _errorWindow = new PenumbraErrorWindow(pi);
-        });
-    }
-
-    private void SetEnabled(bool enabled, bool _)
-    {
-        if (enabled)
-        {
-            if (_characterUtility.Ready)
+            var mods              = loader.Services.GetService<ModManager>();
+            var editWindowFactory = loader.Services.GetService<ModEditWindowFactory>();
+            var modFileSystem     = loader.Services.GetService<ModFileSystem>();
+            foreach (var identifier in config.Ephemeral.AdvancedEditingOpenForModPaths)
             {
-                _residentResources.Reload();
-                _redrawService.RedrawAll(RedrawType.Redraw);
+                if (identifier is ModEditWindowFactory.UnpinnedWindowLabel
+                 && modFileSystem.Selection.Selection?.GetValue<Mod>() is { } selectedMod)
+                    editWindowFactory.OpenForMod(selectedMod, true);
+                if (mods.TryGetMod(identifier, out var mod))
+                    editWindowFactory.OpenForMod(mod, false);
             }
-        }
-        else
+        }, cancel).ConfigureAwait(false);
+    }
+
+    public Task CreateApiAsync(PluginLoader<Penumbra> loader, CancellationToken cancel)
+    {
+        return Task.Run(() =>
         {
-            if (_characterUtility.Ready)
+            var communicator = loader.Services.GetService<CommunicatorService>();
+            loader.Services.GetService<IpcProviders>();
+            var itemSheet = loader.Services.GetService<IDataManager>().GetExcelSheet<Item>();
+            communicator.ChangedItemHover.Subscribe((in args) =>
             {
-                _residentResources.Reload();
-                _redrawService.RedrawAll(RedrawType.Redraw);
-            }
-        }
+                if (args.Data is IdentifiedItem { Item.Id.IsItem: true })
+                    Im.Text("Left Click to create an item link in chat."u8);
+            }, ChangedItemHover.Priority.Link);
 
-        _communicatorService.EnabledChanged.Invoke(new EnabledChanged.Arguments(enabled));
-    }
-
-    public void ForceChangelogOpen()
-        => _windowSystem?.ForceChangelogOpen();
-
-    public void Dispose()
-    {
-        _errorWindow?.Dispose();
-        if (_disposed)
-            return;
-
-        _services?.Dispose();
-        _disposed = true;
-    }
-
-    private void GatherRelevantPlugins(StringBuilder sb)
-    {
-        ReadOnlySpan<string> relevantPlugins =
-        [
-            "Glamourer", "CustomizePlus", "SimpleHeels",
-            "Ktisis", "Brio",
-            "heliosphere-plugin", "VfxEditor", "IllusioVitae", "Aetherment",
-            "DynamicBridge", "GagSpeak", "ProjectGagSpeak", "RoleplayingVoiceDalamud", "AQuestReborn", "Proteus", "DragAndDropTexturing",
-            "CharacterSelectPlugin",
-            "MareSynchronos", "LoporritSync", "KittenSync", "Snowcloak", "LightlessSync", "Sphene", "XivSync",
-            "MareSempiterne" /* PlayerSync */, "AnatoliIliou", "LaciSynchroni",
-        ];
-        var plugins = _services.GetService<IDalamudPluginInterface>().InstalledPlugins
-            .GroupBy(p => p.InternalName)
-            .ToDictionary(g => g.Key, g =>
+            communicator.ChangedItemClick.Subscribe((in args) =>
             {
-                var item = g.OrderByDescending(p => p.IsLoaded).ThenByDescending(p => p.Version).First();
-                return (item.IsLoaded, item.Version, item.Name);
-            });
-
-        foreach (var plugin in IpcProviders.Callers.OrderBy(p => p.DisplayName).ThenBy(p => p.Version))
-            sb.Append($"> **`{plugin.DisplayName + ':',-29}`** {plugin.Version} (IPC)\n");
-
-        foreach (var plugin in relevantPlugins)
-        {
-            // Skip plugins included through caller tracking.
-            if (IpcProviders.Callers.Any(c => c.InternalName == plugin))
-                continue;
-
-            if (plugins.TryGetValue(plugin, out var data))
-                sb.Append($"> **`{data.Name + ':',-29}`** {data.Version}{(data.IsLoaded ? string.Empty : " (Disabled)")}\n");
-        }
+                if (args is { Button: MouseButton.Left, Data: IdentifiedItem item } && itemSheet.GetRow(item.Item.ItemId.Id) is { } i)
+                    Messager.LinkItem(i);
+            }, ChangedItemClick.Priority.Link);
+        }, cancel);
     }
 
-    public string GatherSupportInformation()
-    {
-        var sb          = new StringBuilder(10240);
-        var exists      = _config.Main.ModDirectory.Length > 0 && Directory.Exists(_config.Main.ModDirectory);
-        var cloudSynced = exists && CloudApi.IsCloudSynced(_config.Main.ModDirectory);
-        var hdrEnabler  = _services.GetService<RenderTargetHdrEnabler>();
-        var pi          = _services.GetService<IDalamudPluginInterface>();
-        var drive       = exists ? new DriveInfo(new DirectoryInfo(_config.Main.ModDirectory).Root.FullName) : null;
-        sb.AppendLine("**Settings**");
-        sb.Append($"> **`Plugin Version:              `** {_validityChecker.Version}\n");
-        sb.Append($"> **`Commit Hash:                 `** {_validityChecker.CommitHash}\n");
-        sb.Append($"> **`Load Reason:                 `** {pi.Reason} at {pi.LoadTimeUTC:g} ({pi.LoadTimeDelta:g})\n");
-        sb.Append($"> **`Enable Mods:                 `** {_config.Main.EnableMods}\n");
-        sb.Append($"> **`Enable HTTP API:             `** {_config.Advanced.EnableHttpApi}\n");
-        sb.Append($"> **`Operating System:            `** {(Dalamud.Utility.Util.IsWine() ? "Mac/Linux (Wine)" : "Windows")}\n");
-        if (Dalamud.Utility.Util.IsWine())
-            sb.Append($"> **`Locale Environment Variables:`** {CollectLocaleEnvironmentVariables()}\n");
-        sb.Append(
-            $"> **`Root Directory:              `** `{_config.Main.ModDirectory}`, {(exists ? "Exists" : "Not Existing")}{(cloudSynced ? ", Cloud-Synced" : "")}\n");
-        sb.Append(
-            $"> **`Free Drive Space:            `** {(drive != null ? FormattingFunctions.HumanReadableSize(drive.AvailableFreeSpace) : "Unknown")}\n");
-        sb.Append($"> **`Game Data Files:             `** {(_gameData.HasModifiedGameDataFiles ? "Modified" : "Pristine")}\n");
-        sb.Append($"> **`Auto-Deduplication:          `** {_config.Advanced.AutoDeduplicateOnImport}\n");
-        sb.Append($"> **`Auto-UI-Reduplication:       `** {_config.Advanced.AutoReduplicateUiOnImport}\n");
-        sb.Append($"> **`Debug Mode:                  `** {_config.Advanced.DebugMode}\n");
-        sb.Append($"> **`Penumbra Reloads:            `** {hdrEnabler.PenumbraReloadCount}\n");
-        sb.Append(
-            $"> **`HDR Enabled (from Start):    `** {_config.Advanced.HdrRenderTargets} ({hdrEnabler is { FirstLaunchHdrState: true, FirstLaunchHdrHookOverrideState: true }}){(hdrEnabler.HdrEnabledSuccess ? ", Detour Called" : ", **NEVER CALLED**")}\n");
-        sb.Append($"> **`Custom Shapes Enabled:       `** {_config.Advanced.EnableCustomShapes}\n");
-        sb.Append($"> **`Hook Overrides:              `** {HookOverrides.Instance.IsCustomLoaded}\n");
-        sb.Append(
-            $"> **`Synchronous Load (Dalamud):  `** {(_services.GetService<DalamudConfigService>().GetDalamudConfig(DalamudConfigService.WaitingForPluginsOption, out bool v) ? v.ToString() : "Unknown")} (first Start: {hdrEnabler.FirstLaunchWaitForPluginsState?.ToString() ?? "Unknown"})\n");
-        sb.Append(
-            $"> **`Logging:                     `** Log: {_config.Filters.ResourceLoggerWriteToLog}, Watcher: {_config.Filters.ResourceLoggerEnabled} ({_config.Filters.ResourceLoggerMaxEntries})\n");
-        sb.Append(
-            $"> **`Use Ownership:               `** {_config.Behavior.UseOwnerNameForCharacterCollection} (Hostiles: {_config.Behavior.UseOwnerForHostiles})\n");
-        GatherRelevantPlugins(sb);
-        sb.AppendLine("**Mods**");
-        sb.Append($"> **`Installed Mods:              `** {_modManager.Count}\n");
-        sb.Append($"> **`Mods with Config:            `** {_modManager.Count(m => m.HasOptions)}\n");
-        sb.Append(
-            $"> **`Mods with File Redirections: `** {_modManager.Count(m => m.TotalFileCount > 0)}, Total: {_modManager.Sum(m => m.TotalFileCount)}\n");
-        sb.Append(
-            $"> **`Mods with FileSwaps:         `** {_modManager.Count(m => m.TotalSwapCount > 0)}, Total: {_modManager.Sum(m => m.TotalSwapCount)}\n");
-        sb.Append(
-            $"> **`Mods with Meta Manipulations:`** {_modManager.Count(m => m.TotalManipulations > 0)}, Total {_modManager.Sum(m => m.TotalManipulations)}\n");
-        sb.Append(
-            $"> **`#Temp Mods:                  `** {_tempMods.Mods.Sum(kvp => kvp.Value.Count) + _tempMods.ModsForAllCollections.Count}\n");
-
-        sb.AppendLine("**Collections**");
-        sb.Append($"> **`#Collections:                `** {_collectionManager.Storage.Count - 1}\n");
-        sb.Append($"> **`#Temp Collections:           `** {_tempCollections.Count}\n");
-        sb.Append($"> **`Active Collections:          `** {_collectionManager.Caches.Count}\n");
-        sb.Append($"> **`Base Collection:             `** {_collectionManager.Active.Default.Identity.AnonymizedName}\n");
-        sb.Append($"> **`Interface Collection:        `** {_collectionManager.Active.Interface.Identity.AnonymizedName}\n");
-        sb.Append($"> **`Selected Collection:         `** {_collectionManager.Active.Current.Identity.AnonymizedName}\n");
-        foreach (var (type, name, _) in CollectionTypeExtensions.Special)
-        {
-            var collection = _collectionManager.Active.ByType(type);
-            if (collection != null)
-                sb.Append($"> **`{name,-29}`** {collection.Identity.AnonymizedName}\n");
-        }
-
-        foreach (var (name, id, collection) in _collectionManager.Active.Individuals.Assignments)
-            sb.Append($"> **`{id[0].Incognito(name) + ':',-29}`** {collection.Identity.AnonymizedName}\n");
-
-        foreach (var collection in _collectionManager.Caches.Active)
-            PrintCollection(collection, collection.Cache!);
-
-        return sb.ToString();
-
-        void PrintCollection(ModCollection c, CollectionCache _)
-        {
-            sb.Append(
-                $"> **`Collection {c.Identity.AnonymizedName + ':',-18}`** Inheritances: `{c.Inheritance.DirectlyInheritsFrom.Count,3}`, Enabled Mods: `{c.ActualSettings.Count(s => s is { Enabled: true }),4}`, Conflicts: `{c.AllConflicts.SelectMany(x => x).Sum(x => x is { HasPriority: true, Solved: true } ? x.Conflicts.Count : 0),5}/{c.AllConflicts.SelectMany(x => x).Sum(x => x.HasPriority ? x.Conflicts.Count : 0),5}`\n");
-        }
-    }
-
-    private static string CollectLocaleEnvironmentVariables()
-    {
-        var variableNames = new List<string>();
-        var variables     = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (DictionaryEntry variable in Environment.GetEnvironmentVariables())
-        {
-            var key = (string)variable.Key;
-            if (key.Equals("LANG", StringComparison.Ordinal) || key.StartsWith("LC_", StringComparison.Ordinal))
-            {
-                variableNames.Add(key);
-                variables.Add(key, (string?)variable.Value ?? string.Empty);
-            }
-        }
-
-        variableNames.Sort();
-
-        var pos = variableNames.IndexOf("LC_ALL");
-        if (pos > 0) // If it's == 0, we're going to do a no-op.
-        {
-            variableNames.RemoveAt(pos);
-            variableNames.Insert(0, "LC_ALL");
-        }
-
-        pos = variableNames.IndexOf("LANG");
-        if (pos >= 0 && pos < variableNames.Count - 1)
-        {
-            variableNames.RemoveAt(pos);
-            variableNames.Add("LANG");
-        }
-
-        return variableNames.Count == 0
-            ? "None"
-            : string.Join(", ", variableNames.Select(name => $"`{name}={variables[name]}`"));
-    }
+    public ValueTask DisposeAsync()
+        => ValueTask.CompletedTask;
 }

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Luna;
 using Luna.Generators;
+using Penumbra.Communication;
 using Penumbra.Files;
 using Penumbra.Services;
 
@@ -8,7 +9,7 @@ namespace Penumbra;
 
 public sealed partial class MainConfig : ConfigurationFile<FilenameService>
 {
-    #region Main
+    private readonly CommunicatorService _communicator;
 
     [ConfigProperty(EventName = "ModsEnabled")]
     private bool _enableMods = true;
@@ -26,9 +27,12 @@ public sealed partial class MainConfig : ConfigurationFile<FilenameService>
     private bool _printSuccessfulCommandsToChat = true;
 
     /// <inheritdoc/>
-    public MainConfig(SaveService saveService, PenumbraMessager messager)
+    public MainConfig(SaveService saveService, PenumbraMessager messager, CommunicatorService communicator)
         : base(saveService, messager)
-        => Load();
+    {
+        _communicator = communicator;
+        Load();
+    }
 
     public DoubleModifier DestructiveModifier
     {
@@ -41,8 +45,6 @@ public sealed partial class MainConfig : ConfigurationFile<FilenameService>
         get => LunaStyle.Modifier.Misclick.Modifier;
         set => LunaStyle.Modifier.Misclick.Set(value);
     }
-
-    #endregion
 
     public override int CurrentVersion
         => 100;
@@ -74,6 +76,9 @@ public sealed partial class MainConfig : ConfigurationFile<FilenameService>
             ? mm
             : MisclickModifier;
     }
+
+    partial void OnEnableModsChanged(bool newValue, bool oldValue)
+        => _communicator.EnabledChanged.Invoke(new EnabledChanged.Arguments(newValue));
 
     public override string ToFilePath(FilenameService fileNames)
         => fileNames.Config.Main;
