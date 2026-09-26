@@ -1,6 +1,7 @@
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
+using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using Luna;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Actors;
@@ -87,21 +88,16 @@ public class ResourceTreeFactory(
 
     private unsafe ResourceTree? FromCharacter(in CharacterInfo character, TreeBuildCache cache, Flags flags)
     {
-        var gameObjStruct = character.Address;
-        var drawObjStruct = gameObjStruct->GetDrawObject();
-        if (drawObjStruct == null)
-            return null;
-
-        var collectionResolveData = resolver.IdentifyCollection(gameObjStruct, true);
+        var collectionResolveData = resolver.IdentifyCollection(character.GameObject, true);
         if (!collectionResolveData.Valid)
             return null;
 
-        var localPlayerRelated = cache.IsLocalPlayerRelated(character.Address);
-        var (name, anonymizedName, related) = GetCharacterName(character.Address);
+        var localPlayerRelated = cache.IsLocalPlayerRelated(character.GameObject);
+        var (name, anonymizedName, related) = GetCharacterName(character.GameObject);
         var networked = character.EntityId != 0xE0000000;
-        var tree = new ResourceTree(name, anonymizedName, character.ObjectIndex, (nint)gameObjStruct, (nint)drawObjStruct, localPlayerRelated,
-            related,
-            networked, collectionResolveData.ModCollection.Identity.Name, collectionResolveData.ModCollection.Identity.AnonymizedName);
+        var tree = new ResourceTree(name, anonymizedName, character.ObjectIndex, (nint)character.GameObject, (nint)character.DrawObject,
+            localPlayerRelated, related, networked, collectionResolveData.ModCollection.Identity.Name,
+            collectionResolveData.ModCollection.Identity.AnonymizedName);
         var globalContext = new GlobalResolveContext(metaFileManager, objectIdentifier, collectionResolveData.ModCollection,
             cache, (flags & Flags.WithUiData) != 0);
         using (var _ = pathState.EnterInternalResolve())
@@ -226,9 +222,10 @@ public class ResourceTreeFactory(
             _                     => false,
         };
 
-    private unsafe struct CharacterInfo(GameObject* address, uint entityId, ushort objectIndex)
+    private unsafe struct CharacterInfo(GameObject* gameObject, DrawObject* drawObject, uint entityId, ushort objectIndex)
     {
-        public readonly GameObject* Address     = address;
+        public readonly GameObject* GameObject  = gameObject;
+        public readonly DrawObject* DrawObject  = drawObject;
         public readonly uint        EntityId    = entityId;
         public readonly ushort      ObjectIndex = objectIndex;
 
@@ -240,7 +237,15 @@ public class ResourceTreeFactory(
                 return false;
             }
 
-            info = new CharacterInfo((GameObject*)character.Address, character.EntityId, character.ObjectIndex);
+            var gameObject = (GameObject*)character.Address;
+            var drawObject = gameObject->GetDrawObject();
+            if (drawObject is null)
+            {
+                info = default;
+                return false;
+            }
+
+            info = new CharacterInfo(gameObject, drawObject, character.EntityId, character.ObjectIndex);
             return true;
         }
     }
