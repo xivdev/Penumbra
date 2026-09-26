@@ -110,6 +110,7 @@ public class PrimitiveImporter
             VertexAttribute.BlendIndex(accessors, _nodeBoneMap, _notifier),
             VertexAttribute.Normal(accessors, morphAccessors),
             VertexAttribute.Tangent1(accessors, morphAccessors, _indices, _notifier),
+            VertexAttribute.Tangent2(accessors),
             VertexAttribute.Color(accessors),
             VertexAttribute.Uv(accessors),
         };
