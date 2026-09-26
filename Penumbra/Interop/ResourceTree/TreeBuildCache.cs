@@ -18,12 +18,11 @@ internal readonly struct TreeBuildCache(ObjectManager? objects, IDataManager dat
 
     private readonly IGameObject? _player = objects?.GetDalamudObject(0);
 
-    public unsafe bool IsLocalPlayerRelated(ICharacter character)
+    public unsafe bool IsLocalPlayerRelated(FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* gameObject)
     {
         if (_player is null)
             return false;
 
-        var gameObject  = (FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject*)character.Address;
         var parent      = actors.ToCutsceneParent(gameObject->ObjectIndex);
         var actualIndex = parent >= 0 ? (ushort)parent : gameObject->ObjectIndex;
         return actualIndex switch

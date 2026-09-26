@@ -1,6 +1,7 @@
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
+using Luna;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Actors;
 using Penumbra.GameData.Data;
@@ -23,7 +24,7 @@ public class ResourceTreeFactory(
     ActorManager actors,
     PathState pathState,
     IFramework framework,
-    ModManager modManager) : Luna.IService
+    ModManager modManager) : IService
 {
     private static readonly string ParentDirectoryPrefix = $"..{Path.DirectorySeparatorChar}";
 
@@ -48,13 +49,17 @@ public class ResourceTreeFactory(
         var (cache, characters) = framework.RunOnFrameworkThread(() =>
         {
             var cache = CreateTreeBuildCache();
-            var characters = ((flags & Flags.LocalPlayerRelatedOnly) != 0 ? cache.GetLocalPlayerRelatedCharacters() : cache.GetCharacters()).ToArray();
+            var characters = ((flags & Flags.LocalPlayerRelatedOnly) != 0 ? cache.GetLocalPlayerRelatedCharacters() : cache.GetCharacters())
+                .SelectWhere(character
+                    => !CharacterInfo.TryFromCharacter(character, out var info)
+                        ? (false, default)
+                        : (true, (character, info))).ToArray();
             return (cache, characters);
         }).Result;
 
-        foreach (var character in characters)
+        foreach (var (character, info) in characters)
         {
-            var tree = FromCharacter(character, cache, flags);
+            var tree = FromCharacter(in info, cache, flags);
             if (tree != null)
                 yield return (character, tree);
         }
@@ -66,21 +71,23 @@ public class ResourceTreeFactory(
         var cache = CreateTreeBuildCache(flags);
         foreach (var character in characters)
         {
-            var tree = FromCharacter(character, cache, flags);
+            if (!CharacterInfo.TryFromCharacter(character, out var info))
+                continue;
+
+            var tree = FromCharacter(in info, cache, flags);
             if (tree != null)
                 yield return (character, tree);
         }
     }
 
     public ResourceTree? FromCharacter(ICharacter character, Flags flags)
-        => FromCharacter(character, CreateTreeBuildCache(flags), flags);
+        => CharacterInfo.TryFromCharacter(character, out var info)
+            ? FromCharacter(in info, CreateTreeBuildCache(flags), flags)
+            : null;
 
-    private unsafe ResourceTree? FromCharacter(ICharacter character, TreeBuildCache cache, Flags flags)
+    private unsafe ResourceTree? FromCharacter(in CharacterInfo character, TreeBuildCache cache, Flags flags)
     {
-        if (!character.IsValid())
-            return null;
-
-        var gameObjStruct = (GameObject*)character.Address;
+        var gameObjStruct = character.Address;
         var drawObjStruct = gameObjStruct->GetDrawObject();
         if (drawObjStruct == null)
             return null;
@@ -89,10 +96,11 @@ public class ResourceTreeFactory(
         if (!collectionResolveData.Valid)
             return null;
 
-        var localPlayerRelated = cache.IsLocalPlayerRelated(character);
-        var (name, anonymizedName, related) = GetCharacterName((GameObject*)character.Address);
+        var localPlayerRelated = cache.IsLocalPlayerRelated(character.Address);
+        var (name, anonymizedName, related) = GetCharacterName(character.Address);
         var networked = character.EntityId != 0xE0000000;
-        var tree = new ResourceTree(name, anonymizedName, character.ObjectIndex, (nint)gameObjStruct, (nint)drawObjStruct, localPlayerRelated, related,
+        var tree = new ResourceTree(name, anonymizedName, character.ObjectIndex, (nint)gameObjStruct, (nint)drawObjStruct, localPlayerRelated,
+            related,
             networked, collectionResolveData.ModCollection.Identity.Name, collectionResolveData.ModCollection.Identity.AnonymizedName);
         var globalContext = new GlobalResolveContext(metaFileManager, objectIdentifier, collectionResolveData.ModCollection,
             cache, (flags & Flags.WithUiData) != 0);
@@ -111,6 +119,7 @@ public class ResourceTreeFactory(
             ResolveUiData(tree);
             ResolveModData(tree);
         }
+
         FilterFullPaths(tree, (flags & Flags.RedactExternalPaths) is not 0 ? config.Main.ModDirectory : null);
         Cleanup(tree);
 
@@ -146,7 +155,7 @@ public class ResourceTreeFactory(
         {
             if (node.FullPath.IsRooted && modManager.TryIdentifyPath(node.FullPath.FullName, out var mod, out var relativePath))
             {
-                node.ModName         = mod.Name;
+                node.ModName = mod.Name;
                 node.Mod.SetTarget(mod);
                 node.ModRelativePath = relativePath;
             }
@@ -195,7 +204,7 @@ public class ResourceTreeFactory(
 
     private unsafe (string Name, string AnonymizedName, bool PlayerRelated) GetCharacterName(GameObject* character)
     {
-        var identifier = actors.FromObject(character, out var owner, true, false, false);
+        var identifier    = actors.FromObject(character, out var owner, true, false, false);
         var identifierStr = identifier.ToString();
         return (identifierStr, identifier.Incognito(identifierStr), IsPlayerRelated(identifier, owner));
     }
@@ -216,6 +225,25 @@ public class ResourceTreeFactory(
             IdentifierType.Owned  => IsPlayerRelated(owner.AsObject),
             _                     => false,
         };
+
+    private unsafe struct CharacterInfo(GameObject* address, uint entityId, ushort objectIndex)
+    {
+        public readonly GameObject* Address     = address;
+        public readonly uint        EntityId    = entityId;
+        public readonly ushort      ObjectIndex = objectIndex;
+
+        public static bool TryFromCharacter(ICharacter character, out CharacterInfo info)
+        {
+            if (!character.IsValid())
+            {
+                info = default;
+                return false;
+            }
+
+            info = new CharacterInfo((GameObject*)character.Address, character.EntityId, character.ObjectIndex);
+            return true;
+        }
+    }
 
     [Flags]
     public enum Flags
