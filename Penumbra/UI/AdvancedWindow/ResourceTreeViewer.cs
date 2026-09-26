@@ -154,7 +154,7 @@ public class ResourceTreeViewer(
         if (!gameData.HasModifiedGameDataFiles)
             return;
 
-        using var style = ImGuiColor.Text.Push(ImGuiColors.DalamudOrange);
+        using var style = ImGuiColor.Text.Push(ImGuiColors.WarningForeground);
 
         Im.TextWrapped(
             "Dalamud is reporting your FFXIV installation has modified game files. Any mods installed through TexTools will produce this message."u8);
