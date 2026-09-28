@@ -151,7 +151,7 @@ public sealed class ModSettingsCache : BasicCache
             lastIndex = AddGroup(list, lines, group, currentIndex, 0, parentLineOffset) ?? lastIndex;
         AddSpace(page.Drawing);
 
-        if (!_config.DisplayPages)
+        if (!_config.DisplayPages && VisiblePages.Count > 1)
             AddOutgoingLine(lines, CaretTipSpacing, lastIndex, currentIndex);
     }
 
