@@ -45,7 +45,7 @@ public class ModPanel : IDisposable, IPanel
         _header.Draw();
         Im.Cursor.X += Im.Scroll.X;
         using var child = Im.Child.Begin("Tabs"u8,
-            Im.ContentRegion.Available with { X = Im.Window.MaximumContentRegion.X - Im.Window.MinimumContentRegion.X });
+            Im.ContentRegion.Height(Im.Window.MaximumContentRegion.X - Im.Window.MinimumContentRegion.X));
         if (child)
             _tabs.Draw(_mod);
     }

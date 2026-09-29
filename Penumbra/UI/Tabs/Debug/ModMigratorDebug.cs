@@ -29,7 +29,7 @@ public class ModMigratorDebug(ModManager modManager, ModMigrator migrator) : IUi
             return;
 
         using var list = Im.ListBox.Begin("Backups"u8,
-            Im.ContentRegion.Available with { Y = 6 * Im.Style.TextHeightWithSpacing - Im.Style.ItemSpacing.Y + 2 * Im.Style.FramePadding.Y });
+            Im.ContentRegion.Width(6 * Im.Style.TextHeightWithSpacing - Im.Style.ItemSpacing.Y + 2 * Im.Style.FramePadding.Y));
         if (!list)
             return;
 

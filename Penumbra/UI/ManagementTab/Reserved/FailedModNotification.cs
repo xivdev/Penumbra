@@ -26,7 +26,7 @@ public sealed class FailedModNotification(Services.PenumbraMessager service, UiN
 
     public override void NotificationActions(INotificationDrawArgs args)
     {
-        var width = Im.ContentRegion.Available with { Y = 0 };
+        var width = Im.ContentRegion.Width();
         width.X = (width.X - Im.Style.ItemInnerSpacing.X) / 2;
         if (Im.Button("Open Messages"u8, width))
             navigator.OpenTo(TabType.Messages);

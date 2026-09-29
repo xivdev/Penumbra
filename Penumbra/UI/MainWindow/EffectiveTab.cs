@@ -111,7 +111,7 @@ public sealed class EffectiveTab(
 
             Filter.Filter1.DrawFilter("Filter game path..."u8, new Vector2(_gamePathSize + Im.Style.CellPadding.X, Im.Style.FrameHeight));
             Im.Line.Same(0, _arrowSize + 2 * Im.Style.CellPadding.X);
-            Filter.Filter2.DrawFilter("Filter file path..."u8, Im.ContentRegion.Available with { Y = Im.Style.FrameHeight });
+            Filter.Filter2.DrawFilter("Filter file path..."u8, Im.ContentRegion.Width(Im.Style.FrameHeight));
         }
 
         private void DrawTable()

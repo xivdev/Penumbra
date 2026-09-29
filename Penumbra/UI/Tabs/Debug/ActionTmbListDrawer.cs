@@ -39,7 +39,7 @@ public sealed class ActionTmbListDrawer(SchedulerResourceManagementService servi
         KeyFilter.DrawFilter("Key"u8, Im.ContentRegion.Available);
         using var table = Im.Table.Begin("##table"u8, 2,
             TableFlags.RowBackground | TableFlags.ScrollY | TableFlags.ScrollX | TableFlags.SizingFixedFit,
-            Im.ContentRegion.Available with { Y = 12 * Im.Style.TextHeightWithSpacing });
+            Im.ContentRegion.Width(12 * Im.Style.TextHeightWithSpacing));
         if (!table)
             return;
 

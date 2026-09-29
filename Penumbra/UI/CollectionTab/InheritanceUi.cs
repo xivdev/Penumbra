@@ -35,7 +35,7 @@ public class InheritanceUi(CollectionManager collectionManager, IncognitoService
 
         DrawNewInheritanceSelection();
         Im.Line.Same();
-        if (Im.Button("More Information about Inheritance"u8, Im.ContentRegion.Available with { Y = 0 }))
+        if (Im.Button("More Information about Inheritance"u8, Im.ContentRegion.Width()))
             Im.Popup.Open("InheritanceHelp"u8);
 
         DrawHelpPopup();

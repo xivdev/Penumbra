@@ -184,7 +184,7 @@ public partial class MaterialEditor
         }
 
         Im.Line.Same();
-        using (var childB = Im.Child.Begin("RowB"u8, Im.ContentRegion.Available with { Y = totalHeight }, true, WindowFlags.NoScrollbar))
+        using (var childB = Im.Child.Begin("RowB"u8, Im.ContentRegion.Width(totalHeight), true, WindowFlags.NoScrollbar))
         {
             retB = childB.Success && DrawColorRowEditor(table, dyeTable, in dyePackB, rowBIdx, disabled);
         }
@@ -205,7 +205,7 @@ public partial class MaterialEditor
         var  previewDye = _stainService.GetStainCombo(dye.Channel).CurrentSelection.Id;
         var  dyePack    = _stainService.GudStmFile.GetValueOrNull(dye.Template, previewDye);
 
-        using (var child = Im.Child.Begin("Row"u8, Im.ContentRegion.Available with { Y = totalHeight }, true, WindowFlags.NoScrollbar))
+        using (var child = Im.Child.Begin("Row"u8, Im.ContentRegion.Width(totalHeight), true, WindowFlags.NoScrollbar))
         {
             ret = child.Success && DrawColorRowEditor(table, dyeTable, in dyePack, rowIdx, disabled);
         }
@@ -282,7 +282,7 @@ public partial class MaterialEditor
 
         Im.Line.Same();
         var titleMin    = Im.Cursor.ScreenPosition;
-        var titleRect   = new Rectangle(titleMin, titleMin + Im.ContentRegion.Available with { Y = Im.Style.FrameHeight });
+        var titleRect   = new Rectangle(titleMin, titleMin + Im.ContentRegion.Width(Im.Style.FrameHeight));
         var windowShape = Im.Window.DrawList.Shape;
         windowShape.RectangleFilled(in titleRect, ImGuiColor.Header, Im.Style.FrameRounding);
         if (Im.Style.FrameBorderThickness > 0.0f)
@@ -417,7 +417,7 @@ public partial class MaterialEditor
 
         Im.Line.Same(subColWidth);
         Im.Cursor.ScreenPosition = Im.Cursor.ScreenPosition with { Y = cursorPos.Y + (lineHeight - rightLineHeight) * 0.5f };
-        using (Im.Child.Begin("###TileProperties"u8, Im.ContentRegion.Available with { Y = float.Lerp(rightLineHeight, lineHeight, 0.5f) }))
+        using (Im.Child.Begin("###TileProperties"u8, Im.ContentRegion.Width(float.Lerp(rightLineHeight, lineHeight, 0.5f))))
         {
             Im.Dummy(new Vector2(scalarSize, 0.0f));
             Im.Line.SameInner();

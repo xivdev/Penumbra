@@ -173,7 +173,7 @@ public partial class ShaderPackageEditor
             return;
 
         using var font = Im.Font.PushMono();
-        var       size = Im.ContentRegion.Available with { Y = Im.Style.TextHeight * 20 };
+        var       size = Im.ContentRegion.Width(Im.Style.TextHeight * 20);
         Im.Input.MultiLine(DisassemblyLabel,
             new Span<byte>(shader.Disassembly.RawDisassembly.Path, shader.Disassembly.RawDisassembly.Length + 1), out ulong _, size,
             InputTextFlags.ReadOnly);

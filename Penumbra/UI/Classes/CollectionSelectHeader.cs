@@ -46,7 +46,7 @@ public class CollectionSelectHeader(
         tutorial.OpenTutorial(BasicTutorialSteps.CollectionSelectors);
 
         if (!_activeCollections.CurrentCollectionInUse)
-            ImEx.TextFramed("The currently selected collection is not used in any way."u8, Im.ContentRegion.Available with { Y = 0 },
+            ImEx.TextFramed("The currently selected collection is not used in any way."u8, Im.ContentRegion.Width(),
                 Colors.PressEnterWarningBg);
     }
 
@@ -184,7 +184,7 @@ public class CollectionSelectHeader(
         tutorial.OpenTutorial(BasicTutorialSteps.CollectionSelectors);
 
         if (!_activeCollections.CurrentCollectionInUse)
-            ImEx.TextFramed("The currently selected collection is not used in any way."u8, Im.ContentRegion.Available with { Y = 0 },
+            ImEx.TextFramed("The currently selected collection is not used in any way."u8, Im.ContentRegion.Width(),
                 Colors.PressEnterWarningBg);
     }
 }
