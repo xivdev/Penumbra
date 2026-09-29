@@ -93,8 +93,7 @@ public partial class DeformerEditor
 
     private bool DrawBoneData(bool disabled)
     {
-        using var child = Im.Child.Begin("Data"u8,
-            Im.ContentRegion.Available with { Y = Im.ContentRegion.Maximum.Y - Im.Style.WindowPadding.Y }, true);
+        using var child = Im.Child.Begin("Data"u8, Im.ContentRegion.Width(Im.ContentRegion.Maximum.Y - Im.Style.WindowPadding.Y), true);
         if (!child)
             return false;
 

@@ -519,8 +519,7 @@ public sealed class CollectionPanel(
         {
             Im.Dummy(Vector2.One);
             using var f = _nameFont.Push();
-            ImEx.TextFramed("Collection is not used."u8, Im.ContentRegion.Available with { Y = buttonHeight },
-                Colors.PressEnterWarningBg);
+            ImEx.TextFramed("Collection is not used."u8, Im.ContentRegion.Width(buttonHeight), Colors.PressEnterWarningBg);
             Im.Dummy(Vector2.One);
             Im.Separator();
         }
@@ -553,7 +552,7 @@ public sealed class CollectionPanel(
 
         using (ImStyleDouble.FramePadding.Push(Vector2.Zero))
         {
-            ImEx.TextFramed("In Use By"u8, Im.ContentRegion.Available with { Y = 0 }, 0);
+            ImEx.TextFramed("In Use By"u8, Im.ContentRegion.Width(), 0);
         }
 
         using var style = ImStyleSingle.FrameBorderThickness.Push(Im.Style.GlobalScale)
@@ -582,7 +581,7 @@ public sealed class CollectionPanel(
 
         using (ImStyleDouble.FramePadding.Push(Vector2.Zero))
         {
-            ImEx.TextFramed("Inherited by"u8, Im.ContentRegion.Available with { Y = 0 }, 0);
+            ImEx.TextFramed("Inherited by"u8, Im.ContentRegion.Width(), 0);
         }
 
         using var f     = _nameFont.Push();
@@ -608,7 +607,7 @@ public sealed class CollectionPanel(
     private void DrawSettingsList(ModCollection collection)
     {
         Im.Dummy(Vector2.One);
-        var       size  = Im.ContentRegion.Available with { Y = 10 * Im.Style.FrameHeightWithSpacing };
+        var       size  = Im.ContentRegion.Width(10 * Im.Style.FrameHeightWithSpacing);
         using var table = Im.Table.Begin("##activeSettings"u8, 4, TableFlags.ScrollY | TableFlags.RowBackground, size);
         if (!table)
             return;
@@ -649,12 +648,12 @@ public sealed class CollectionPanel(
         Im.Dummy(Vector2.One);
         if (Im.Button(collection.Settings.Unused.Count > 1
                 ? $"Clear all {collection.Settings.Unused.Count} unused settings from deleted mods."
-                : "Clear the currently unused setting from a deleted mods."u8, Im.ContentRegion.Available with { Y = 0 }))
+                : "Clear the currently unused setting from a deleted mods."u8, Im.ContentRegion.Width()))
             _collections.CleanUnavailableSettings(collection);
 
         Im.Dummy(Vector2.One);
 
-        var size = Im.ContentRegion.Available with { Y = Math.Min(10, collection.Settings.Unused.Count + 1) * Im.Style.FrameHeightWithSpacing };
+        var size = Im.ContentRegion.Width(Math.Min(10, collection.Settings.Unused.Count + 1) * Im.Style.FrameHeightWithSpacing);
         using var table = Im.Table.Begin("##inactiveSettings"u8, 4, TableFlags.ScrollY | TableFlags.RowBackground, size);
         if (!table)
             return;

@@ -43,7 +43,7 @@ public sealed class KnowledgeWindow : Luna.Window
                 _lower = ByteString.FromSpanUnsafe(_filterStore.AsSpan(0, (int)length), true, null, null).AsciiToLowerClone();
         }
 
-        using var child = Im.Child.Begin("KnowledgeSelector"u8, Im.ContentRegion.Available with { X = 200 * Im.Style.GlobalScale }, true);
+        using var child = Im.Child.Begin("KnowledgeSelector"u8, Im.ContentRegion.Height(200 * Im.Style.GlobalScale), true);
         if (!child)
             return;
 
@@ -62,7 +62,7 @@ public sealed class KnowledgeWindow : Luna.Window
         using var group = Im.Group();
         using (ImStyleSingle.FrameRounding.Push(0).Push(ImStyleDouble.ItemSpacing, Vector2.Zero))
         {
-            ImEx.TextFramed(_selected == null ? "No Selection"u8 : _selected.Name, Im.ContentRegion.Available with { Y = 0 });
+            ImEx.TextFramed(_selected == null ? "No Selection"u8 : _selected.Name, Im.ContentRegion.Width());
         }
 
         using var child = Im.Child.Begin("KnowledgeMain"u8, Im.ContentRegion.Available, true);

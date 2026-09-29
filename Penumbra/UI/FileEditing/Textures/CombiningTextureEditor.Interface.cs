@@ -110,7 +110,7 @@ public partial class CombiningTextureEditor
                 return;
 
             using var id = Im.Id.Push(label);
-            ImEx.TextFramed(label, Im.ContentRegion.Available with { Y = 0 }, ImGuiColor.FrameBackground.Get());
+            ImEx.TextFramed(label, Im.ContentRegion.Width(), ImGuiColor.FrameBackground.Get());
             Im.Line.New();
 
             using (Im.Disabled(!_center.SaveTask.IsCompleted))
@@ -276,7 +276,7 @@ public partial class CombiningTextureEditor
             case TaskStatus.WaitingForActivation:
             case TaskStatus.WaitingToRun:
             case TaskStatus.Running:
-                ImEx.TextFramed("Computing..."u8, Im.ContentRegion.Available with { Y = 0 }, Colors.PressEnterWarningBg);
+                ImEx.TextFramed("Computing..."u8, Im.ContentRegion.Width(), Colors.PressEnterWarningBg);
                 break;
             case TaskStatus.Canceled:
             case TaskStatus.Faulted:

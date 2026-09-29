@@ -123,7 +123,7 @@ public class ModPanelSettingsTab(
 
         using var color =
             ImGuiColor.Button.Push(Rgba32.TintColor(Im.Style[ImGuiColor.Button], ColorId.TemporaryModSettingsTint.Vector));
-        var width = Im.ContentRegion.Available with { Y = 0 };
+        var width = Im.ContentRegion.Width();
         if (ImEx.Button($"These settings are temporarily set by {selection.TemporarySettings!.Source}{(_locked ? " and locked." : ".")}",
                 width, _locked))
             collectionManager.Editor.SetTemporarySettings(collectionManager.Active.Current, selection.Mod!, null);
@@ -139,7 +139,7 @@ public class ModPanelSettingsTab(
             return;
 
         using var color = ImGuiColor.Button.Push(Colors.PressEnterWarningBg);
-        var       width = Im.ContentRegion.Available with { Y = 0 };
+        var       width = Im.ContentRegion.Width();
         if (ImEx.Button($"These settings are inherited from {selection.Collection.Identity.Name}.", width, _locked))
         {
             if (_temporary)

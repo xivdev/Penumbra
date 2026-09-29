@@ -67,7 +67,7 @@ public partial class ModelEditor
         if (disabled || Mdl.Version is not MdlFile.V5)
             return;
 
-        if (!ImEx.Button("Update MDL Version from V5 to V6"u8, Colors.PressEnterWarningBg, default, Im.ContentRegion.Available with { Y = 0 },
+        if (!ImEx.Button("Update MDL Version from V5 to V6"u8, Colors.PressEnterWarningBg, default, Im.ContentRegion.Width(),
                 "Try using this if the bone weights of a pre-Dawntrail model seem wrong.\n\nThis is not revertible."u8))
             return;
 
@@ -173,7 +173,7 @@ public partial class ModelEditor
         if (IoExceptions.Count is 0)
             return;
 
-        var size = Im.ContentRegion.Available with { Y = 0 };
+        var size = Im.ContentRegion.Width();
         using var frame = ImEx.FramedGroup("Exceptions"u8, LunaStyle.ErrorIcon, default, StringU8.Empty, ColorParameter.Default,
             LunaStyle.ErrorForeground, size);
 
@@ -200,7 +200,7 @@ public partial class ModelEditor
         if (IoWarnings.Count is 0)
             return;
 
-        var size = Im.ContentRegion.Available with { Y = 0 };
+        var size = Im.ContentRegion.Width();
         using var frame = ImEx.FramedGroup("Warnings"u8, LunaStyle.WarningIcon, default, StringU8.Empty, ColorParameter.Default,
             LunaStyle.WarningForeground, size);
 

@@ -83,7 +83,7 @@ public sealed partial class MaterialEditor : IFileEditor
         if (disabled || Mtrl.IsDawntrail)
             return false;
 
-        if (!ImEx.Button("Update MTRL Version to Dawntrail"u8, Colors.PressEnterWarningBg, default, Im.ContentRegion.Available with { Y = 0 },
+        if (!ImEx.Button("Update MTRL Version to Dawntrail"u8, Colors.PressEnterWarningBg, default, Im.ContentRegion.Width(),
                 "Try using this if the material can not be loaded or should use legacy shaders.\n\nThis is not revertible."u8))
             return false;
 

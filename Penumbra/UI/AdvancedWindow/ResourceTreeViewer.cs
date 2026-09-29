@@ -321,7 +321,7 @@ public class ResourceTreeViewer(
                 0 => "(none)"u8,
                 1 => $"{resourceNode.GamePath}",
                 _ => "(multiple)"u8,
-            }, false, hasGamePaths ? 0 : SelectableFlags.Disabled, Im.ContentRegion.Available with { Y = frameHeight });
+            }, false, hasGamePaths ? 0 : SelectableFlags.Disabled, Im.ContentRegion.Width(frameHeight));
             if (hasGamePaths && Im.Item.Hovered())
             {
                 var allPaths = StringU8.Join((byte)'\n', resourceNode.PossibleGamePaths.AsEnumerable());
@@ -344,7 +344,7 @@ public class ResourceTreeViewer(
                     using var group   = Im.Group();
                     using (ImGuiColor.Text.Push((hasMod ? ColorId.NewMod : ColorId.DisabledMod).Vector))
                     {
-                        Im.Selectable(modName, false, SelectableFlags.AllowOverlap, Im.ContentRegion.Available with { Y = frameHeight });
+                        Im.Selectable(modName, false, SelectableFlags.AllowOverlap, Im.ContentRegion.Width(frameHeight));
                     }
 
                     Im.Line.Same();
@@ -360,12 +360,11 @@ public class ResourceTreeViewer(
                         : -1;
                     if (secondLastDirectorySeparator >= 0)
                         path = $"…{path.AsSpan(secondLastDirectorySeparator)}";
-                    Im.Selectable(path, false, SelectableFlags.AllowOverlap, Im.ContentRegion.Available with { Y = frameHeight });
+                    Im.Selectable(path, false, SelectableFlags.AllowOverlap, Im.ContentRegion.Width(frameHeight));
                 }
                 else
                 {
-                    Im.Selectable(resourceNode.FullPath.ToPath(), false, SelectableFlags.AllowOverlap,
-                        Im.ContentRegion.Available with { Y = frameHeight });
+                    Im.Selectable(resourceNode.FullPath.ToPath(), false, SelectableFlags.AllowOverlap, Im.ContentRegion.Width(frameHeight));
                 }
 
                 if (Im.Item.Clicked())
@@ -380,7 +379,7 @@ public class ResourceTreeViewer(
             else
             {
                 Im.Selectable(GetPathStatusLabel(resourceNode.FullPathStatus), false, SelectableFlags.Disabled,
-                    Im.ContentRegion.Available with { Y = frameHeight });
+                    Im.ContentRegion.Width(frameHeight));
                 Im.Tooltip.OnHover(default,
                     $"{GetPathStatusDescription(resourceNode.FullPathStatus)}{GetAdditionalDataSuffix(resourceNode.AdditionalData)}");
             }

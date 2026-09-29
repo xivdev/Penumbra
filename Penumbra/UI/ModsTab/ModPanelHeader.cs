@@ -39,7 +39,7 @@ public class ModPanelHeader : IDisposable
         var height    = Im.ContentRegion.Available.Y;
         var maxHeight = 3 * height / 4;
         using var child = _lastPreSettingsHeight > maxHeight && _communicator.PreSettingsTabBarDraw.HasSubscribers
-            ? Im.Child.Begin("HeaderChild"u8, Im.ContentRegion.Available with { Y = maxHeight })
+            ? Im.Child.Begin("HeaderChild"u8, Im.ContentRegion.Width(maxHeight))
             : default;
         using (Im.Group())
         {

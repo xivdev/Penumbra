@@ -56,7 +56,7 @@ public sealed unsafe class CmpDrawer(CharacterUtility utility) : IUiService
 
         using var table = Im.Table.Begin("t"u8, 1 + 5 + 32,
             TableFlags.Borders | TableFlags.SizingFixedFit | TableFlags.RowBackground | TableFlags.ScrollX | TableFlags.ScrollY,
-            Im.ContentRegion.Available with { Y = Im.Style.FrameHeightWithSpacing * 10 });
+            Im.ContentRegion.Width(Im.Style.FrameHeightWithSpacing * 10));
         if (!table)
             return;
 
