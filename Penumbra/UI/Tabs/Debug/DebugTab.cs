@@ -51,7 +51,7 @@ public class Diagnostics(ServiceManager provider) : IUiService
         foreach (var type in typeof(ActorManager).Assembly.GetTypes()
                      .Where(t => t is { IsAbstract: false, IsInterface: false } && t.IsAssignableTo(typeof(IAsyncDataContainer))))
         {
-            var container = (IAsyncDataContainer)provider.Provider!.GetRequiredService(type);
+            var container = (IAsyncDataContainer)provider.GetService(type);
             table.DrawColumn(container.Name);
             table.DrawColumn($"{container.Time}");
             table.DrawColumn(FormattingFunctions.HumanReadableSize(container.Memory));
@@ -102,6 +102,7 @@ public sealed class DebugTab : Window, ITab<TabType>
     private readonly FileWatcher.FileWatcherDrawer _fileWatcherDrawer;
     private readonly DragDropManager               _dragDropManager;
     private readonly IpcObjectManager              _ipcObjects;
+    private readonly HookManagerDrawer             _hookManager;
 
     public DebugTab(Configuration config, CollectionManager collectionManager, ObjectManager objects, IDataManager dataManager,
         ValidityChecker validityChecker, ModManager modManager, HttpApi httpApi, ActorManager actors, StainAccessor stains,
@@ -113,7 +114,7 @@ public sealed class DebugTab : Window, ITab<TabType>
         LunaDxTester lunaDxTester, HookOverrideDrawer hookOverrides, RsfService rsfService, GlobalVariablesDrawer globalVariablesDrawer,
         ActionTmbListDrawer actionTmbs, ObjectIdentification objectIdentification, RenderTargetDrawer renderTargetDrawer,
         ModMigratorDebug modMigratorDebug, ShapeInspector shapeInspector, FileWatcher.FileWatcherDrawer fileWatcherDrawer,
-        DragDropManager dragDropManager, IpcObjectManager ipcObjects)
+        DragDropManager dragDropManager, IpcObjectManager ipcObjects, HookManagerDrawer hookManager)
         : base("Penumbra Debug Window", WindowFlags.NoCollapse)
     {
         IsOpen = true;
@@ -160,6 +161,7 @@ public sealed class DebugTab : Window, ITab<TabType>
         _fileWatcherDrawer         = fileWatcherDrawer;
         _dragDropManager           = dragDropManager;
         _ipcObjects                = ipcObjects;
+        _hookManager               = hookManager;
         _objects                   = objects;
         _dataManager               = dataManager;
     }
@@ -188,6 +190,12 @@ public sealed class DebugTab : Window, ITab<TabType>
         DrawDebugTabGeneral();
         _crashHandlerPanel.Draw();
         DebugConfigurationDrawer.Draw();
+        using (var tree = Im.Tree.Node("Hooks"u8))
+        {
+            if (tree)
+                _hookManager.Draw();
+        }
+
         _diagnostics.DrawDiagnostics();
         DrawPerformanceTab();
         DrawPathResolverDebug();
@@ -836,7 +844,7 @@ public sealed class DebugTab : Window, ITab<TabType>
             return;
 
         using var list = Im.ListBox.Begin("##ChangedItemList"u8,
-            Im.ContentRegion.Available with { Y = 8 * Im.Style.TextHeightWithSpacing });
+            Im.ContentRegion.Width(8 * Im.Style.TextHeightWithSpacing));
         if (!list)
             return;
 

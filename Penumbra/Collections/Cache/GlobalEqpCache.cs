@@ -5,7 +5,7 @@ using Penumbra.Mods.Editor;
 
 namespace Penumbra.Collections.Cache;
 
-public class GlobalEqpCache : ReadWriteDictionary<GlobalEqpManipulation, IMod>, Luna.IService
+public sealed class GlobalEqpCache : ReadWriteDictionary<GlobalEqpManipulation, IMod>, IScopedService
 {
     private readonly HashSet<PrimaryId> _doNotHideEarrings  = [];
     private readonly HashSet<PrimaryId> _doNotHideNecklace  = [];

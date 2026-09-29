@@ -1,3 +1,4 @@
+using Luna;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
@@ -18,7 +19,7 @@ public enum RedirectResult
     FilteredGamePath        = 3,
 }
 
-public class TempModManager : IDisposable, Luna.IService
+public sealed class TempModManager : IDisposable, IScopedService
 {
     private readonly CommunicatorService _communicator;
 

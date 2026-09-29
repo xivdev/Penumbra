@@ -30,7 +30,7 @@ public enum ModPathChangeType
     StartingReload,
 }
 
-public sealed class ModManager : ModStorage, IDisposable, IService
+public sealed class ModManager : ModStorage, IDisposable, IScopedService
 {
     private readonly Configuration       _config;
     private readonly CommunicatorService _communicator;

@@ -7,13 +7,13 @@ using Penumbra.Services;
 
 namespace Penumbra.Mods.Manager;
 
-public class ModImportManager(
+public sealed class ModImportManager(
     ModManager modManager,
     Configuration config,
     DuplicateManager duplicates,
     ModNormalizer modNormalizer,
     MigrationManager migrationManager,
-    FileCompactor compactor) : IDisposable, IService
+    FileCompactor compactor) : IDisposable, IScopedService
 {
     private readonly  Dictionary<string, DateTime> _uniqueModsToUnpack = new(StringComparer.OrdinalIgnoreCase);
     internal readonly Queue<UnpackRequest>         ModsToUnpack        = new();

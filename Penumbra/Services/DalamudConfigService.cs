@@ -1,8 +1,9 @@
 using Dalamud.Plugin;
+using Luna;
 
 namespace Penumbra.Services;
 
-public class DalamudConfigService : Luna.IService
+public class DalamudConfigService : ISingletonService
 {
     public DalamudConfigService()
     {

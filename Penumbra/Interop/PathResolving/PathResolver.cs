@@ -8,7 +8,7 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.Interop.PathResolving;
 
-public class PathResolver : IDisposable, Luna.IService
+public sealed class PathResolver : IDisposable, Luna.IScopedService
 {
     private readonly MainConfig        _config;
     private readonly CollectionManager _collectionManager;

@@ -16,7 +16,7 @@ using Penumbra.UI.ManagementTab;
 
 namespace Penumbra.Collections.Cache;
 
-public class CollectionCacheManager : IDisposable, IService
+public sealed class CollectionCacheManager : IDisposable, IScopedService
 {
     private readonly  FrameworkManager          _framework;
     private readonly  CommunicatorService       _communicator;

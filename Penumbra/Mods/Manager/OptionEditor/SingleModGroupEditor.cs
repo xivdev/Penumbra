@@ -9,7 +9,7 @@ using Penumbra.Services;
 namespace Penumbra.Mods.Manager.OptionEditor;
 
 public sealed class SingleModGroupEditor(CommunicatorService communicator, SaveService saveService, Configuration config)
-    : ModOptionEditor<SingleModGroup, SingleSubMod>(communicator, saveService, config), IService
+    : ModOptionEditor<SingleModGroup, SingleSubMod>(communicator, saveService, config), IScopedService
 {
     public void ChangeToMulti(SingleModGroup group)
     {

@@ -4,13 +4,14 @@ using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
+using Luna;
 using Penumbra.GameData;
 using Penumbra.Interop.Hooks.ResourceLoading;
 using Penumbra.Services;
 
 namespace Penumbra.Interop.Hooks.PostProcessing;
 
-public unsafe class RenderTargetHdrEnabler : Luna.IService, IDisposable
+public sealed unsafe class RenderTargetHdrEnabler : IScopedService, IDisposable
 {
     public const bool HdrModeSupported = false;
 

@@ -11,7 +11,7 @@ using Penumbra.String.Classes;
 namespace Penumbra.Services;
 
 public class PenumbraMessager(LunaLogger log, IChatGui chat, INotificationManager notificationManager)
-    : MessageService(log, chat, notificationManager), IService
+    : MessageService(log, chat, notificationManager), ISingletonService
 {
     public void LinkItem(in Item item)
     {

@@ -16,7 +16,7 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.Interop.ResourceTree;
 
-public class ResourceTreeFactory(
+public sealed class ResourceTreeFactory(
     IDataManager gameData,
     ObjectManager objects,
     MetaFileManager metaFileManager,
@@ -26,7 +26,7 @@ public class ResourceTreeFactory(
     ActorManager actors,
     PathState pathState,
     IFramework framework,
-    ModManager modManager) : IService
+    ModManager modManager) : IScopedService
 {
     private static readonly string ParentDirectoryPrefix = $"..{Path.DirectorySeparatorChar}";
 

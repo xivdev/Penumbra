@@ -6,7 +6,7 @@ namespace Penumbra.Interop.Hooks;
 
 #if DEBUG
 
-public sealed unsafe class DebugHook() : IHookService
+public sealed unsafe class DebugHook() : IScopedService, IHookService
 {
     public const string Signature = "";
 

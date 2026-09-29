@@ -6,7 +6,7 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.Mods.Editor;
 
-public class DuplicateManager(ModManager modManager, SaveService saveService) : IService
+public sealed class DuplicateManager(ModManager modManager, SaveService saveService) : IScopedService
 {
     private readonly SHA256                                           _hasher     = SHA256.Create();
     private readonly List<(FullPath[] Paths, long Size, byte[] Hash)> _duplicates = [];

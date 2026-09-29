@@ -7,7 +7,7 @@ using Penumbra.Services;
 
 namespace Penumbra.Mods.Manager.OptionEditor;
 
-public sealed class LayoutManager : IRequiredService, IDisposable
+public sealed class LayoutManager : IScopedService, IRequiredService, IDisposable
 {
     public readonly SaveService         SaveService;
     public readonly CommunicatorService Communicator;

@@ -12,7 +12,7 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.Services;
 
-public class ModMigrator(IDataManager gameData, TextureManager textures) : IService
+public sealed class ModMigrator(IDataManager gameData, TextureManager textures) : IScopedService
 {
     private sealed class FileDataDict : ListDictionary<string, (string GamePath, IModDataContainer Container)>;
 

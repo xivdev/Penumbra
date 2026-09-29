@@ -9,7 +9,7 @@ using TextureResourceHandle = Penumbra.Interop.Structs.TextureResourceHandle;
 
 namespace Penumbra.Interop.Hooks.ResourceLoading;
 
-public sealed unsafe class RsfService : IDisposable, IRequiredService
+public sealed unsafe class RsfService : IDisposable, IScopedService, IRequiredService
 {
     private readonly HookManager _hooks;
 

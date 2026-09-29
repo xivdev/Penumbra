@@ -17,7 +17,7 @@ using Penumbra.Services;
 
 namespace Penumbra.Mods.Settings;
 
-public sealed class SettingPresetManager : IDisposable, IService
+public sealed class SettingPresetManager : IDisposable, IScopedService
 {
     private readonly LocalModDatabase    _database;
     private readonly CommunicatorService _communicator;

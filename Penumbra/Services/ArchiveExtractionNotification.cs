@@ -6,7 +6,7 @@ using Luna;
 namespace Penumbra.Services;
 
 public sealed class ArchiveExtractionNotification(PenumbraMessager messageService)
-    : AmassingNotification<ArchiveExtractionNotification.ArchiveInfo>(messageService), IService
+    : AmassingNotification<ArchiveExtractionNotification.ArchiveInfo>(messageService), IScopedService
 {
     public readonly record struct ArchiveInfo(string ArchiveName, int ModCount);
 

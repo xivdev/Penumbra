@@ -3,7 +3,7 @@ using Penumbra.GameData;
 
 namespace Penumbra.Interop;
 
-public sealed unsafe class CharacterBaseVTables(ISigScanner sigScanner) : Luna.IService
+public sealed unsafe class CharacterBaseVTables(ISigScanner sigScanner) : Luna.ISingletonService
 {
     public readonly nint* HumanVTable     = (nint*)sigScanner.GetStaticAddressFromSig(Sigs.HumanVTable);
     public readonly nint* WeaponVTable    = (nint*)sigScanner.GetStaticAddressFromSig(Sigs.WeaponVTable);

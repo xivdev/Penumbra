@@ -1,6 +1,5 @@
 using ImSharp;
 using Luna;
-using Penumbra.Mods.Groups;
 using Penumbra.Mods.Settings;
 using Penumbra.UI.Classes;
 
@@ -206,7 +205,6 @@ public readonly struct ModSettingDrawNode
                 drawer.SetMultiState(group.Group, false);
         }
     }
-
 
     private bool DrawCheckboxLabel(ModGroupDrawer drawer, ModSettingsCache cache)
     {

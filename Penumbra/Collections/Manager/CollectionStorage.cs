@@ -19,7 +19,7 @@ public readonly record struct LocalCollectionId(int Id) : IAdditionOperators<Loc
         => new(left.Id + right);
 }
 
-public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, IService
+public sealed class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, IScopedService
 {
     private readonly CommunicatorService _communicator;
     private readonly SaveService         _saveService;

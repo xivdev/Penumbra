@@ -1,5 +1,6 @@
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Plugin.Services;
+using Luna;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Interop;
 using Penumbra.Interop.Hooks.Objects;
@@ -7,7 +8,7 @@ using Penumbra.String;
 
 namespace Penumbra.Interop.PathResolving;
 
-public sealed class CutsceneService : Luna.IRequiredService, IDisposable
+public sealed class CutsceneService : IScopedService, IRequiredService, IDisposable
 {
     public const int CutsceneStartIdx = (int)ScreenActor.CutsceneStart;
     public const int CutsceneEndIdx   = (int)ScreenActor.CutsceneEnd;

@@ -2,11 +2,12 @@ using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using FFXIVClientStructs.STD;
 using ImSharp;
+using Luna;
 using Penumbra.Api.Enums;
 
 namespace Penumbra.Interop.Hooks.ResourceLoading;
 
-public unsafe class ResourceManagerService : Luna.IRequiredService
+public sealed unsafe class ResourceManagerService : ISingletonService, IRequiredService
 {
     /// <summary> The SE Resource Manager as pointer. </summary>
     public ResourceManager* ResourceManager
@@ -66,6 +67,7 @@ public unsafe class ResourceManagerService : Luna.IRequiredService
             => IterateExtMap(extMap, (_, resourceMap)
                 => IterateResourceMap(resourceMap, action)));
     }
+
     // Find a key in a StdMap.
     private static TValue* FindInMap<TKey, TValue>(StdMap<TKey, TValue>* map, in TKey key)
         where TKey : unmanaged, IComparable<TKey>

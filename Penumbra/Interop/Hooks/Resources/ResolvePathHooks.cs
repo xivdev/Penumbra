@@ -1,8 +1,10 @@
+using Luna;
 using Penumbra.Interop.PathResolving;
 
 namespace Penumbra.Interop.Hooks.Resources;
 
-public sealed unsafe class ResolvePathHooks(Luna.HookManager hooks, CharacterBaseVTables vTables, PathState pathState) : IDisposable, Luna.IRequiredService
+public sealed unsafe class ResolvePathHooks(HookManager hooks, CharacterBaseVTables vTables, PathState pathState)
+    : IDisposable, IScopedService, IRequiredService
 {
     // @formatter:off
     private readonly ResolvePathHooksBase _human     = new("Human",     hooks, pathState, vTables.HumanVTable,     ResolvePathHooksBase.Type.Human);

@@ -1,14 +1,15 @@
+using Luna;
 using Penumbra.Collections.Cache;
 
 namespace Penumbra.Collections.Manager;
 
-public class CollectionManager(
+public sealed class CollectionManager(
     CollectionStorage storage,
     ActiveCollections active,
     InheritanceManager inheritances,
     CollectionCacheManager caches,
     TempCollectionManager temp,
-    CollectionEditor editor) : Luna.IService
+    CollectionEditor editor) : IScopedService
 {
     public readonly CollectionStorage      Storage      = storage;
     public readonly ActiveCollections      Active       = active;

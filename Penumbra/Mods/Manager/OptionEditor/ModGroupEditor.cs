@@ -44,7 +44,7 @@ public class ModGroupEditor(
     ImcModGroupEditor imcEditor,
     CombiningModGroupEditor combiningEditor,
     CommunicatorService communicator,
-    SaveService saveService) : IService
+    SaveService saveService) : IScopedService
 {
     public SingleModGroupEditor SingleEditor
         => singleEditor;

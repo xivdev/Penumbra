@@ -17,7 +17,7 @@ using ModelRenderer = Penumbra.Interop.Services.ModelRenderer;
 
 namespace Penumbra.Interop.Hooks.PostProcessing;
 
-public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredService
+public sealed unsafe class ShaderReplacementFixer : IDisposable, IScopedService, IRequiredService
 {
     public static ReadOnlySpan<byte> SkinShpkName
         => "skin.shpk"u8;

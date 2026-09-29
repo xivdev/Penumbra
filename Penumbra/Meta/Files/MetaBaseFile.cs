@@ -1,5 +1,3 @@
-using Dalamud.Plugin.Services;
-using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Memory;
 using Luna;
 using Penumbra.GameData;
@@ -9,7 +7,7 @@ using CharacterUtility = Penumbra.Interop.Services.CharacterUtility;
 
 namespace Penumbra.Meta.Files;
 
-public unsafe interface IFileAllocator
+public unsafe interface IFileAllocator : ISingletonService
 {
     public T*   Allocate<T>(int length, int alignment = 1) where T : unmanaged;
     public void Release<T>(ref T* pointer, int length) where T : unmanaged;
@@ -41,7 +39,7 @@ public sealed class MarshalAllocator : IFileAllocator
     }
 }
 
-public sealed unsafe class XivFileAllocator(HookManager provider) : IFileAllocator, IService
+public sealed unsafe class XivFileAllocator(HookManager provider) : IFileAllocator
 {
     /// <summary>
     /// Allocate in the games space for file storage.
@@ -68,7 +66,7 @@ public sealed unsafe class XivFileAllocator(HookManager provider) : IFileAllocat
     }
 }
 
-public sealed unsafe class XivDefaultAllocator : IFileAllocator, IService
+public sealed unsafe class XivDefaultAllocator : IFileAllocator
 {
     public T* Allocate<T>(int length, int alignment = 1) where T : unmanaged
     {

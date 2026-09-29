@@ -1,6 +1,5 @@
 using System.Collections.Frozen;
 using Dalamud.Plugin.Services;
-using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Scheduler.Resource;
 using Lumina.Excel.Sheets;
 using Luna;
@@ -12,7 +11,7 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.Interop.Services;
 
-public unsafe class SchedulerResourceManagementService : IService, IDisposable
+public sealed unsafe class SchedulerResourceManagementService : IScopedService, IDisposable
 {
     private static readonly CiByteString TmbExtension = new(".tmb"u8, MetaDataComputation.All);
     private static readonly CiByteString FolderPrefix = new("chara/action/"u8, MetaDataComputation.All);

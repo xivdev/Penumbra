@@ -1,3 +1,4 @@
+using Luna;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
@@ -13,7 +14,7 @@ namespace Penumbra.Interop.PathResolving;
 /// Those are loaded synchronously.
 /// Thus, we need to ensure the correct files are loaded when a material is loaded.
 /// </summary>
-public sealed unsafe class SubfileHelper : IDisposable, IReadOnlyCollection<KeyValuePair<nint, ResolveData>>, Luna.IService
+public sealed unsafe class SubfileHelper : IDisposable, IReadOnlyCollection<KeyValuePair<nint, ResolveData>>, IScopedService
 {
     private readonly GameState                _gameState;
     private readonly ResourceLoader           _loader;

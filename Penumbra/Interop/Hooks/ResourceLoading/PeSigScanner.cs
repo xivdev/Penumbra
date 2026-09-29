@@ -1,4 +1,4 @@
-﻿using System.IO.MemoryMappedFiles;
+using System.IO.MemoryMappedFiles;
 using Iced.Intel;
 using PeNet;
 using Decoder = Iced.Intel.Decoder;
@@ -6,7 +6,7 @@ using Decoder = Iced.Intel.Decoder;
 namespace Penumbra.Interop.Hooks.ResourceLoading;
 
 // A good chunk of this was blatantly stolen from Dalamud's SigScanner 'cause Winter could not be faffed, Winter will definitely not rewrite it later
-public unsafe class PeSigScanner : IDisposable, Luna.IService
+public sealed unsafe class PeSigScanner : IDisposable, Luna.ISingletonService
 {
     private readonly MemoryMappedFile         _file;
     private readonly MemoryMappedViewAccessor _textSection;

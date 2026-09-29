@@ -12,7 +12,7 @@ using FileMode = Penumbra.Interop.Structs.FileMode;
 
 namespace Penumbra.Interop.Hooks.ResourceLoading;
 
-public unsafe class ResourceLoader : IDisposable, IService
+public sealed unsafe class ResourceLoader : IDisposable, IScopedService
 {
     private readonly ResourceService          _resources;
     private readonly FileReadService          _fileReadService;
@@ -31,8 +31,7 @@ public unsafe class ResourceLoader : IDisposable, IService
         => _ongoingLoads;
 
     public ResourceLoader(ResourceService resources, FileReadService fileReadService, RsfService rsfService, Configuration config,
-        PeSigScanner sigScanner,
-        ResourceHandleDestructor destructor)
+        PeSigScanner sigScanner, ResourceHandleDestructor destructor)
     {
         _resources       = resources;
         _fileReadService = fileReadService;

@@ -13,7 +13,7 @@ using Penumbra.Mods.Manager;
 namespace Penumbra.Services;
 
 public sealed class PenumbraSupportInfo(IPluginLoader mainLoader)
-    : SupportInfoProvider(mainLoader), IService
+    : SupportInfoProvider(mainLoader), ISingletonService
 {
     /// <summary> The longest support button text. </summary>
     public static ReadOnlySpan<byte> SupportInfoButtonText

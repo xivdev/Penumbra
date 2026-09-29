@@ -1,4 +1,3 @@
-using Dalamud.Plugin.Services;
 using ImSharp;
 using Luna;
 using Penumbra.GameData.DataContainers;
@@ -6,8 +5,6 @@ using Penumbra.GameData.Files;
 using Penumbra.GameData.Files.StainMapStructs;
 using Penumbra.GameData.Interop;
 using Penumbra.GameData.Structs;
-using Penumbra.Interop.Services;
-using Penumbra.Interop.Structs;
 using Penumbra.UI.FileEditing.Materials;
 
 namespace Penumbra.Services;
@@ -178,7 +175,7 @@ public sealed class StainTemplateCombo<TDyePack> : FilterComboBase<StainTemplate
     }
 }
 
-public class StainService : IService
+public sealed class StainService : ISingletonService
 {
     public const int VanillaChannelCount = 2;
     public const int ChannelCount        = 4;

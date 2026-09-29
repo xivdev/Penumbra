@@ -25,7 +25,7 @@ public partial class ModCreator(
     MetaFileManager metaFileManager,
     GamePathParser gamePathParser,
     LocalModDatabase localModDatabase,
-    FailedModNotification failedMod) : IService
+    FailedModNotification failedMod) : IScopedService
 {
     public const    FeatureFlags          SupportedFeatures = FeatureFlags.Atch | FeatureFlags.Shp | FeatureFlags.Atr;
     public readonly Configuration         Config            = config;

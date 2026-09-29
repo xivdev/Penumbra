@@ -2,7 +2,7 @@ using Luna;
 
 namespace Penumbra;
 
-public class Configuration(
+public sealed class Configuration(
     MainConfig main,
     EditingConfig editing,
     AdvancedConfig advanced,
@@ -10,7 +10,7 @@ public class Configuration(
     IoConfig io,
     UiConfig ui,
     EphemeralConfig ephemeral,
-    FilterConfig filters) : IService
+    FilterConfig filters) : IScopedService
 {
     public readonly MainConfig      Main      = main;
     public readonly EditingConfig   Editing   = editing;

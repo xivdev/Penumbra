@@ -17,7 +17,7 @@ using ObjectKind = Dalamud.Game.ClientState.Objects.Enums.ObjectKind;
 
 namespace Penumbra.Interop.Services;
 
-public unsafe partial class RedrawService : Luna.IService
+public sealed unsafe partial class RedrawService : Luna.IScopedService
 {
     public const int GPosePlayerIdx = 201;
     public const int GPoseSlots     = 42;

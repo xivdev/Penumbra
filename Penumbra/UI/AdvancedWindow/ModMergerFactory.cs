@@ -14,7 +14,7 @@ public sealed class ModMergerFactory(
     DuplicateManager duplicates,
     CommunicatorService communicator,
     ModCreator creator,
-    Configuration config) : IService
+    Configuration config) : IScopedService
 {
     public ModMerger CreateMerger(ModEditor editor)
         => new(manager, groupEditor, duplicates, communicator, creator, config, editor);

@@ -19,7 +19,7 @@ public sealed class TextureManager(
     IUiBuilder uiBuilder,
     IFramework framework,
     Configuration configuration)
-    : SingleTaskQueue, IDisposable, IService
+    : SingleTaskQueue, IDisposable, IScopedService
 {
     private readonly LunaLogger       _logger  = logger;
     public readonly  ITextureProvider Provider = textureProvider;

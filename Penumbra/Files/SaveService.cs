@@ -11,7 +11,7 @@ namespace Penumbra.Files;
 public interface ISavable : ISavable<FilenameService>
 { }
 
-public sealed class SaveService : BaseSaveService<FilenameService>, IService
+public sealed class SaveService : BaseSaveService<FilenameService>, IScopedService
 {
     public SaveService(LunaLogger log, FrameworkManager framework, FilenameService fileNames, BackupService backupService)
         : base(log, framework, fileNames, backupService.Awaiter)

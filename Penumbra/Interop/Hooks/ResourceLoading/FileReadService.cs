@@ -5,7 +5,7 @@ using Penumbra.Interop.Structs;
 
 namespace Penumbra.Interop.Hooks.ResourceLoading;
 
-public sealed unsafe class FileReadService : IDisposable, IRequiredService
+public sealed unsafe class FileReadService : IDisposable, IScopedService, IRequiredService
 {
     private readonly HookManager _hooks;
 

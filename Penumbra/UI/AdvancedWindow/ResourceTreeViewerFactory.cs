@@ -8,7 +8,7 @@ using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.AdvancedWindow;
 
-public class ResourceTreeViewerFactory(
+public sealed class ResourceTreeViewerFactory(
     Configuration config,
     ResourceTreeFactory treeFactory,
     ChangedItemDrawer changedItemDrawer,
@@ -17,7 +17,7 @@ public class ResourceTreeViewerFactory(
     IDataManager gameData,
     FileDialogService fileDialog,
     FileCompactor compactor,
-    UiNavigator navigator) : IService
+    UiNavigator navigator) : IScopedService
 {
     public ResourceTreeViewer Create(int actionCapacity, Action onRefresh, Action<ResourceNode, IWritable?, Vector2> drawActions)
         => new(config, treeFactory, changedItemDrawer, incognito, actionCapacity, onRefresh, drawActions, pcpService, gameData,

@@ -1,11 +1,12 @@
+using Luna;
 using Penumbra.Collections.Manager;
 using Penumbra.Files;
 using Penumbra.Mods.Manager;
 
 namespace Penumbra.Services;
 
-public class CleanupService(SaveService saveService, ModManager mods, CollectionManager collections, LocalModDatabase modDatabase)
-    : Luna.IService
+public sealed class CleanupService(SaveService saveService, ModManager mods, CollectionManager collections, LocalModDatabase modDatabase)
+    : IScopedService
 {
     private CancellationTokenSource _cancel = new();
     private Task?                   _task;
@@ -28,9 +29,9 @@ public class CleanupService(SaveService saveService, ModManager mods, Collection
         _cancel  = new CancellationTokenSource();
         _task = Task.Run(() =>
         {
-            var       count   = 0;
-            var       entries = modDatabase.GetIds();
-            var       step    = 0.9 / entries.Count;
+            var count   = 0;
+            var entries = modDatabase.GetIds();
+            var step    = 0.9 / entries.Count;
             Progress = 0.1;
             using (modDatabase.Transaction())
             {

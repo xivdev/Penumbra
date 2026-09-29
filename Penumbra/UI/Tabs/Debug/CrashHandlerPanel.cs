@@ -1,12 +1,13 @@
 using System.Text.Json;
 using Dalamud.Interface.DragDrop;
 using ImSharp;
+using Luna;
 using Penumbra.CrashHandler;
 using Penumbra.Services;
 
 namespace Penumbra.UI.Tabs.Debug;
 
-public class CrashHandlerPanel(CrashHandlerService service, Configuration config, IDragDropManager dragDrop) : Luna.IService
+public sealed class CrashHandlerPanel(CrashHandlerService service, Configuration config, IDragDropManager dragDrop) : IScopedService
 {
     private CrashData? _lastDump;
     private string     _lastLoadedFile = string.Empty;

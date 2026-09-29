@@ -12,12 +12,12 @@ using Penumbra.UI.ModsTab.Selector;
 
 namespace Penumbra;
 
-public class ConfigMigrationService(
+public sealed class ConfigMigrationService(
     SaveService saveService,
     PenumbraMessager messages,
     Configuration config,
     BackupService backupService,
-    LocalModDatabase localModDatabase) : IService
+    LocalModDatabase localModDatabase) : IScopedService
 {
     public void MigrateOldConfigStyle()
     {

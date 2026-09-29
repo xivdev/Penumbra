@@ -3,7 +3,7 @@ using Penumbra.Communication;
 
 namespace Penumbra.Services;
 
-public class CommunicatorService(ServiceManager services) : IService
+public class CommunicatorService(ServiceManager services) : IScopedService
 {
     /// <inheritdoc cref="Communication.CollectionRename"/>
     public readonly CollectionRename CollectionRename = services.GetService<CollectionRename>();

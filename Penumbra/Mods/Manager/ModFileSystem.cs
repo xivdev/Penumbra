@@ -6,7 +6,7 @@ using Penumbra.Services;
 
 namespace Penumbra.Mods.Manager;
 
-public sealed class ModFileSystem : BaseFileSystem, IDisposable, IRequiredService
+public sealed class ModFileSystem : BaseFileSystem, IDisposable, IScopedService, IRequiredService
 {
     private readonly IoConfig            _config;
     private readonly CommunicatorService _communicator;

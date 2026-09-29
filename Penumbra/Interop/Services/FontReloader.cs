@@ -1,14 +1,15 @@
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using Luna;
 
 namespace Penumbra.Interop.Services;
 
 /// <summary>
 /// Handle font reloading via game functions.
-/// May cause a interface flicker while reloading.
+/// May cause an interface flicker while reloading.
 /// </summary>
-public unsafe class FontReloader : Luna.IService
+public unsafe class FontReloader : ISingletonService
 {
     public bool Valid
         => _reloadFontsFunc != null;
@@ -29,19 +30,20 @@ public unsafe class FontReloader : Luna.IService
         dFramework.RunOnFrameworkThread(() =>
         {
             var framework = Framework.Instance();
-            if (framework == null)
+            if (framework is null)
                 return;
 
             var uiModule = framework->GetUIModule();
-            if (uiModule == null)
+            if (uiModule is null)
                 return;
 
             var atkModule = uiModule->GetRaptureAtkModule();
-            if (atkModule == null)
+            if (atkModule is null)
                 return;
 
-            _atkModule       = &atkModule->AtkModule;
-            _reloadFontsFunc = ((delegate* unmanaged<AtkModule*, bool, bool, void>*)_atkModule->VirtualTable)[VolatileOffsets.FontReloader.ReloadFontsVFunc];
+            _atkModule = &atkModule->AtkModule;
+            _reloadFontsFunc =
+                ((delegate* unmanaged<AtkModule*, bool, bool, void>*)_atkModule->VirtualTable)[VolatileOffsets.FontReloader.ReloadFontsVFunc];
         });
     }
 }

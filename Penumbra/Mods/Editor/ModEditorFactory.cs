@@ -6,14 +6,14 @@ using Penumbra.Services;
 
 namespace Penumbra.Mods.Editor;
 
-public class ModEditorFactory(
+public sealed class ModEditorFactory(
     ModNormalizer modNormalizer,
     ModGroupEditor groupEditor,
     MetaFileManager metaFileManager,
     ModManager modManager,
     CommunicatorService communicator,
     DuplicateManager duplicates,
-    FileCompactor compactor) : IService
+    FileCompactor compactor) : IScopedService
 {
     public ModEditor Create()
     {

@@ -13,7 +13,7 @@ using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManage
 
 namespace Penumbra.Meta;
 
-public class MetaFileManager : IService
+public sealed class MetaFileManager : IScopedService
 {
     internal readonly Configuration           Config;
     internal readonly CharacterUtility        CharacterUtility;

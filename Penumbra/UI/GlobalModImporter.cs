@@ -6,7 +6,7 @@ using Penumbra.Mods.Manager;
 
 namespace Penumbra.UI;
 
-public sealed class GlobalModImporter : IRequiredService, IDisposable
+public sealed class GlobalModImporter : IScopedService, IRequiredService, IDisposable
 {
     public const     string           DragDropId = "ModDragDrop";
     private readonly DragDropManager  _dragDropManager;

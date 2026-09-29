@@ -1,11 +1,12 @@
 using System.Collections.Frozen;
 using Dalamud.Plugin.Services;
+using Luna;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Files;
 
 namespace Penumbra.Meta;
 
-public sealed unsafe class AtchManager : Luna.IService
+public sealed unsafe class AtchManager : ISingletonService
 {
     private static readonly IReadOnlyList<GenderRace> GenderRaces =
     [

@@ -1,3 +1,4 @@
+using Luna;
 using Penumbra.Collections.Cache;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Interop;
@@ -7,7 +8,7 @@ using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Meta;
 
-public unsafe class ShapeAttributeManager : Luna.IRequiredService, IDisposable
+public sealed unsafe class ShapeAttributeManager : IScopedService, IRequiredService, IDisposable
 {
     public const     int           NumSlots      = 14;
     public const     int           ModelSlotSize = 18;

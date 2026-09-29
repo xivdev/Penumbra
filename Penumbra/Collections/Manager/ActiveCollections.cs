@@ -11,7 +11,7 @@ using Penumbra.Services;
 
 namespace Penumbra.Collections.Manager;
 
-public class ActiveCollectionData : IService
+public sealed class ActiveCollectionData : IScopedService
 {
     public ModCollection Current   { get; internal set; } = ModCollection.Empty;
     public ModCollection Default   { get; internal set; } = ModCollection.Empty;
@@ -20,7 +20,7 @@ public class ActiveCollectionData : IService
     public readonly ModCollection?[] SpecialCollections = new ModCollection?[Api.Enums.ApiCollectionType.Values.Count - 3];
 }
 
-public class ActiveCollections : ISavable, IDisposable, IService
+public sealed class ActiveCollections : ISavable, IDisposable, IScopedService
 {
     public const int Version = 2;
 

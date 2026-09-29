@@ -7,7 +7,7 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.UI.ManagementTab;
 
-public sealed class ReservedFiles(ModGroupEditor editor, ManagementLog<ReservedFiles> log) : IService
+public sealed class ReservedFiles(ModGroupEditor editor, ManagementLog<ReservedFiles> log) : IScopedService
 {
     public static readonly FrozenDictionary<uint, CiByteString> Files = (((uint, CiByteString)[])
     [

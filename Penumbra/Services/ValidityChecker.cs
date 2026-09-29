@@ -4,7 +4,7 @@ using Luna;
 
 namespace Penumbra.Services;
 
-public class ValidityChecker : IService
+public class ValidityChecker : ISingletonService
 {
     public const string Repository      = "https://raw.githubusercontent.com/xivdev/Penumbra/master/repo.json";
     public const string SeaOfStars      = "https://raw.githubusercontent.com/Ottermandias/SeaOfStars/main/repo.json";

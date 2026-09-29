@@ -1,4 +1,5 @@
 using Dalamud.Plugin.Services;
+using Luna;
 using Penumbra.GameData.Interop;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.Hooks.Objects;
@@ -6,7 +7,7 @@ using Object = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.Object;
 
 namespace Penumbra.Interop.PathResolving;
 
-public sealed class DrawObjectState : IDisposable, IReadOnlyDictionary<Model, (Actor, ObjectIndex, bool)>, Luna.IService
+public sealed class DrawObjectState : IDisposable, IReadOnlyDictionary<Model, (Actor, ObjectIndex, bool)>, IScopedService
 {
     private readonly ObjectManager           _objects;
     private readonly CreateCharacterBase     _createCharacterBase;
@@ -58,7 +59,8 @@ public sealed class DrawObjectState : IDisposable, IReadOnlyDictionary<Model, (A
         var currentObject = _objects[gameObject.Item2];
         if (currentObject != gameObject.Item1)
         {
-            Penumbra.Log.Warning($"[DrawObjectState] Stored association {drawObject} -> {gameObject.Item1} has index {gameObject.Item2}, which resolves to {currentObject}.");
+            Penumbra.Log.Warning(
+                $"[DrawObjectState] Stored association {drawObject} -> {gameObject.Item1} has index {gameObject.Item2}, which resolves to {currentObject}.");
 
             return false;
         }
@@ -93,8 +95,8 @@ public sealed class DrawObjectState : IDisposable, IReadOnlyDictionary<Model, (A
         if (!arguments.Character.Valid)
             return;
 
-        var delete    = stackalloc nint[5];
-        var current   = 0;
+        var delete  = stackalloc nint[5];
+        var current = 0;
         foreach (var (drawObject, (gameObject, _, _)) in _drawObjectToGameObject)
         {
             if (gameObject != arguments.Character.Address)

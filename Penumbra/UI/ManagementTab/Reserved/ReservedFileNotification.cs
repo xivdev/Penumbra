@@ -12,7 +12,7 @@ namespace Penumbra.UI.ManagementTab;
 public sealed class ReservedFileNotification(
     Services.PenumbraMessager service,
     UiNavigator navigator)
-    : AmassingNotification<(string Path, string Mod)>(service), IService
+    : AmassingNotification<(string Path, string Mod)>(service), IScopedService
 {
     public bool IsRedirectionSupported(Utf8GamePath path, IMod mod, bool temporaryCollection)
     {

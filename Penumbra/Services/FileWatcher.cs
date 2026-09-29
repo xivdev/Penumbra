@@ -8,7 +8,7 @@ using ZipArchive = SharpCompress.Archives.Zip.ZipArchive;
 
 namespace Penumbra.Services;
 
-public sealed class FileWatcher : IDisposable, IService
+public sealed class FileWatcher : IDisposable, IScopedService
 {
     private readonly ConcurrentSet<string>              _pending           = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, long> _ignored           = new(StringComparer.OrdinalIgnoreCase);

@@ -26,7 +26,7 @@ public sealed class ModelManager(
     MetaFileManager metaFileManager,
     ActiveCollections collections,
     GamePathParser parser)
-    : SingleTaskQueue, IDisposable, IService
+    : SingleTaskQueue, IDisposable, IScopedService
 {
     public readonly  LunaLogger Log        = log;
     private readonly IFramework _framework = framework;

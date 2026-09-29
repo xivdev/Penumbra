@@ -5,7 +5,7 @@ using Penumbra.Services;
 
 namespace Penumbra.Interop.Services;
 
-public unsafe class ResidentResourceManager : IRequiredService, IDisposable
+public sealed unsafe class ResidentResourceManager : IScopedService, IRequiredService, IDisposable
 {
     private readonly CommunicatorService _communicator;
     private readonly CharacterUtility    _utility;

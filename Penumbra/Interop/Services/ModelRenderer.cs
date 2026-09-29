@@ -1,11 +1,12 @@
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
+using Luna;
 using ModelRendererData = FFXIVClientStructs.FFXIV.Client.Graphics.Render.ModelRenderer;
 
 namespace Penumbra.Interop.Services;
 
-public unsafe class ModelRenderer : IDisposable, Luna.IRequiredService
+public sealed unsafe class ModelRenderer : IDisposable, IScopedService, IRequiredService
 {
     public bool Ready { get; private set; }
 
@@ -54,8 +55,9 @@ public unsafe class ModelRenderer : IDisposable, Luna.IRequiredService
     public ShaderPackageResourceHandle** HairMaskShaderPackage
         => Address switch
         {
-            null     => null,
-            var data => &data->CharacterOcclusionShaderPackage, // TODO 20260824 check if this still exists? &data->HairMaskShaderPackage, otherwise remove
+            null => null,
+            var data =>
+                &data->CharacterOcclusionShaderPackage, // TODO 20260824 check if this still exists? &data->HairMaskShaderPackage, otherwise remove
         };
 
     public ShaderPackageResourceHandle* DefaultIrisShaderPackage { get; private set; }

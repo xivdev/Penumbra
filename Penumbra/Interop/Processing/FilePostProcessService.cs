@@ -1,4 +1,5 @@
 using System.Collections.Frozen;
+using Luna;
 using Penumbra.Api.Enums;
 using Penumbra.Interop.Hooks.ResourceLoading;
 using Penumbra.Interop.Structs;
@@ -7,18 +8,18 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.Interop.Processing;
 
-public interface IFilePostProcessor : Luna.IService
+public interface IFilePostProcessor : IScopedService
 {
     public        ResourceType Type { get; }
     public unsafe void         PostProcess(ResourceHandle* resource, CiByteString originalGamePath, ReadOnlySpan<byte> additionalData);
 }
 
-public unsafe class FilePostProcessService : Luna.IRequiredService, IDisposable
+public unsafe class FilePostProcessService : IScopedService, IRequiredService, IDisposable
 {
     private readonly ResourceLoader                                     _resourceLoader;
     private readonly FrozenDictionary<ResourceType, IFilePostProcessor> _processors;
 
-    public FilePostProcessService(ResourceLoader resourceLoader, Luna.ServiceManager services)
+    public FilePostProcessService(ResourceLoader resourceLoader, ServiceManager services)
     {
         _resourceLoader                        =  resourceLoader;
         _processors                            =  services.GetServicesImplementing<IFilePostProcessor>().ToFrozenDictionary(s => s.Type, s => s);
@@ -26,9 +27,7 @@ public unsafe class FilePostProcessService : Luna.IRequiredService, IDisposable
     }
 
     public void Dispose()
-    {
-        _resourceLoader.BeforeResourceComplete -= OnBeforeResourceComplete;
-    }
+        => _resourceLoader.BeforeResourceComplete -= OnBeforeResourceComplete;
 
     private void OnBeforeResourceComplete(ResourceHandle* resource, CiByteString path, Utf8GamePath original,
         ReadOnlySpan<byte> additionalData, bool isAsync)

@@ -7,7 +7,7 @@ using Penumbra.Util;
 
 namespace Penumbra.Mods.Manager;
 
-public class ModCacheManager : IDisposable, IRequiredService
+public class ModCacheManager : IDisposable, IScopedService, IRequiredService
 {
     private readonly UiConfig             _config;
     private readonly CommunicatorService  _communicator;

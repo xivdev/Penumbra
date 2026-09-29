@@ -11,7 +11,7 @@ using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.ModsTab.Selector;
 
-public sealed class ModFileSystemCache : FileSystemCache<ModFileSystemCache.ModData>, IService
+public sealed class ModFileSystemCache : FileSystemCache<ModFileSystemCache.ModData>
 {
     private new ModFileSystemDrawer Parent
         => (ModFileSystemDrawer)base.Parent;
@@ -183,7 +183,8 @@ public sealed class ModFileSystemCache : FileSystemCache<ModFileSystemCache.ModD
 
             modManager.SetKnown(Node.Value);
             var (setting, collection) = collectionManager.Active.Current.GetActualSettings(Node.Value.Index);
-            if (LunaStyle.Modifier.Destructive.Modifier.ForcedModifier(new DoubleModifier(ModifierHotkey.Control, ModifierHotkey.Shift)).IsActive())
+            if (LunaStyle.Modifier.Destructive.Modifier.ForcedModifier(new DoubleModifier(ModifierHotkey.Control, ModifierHotkey.Shift))
+                .IsActive())
             {
                 // Delete temporary settings if they exist, regardless of mode, or set to inheriting if none exist.
                 if (collectionManager.Active.Current.GetTempSettings(Node.Value.Index) is not null)

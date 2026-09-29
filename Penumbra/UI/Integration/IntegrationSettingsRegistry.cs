@@ -5,7 +5,7 @@ using Penumbra.Api.Enums;
 
 namespace Penumbra.UI.Integration;
 
-public sealed class IntegrationSettingsRegistry : IService, IDisposable
+public sealed class IntegrationSettingsRegistry : IScopedService, IDisposable
 {
     private readonly IDalamudPluginInterface _pluginInterface;
 

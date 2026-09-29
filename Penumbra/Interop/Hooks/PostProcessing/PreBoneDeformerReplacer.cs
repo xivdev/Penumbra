@@ -12,7 +12,7 @@ using CharacterUtility = Penumbra.Interop.Services.CharacterUtility;
 
 namespace Penumbra.Interop.Hooks.PostProcessing;
 
-public sealed unsafe class PreBoneDeformerReplacer : IDisposable, Luna.IRequiredService
+public sealed unsafe class PreBoneDeformerReplacer : IDisposable, IScopedService, IRequiredService
 {
     public static readonly Utf8GamePath PreBoneDeformerPath =
         Utf8GamePath.FromSpan("chara/xls/boneDeformer/human.pbd"u8, MetaDataComputation.All, out var p) ? p : Utf8GamePath.Empty;

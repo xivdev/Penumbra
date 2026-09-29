@@ -1,10 +1,11 @@
+using Luna;
 using Penumbra.Communication;
 using Penumbra.Mods.Editor;
 using Penumbra.Services;
 
 namespace Penumbra.Mods.Manager;
 
-public class ModExportManager : IDisposable, Luna.IService
+public class ModExportManager : IDisposable, IScopedService
 {
     private readonly IoConfig            _config;
     private readonly CommunicatorService _communicator;

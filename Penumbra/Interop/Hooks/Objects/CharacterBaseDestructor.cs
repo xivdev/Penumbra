@@ -5,8 +5,7 @@ using Penumbra.GameData.Interop;
 
 namespace Penumbra.Interop.Hooks.Objects;
 
-public sealed unsafe class CharacterBaseDestructor : EventBase<CharacterBaseDestructor.Arguments, CharacterBaseDestructor.Priority>,
-    IHookService
+public sealed unsafe class CharacterBaseDestructor : EventBase<CharacterBaseDestructor.Arguments, CharacterBaseDestructor.Priority>, IHookService
 {
     public enum Priority
     {

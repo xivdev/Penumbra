@@ -20,7 +20,6 @@ using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.UI;
 using Penumbra.UI.AdvancedWindow;
-using Penumbra.UI.MainWindow;
 using Penumbra.UI.ManagementTab;
 using MouseButton = Penumbra.Api.Enums.MouseButton;
 
@@ -65,9 +64,9 @@ public sealed class Penumbra : IPluginDefinition<Penumbra>, IAsyncDisposable
 
     public static Task InitializeLoggingAsync(PluginLoader<Penumbra> loader, CancellationToken cancel)
     {
-        Log                       = loader.Log;
-        Messager                  = loader.Services.GetService<PenumbraMessager>();
-        Dynamis                   = loader.Services.GetService<DynamisIpc>();
+        Log      = loader.Log;
+        Messager = loader.Services.GetService<PenumbraMessager>();
+        Dynamis  = loader.Services.GetService<DynamisIpc>();
         return Task.CompletedTask;
     }
 
@@ -92,6 +91,7 @@ public sealed class Penumbra : IPluginDefinition<Penumbra>, IAsyncDisposable
         return Task.Run(() =>
         {
             loader.Services.GetService<ConfigMigrationService>().MigrateOldConfigStyle();
+            cancel.ThrowIfCancellationRequested();
             loader.Services.GetService<Configuration>();
         }, cancel);
     }
@@ -100,10 +100,14 @@ public sealed class Penumbra : IPluginDefinition<Penumbra>, IAsyncDisposable
     {
         return Task.Run(() =>
         {
-            var tempModManager        = loader.Services.GetService<TempModManager>();
-            var modManager            = loader.Services.GetService<ModManager>();
-            var collectionManager     = loader.Services.GetService<CollectionManager>();
+            var tempModManager = loader.Services.GetService<TempModManager>();
+            cancel.ThrowIfCancellationRequested();
+            var modManager = loader.Services.GetService<ModManager>();
+            cancel.ThrowIfCancellationRequested();
+            var collectionManager = loader.Services.GetService<CollectionManager>();
+            cancel.ThrowIfCancellationRequested();
             var tempCollectionManager = loader.Services.GetService<TempCollectionManager>();
+            cancel.ThrowIfCancellationRequested();
             collectionManager.Caches.CreateNecessaryCaches();
         }, cancel);
     }
@@ -112,23 +116,30 @@ public sealed class Penumbra : IPluginDefinition<Penumbra>, IAsyncDisposable
     {
         return Task.Run(() =>
         {
-            var characterUtility  = loader.Services.GetService<CharacterUtility>();
+            var characterUtility = loader.Services.GetService<CharacterUtility>();
+            cancel.ThrowIfCancellationRequested();
             var residentResources = loader.Services.GetService<ResidentResourceManager>();
-            var redrawService     = loader.Services.GetService<RedrawService>();
-            var resolver          = loader.Services.GetService<PathResolver>();
-            loader.Services.EnsureRequiredServices();
+            cancel.ThrowIfCancellationRequested();
+            var redrawService = loader.Services.GetService<RedrawService>();
+            cancel.ThrowIfCancellationRequested();
+            var resolver = loader.Services.GetService<PathResolver>();
+            cancel.ThrowIfCancellationRequested();
+            loader.Services.EnsureRequiredServices(cancel);
         }, cancel);
     }
 
     public async Task CreateUiAsync(PluginLoader<Penumbra> loader, CancellationToken cancel)
     {
         var substitution = loader.Services.GetService<DalamudSubstitutionProvider>();
+        cancel.ThrowIfCancellationRequested();
         await Task.WhenAll(loader.Services.GetServicesImplementing<IAwaitedService>().Select(s => s.Awaiter)).ConfigureAwait(false);
+        cancel.ThrowIfCancellationRequested();
         await Task.Run(() =>
         {
             var system = loader.Services.GetService<PenumbraWindowSystem>();
-            system.Window.Setup(loader.Services.GetService<MainTabBar>());
+            cancel.ThrowIfCancellationRequested();
             loader.Services.GetService<CommandHandler>();
+            cancel.ThrowIfCancellationRequested();
             var config = loader.Services.GetService<Configuration>();
             if (config is not { Ui.OpenWindowAtStart: true, Ephemeral.AdvancedEditingOpenForModPaths.Count: > 0 })
                 return;
@@ -138,6 +149,7 @@ public sealed class Penumbra : IPluginDefinition<Penumbra>, IAsyncDisposable
             var modFileSystem     = loader.Services.GetService<ModFileSystem>();
             foreach (var identifier in config.Ephemeral.AdvancedEditingOpenForModPaths)
             {
+                cancel.ThrowIfCancellationRequested();
                 if (identifier is ModEditWindowFactory.UnpinnedWindowLabel
                  && modFileSystem.Selection.Selection?.GetValue<Mod>() is { } selectedMod)
                     editWindowFactory.OpenForMod(selectedMod, true);
@@ -153,6 +165,7 @@ public sealed class Penumbra : IPluginDefinition<Penumbra>, IAsyncDisposable
         {
             var communicator = loader.Services.GetService<CommunicatorService>();
             loader.Services.GetService<IpcProviders>();
+            cancel.ThrowIfCancellationRequested();
             var itemSheet = loader.Services.GetService<IDataManager>().GetExcelSheet<Item>();
             communicator.ChangedItemHover.Subscribe((in args) =>
             {

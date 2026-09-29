@@ -18,11 +18,12 @@ public sealed class MainWindow : Window
     private readonly GlobalModImporter       _globalModImporter;
     private readonly UiNavigator             _navigator;
     private readonly PenumbraSupportInfo     _supportInfoProvider;
-    private          MainTabBar              _configTabs = null!;
+    private readonly MainTabBar              _configTabs;
     private          string?                 _lastException;
 
     public MainWindow(IDalamudPluginInterface pi, Configuration config, ValidityChecker checker,
-        TutorialService tutorial, GlobalModImporter globalModImporter, UiNavigator navigator, PenumbraSupportInfo supportInfoProvider)
+        TutorialService tutorial, GlobalModImporter globalModImporter, UiNavigator navigator, PenumbraSupportInfo supportInfoProvider,
+        MainTabBar configTabs)
         : base(checker.GetMainWindowLabel())
     {
         _pluginInterface     = pi;
@@ -31,6 +32,7 @@ public sealed class MainWindow : Window
         _globalModImporter   = globalModImporter;
         _navigator           = navigator;
         _supportInfoProvider = supportInfoProvider;
+        _configTabs          = configTabs;
 
         _navigator.ToggleMainWindow += OnToggleMainWindow;
         RespectCloseHotkey          =  true;
@@ -42,12 +44,6 @@ public sealed class MainWindow : Window
     {
         _configTabs.NextTab = TabType.Settings;
         IsOpen              = true;
-    }
-
-    public void Setup(MainTabBar configTabs)
-    {
-        _configTabs         = configTabs;
-        _configTabs.NextTab = _config.Ephemeral.SelectedTab;
     }
 
     public override void PreDraw()

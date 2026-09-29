@@ -9,7 +9,7 @@ using MtrlFile = Penumbra.GameData.Files.MtrlFile;
 
 namespace Penumbra.Services;
 
-public class MigrationManager(IoConfig config) : IService
+public sealed class MigrationManager(IoConfig config) : IScopedService
 {
     public enum TaskType : byte
     {

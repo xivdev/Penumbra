@@ -11,7 +11,7 @@ using Penumbra.Services;
 namespace Penumbra.Mods.Manager.OptionEditor;
 
 public sealed class ImcModGroupEditor(CommunicatorService communicator, SaveService saveService, Configuration config)
-    : ModOptionEditor<ImcModGroup, ImcSubMod>(communicator, saveService, config), IService
+    : ModOptionEditor<ImcModGroup, ImcSubMod>(communicator, saveService, config), IScopedService
 {
     /// <summary> Add a new, empty imc group with the given manipulation data. </summary>
     public ImcModGroup? AddModGroup(Mod mod, string newName, ImcIdentifier identifier, ImcEntry defaultEntry,

@@ -7,7 +7,7 @@ using Penumbra.GameData.Structs;
 
 namespace Penumbra.Mods.Manager;
 
-public sealed class LocalModDatabase(ServiceManager services) : IDisposable, IService
+public sealed class LocalModDatabase(ServiceManager services) : IDisposable, IScopedService
 {
     private readonly Lock                         _lock = new();
     private          LiteDatabase?                _database;

@@ -1,13 +1,13 @@
 using Dalamud.Plugin.Services;
 using ImSharp;
+using Luna;
 using Penumbra.Communication;
 using Penumbra.GameData;
 using Penumbra.Interop.Structs;
-using Penumbra.Services;
 
 namespace Penumbra.Interop.Services;
 
-public unsafe class CharacterUtility : IDisposable, Luna.IRequiredService
+public sealed unsafe class CharacterUtility : IDisposable, IScopedService, IRequiredService
 {
     public record struct InternalIndex(int Value);
 

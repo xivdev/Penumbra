@@ -7,7 +7,7 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.Mods.Editor;
 
-public class ModNormalizer(ModManager modManager, Configuration config, SaveService saveService) : IService
+public sealed class ModNormalizer(ModManager modManager, Configuration config, SaveService saveService) : IScopedService
 {
     private readonly List<List<Dictionary<Utf8GamePath, FullPath>>> _redirections = [];
 

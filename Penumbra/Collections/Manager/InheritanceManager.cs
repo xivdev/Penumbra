@@ -12,7 +12,7 @@ namespace Penumbra.Collections.Manager;
 /// This is transitive, so a collection A inheriting from B also inherits from everything B inherits.
 /// Circular dependencies are resolved by distinctness.
 /// </summary>
-public class InheritanceManager : IDisposable, IService
+public sealed class InheritanceManager : IDisposable, IScopedService
 {
     public enum ValidInheritance
     {

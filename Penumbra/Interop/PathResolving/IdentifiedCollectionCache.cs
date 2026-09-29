@@ -9,8 +9,9 @@ using Penumbra.Services;
 
 namespace Penumbra.Interop.PathResolving;
 
-public unsafe class IdentifiedCollectionCache : IDisposable, IEnumerable<(nint Address, ActorIdentifier Identifier, ModCollection Collection)>,
-    Luna.IService
+public sealed unsafe class IdentifiedCollectionCache : IDisposable,
+    IEnumerable<(nint Address, ActorIdentifier Identifier, ModCollection Collection)>,
+    Luna.IScopedService
 {
     private readonly CommunicatorService                                _communicator;
     private readonly CharacterDestructor                                _characterDestructor;

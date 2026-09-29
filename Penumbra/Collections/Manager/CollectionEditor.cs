@@ -1,3 +1,4 @@
+using Luna;
 using Penumbra.Api.Enums;
 using Penumbra.Api.Preset;
 using Penumbra.Communication;
@@ -10,7 +11,7 @@ using Penumbra.Services;
 
 namespace Penumbra.Collections.Manager;
 
-public class CollectionEditor(SaveService saveService, CommunicatorService communicator, ModStorage modStorage) : Luna.IService
+public sealed class CollectionEditor(SaveService saveService, CommunicatorService communicator, ModStorage modStorage) : IScopedService
 {
     /// <summary> Enable or disable the mod inheritance of mod idx. </summary>
     public bool SetModInheritance(ModCollection collection, Mod mod, bool inherit)

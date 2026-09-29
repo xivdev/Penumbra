@@ -9,7 +9,7 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.UI.ManagementTab;
 
-public sealed class TextureOptimization(ModGroupEditor groupEditor, TextureManager textures, ManagementLog<TextureOptimization> log) : IService
+public sealed class TextureOptimization(ModGroupEditor groupEditor, TextureManager textures, ManagementLog<TextureOptimization> log) : IScopedService
 {
     public static unsafe byte[] WriteSolidColorTex(Rgba32 color)
     {

@@ -10,7 +10,7 @@ using CSResourceHandle = FFXIVClientStructs.FFXIV.Client.System.Resource.Handle.
 
 namespace Penumbra.Interop.Hooks.ResourceLoading;
 
-public sealed unsafe class ResourceService : IDisposable, IRequiredService
+public sealed unsafe class ResourceService : IDisposable, IScopedService, IRequiredService
 {
     private readonly HookManager               _hooks;
     private readonly ResourceManagerService    _resourceManager;

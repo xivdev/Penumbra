@@ -7,7 +7,7 @@ using Penumbra.Services;
 
 namespace Penumbra.Mods.Manager;
 
-public class ModConfigUpdater : IDisposable, IRequiredService
+public sealed class ModConfigUpdater : IDisposable, IScopedService, IRequiredService
 {
     private readonly CommunicatorService _communicator;
     private readonly ModStorage          _mods;

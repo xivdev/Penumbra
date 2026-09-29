@@ -6,7 +6,7 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.Interop;
 
-public class GameState : Luna.IService
+public sealed class GameState : Luna.IScopedService
 {
     #region Last Game Object
 

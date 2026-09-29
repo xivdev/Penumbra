@@ -67,7 +67,7 @@ public sealed class CollectionSelector(
         }
     }
 
-    public sealed class Cache : BasicFilterCache<Entry>, IService
+    public sealed class Cache : BasicFilterCache<Entry>
     {
         private readonly CollectionStorage   _collections;
         private readonly CommunicatorService _communicator;

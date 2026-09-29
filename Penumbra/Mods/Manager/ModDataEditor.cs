@@ -1,4 +1,5 @@
 using Dalamud.Utility;
+using Luna;
 using Penumbra.Communication;
 using Penumbra.Files;
 using Penumbra.GameData.Data;
@@ -36,8 +37,8 @@ public enum ModDataChangeType : uint
     IgnorePages           = 0x400000,
 }
 
-public class ModDataEditor(SaveService saveService, CommunicatorService communicatorService, ItemData itemData, LocalModDatabase database)
-    : Luna.IService
+public sealed class ModDataEditor(SaveService saveService, CommunicatorService communicatorService, ItemData itemData, LocalModDatabase database)
+    : IScopedService
 {
     public SaveService SaveService
         => saveService;
