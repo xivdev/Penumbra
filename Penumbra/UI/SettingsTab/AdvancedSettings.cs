@@ -39,7 +39,7 @@ public sealed class AdvancedSettings(
         if (SettingsTab.Checkbox("Auto Reduplicate UI Files on PMP Import"u8,
                 "Automatically reduplicate and normalize UI-specific files on import from PMP files. This is STRONGLY recommended because deduplicated UI files crash the game."u8,
                 config.AutoReduplicateUiOnImport))
-            config.AutoDeduplicateOnImport ^= true;
+            config.AutoReduplicateUiOnImport ^= true;
         DrawCompressionBox();
         if (SettingsTab.Checkbox("Keep Default Metadata Changes on Import"u8,
                 "Normally, metadata changes that equal their default values, which are sometimes exported by TexTools, are discarded. "u8
