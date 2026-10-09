@@ -84,7 +84,7 @@ public class MeshExporter
             .GroupBy(ele => (MdlFile.VertexUsage)ele.Usage, ele => ele)
             .ToImmutableDictionary(
                 g => g.Key,
-                g => g.OrderBy(ele => ele.UsageIndex)   // OrderBy UsageIndex is probably unnecessary as they're probably already be in order
+                g => g.OrderBy(ele => ele.UsageIndex) // OrderBy UsageIndex is probably unnecessary as they're probably already be in order
                     .Select(ele => (MdlFile.VertexType)ele.Type)
                     .ToList()
             );
@@ -151,7 +151,7 @@ public class MeshExporter
             .Take(XivMesh.SubMeshCount)
             .Index()
             .Select(subMesh => BuildMesh($"mesh {_meshIndex}.{subMesh.Index}", indices, vertices,
-                (int)(subMesh.Item.IndexOffset - XivMesh.StartIndex),         (int)subMesh.Item.IndexCount,
+                (int)(subMesh.Item.IndexOffset - XivMesh.StartIndex),          (int)subMesh.Item.IndexCount,
                 subMesh.Item.AttributeIndexMask))
             .ToArray();
     }
@@ -242,7 +242,7 @@ public class MeshExporter
         var      maxAttribute = 31 - BitOperations.LeadingZeroCount(attributeMask);
         if (maxAttribute < _mdl.Attributes.Length)
             attributes = Enumerable.Range(0, 32)
-                .Where(index => ((attributeMask >> index) & 1) == 1)
+                .Where(index => ((attributeMask >> index) & 1) is 1)
                 .Select(index => _mdl.Attributes[index])
                 .ToArray();
         else
@@ -290,11 +290,11 @@ public class MeshExporter
                 .GroupBy(element => element.Usage)
                 .ToDictionary(
                     x => (MdlFile.VertexUsage)x.Key,
-                    x => x.OrderBy(ele => ele.UsageIndex)   // Once again, OrderBy UsageIndex is probably unnecessary
+                    x => x.OrderBy(ele => ele.UsageIndex) // Once again, OrderBy UsageIndex is probably unnecessary
                         .Select(ele => ReadVertexAttribute((MdlFile.VertexType)ele.Type, streams[ele.Stream]))
                         .ToList()
                 );
-        
+
 
             var vertexGeometry = BuildVertexGeometry(attributes);
             var vertexMaterial = BuildVertexMaterial(attributes);
@@ -316,11 +316,13 @@ public class MeshExporter
             MdlFile.VertexType.Single3 => new Vector3(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle()),
             MdlFile.VertexType.Single4 => new Vector4(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle()),
             MdlFile.VertexType.UByte4  => reader.ReadBytes(4),
-            MdlFile.VertexType.NByte4 => new Vector4(reader.ReadByte() / 255f, reader.ReadByte() / 255f, reader.ReadByte() / 255f, reader.ReadByte() / 255f),
+            MdlFile.VertexType.NByte4 => new Vector4(reader.ReadByte() / 255f, reader.ReadByte() / 255f, reader.ReadByte() / 255f,
+                reader.ReadByte() / 255f),
             MdlFile.VertexType.Half2 => new Vector2((float)reader.ReadHalf(), (float)reader.ReadHalf()),
-            MdlFile.VertexType.Half4 => new Vector4((float)reader.ReadHalf(), (float)reader.ReadHalf(), (float)reader.ReadHalf(), (float)reader.ReadHalf()),
+            MdlFile.VertexType.Half4 => new Vector4((float)reader.ReadHalf(), (float)reader.ReadHalf(), (float)reader.ReadHalf(),
+                (float)reader.ReadHalf()),
             MdlFile.VertexType.UShort4 => reader.ReadBytes(8),
-            var other => throw _notifier.Exception<ArgumentOutOfRangeException>($"Unhandled vertex type {other}"),
+            var other                  => throw _notifier.Exception<ArgumentOutOfRangeException>($"Unhandled vertex type {other}"),
         };
     }
 
@@ -358,7 +360,7 @@ public class MeshExporter
             // (Bi)tangents are universally stored as ByteFloat4, which uses 0..1 to represent the full -1..1 range.
             // TODO 20260824 While this assumption is safe, it would be sensible to actually check.
             var bitangent = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Tangent1)) * 2 - Vector4.One;
-            
+
             return new VertexPositionNormalTangent(
                 ToVector3(GetFirstSafe(attributes, MdlFile.VertexUsage.Position)),
                 ToVector3(GetFirstSafe(attributes, MdlFile.VertexUsage.Normal)),
@@ -374,56 +376,50 @@ public class MeshExporter
     {
         var uvCount = 0;
         if (usages.TryGetValue(MdlFile.VertexUsage.UV, out var list))
-        {
             foreach (var type in list)
             {
                 uvCount += type switch
                 {
-                    MdlFile.VertexType.Half2 => 1,
-                    MdlFile.VertexType.Half4 => 2,
+                    MdlFile.VertexType.Half2   => 1,
+                    MdlFile.VertexType.Half4   => 2,
                     MdlFile.VertexType.Single2 => 1,
                     MdlFile.VertexType.Single4 => 2,
-                    _ => throw _notifier.Exception($"Unexpected UV vertex type {type}."),
+                    _                          => throw _notifier.Exception($"Unexpected UV vertex type {type}."),
                 };
             }
-        }
 
         usages.TryGetValue(MdlFile.VertexUsage.Color, out var colours);
         var nColors = colours?.Count ?? 0;
-        var hasTangent2 = usages.ContainsKey(MdlFile.VertexUsage.Tangent2);
+        var hasFlow = usages.ContainsKey(MdlFile.VertexUsage.Tangent2);
 
-        var materialUsages = (
-            uvCount,
-            nColors,
-            hasTangent2
-        );
+        var materialUsages = (uvCount, nColors, hasFlow);
 
         return materialUsages switch
         {
-            (3, 2, false) => typeof(VertexTexture3Color2Ffxiv),
-            (3, 1, false) => typeof(VertexTexture3ColorFfxiv),
+            (3, 2, false) => typeof(VertexTexture3Color2Xiv),
+            (3, 1, false) => typeof(VertexTexture3ColorXiv),
             (3, 0, false) => typeof(VertexTexture3),
-            (2, 2, false) => typeof(VertexTexture2Color2Ffxiv),
-            (2, 1, false) => typeof(VertexTexture2ColorFfxiv),
+            (2, 2, false) => typeof(VertexTexture2Color2Xiv),
+            (2, 1, false) => typeof(VertexTexture2ColorXiv),
             (2, 0, false) => typeof(VertexTexture2),
-            (1, 2, false) => typeof(VertexTexture1Color2Ffxiv),
-            (1, 1, false) => typeof(VertexTexture1ColorFfxiv),
+            (1, 2, false) => typeof(VertexTexture1Color2Xiv),
+            (1, 1, false) => typeof(VertexTexture1ColorXiv),
             (1, 0, false) => typeof(VertexTexture1),
-            (0, 2, false) => typeof(VertexColor2Ffxiv),
-            (0, 1, false) => typeof(VertexColorFfxiv),
+            (0, 2, false) => typeof(VertexColor2Xiv),
+            (0, 1, false) => typeof(VertexColorXiv),
             (0, 0, false) => typeof(VertexEmpty),
-            (3, 2, true) => typeof(VertexTexture3Color2Tangent2Ffxiv),
-            (3, 1, true) => typeof(VertexTexture3ColorTangent2Ffxiv),
-            (3, 0, true) => typeof(VertexTexture3Tangent2Ffxiv),
-            (2, 2, true) => typeof(VertexTexture2Color2Tangent2Ffxiv),
-            (2, 1, true) => typeof(VertexTexture2ColorTangent2Ffxiv),
-            (2, 0, true) => typeof(VertexTexture2Tangent2Ffxiv),
-            (1, 2, true) => typeof(VertexTexture1Color2Tangent2Ffxiv),
-            (1, 1, true) => typeof(VertexTexture1ColorTangent2Ffxiv),
-            (1, 0, true) => typeof(VertexTexture1Tangent2Ffxiv),
-            (0, 2, true) => typeof(VertexColor2Tangent2Ffxiv),
-            (0, 1, true) => typeof(VertexColorTangent2Ffxiv),
-            (0, 0, true) => typeof(VertexTangent2Ffxiv),
+            (3, 2, true)  => typeof(VertexTexture3Color2FlowXiv),
+            (3, 1, true)  => typeof(VertexTexture3ColorFlowXiv),
+            (3, 0, true)  => typeof(VertexTexture3FlowXiv),
+            (2, 2, true)  => typeof(VertexTexture2Color2FlowXiv),
+            (2, 1, true)  => typeof(VertexTexture2ColorFlowXiv),
+            (2, 0, true)  => typeof(VertexTexture2FlowXiv),
+            (1, 2, true)  => typeof(VertexTexture1Color2FlowXiv),
+            (1, 1, true)  => typeof(VertexTexture1ColorFlowXiv),
+            (1, 0, true)  => typeof(VertexTexture1FlowXiv),
+            (0, 2, true)  => typeof(VertexColor2FlowXiv),
+            (0, 1, true)  => typeof(VertexColorFlowXiv),
+            (0, 0, true)  => typeof(VertexFlowXiv),
 
             _ => throw _notifier.Exception($"Unhandled UV/color count of {uvCount}/{nColors} encountered."),
         };
@@ -435,99 +431,92 @@ public class MeshExporter
         if (_materialType == typeof(VertexEmpty))
             return new VertexEmpty();
 
-        if (_materialType == typeof(VertexColorFfxiv))
-            return new VertexColorFfxiv(ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Color)));
+        if (_materialType == typeof(VertexColorXiv))
+            return new VertexColorXiv(ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Color)));
 
-        if (_materialType == typeof(VertexColor2Ffxiv))
+        if (_materialType == typeof(VertexColor2Xiv))
         {
             var (color0, color1) = GetBothSafe(attributes, MdlFile.VertexUsage.Color);
-            return new VertexColor2Ffxiv(ToVector4(color0), ToVector4(color1));
+            return new VertexColor2Xiv(ToVector4(color0), ToVector4(color1));
         }
 
-        if (_materialType == typeof(VertexTexture1))
+        if (_materialType == typeof(VertexTexture1Xiv))
             return new VertexTexture1(ToVector2(GetFirstSafe(attributes, MdlFile.VertexUsage.UV)));
 
-        if (_materialType == typeof(VertexTexture1ColorFfxiv))
-            return new VertexTexture1ColorFfxiv(
+        if (_materialType == typeof(VertexTexture1ColorXiv))
+            return new VertexTexture1ColorXiv(
                 ToVector2(GetFirstSafe(attributes, MdlFile.VertexUsage.UV)),
                 ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Color))
             );
 
-        if (_materialType == typeof(VertexTexture1Color2Ffxiv))
+        if (_materialType == typeof(VertexTexture1Color2Xiv))
         {
             var (color0, color1) = GetBothSafe(attributes, MdlFile.VertexUsage.Color);
-            return new VertexTexture1Color2Ffxiv(
+            return new VertexTexture1Color2Xiv(
                 ToVector2(GetFirstSafe(attributes, MdlFile.VertexUsage.UV)),
                 ToVector4(color0),
                 ToVector4(color1)
             );
         }
-        
+
         // XIV packs two UVs into a single vec4 attribute.
 
-        if (_materialType == typeof(VertexTexture2))
+        if (_materialType == typeof(VertexTexture2Xiv))
         {
             var uv = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.UV));
-            return new VertexTexture2(
-                new Vector2(uv.X, uv.Y),
-                new Vector2(uv.Z, uv.W)
-            );
+            return new VertexTexture2(new Vector2(uv.X, uv.Y), new Vector2(uv.Z, uv.W));
         }
 
-        if (_materialType == typeof(VertexTexture2ColorFfxiv))
+        if (_materialType == typeof(VertexTexture2ColorXiv))
         {
             var uv = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.UV));
-            return new VertexTexture2ColorFfxiv(
+            return new VertexTexture2ColorXiv(
                 new Vector2(uv.X, uv.Y),
                 new Vector2(uv.Z, uv.W),
                 ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Color))
             );
         }
-        
-        if (_materialType == typeof(VertexTexture2Color2Ffxiv))
+
+        if (_materialType == typeof(VertexTexture2Color2Xiv))
         {
-            var uv         = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.UV));
+            var uv = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.UV));
             var (color0, color1) = GetBothSafe(attributes, MdlFile.VertexUsage.Color);
 
-            return new VertexTexture2Color2Ffxiv(
+            return new VertexTexture2Color2Xiv(
                 new Vector2(uv.X, uv.Y),
                 new Vector2(uv.Z, uv.W),
                 ToVector4(color0),
                 ToVector4(color1)
             );
         }
-        
-        if (_materialType == typeof(VertexTexture3))
+
+        if (_materialType == typeof(VertexTexture3Xiv))
         {
             // Not 100% sure about this
             var uv0 = ToVector4(attributes[MdlFile.VertexUsage.UV][0]);
             var uv1 = ToVector4(attributes[MdlFile.VertexUsage.UV][1]);
-            return new VertexTexture3(
-                new Vector2(uv0.X, uv0.Y),
-                new Vector2(uv0.Z, uv0.W),
-                new Vector2(uv1.X, uv1.Y)
-            );
+            return new VertexTexture3(new Vector2(uv0.X, uv0.Y), new Vector2(uv0.Z, uv0.W), new Vector2(uv1.X, uv1.Y));
         }
 
-        if (_materialType == typeof(VertexTexture3ColorFfxiv))
+        if (_materialType == typeof(VertexTexture3ColorXiv))
         {
             var uv0 = ToVector4(attributes[MdlFile.VertexUsage.UV][0]);
             var uv1 = ToVector4(attributes[MdlFile.VertexUsage.UV][1]);
-            return new VertexTexture3ColorFfxiv(
+            return new VertexTexture3ColorXiv(
                 new Vector2(uv0.X, uv0.Y),
                 new Vector2(uv0.Z, uv0.W),
                 new Vector2(uv1.X, uv1.Y),
-                ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Color)) 
+                ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Color))
             );
         }
 
-        if (_materialType == typeof(VertexTexture3Color2Ffxiv))
+        if (_materialType == typeof(VertexTexture3Color2Xiv))
         {
             var uv0 = ToVector4(attributes[MdlFile.VertexUsage.UV][0]);
             var uv1 = ToVector4(attributes[MdlFile.VertexUsage.UV][1]);
             var (color0, color1) = GetBothSafe(attributes, MdlFile.VertexUsage.Color);
-            
-            return new VertexTexture3Color2Ffxiv(
+
+            return new VertexTexture3Color2Xiv(
                 new Vector2(uv0.X, uv0.Y),
                 new Vector2(uv0.Z, uv0.W),
                 new Vector2(uv1.X, uv1.Y),
@@ -536,46 +525,46 @@ public class MeshExporter
             );
         }
 
-        if (_materialType == typeof(VertexTangent2Ffxiv))
+        if (_materialType == typeof(VertexFlowXiv))
         {
             var tangent = EncodeTangent2Relative(attributes);
-            return new VertexTangent2Ffxiv(tangent);
+            return new VertexFlowXiv(tangent);
         }
 
-        if (_materialType == typeof(VertexColorTangent2Ffxiv))
+        if (_materialType == typeof(VertexColorFlowXiv))
         {
             var tangent = EncodeTangent2Relative(attributes);
-            return new VertexColorTangent2Ffxiv(ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Color)), tangent);
+            return new VertexColorFlowXiv(ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Color)), tangent);
         }
 
-        if (_materialType == typeof(VertexColor2Tangent2Ffxiv))
+        if (_materialType == typeof(VertexColor2FlowXiv))
         {
             var (color0, color1) = GetBothSafe(attributes, MdlFile.VertexUsage.Color);
             var tangent = EncodeTangent2Relative(attributes);
-            return new VertexColor2Tangent2Ffxiv(ToVector4(color0), ToVector4(color1), tangent);
+            return new VertexColor2FlowXiv(ToVector4(color0), ToVector4(color1), tangent);
         }
 
-        if (_materialType == typeof(VertexTexture1Tangent2Ffxiv))
+        if (_materialType == typeof(VertexTexture1FlowXiv))
         {
             var tangent = EncodeTangent2Relative(attributes);
-            return new VertexTexture1Tangent2Ffxiv(ToVector2(GetFirstSafe(attributes, MdlFile.VertexUsage.UV)), tangent);
+            return new VertexTexture1FlowXiv(ToVector2(GetFirstSafe(attributes, MdlFile.VertexUsage.UV)), tangent);
         }
 
-        if (_materialType == typeof(VertexTexture1ColorTangent2Ffxiv))
+        if (_materialType == typeof(VertexTexture1ColorFlowXiv))
         {
             var tangent = EncodeTangent2Relative(attributes);
-            return new VertexTexture1ColorTangent2Ffxiv(
+            return new VertexTexture1ColorFlowXiv(
                 ToVector2(GetFirstSafe(attributes, MdlFile.VertexUsage.UV)),
                 ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Color)),
                 tangent
             );
         }
 
-        if (_materialType == typeof(VertexTexture1Color2Tangent2Ffxiv))
+        if (_materialType == typeof(VertexTexture1Color2FlowXiv))
         {
             var (color0, color1) = GetBothSafe(attributes, MdlFile.VertexUsage.Color);
             var tangent = EncodeTangent2Relative(attributes);
-            return new VertexTexture1Color2Tangent2Ffxiv(
+            return new VertexTexture1Color2FlowXiv(
                 ToVector2(GetFirstSafe(attributes, MdlFile.VertexUsage.UV)),
                 ToVector4(color0),
                 ToVector4(color1),
@@ -585,22 +574,22 @@ public class MeshExporter
 
         // XIV packs two UVs into a single vec4 attribute.
 
-        if (_materialType == typeof(VertexTexture2Tangent2Ffxiv))
+        if (_materialType == typeof(VertexTexture2FlowXiv))
         {
-            var uv = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.UV));
+            var uv      = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.UV));
             var tangent = EncodeTangent2Relative(attributes);
-            return new VertexTexture2Tangent2Ffxiv(
+            return new VertexTexture2FlowXiv(
                 new Vector2(uv.X, uv.Y),
                 new Vector2(uv.Z, uv.W),
                 tangent
             );
         }
 
-        if (_materialType == typeof(VertexTexture2ColorTangent2Ffxiv))
+        if (_materialType == typeof(VertexTexture2ColorFlowXiv))
         {
-            var uv = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.UV));
+            var uv      = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.UV));
             var tangent = EncodeTangent2Relative(attributes);
-            return new VertexTexture2ColorTangent2Ffxiv(
+            return new VertexTexture2ColorFlowXiv(
                 new Vector2(uv.X, uv.Y),
                 new Vector2(uv.Z, uv.W),
                 ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Color)),
@@ -608,13 +597,13 @@ public class MeshExporter
             );
         }
 
-        if (_materialType == typeof(VertexTexture2Color2Tangent2Ffxiv))
+        if (_materialType == typeof(VertexTexture2Color2FlowXiv))
         {
             var uv = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.UV));
             var (color0, color1) = GetBothSafe(attributes, MdlFile.VertexUsage.Color);
             var tangent = EncodeTangent2Relative(attributes);
 
-            return new VertexTexture2Color2Tangent2Ffxiv(
+            return new VertexTexture2Color2FlowXiv(
                 new Vector2(uv.X, uv.Y),
                 new Vector2(uv.Z, uv.W),
                 ToVector4(color0),
@@ -623,13 +612,13 @@ public class MeshExporter
             );
         }
 
-        if (_materialType == typeof(VertexTexture3Tangent2Ffxiv))
+        if (_materialType == typeof(VertexTexture3FlowXiv))
         {
             // Not 100% sure about this
-            var uv0 = ToVector4(attributes[MdlFile.VertexUsage.UV][0]);
-            var uv1 = ToVector4(attributes[MdlFile.VertexUsage.UV][1]);
+            var uv0     = ToVector4(attributes[MdlFile.VertexUsage.UV][0]);
+            var uv1     = ToVector4(attributes[MdlFile.VertexUsage.UV][1]);
             var tangent = EncodeTangent2Relative(attributes);
-            return new VertexTexture3Tangent2Ffxiv(
+            return new VertexTexture3FlowXiv(
                 new Vector2(uv0.X, uv0.Y),
                 new Vector2(uv0.Z, uv0.W),
                 new Vector2(uv1.X, uv1.Y),
@@ -637,12 +626,12 @@ public class MeshExporter
             );
         }
 
-        if (_materialType == typeof(VertexTexture3ColorTangent2Ffxiv))
+        if (_materialType == typeof(VertexTexture3ColorFlowXiv))
         {
-            var uv0 = ToVector4(attributes[MdlFile.VertexUsage.UV][0]);
-            var uv1 = ToVector4(attributes[MdlFile.VertexUsage.UV][1]);
+            var uv0     = ToVector4(attributes[MdlFile.VertexUsage.UV][0]);
+            var uv1     = ToVector4(attributes[MdlFile.VertexUsage.UV][1]);
             var tangent = EncodeTangent2Relative(attributes);
-            return new VertexTexture3ColorTangent2Ffxiv(
+            return new VertexTexture3ColorFlowXiv(
                 new Vector2(uv0.X, uv0.Y),
                 new Vector2(uv0.Z, uv0.W),
                 new Vector2(uv1.X, uv1.Y),
@@ -651,14 +640,14 @@ public class MeshExporter
             );
         }
 
-        if (_materialType == typeof(VertexTexture3Color2Tangent2Ffxiv))
+        if (_materialType == typeof(VertexTexture3Color2FlowXiv))
         {
             var uv0 = ToVector4(attributes[MdlFile.VertexUsage.UV][0]);
             var uv1 = ToVector4(attributes[MdlFile.VertexUsage.UV][1]);
             var (color0, color1) = GetBothSafe(attributes, MdlFile.VertexUsage.Color);
             var tangent = EncodeTangent2Relative(attributes);
 
-            return new VertexTexture3Color2Tangent2Ffxiv(
+            return new VertexTexture3Color2FlowXiv(
                 new Vector2(uv0.X, uv0.Y),
                 new Vector2(uv0.Z, uv0.W),
                 new Vector2(uv1.X, uv1.Y),
@@ -676,17 +665,17 @@ public class MeshExporter
     private Vector4 EncodeTangent2Relative(IReadOnlyDictionary<MdlFile.VertexUsage, List<object>> attributes)
     {
         var normal = Vector3.Normalize(ToVector3(GetFirstSafe(attributes, MdlFile.VertexUsage.Normal)));
-        
+
         var tangent1       = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Tangent1)).AsVector3();
         var tangent1Scaled = Vector3.Normalize(Vector3.FusedMultiplyAdd(tangent1, new Vector3(2f), new Vector3(-1f)));
-        
+
         var bitangent = Vector3.Normalize(Vector3.Cross(normal, tangent1Scaled));
 
-        var tangent2        = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Tangent2)).AsVector3();
-        var tangent2Scaled  = Vector3.Normalize(Vector3.FusedMultiplyAdd(tangent2, new Vector3(2f), new Vector3(-1f)));
+        var tangent2       = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Tangent2)).AsVector3();
+        var tangent2Scaled = Vector3.Normalize(Vector3.FusedMultiplyAdd(tangent2, new Vector3(2f), new Vector3(-1f)));
 
         var cosTheta = Math.Clamp(Vector3.Dot(tangent2Scaled, tangent1Scaled), -1f, 1f);
-        var sinTheta = Math.Clamp(Vector3.Dot(tangent2Scaled, bitangent), -1f, 1f);
+        var sinTheta = Math.Clamp(Vector3.Dot(tangent2Scaled, bitangent),      -1f, 1f);
 
         return new Vector4(
             MathF.FusedMultiplyAdd(cosTheta, 0.5f, 0.5f),
@@ -699,11 +688,9 @@ public class MeshExporter
     private Type GetSkinningType(IReadOnlyDictionary<MdlFile.VertexUsage, List<MdlFile.VertexType>> usages)
     {
         if (usages.ContainsKey(MdlFile.VertexUsage.BlendWeights) && usages.ContainsKey(MdlFile.VertexUsage.BlendIndices))
-        {
-            return GetFirstSafe(usages, MdlFile.VertexUsage.BlendWeights) == MdlFile.VertexType.UShort4 
-                ? typeof(VertexJoints8) 
+            return GetFirstSafe(usages, MdlFile.VertexUsage.BlendWeights) == MdlFile.VertexType.UShort4
+                ? typeof(VertexJoints8)
                 : typeof(VertexJoints4);
-        }
 
         return typeof(VertexEmpty);
     }
@@ -723,7 +710,7 @@ public class MeshExporter
             var weightsData  = GetFirstSafe(attributes, MdlFile.VertexUsage.BlendWeights);
             var indices      = ToByteArray(indiciesData);
             var weights      = ToFloatArray(weightsData);
-            
+
             var bindings = Enumerable.Range(0, indices.Length)
                 .Select(bindingIndex =>
                 {
@@ -735,12 +722,12 @@ public class MeshExporter
                     return (jointIndex, weights[bindingIndex]);
                 })
                 .ToArray();
-            
+
             return bindings.Length switch
             {
                 4 => new VertexJoints4(bindings),
                 8 => new VertexJoints8(bindings),
-                _ => throw _notifier.Exception($"Invalid number of bone bindings {bindings.Length}.")
+                _ => throw _notifier.Exception($"Invalid number of bone bindings {bindings.Length}."),
             };
         }
 
@@ -757,7 +744,7 @@ public class MeshExporter
 
         return list[0];
     }
-    
+
     /// <summary> Check that the list has length 2 for any case where this is expected and return both entries. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private (T First, T Second) GetBothSafe<T>(IReadOnlyDictionary<MdlFile.VertexUsage, List<T>> attributes, MdlFile.VertexUsage usage)
@@ -806,13 +793,18 @@ public class MeshExporter
             byte[] value => value,
             _            => throw new ArgumentOutOfRangeException($"Invalid byte[] input {data}"),
         };
-    
+
     private static float[] ToFloatArray(object data)
         => data switch
         {
-            byte[] value   => value.Select(x => x / 255f).ToArray(),
-            Vector4 v4     => new[] { v4.X, v4.Y, v4.Z, v4.W },
-            _              => throw new ArgumentOutOfRangeException($"Invalid float[] input {data}"),
+            byte[] value => value.Select(x => x / 255f).ToArray(),
+            Vector4 v4 => new[]
+            {
+                v4.X,
+                v4.Y,
+                v4.Z,
+                v4.W,
+            },
+            _ => throw new ArgumentOutOfRangeException($"Invalid float[] input {data}"),
         };
 }
-

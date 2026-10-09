@@ -101,7 +101,7 @@ public class VertexAttribute
             (morphIndex, vertexIndex) =>
             {
                 var deltas = morphValues[morphIndex];
-                if (deltas == null)
+                if (deltas is null)
                     return false;
 
                 var delta = deltas[vertexIndex];
@@ -112,7 +112,7 @@ public class VertexAttribute
                 var value = values[vertexIndex];
 
                 var delta = morphValues[morphIndex]?[vertexIndex];
-                if (delta != null)
+                if (delta is not null)
                     value += delta.Value;
 
                 return BuildSingle3(value);
@@ -134,7 +134,7 @@ public class VertexAttribute
                 throw notifier.Exception("Mesh contained WEIGHTS_1 attribute but no corresponding JOINTS_1 attribute.");
         }
 
-        var element = new MdlStructs.VertexElement()
+        var element = new MdlStructs.VertexElement
         {
             Stream = 0,
             Type  = (byte)MdlFile.VertexType.UShort4,
@@ -216,20 +216,20 @@ public class VertexAttribute
                 var gltfIndices1 = joints1?[index];
                 var gltfWeights1 = weights1?[index];
                 var v0 = new Vector4(
-                    gltfWeights0.X == 0 ? 0 : boneMap[(ushort)gltfIndices0.X],
-                    gltfWeights0.Y == 0 ? 0 : boneMap[(ushort)gltfIndices0.Y],
-                    gltfWeights0.Z == 0 ? 0 : boneMap[(ushort)gltfIndices0.Z],
-                    gltfWeights0.W == 0 ? 0 : boneMap[(ushort)gltfIndices0.W]
+                    gltfWeights0.X is 0 ? 0 : boneMap[(ushort)gltfIndices0.X],
+                    gltfWeights0.Y is 0 ? 0 : boneMap[(ushort)gltfIndices0.Y],
+                    gltfWeights0.Z is 0 ? 0 : boneMap[(ushort)gltfIndices0.Z],
+                    gltfWeights0.W is 0 ? 0 : boneMap[(ushort)gltfIndices0.W]
                 );
                 
                 var v1 = Vector4.Zero;
                 if (gltfIndices1 != null && gltfWeights1 != null)
                 {
                     v1 = new Vector4(
-                        gltfWeights1.Value.X == 0 ? 0 : boneMap[(ushort)gltfIndices1.Value.X],
-                        gltfWeights1.Value.Y == 0 ? 0 : boneMap[(ushort)gltfIndices1.Value.Y],
-                        gltfWeights1.Value.Z == 0 ? 0 : boneMap[(ushort)gltfIndices1.Value.Z],
-                        gltfWeights1.Value.W == 0 ? 0 : boneMap[(ushort)gltfIndices1.Value.W]
+                        gltfWeights1.Value.X is 0 ? 0 : boneMap[(ushort)gltfIndices1.Value.X],
+                        gltfWeights1.Value.Y is 0 ? 0 : boneMap[(ushort)gltfIndices1.Value.Y],
+                        gltfWeights1.Value.Z is 0 ? 0 : boneMap[(ushort)gltfIndices1.Value.Z],
+                        gltfWeights1.Value.W is 0 ? 0 : boneMap[(ushort)gltfIndices1.Value.W]
                     );
                 }
 
@@ -245,7 +245,7 @@ public class VertexAttribute
         if (!accessors.TryGetValue("NORMAL", out var accessor))
             return null;
 
-        var element = new MdlStructs.VertexElement()
+        var element = new MdlStructs.VertexElement
         {
             Stream = 1,
             Type   = (byte)MdlFile.VertexType.Single3,
@@ -266,7 +266,7 @@ public class VertexAttribute
                 var value = values[vertexIndex];
 
                 var delta = morphValues[morphIndex]?[vertexIndex];
-                if (delta != null) 
+                if (delta is not null) 
                     value += delta.Value;
 
                 return BuildSingle3(value);
@@ -322,7 +322,7 @@ public class VertexAttribute
             ? accessor.AsVector4Array().ToArray()
             : CalculateTangents(accessors, indices, normals, notifier);
 
-        if (tangents == null)
+        if (tangents is null)
         {
             notifier.Warning("No tangents available for sub-mesh. This could lead to incorrect lighting, or mismatched vertex attributes.");
             return null;
@@ -348,12 +348,12 @@ public class VertexAttribute
             {
                 var tangent      = tangents[vertexIndex];
                 var tangentDelta = morphValues[morphIndex].Tangent?[vertexIndex];
-                if (tangentDelta != null)
+                if (tangentDelta is not null)
                     tangent += new Vector4(tangentDelta.Value, 0);
 
                 var normal      = normals[vertexIndex];
                 var normalDelta = morphValues[morphIndex].Normal?[vertexIndex];
-                if (normalDelta != null)
+                if (normalDelta is not null)
                     normal += normalDelta.Value;
 
                 return BuildBitangent(tangent, normal);
@@ -482,7 +482,7 @@ public class VertexAttribute
         );
     }
     
-    public static VertexAttribute? Tangent2(Accessors accessors)
+    public static VertexAttribute? Flow(Accessors accessors)
     {
         if (!accessors.TryGetValue("_FFXIV_TANGENT_2", out var accessor))
             return null;
@@ -490,7 +490,7 @@ public class VertexAttribute
         if (!accessors.TryGetValue("NORMAL", out var normalAccessor) || !accessors.TryGetValue("TANGENT", out var tangentAccessor))
             return null;
 
-        var element = new MdlStructs.VertexElement()
+        var element = new MdlStructs.VertexElement
         {
             Stream = 1,
             Type   = (byte)MdlFile.VertexType.NByte4,

@@ -4,420 +4,150 @@ using SharpGLTF.Schema2;
 
 namespace Penumbra.Import.Models.Export;
 
-/*
-Yeah, look, I tried to make this file less garbage. It's a little difficult.
-Realistically, it will need to stick around until transforms/mutations are built
-and there's reason to overhaul the export pipeline.
-*/
-
-public struct VertexColorFfxiv(Vector4 ffxivColor) : IVertexCustom
+public interface IVertexTexture
 {
-    public IEnumerable<KeyValuePair<string, AttributeFormat>> GetEncodingAttributes()
-    {
-        // NOTE: We only realistically require UNSIGNED_BYTE for this, however Blender 3.6 errors on that (fixed in 4.0).
-        yield return new KeyValuePair<string, AttributeFormat>("_FFXIV_COLOR",
-            new AttributeFormat(DimensionType.VEC4, EncodingType.UNSIGNED_SHORT, true));
-    }
+    public static readonly IReadOnlyList<string> TexCoords = ["TEXCOORD_0", "TEXCOORD_1", "TEXCOORD_2", "TEXCOORD_3"];
 
-    public Vector4 FfxivColor = ffxivColor;
+    public static KeyValuePair<string, AttributeFormat> CreateCoord(int index)
+        => KeyValuePair.Create(TexCoords[index], new AttributeFormat(DimensionType.VEC2, EncodingType.FLOAT, false));
 
-    public int MaxColors
-        => 0;
-
-    public int MaxTextCoords
-        => 0;
-
-    private static readonly string[] CustomNames = ["_FFXIV_COLOR"];
-
-    public IEnumerable<string> CustomAttributes
-        => CustomNames;
-
-    public void Add(in VertexMaterialDelta delta)
-    { }
-
-    public VertexMaterialDelta Subtract(IVertexMaterial baseValue)
-        => new(Vector4.Zero, Vector4.Zero, Vector2.Zero, Vector2.Zero);
-
-    public Vector2 GetTexCoord(int index)
-        => throw new ArgumentOutOfRangeException(nameof(index));
-
-    public void SetTexCoord(int setIndex, Vector2 coord)
-    { }
-
-    public bool TryGetCustomAttribute(string attributeName, out object? value)
-    {
-        switch (attributeName)
-        {
-            case "_FFXIV_COLOR":
-                value = FfxivColor;
-                return true;
-
-            default:
-                value = null;
-                return false;
-        }
-    }
-
-    public void SetCustomAttribute(string attributeName, object value)
-    {
-        if (attributeName == "_FFXIV_COLOR" && value is Vector4 valueVector4)
-            FfxivColor = valueVector4;
-    }
-
-    public Vector4 GetColor(int index)
-        => throw new ArgumentOutOfRangeException(nameof(index));
-
-    public void SetColor(int setIndex, Vector4 color)
-    { }
-
-    public void Validate()
-    {
-        var components = new[]
-        {
-            FfxivColor.X,
-            FfxivColor.Y,
-            FfxivColor.Z,
-            FfxivColor.W,
-        };
-        if (components.Any(component => component < 0 || component > 1))
-            throw new ArgumentOutOfRangeException(nameof(FfxivColor));
-    }
+    public abstract static int MaxTextCoords { get; }
 }
 
-public struct VertexColor2Ffxiv(Vector4 ffxivColor0, Vector4 ffxivColor1) : IVertexCustom
+public interface IVertexColor
 {
-    public IEnumerable<KeyValuePair<string, AttributeFormat>> GetEncodingAttributes()
-    {
-        yield return new KeyValuePair<string, AttributeFormat>("_FFXIV_COLOR_0",
-            new AttributeFormat(DimensionType.VEC4, EncodingType.UNSIGNED_SHORT, true));
-        yield return new KeyValuePair<string, AttributeFormat>("_FFXIV_COLOR_1",
-            new AttributeFormat(DimensionType.VEC4, EncodingType.UNSIGNED_SHORT, true));
-    }
+    /// <remarks> We only realistically require UNSIGNED_BYTE for this, however Blender 3.6 errors on that (fixed in 4.0). </remarks>
+    public static KeyValuePair<string, AttributeFormat> CreateColor(string name)
+        => KeyValuePair.Create(name, new AttributeFormat(DimensionType.VEC4, EncodingType.UNSIGNED_SHORT, true));
 
-    public Vector4 FfxivColor0 = ffxivColor0;
-    public Vector4 FfxivColor1 = ffxivColor1;
+    public abstract static IEnumerable<string> CustomAttributes { get; }
 
-    public int MaxColors
-        => 0;
-
-    public int MaxTextCoords
-        => 0;
-
-    private static readonly string[] CustomNames = ["_FFXIV_COLOR_0", "_FFXIV_COLOR_1"];
-
-    public IEnumerable<string> CustomAttributes
-        => CustomNames;
-
-    public void Add(in VertexMaterialDelta delta)
-    { }
-
-    public VertexMaterialDelta Subtract(IVertexMaterial baseValue)
-        => new(Vector4.Zero, Vector4.Zero, Vector2.Zero, Vector2.Zero);
-
-    public Vector2 GetTexCoord(int index)
-        => throw new ArgumentOutOfRangeException(nameof(index));
-
-    public void SetTexCoord(int setIndex, Vector2 coord)
-    { }
-
-    public bool TryGetCustomAttribute(string attributeName, out object? value)
-    {
-        switch (attributeName)
-        {
-            case "_FFXIV_COLOR_0":
-                value = FfxivColor0;
-                return true;
-            
-            case "_FFXIV_COLOR_1":
-                value = FfxivColor1;
-                return true;
-
-            default:
-                value = null;
-                return false;
-        }
-    }
-
-    public void SetCustomAttribute(string attributeName, object value)
-    {
-        switch (attributeName)
-        {
-            case "_FFXIV_COLOR_0" when value is Vector4 valueVector4:
-                FfxivColor0 = valueVector4;
-                break;
-            case "_FFXIV_COLOR_1" when value is Vector4 valueVector4:
-                FfxivColor1 = valueVector4;
-                break;
-        }
-    }
-
-    public Vector4 GetColor(int index)
-        => throw new ArgumentOutOfRangeException(nameof(index));
-
-    public void SetColor(int setIndex, Vector4 color)
-    { }
-
-    public void Validate()
-    {
-        var components = new[]
-        {
-            FfxivColor0.X,
-            FfxivColor0.Y,
-            FfxivColor0.Z,
-            FfxivColor0.W,
-        };
-        if (components.Any(component => component is < 0 or > 1))
-            throw new ArgumentOutOfRangeException(nameof(FfxivColor0));
-        components =
-        [
-            FfxivColor1.X,
-            FfxivColor1.Y,
-            FfxivColor1.Z,
-            FfxivColor1.W,
-        ];
-        if (components.Any(component => component is < 0 or > 1))
-            throw new ArgumentOutOfRangeException(nameof(FfxivColor1));
-    }
+    public abstract static int MaxXivColors { get; }
 }
 
-
-public struct VertexTexture1ColorFfxiv(Vector2 texCoord0, Vector4 ffxivColor) : IVertexCustom
+public interface IVertexFlow
 {
-    public IEnumerable<KeyValuePair<string, AttributeFormat>> GetEncodingAttributes()
-    {
-        yield return new KeyValuePair<string, AttributeFormat>("TEXCOORD_0",
-            new AttributeFormat(DimensionType.VEC2, EncodingType.FLOAT, false));
-        yield return new KeyValuePair<string, AttributeFormat>("_FFXIV_COLOR",
-            new AttributeFormat(DimensionType.VEC4, EncodingType.UNSIGNED_SHORT, true));
-    }
+    public static KeyValuePair<string, AttributeFormat> CreateFlow(string name)
+        => KeyValuePair.Create(name, new AttributeFormat(DimensionType.VEC4, EncodingType.UNSIGNED_SHORT, true));
 
-    public Vector2 TexCoord0 = texCoord0;
+    public abstract static IEnumerable<string> CustomAttributes { get; }
 
-    public Vector4 FfxivColor = ffxivColor;
+    public abstract static bool HasFlow { get; }
+}
 
-    public int MaxColors
+internal struct VertexFlow0 : IVertexFlow
+{
+    public static IEnumerable<string> CustomAttributes
+        => [];
+
+    public static bool HasFlow
+        => false;
+}
+
+internal struct VertexFlow1 : IVertexFlow
+{
+    public static IEnumerable<string> CustomAttributes
+        => ["_FFXIV_TANGENT_2"];
+
+    public static bool HasFlow
+        => true;
+}
+
+internal struct VertexColor0 : IVertexColor
+{
+    public static IEnumerable<string> CustomAttributes
+        => [];
+
+    public static int MaxXivColors
         => 0;
+}
 
-    public int MaxTextCoords
+internal record struct VertexColor1(Vector4 Color) : IVertexColor
+{
+    public static IEnumerable<string> CustomAttributes
+        => ["_FFXIV_COLOR"];
+
+    public static int MaxXivColors
         => 1;
 
-    private static readonly string[] CustomNames = ["_FFXIV_COLOR"];
-
-    public IEnumerable<string> CustomAttributes
-        => CustomNames;
-
-    public void Add(in VertexMaterialDelta delta)
-    {
-        TexCoord0 += delta.TexCoord0Delta;
-    }
-
-    public VertexMaterialDelta Subtract(IVertexMaterial baseValue)
-        => new(Vector4.Zero, Vector4.Zero, TexCoord0 - baseValue.GetTexCoord(0), Vector2.Zero);
-
-    public Vector2 GetTexCoord(int index)
+    public readonly Vector4 Get(int index)
         => index switch
         {
-            0 => TexCoord0,
+            0 => Color,
             _ => throw new ArgumentOutOfRangeException(nameof(index)),
         };
 
-    public void SetTexCoord(int setIndex, Vector2 coord)
+    public void Set(int index, Vector4 value)
     {
-        if (setIndex == 0)
-            TexCoord0 = coord;
-        if (setIndex >= 1)
-            throw new ArgumentOutOfRangeException(nameof(setIndex));
-    }
-
-    public bool TryGetCustomAttribute(string attributeName, out object? value)
-    {
-        switch (attributeName)
+        switch (index)
         {
-            case "_FFXIV_COLOR":
-                value = FfxivColor;
-                return true;
-
-            default:
-                value = null;
-                return false;
+            case 0:  Color = value; break;
+            default: throw new ArgumentOutOfRangeException(nameof(index));
         }
-    }
-
-    public void SetCustomAttribute(string attributeName, object value)
-    {
-        if (attributeName == "_FFXIV_COLOR" && value is Vector4 valueVector4)
-            FfxivColor = valueVector4;
-    }
-
-    public Vector4 GetColor(int index)
-        => throw new ArgumentOutOfRangeException(nameof(index));
-
-    public void SetColor(int setIndex, Vector4 color)
-    { }
-
-    public void Validate()
-    {
-        var components = new[]
-        {
-            FfxivColor.X,
-            FfxivColor.Y,
-            FfxivColor.Z,
-            FfxivColor.W,
-        };
-        if (components.Any(component => component < 0 || component > 1))
-            throw new ArgumentOutOfRangeException(nameof(FfxivColor));
     }
 }
 
-public struct VertexTexture1Color2Ffxiv(Vector2 texCoord0, Vector4 ffxivColor0, Vector4 ffxivColor1) : IVertexCustom
+internal record struct VertexColor2(Vector4 Color0, Vector4 Color1) : IVertexColor
 {
-    public IEnumerable<KeyValuePair<string, AttributeFormat>> GetEncodingAttributes()
-    {
-        yield return new KeyValuePair<string, AttributeFormat>("TEXCOORD_0",
-            new AttributeFormat(DimensionType.VEC2, EncodingType.FLOAT, false));
-        yield return new KeyValuePair<string, AttributeFormat>("_FFXIV_COLOR_0",
-            new AttributeFormat(DimensionType.VEC4, EncodingType.UNSIGNED_SHORT, true));
-        yield return new KeyValuePair<string, AttributeFormat>("_FFXIV_COLOR_1",
-            new AttributeFormat(DimensionType.VEC4, EncodingType.UNSIGNED_SHORT, true));
-    }
+    public static IEnumerable<string> CustomAttributes
+        => ["_FFXIV_COLOR_0", "_FFXIV_COLOR_1"];
 
-    public Vector2 TexCoord0 = texCoord0;
-
-    public Vector4 FfxivColor0 = ffxivColor0;
-    public Vector4 FfxivColor1 = ffxivColor1;
-
-    public int MaxColors
-        => 0;
-
-    public int MaxTextCoords
-        => 1;
-
-    private static readonly string[] CustomNames = ["_FFXIV_COLOR_0", "_FFXIV_COLOR_1"];
-
-    public IEnumerable<string> CustomAttributes
-        => CustomNames;
-
-    public void Add(in VertexMaterialDelta delta)
-    {
-        TexCoord0 += delta.TexCoord0Delta;
-    }
-
-    public VertexMaterialDelta Subtract(IVertexMaterial baseValue)
-        => new(Vector4.Zero, Vector4.Zero, TexCoord0 - baseValue.GetTexCoord(0), Vector2.Zero);
-
-    public Vector2 GetTexCoord(int index)
-        => index switch
-        {
-            0 => TexCoord0,
-            _ => throw new ArgumentOutOfRangeException(nameof(index)),
-        };
-
-    public void SetTexCoord(int setIndex, Vector2 coord)
-    {
-        if (setIndex == 0)
-            TexCoord0 = coord;
-        if (setIndex >= 1)
-            throw new ArgumentOutOfRangeException(nameof(setIndex));
-    }
-
-    public bool TryGetCustomAttribute(string attributeName, out object? value)
-    {
-        switch (attributeName)
-        {
-            case "_FFXIV_COLOR_0":
-                value = FfxivColor0;
-                return true;
-            
-            case "_FFXIV_COLOR_1":
-                value = FfxivColor1;
-                return true;
-
-            default:
-                value = null;
-                return false;
-        }
-    }
-
-    public void SetCustomAttribute(string attributeName, object value)
-    {
-        switch (attributeName)
-        {
-            case "_FFXIV_COLOR_0" when value is Vector4 valueVector4:
-                FfxivColor0 = valueVector4;
-                break;
-            case "_FFXIV_COLOR_1" when value is Vector4 valueVector4:
-                FfxivColor1 = valueVector4;
-                break;
-        }
-    }
-
-    public Vector4 GetColor(int index)
-        => throw new ArgumentOutOfRangeException(nameof(index));
-
-    public void SetColor(int setIndex, Vector4 color)
-    { }
-
-    public void Validate()
-    {
-        var components = new[]
-        {
-            FfxivColor0.X,
-            FfxivColor0.Y,
-            FfxivColor0.Z,
-            FfxivColor0.W,
-        };
-        if (components.Any(component => component is < 0 or > 1))
-            throw new ArgumentOutOfRangeException(nameof(FfxivColor0));
-        components =
-        [
-            FfxivColor1.X,
-            FfxivColor1.Y,
-            FfxivColor1.Z,
-            FfxivColor1.W,
-        ];
-        if (components.Any(component => component is < 0 or > 1))
-            throw new ArgumentOutOfRangeException(nameof(FfxivColor1));
-    }
-}
-
-
-public struct VertexTexture2ColorFfxiv(Vector2 texCoord0, Vector2 texCoord1, Vector4 ffxivColor) : IVertexCustom
-{
-    public IEnumerable<KeyValuePair<string, AttributeFormat>> GetEncodingAttributes()
-    {
-        yield return new KeyValuePair<string, AttributeFormat>("TEXCOORD_0",
-            new AttributeFormat(DimensionType.VEC2, EncodingType.FLOAT, false));
-        yield return new KeyValuePair<string, AttributeFormat>("TEXCOORD_1",
-            new AttributeFormat(DimensionType.VEC2, EncodingType.FLOAT, false));
-        yield return new KeyValuePair<string, AttributeFormat>("_FFXIV_COLOR",
-            new AttributeFormat(DimensionType.VEC4, EncodingType.UNSIGNED_SHORT, true));
-    }
-
-    public Vector2 TexCoord0  = texCoord0;
-    public Vector2 TexCoord1  = texCoord1;
-    public Vector4 FfxivColor = ffxivColor;
-
-    public int MaxColors
-        => 0;
-
-    public int MaxTextCoords
+    public static int MaxXivColors
         => 2;
 
-    private static readonly string[] CustomNames = ["_FFXIV_COLOR"];
+    public readonly Vector4 Get(int index)
+        => index switch
+        {
+            0 => Color0,
+            1 => Color1,
+            _ => throw new ArgumentOutOfRangeException(nameof(index)),
+        };
 
-    public IEnumerable<string> CustomAttributes
-        => CustomNames;
-
-    public void Add(in VertexMaterialDelta delta)
+    public void Set(int index, Vector4 value)
     {
-        TexCoord0 += delta.TexCoord0Delta;
-        TexCoord1 += delta.TexCoord1Delta;
+        switch (index)
+        {
+            case 0:  Color0 = value; break;
+            case 1:  Color1 = value; break;
+            default: throw new ArgumentOutOfRangeException(nameof(index));
+        }
     }
+}
 
-    public VertexMaterialDelta Subtract(IVertexMaterial baseValue)
-        => new(Vector4.Zero, Vector4.Zero, TexCoord0 - baseValue.GetTexCoord(0), TexCoord1 - baseValue.GetTexCoord(1));
+internal struct VertexTexture0Xiv : IVertexTexture
+{
+    public static int MaxTextCoords
+        => 0;
+}
 
-    public Vector2 GetTexCoord(int index)
+internal record struct VertexTexture1Xiv(Vector2 TexCoord0) : IVertexTexture
+{
+    public static int MaxTextCoords
+        => 1;
+
+    public readonly Vector2 Get(int index)
+        => index switch
+        {
+            0 => TexCoord0,
+            _ => throw new ArgumentOutOfRangeException(nameof(index)),
+        };
+
+    public void Set(int index, Vector2 value)
+    {
+        switch (index)
+        {
+            case 0:  TexCoord0 = value; break;
+            default: throw new ArgumentOutOfRangeException(nameof(index));
+        }
+    }
+}
+
+internal record struct VertexTexture2Xiv(Vector2 TexCoord0, Vector2 TexCoord1) : IVertexTexture
+{
+    public static int MaxTextCoords
+        => 2;
+
+    public readonly Vector2 Get(int index)
         => index switch
         {
             0 => TexCoord0,
@@ -425,216 +155,23 @@ public struct VertexTexture2ColorFfxiv(Vector2 texCoord0, Vector2 texCoord1, Vec
             _ => throw new ArgumentOutOfRangeException(nameof(index)),
         };
 
-    public void SetTexCoord(int setIndex, Vector2 coord)
+    public void Set(int index, Vector2 value)
     {
-        if (setIndex == 0)
-            TexCoord0 = coord;
-        if (setIndex == 1)
-            TexCoord1 = coord;
-        if (setIndex >= 2)
-            throw new ArgumentOutOfRangeException(nameof(setIndex));
-    }
-
-    public bool TryGetCustomAttribute(string attributeName, out object? value)
-    {
-        switch (attributeName)
+        switch (index)
         {
-            case "_FFXIV_COLOR":
-                value = FfxivColor;
-                return true;
-
-            default:
-                value = null;
-                return false;
+            case 0:  TexCoord0 = value; break;
+            case 1:  TexCoord1 = value; break;
+            default: throw new ArgumentOutOfRangeException(nameof(index));
         }
-    }
-
-    public void SetCustomAttribute(string attributeName, object value)
-    {
-        if (attributeName == "_FFXIV_COLOR" && value is Vector4 valueVector4)
-            FfxivColor = valueVector4;
-    }
-
-    public Vector4 GetColor(int index)
-        => throw new ArgumentOutOfRangeException(nameof(index));
-
-    public void SetColor(int setIndex, Vector4 color)
-    { }
-
-    public void Validate()
-    {
-        var components = new[]
-        {
-            FfxivColor.X,
-            FfxivColor.Y,
-            FfxivColor.Z,
-            FfxivColor.W,
-        };
-        if (components.Any(component => component < 0 || component > 1))
-            throw new ArgumentOutOfRangeException(nameof(FfxivColor));
     }
 }
 
-public struct VertexTexture2Color2Ffxiv(Vector2 texCoord0, Vector2 texCoord1, Vector4 ffxivColor0, Vector4 ffxivColor1) : IVertexCustom
+internal record struct VertexTexture3Xiv(Vector2 TexCoord0, Vector2 TexCoord1, Vector2 TexCoord2) : IVertexTexture
 {
-    public IEnumerable<KeyValuePair<string, AttributeFormat>> GetEncodingAttributes()
-    {
-        yield return new KeyValuePair<string, AttributeFormat>("TEXCOORD_0",
-            new AttributeFormat(DimensionType.VEC2, EncodingType.FLOAT, false));
-        yield return new KeyValuePair<string, AttributeFormat>("TEXCOORD_1",
-            new AttributeFormat(DimensionType.VEC2, EncodingType.FLOAT, false));
-        yield return new KeyValuePair<string, AttributeFormat>("_FFXIV_COLOR_0",
-            new AttributeFormat(DimensionType.VEC4, EncodingType.UNSIGNED_SHORT, true));
-        yield return new KeyValuePair<string, AttributeFormat>("_FFXIV_COLOR_1",
-            new AttributeFormat(DimensionType.VEC4, EncodingType.UNSIGNED_SHORT, true));
-    }
-
-    public Vector2 TexCoord0   = texCoord0;
-    public Vector2 TexCoord1   = texCoord1;
-    public Vector4 FfxivColor0 = ffxivColor0;
-    public Vector4 FfxivColor1 = ffxivColor1;
-
-    public int MaxColors
-        => 0;
-
-    public int MaxTextCoords
-        => 2;
-
-    private static readonly string[] CustomNames = ["_FFXIV_COLOR_0", "_FFXIV_COLOR_1"];
-
-    public IEnumerable<string> CustomAttributes
-        => CustomNames;
-
-    public void Add(in VertexMaterialDelta delta)
-    {
-        TexCoord0 += delta.TexCoord0Delta;
-        TexCoord1 += delta.TexCoord1Delta;
-    }
-
-    public VertexMaterialDelta Subtract(IVertexMaterial baseValue)
-        => new(Vector4.Zero, Vector4.Zero, TexCoord0 - baseValue.GetTexCoord(0), TexCoord1 - baseValue.GetTexCoord(1));
-
-    public Vector2 GetTexCoord(int index)
-        => index switch
-        {
-            0 => TexCoord0,
-            1 => TexCoord1,
-            _ => throw new ArgumentOutOfRangeException(nameof(index)),
-        };
-
-    public void SetTexCoord(int setIndex, Vector2 coord)
-    {
-        if (setIndex == 0)
-            TexCoord0 = coord;
-        if (setIndex == 1)
-            TexCoord1 = coord;
-        if (setIndex >= 2)
-            throw new ArgumentOutOfRangeException(nameof(setIndex));
-    }
-
-    public bool TryGetCustomAttribute(string attributeName, out object? value)
-    {
-        switch (attributeName)
-        {
-            case "_FFXIV_COLOR_0":
-                value = FfxivColor0;
-                return true;
-            
-            case "_FFXIV_COLOR_1":
-                value = FfxivColor1;
-                return true;
-
-            default:
-                value = null;
-                return false;
-        }
-    }
-
-    public void SetCustomAttribute(string attributeName, object value)
-    {
-        switch (attributeName)
-        {
-            case "_FFXIV_COLOR_0" when value is Vector4 valueVector4:
-                FfxivColor0 = valueVector4;
-                break;
-            case "_FFXIV_COLOR_1" when value is Vector4 valueVector4:
-                FfxivColor1 = valueVector4;
-                break;
-        }
-    }
-
-    public Vector4 GetColor(int index)
-        => throw new ArgumentOutOfRangeException(nameof(index));
-
-    public void SetColor(int setIndex, Vector4 color)
-    { }
-
-    public void Validate()
-    {
-        var components = new[]
-        {
-            FfxivColor0.X,
-            FfxivColor0.Y,
-            FfxivColor0.Z,
-            FfxivColor0.W,
-        };
-        if (components.Any(component => component is < 0 or > 1))
-            throw new ArgumentOutOfRangeException(nameof(FfxivColor0));
-        components =
-        [
-            FfxivColor1.X,
-            FfxivColor1.Y,
-            FfxivColor1.Z,
-            FfxivColor1.W,
-        ];
-        if (components.Any(component => component is < 0 or > 1))
-            throw new ArgumentOutOfRangeException(nameof(FfxivColor1));
-    }
-
-}
-
-public struct VertexTexture3ColorFfxiv(Vector2 texCoord0, Vector2 texCoord1, Vector2 texCoord2, Vector4 ffxivColor)
-    : IVertexCustom
-{
-    public IEnumerable<KeyValuePair<string, AttributeFormat>> GetEncodingAttributes()
-    {
-        yield return new KeyValuePair<string, AttributeFormat>("TEXCOORD_0",
-            new AttributeFormat(DimensionType.VEC2, EncodingType.FLOAT, false));
-        yield return new KeyValuePair<string, AttributeFormat>("TEXCOORD_1",
-            new AttributeFormat(DimensionType.VEC2, EncodingType.FLOAT, false));
-        yield return new KeyValuePair<string, AttributeFormat>("TEXCOORD_2",
-            new AttributeFormat(DimensionType.VEC2, EncodingType.FLOAT, false));
-        yield return new KeyValuePair<string, AttributeFormat>("_FFXIV_COLOR",
-            new AttributeFormat(DimensionType.VEC4, EncodingType.UNSIGNED_SHORT, true));
-    }
-
-    public Vector2 TexCoord0  = texCoord0;
-    public Vector2 TexCoord1  = texCoord1;
-    public Vector2 TexCoord2  = texCoord2;
-    public Vector4 FfxivColor = ffxivColor;
-
-    public int MaxColors
-        => 0;
-
-    public int MaxTextCoords
+    public static int MaxTextCoords
         => 3;
 
-    private static readonly string[] CustomNames = ["_FFXIV_COLOR"];
-
-    public IEnumerable<string> CustomAttributes
-        => CustomNames;
-
-    public void Add(in VertexMaterialDelta delta)
-    {
-        TexCoord0 += delta.TexCoord0Delta;
-        TexCoord1 += delta.TexCoord1Delta;
-        TexCoord2 += delta.TexCoord2Delta;
-    }
-
-    public VertexMaterialDelta Subtract(IVertexMaterial baseValue)
-        => new(Vector4.Zero, Vector4.Zero, TexCoord0 - baseValue.GetTexCoord(0), TexCoord1 - baseValue.GetTexCoord(1));
-
-    public Vector2 GetTexCoord(int index)
+    public readonly Vector2 Get(int index)
         => index switch
         {
             0 => TexCoord0,
@@ -643,1519 +180,154 @@ public struct VertexTexture3ColorFfxiv(Vector2 texCoord0, Vector2 texCoord1, Vec
             _ => throw new ArgumentOutOfRangeException(nameof(index)),
         };
 
-    public void SetTexCoord(int setIndex, Vector2 coord)
+    public void Set(int index, Vector2 value)
     {
-        if (setIndex == 0)
-            TexCoord0 = coord;
-        if (setIndex == 1)
-            TexCoord1 = coord;
-        if (setIndex == 2)
-            TexCoord2 = coord;
-        if (setIndex >= 3)
-            throw new ArgumentOutOfRangeException(nameof(setIndex));
-    }
-
-    public bool TryGetCustomAttribute(string attributeName, out object? value)
-    {
-        switch (attributeName)
+        switch (index)
         {
-            case "_FFXIV_COLOR":
-                value = FfxivColor;
-                return true;
-
-            default:
-                value = null;
-                return false;
+            case 0:  TexCoord0 = value; break;
+            case 1:  TexCoord1 = value; break;
+            case 2:  TexCoord2 = value; break;
+            default: throw new ArgumentOutOfRangeException(nameof(index));
         }
-    }
-
-    public void SetCustomAttribute(string attributeName, object value)
-    {
-        if (attributeName == "_FFXIV_COLOR" && value is Vector4 valueVector4)
-            FfxivColor = valueVector4;
-    }
-
-    public Vector4 GetColor(int index)
-        => throw new ArgumentOutOfRangeException(nameof(index));
-
-    public void SetColor(int setIndex, Vector4 color)
-    { }
-
-    public void Validate()
-    {
-        var components = new[]
-        {
-            FfxivColor.X,
-            FfxivColor.Y,
-            FfxivColor.Z,
-            FfxivColor.W,
-        };
-        if (components.Any(component => component is < 0f or > 1f))
-            throw new ArgumentOutOfRangeException(nameof(FfxivColor));
     }
 }
 
-public struct VertexTexture3Color2Ffxiv(Vector2 texCoord0, Vector2 texCoord1, Vector2 texCoord2, Vector4 ffxivColor0, Vector4 ffxivColor1)
-    : IVertexCustom
+public interface IXivVertex<TVertexColor, TVertexTexture, TVertexFlow> : IVertexCustom
+    where TVertexColor : IVertexColor
+    where TVertexTexture : IVertexTexture
+    where TVertexFlow : IVertexFlow
 {
-    public IEnumerable<KeyValuePair<string, AttributeFormat>> GetEncodingAttributes()
-    {
-        yield return new KeyValuePair<string, AttributeFormat>("TEXCOORD_0",
-            new AttributeFormat(DimensionType.VEC2, EncodingType.FLOAT, false));
-        yield return new KeyValuePair<string, AttributeFormat>("TEXCOORD_1",
-            new AttributeFormat(DimensionType.VEC2, EncodingType.FLOAT, false));
-        yield return new KeyValuePair<string, AttributeFormat>("_FFXIV_COLOR_0",
-            new AttributeFormat(DimensionType.VEC4, EncodingType.UNSIGNED_SHORT, true));
-        yield return new KeyValuePair<string, AttributeFormat>("_FFXIV_COLOR_1",
-            new AttributeFormat(DimensionType.VEC4, EncodingType.UNSIGNED_SHORT, true));
-    }
-
-    public Vector2 TexCoord0   = texCoord0;
-    public Vector2 TexCoord1   = texCoord1;
-    public Vector2 TexCoord2   = texCoord2;
-    public Vector4 FfxivColor0 = ffxivColor0;
-    public Vector4 FfxivColor1 = ffxivColor1;
-
-    public int MaxColors
-        => 0;
-
-    public int MaxTextCoords
-        => 3;
-
-    private static readonly string[] CustomNames = ["_FFXIV_COLOR_0", "_FFXIV_COLOR_1"];
-
-    public IEnumerable<string> CustomAttributes
-        => CustomNames;
-
-    public void Add(in VertexMaterialDelta delta)
-    {
-        TexCoord0 += delta.TexCoord0Delta;
-        TexCoord1 += delta.TexCoord1Delta;
-        TexCoord2 += delta.TexCoord2Delta;
-    }
-
-    public VertexMaterialDelta Subtract(IVertexMaterial baseValue)
-        => new(Vector4.Zero, Vector4.Zero, TexCoord0 - baseValue.GetTexCoord(0), TexCoord1 - baseValue.GetTexCoord(1));
-
-    public Vector2 GetTexCoord(int index)
-        => index switch
-        {
-            0 => TexCoord0,
-            1 => TexCoord1,
-            2 => TexCoord2,
-            _ => throw new ArgumentOutOfRangeException(nameof(index)),
-        };
-
-    public void SetTexCoord(int setIndex, Vector2 coord)
-    {
-        if (setIndex == 0)
-            TexCoord0 = coord;
-        if (setIndex == 1)
-            TexCoord1 = coord;
-        if (setIndex == 2)
-            TexCoord2 = coord;
-        if (setIndex >= 3)
-            throw new ArgumentOutOfRangeException(nameof(setIndex));
-    }
-
-    public bool TryGetCustomAttribute(string attributeName, out object? value)
-    {
-        switch (attributeName)
-        {
-            case "_FFXIV_COLOR_0":
-                value = FfxivColor0;
-                return true;
-            
-            case "_FFXIV_COLOR_1":
-                value = FfxivColor1;
-                return true;
-
-            default:
-                value = null;
-                return false;
-        }
-    }
-
-    public void SetCustomAttribute(string attributeName, object value)
-    {
-        switch (attributeName)
-        {
-            case "_FFXIV_COLOR_0" when value is Vector4 valueVector4:
-                FfxivColor0 = valueVector4;
-                break;
-            case "_FFXIV_COLOR_1" when value is Vector4 valueVector4:
-                FfxivColor1 = valueVector4;
-                break;
-        }
-    }
-
-    public Vector4 GetColor(int index)
-        => throw new ArgumentOutOfRangeException(nameof(index));
-
-    public void SetColor(int setIndex, Vector4 color)
-    { }
-
-    public void Validate()
-    {
-        var components = new[]
-        {
-            FfxivColor0.X,
-            FfxivColor0.Y,
-            FfxivColor0.Z,
-            FfxivColor0.W,
-        };
-        if (components.Any(component => component is < 0 or > 1))
-            throw new ArgumentOutOfRangeException(nameof(FfxivColor0));
-        components =
+    IEnumerable<KeyValuePair<string, AttributeFormat>> IVertexReflection.GetEncodingAttributes()
+        =>
         [
-            FfxivColor1.X,
-            FfxivColor1.Y,
-            FfxivColor1.Z,
-            FfxivColor1.W,
+            .. Enumerable.Range(0, TVertexTexture.MaxTextCoords).Select(IVertexTexture.CreateCoord),
+            .. TVertexColor.CustomAttributes.Select(IVertexColor.CreateColor),
+            .. TVertexFlow.CustomAttributes.Select(IVertexFlow.CreateFlow),
         ];
-        if (components.Any(component => component is < 0 or > 1))
-            throw new ArgumentOutOfRangeException(nameof(FfxivColor1));
-    }
-}
 
-// I don't know if we actually need all of these, but I added them all in just for completeness' sake
-// These are simply all copies of the code above, but with the additional _FFXIV_TANGENT_2 attribute added.
-// While going through this I also noticed, that the two subtract functions with 3 components were only actually 
-// handling the first two and dropping the third component. I changed this in these copies
-
-public struct VertexColorTangent2Ffxiv(Vector4 ffxivColor, Vector4 ffxivTangent2) : IVertexCustom
-{
-    public IEnumerable<KeyValuePair<string, AttributeFormat>> GetEncodingAttributes()
-    {
-        // NOTE: We only realistically require UNSIGNED_BYTE for this, however Blender 3.6 errors on that (fixed in 4.0).
-        yield return new KeyValuePair<string, AttributeFormat>("_FFXIV_COLOR",
-            new AttributeFormat(DimensionType.VEC4, EncodingType.UNSIGNED_SHORT, true));
-        yield return new KeyValuePair<string, AttributeFormat>("_FFXIV_TANGENT_2",
-            new AttributeFormat(DimensionType.VEC4, EncodingType.UNSIGNED_SHORT, true));
-    }
-
-    public Vector4 FfxivColor = ffxivColor;
-    public Vector4 FfxivTangent2 = ffxivTangent2;
-
-    public int MaxColors
+    int IVertexMaterial.MaxColors
         => 0;
 
-    public int MaxTextCoords
-        => 0;
+    int IVertexMaterial.MaxTextCoords
+        => TVertexTexture.MaxTextCoords;
 
-    private static readonly string[] CustomNames = ["_FFXIV_COLOR", "_FFXIV_TANGENT_2"];
+    public bool HasFlow
+        => TVertexFlow.HasFlow;
 
-    public IEnumerable<string> CustomAttributes
-        => CustomNames;
+    public int MaxXivColors
+        => TVertexColor.MaxXivColors;
 
-    public void Add(in VertexMaterialDelta delta)
-    { }
+    IEnumerable<string> IVertexCustom.CustomAttributes
+        => [.. TVertexColor.CustomAttributes, .. TVertexFlow.CustomAttributes];
 
-    public VertexMaterialDelta Subtract(IVertexMaterial baseValue)
-        => new(Vector4.Zero, Vector4.Zero, Vector2.Zero, Vector2.Zero);
+    void IVertexMaterial.Add(in VertexMaterialDelta delta)
+    {
+        for (var i = 0; i < TVertexTexture.MaxTextCoords; ++i)
+            SetTexCoord(i, delta.GetTexCoord(i));
+    }
 
-    public Vector2 GetTexCoord(int index)
+    VertexMaterialDelta IVertexMaterial.Subtract(IVertexMaterial baseValue)
+        => TVertexTexture.MaxTextCoords switch
+        {
+            0 => VertexMaterialDelta.Zero,
+            1 => VertexMaterialDelta.Zero with { TexCoord0Delta = GetTexCoord(0) - baseValue.GetTexCoord(0) },
+            2 => new VertexMaterialDelta(Vector4.Zero, Vector4.Zero, GetTexCoord(0) - baseValue.GetTexCoord(0),
+                GetTexCoord(1) - baseValue.GetTexCoord(1)),
+            3 => new VertexMaterialDelta(Vector4.Zero, Vector4.Zero, GetTexCoord(0) - baseValue.GetTexCoord(0),
+                GetTexCoord(1) - baseValue.GetTexCoord(1),
+                GetTexCoord(2) - baseValue.GetTexCoord(2), Vector2.Zero),
+            4 => new VertexMaterialDelta(Vector4.Zero, Vector4.Zero, GetTexCoord(0) - baseValue.GetTexCoord(0),
+                GetTexCoord(1) - baseValue.GetTexCoord(1),
+                GetTexCoord(2) - baseValue.GetTexCoord(2), GetTexCoord(3) - baseValue.GetTexCoord(3)),
+            _ => throw new NotSupportedException(),
+        };
+
+    bool IVertexCustom.TryGetCustomAttribute(string attributeName, out object? value)
+    {
+        foreach (var (index, attribute) in TVertexColor.CustomAttributes.Index())
+        {
+            if (attribute != attributeName)
+                continue;
+
+            value = GetXivColor(index);
+            return true;
+        }
+
+        foreach (var attribute in TVertexFlow.CustomAttributes)
+        {
+            if (attribute != attributeName)
+                continue;
+
+            value = Flow;
+            return true;
+        }
+
+        value = null;
+        return false;
+    }
+
+    void IVertexCustom.SetCustomAttribute(string attributeName, object value)
+    {
+        if (value is not Vector4 valueVector4)
+            return;
+
+        foreach (var (index, attribute) in TVertexColor.CustomAttributes.Index())
+        {
+            if (attribute != attributeName)
+                continue;
+
+            SetXivColor(index, valueVector4);
+            return;
+        }
+
+        foreach (var attribute in TVertexFlow.CustomAttributes)
+        {
+            if (attribute != attributeName)
+                continue;
+
+            Flow = valueVector4;
+            return;
+        }
+    }
+
+    public Vector4 GetXivColor(int index)
         => throw new ArgumentOutOfRangeException(nameof(index));
 
-    public void SetTexCoord(int setIndex, Vector2 coord)
-    { }
-
-    public bool TryGetCustomAttribute(string attributeName, out object? value)
-    {
-        switch (attributeName)
-        {
-            case "_FFXIV_COLOR":
-                value = FfxivColor;
-                return true;
-
-            case "_FFXIV_TANGENT_2":
-                value = FfxivTangent2;
-                return true;
-
-            default:
-                value = null;
-                return false;
-        }
-    }
-
-    public void SetCustomAttribute(string attributeName, object value)
-    {
-        switch (attributeName)
-        {
-            case "_FFXIV_COLOR" when value is Vector4 valueVector4:
-                FfxivColor = valueVector4;
-                break;
-            case "_FFXIV_TANGENT_2" when value is Vector4 valueVector4:
-                FfxivTangent2 = valueVector4;
-                break;
-        }
-    }
-
-    public Vector4 GetColor(int index)
-        => throw new ArgumentOutOfRangeException(nameof(index));
-    public void SetColor(int setIndex, Vector4 color)
-    { }
-    public void Validate()
-    {
-        var components = new[]
-        {
-            FfxivColor.X,
-            FfxivColor.Y,
-            FfxivColor.Z,
-            FfxivColor.W,
-        };
-        if (components.Any(component => component < 0 || component > 1))
-            throw new ArgumentOutOfRangeException(nameof(FfxivColor));
-        components =
-        [
-            FfxivTangent2.X,
-            FfxivTangent2.Y,
-            FfxivTangent2.Z,
-            FfxivTangent2.W,
-        ];
-        if (components.Any(component => component is < 0 or > 1))
-            throw new ArgumentOutOfRangeException(nameof(FfxivTangent2));
-    }
-}
-
-public struct VertexColor2Tangent2Ffxiv(Vector4 ffxivColor0, Vector4 ffxivColor1, Vector4 ffxivTangent2) : IVertexCustom
-{
-    public IEnumerable<KeyValuePair<string, AttributeFormat>> GetEncodingAttributes()
-    {
-        yield return new KeyValuePair<string, AttributeFormat>("_FFXIV_COLOR_0",
-            new AttributeFormat(DimensionType.VEC4, EncodingType.UNSIGNED_SHORT, true));
-        yield return new KeyValuePair<string, AttributeFormat>("_FFXIV_COLOR_1",
-            new AttributeFormat(DimensionType.VEC4, EncodingType.UNSIGNED_SHORT, true));
-        yield return new KeyValuePair<string, AttributeFormat>("_FFXIV_TANGENT_2",
-            new AttributeFormat(DimensionType.VEC4, EncodingType.UNSIGNED_SHORT, true));
-    }
-
-    public Vector4 FfxivColor0 = ffxivColor0;
-    public Vector4 FfxivColor1 = ffxivColor1;
-
-    public Vector4 FfxivTangent2 = ffxivTangent2;
-
-    public int MaxColors
-        => 0;
-
-    public int MaxTextCoords
-        => 0;
-
-    private static readonly string[] CustomNames = ["_FFXIV_COLOR_0", "_FFXIV_COLOR_1", "_FFXIV_TANGENT_2"];
-
-    public IEnumerable<string> CustomAttributes
-        => CustomNames;
-
-    public void Add(in VertexMaterialDelta delta)
-    { }
-
-    public VertexMaterialDelta Subtract(IVertexMaterial baseValue)
-        => new(Vector4.Zero, Vector4.Zero, Vector2.Zero, Vector2.Zero);
-
-    public Vector2 GetTexCoord(int index)
+    public void SetXivColor(int index, Vector4 color)
         => throw new ArgumentOutOfRangeException(nameof(index));
 
-    public void SetTexCoord(int setIndex, Vector2 coord)
-    { }
-
-    public bool TryGetCustomAttribute(string attributeName, out object? value)
-    {
-        switch (attributeName)
-        {
-            case "_FFXIV_COLOR_0":
-                value = FfxivColor0;
-                return true;
-            
-            case "_FFXIV_COLOR_1":
-                value = FfxivColor1;
-                return true;
-            case "_FFXIV_TANGENT_2":
-                value = FfxivTangent2;
-                return true;
-
-            default:
-                value = null;
-                return false;
-        }
-    }
-
-    public void SetCustomAttribute(string attributeName, object value)
-    {
-        switch (attributeName)
-        {
-            case "_FFXIV_COLOR_0" when value is Vector4 valueVector4:
-                FfxivColor0 = valueVector4;
-                break;
-            case "_FFXIV_COLOR_1" when value is Vector4 valueVector4:
-                FfxivColor1 = valueVector4;
-                break;
-            case "_FFXIV_TANGENT_2" when value is Vector4 valueVector4:
-                FfxivTangent2 = valueVector4;
-                break;
-        }
-    }
-
-    public Vector4 GetColor(int index)
+    Vector2 IVertexMaterial.GetTexCoord(int index)
         => throw new ArgumentOutOfRangeException(nameof(index));
 
-    public void SetColor(int setIndex, Vector4 color)
-    { }
-
-    public void Validate()
-    {
-        var components = new[]
-        {
-            FfxivColor0.X,
-            FfxivColor0.Y,
-            FfxivColor0.Z,
-            FfxivColor0.W,
-        };
-        if (components.Any(component => component is < 0 or > 1))
-            throw new ArgumentOutOfRangeException(nameof(FfxivColor0));
-        components =
-        [
-            FfxivColor1.X,
-            FfxivColor1.Y,
-            FfxivColor1.Z,
-            FfxivColor1.W,
-        ];
-        if (components.Any(component => component is < 0 or > 1))
-            throw new ArgumentOutOfRangeException(nameof(FfxivColor1));
-        components =
-        [
-            FfxivTangent2.X,
-            FfxivTangent2.Y,
-            FfxivTangent2.Z,
-            FfxivTangent2.W,
-        ];
-        if (components.Any(component => component is < 0 or > 1))
-            throw new ArgumentOutOfRangeException(nameof(FfxivTangent2));
-    }
-}
-
-
-public struct VertexTexture1ColorTangent2Ffxiv(Vector2 texCoord0, Vector4 ffxivColor, Vector4 ffxivTangent2) : IVertexCustom
-{
-    public IEnumerable<KeyValuePair<string, AttributeFormat>> GetEncodingAttributes()
-    {
-        yield return new KeyValuePair<string, AttributeFormat>("TEXCOORD_0",
-            new AttributeFormat(DimensionType.VEC2, EncodingType.FLOAT, false));
-        yield return new KeyValuePair<string, AttributeFormat>("_FFXIV_COLOR",
-            new AttributeFormat(DimensionType.VEC4, EncodingType.UNSIGNED_SHORT, true));
-        yield return new KeyValuePair<string, AttributeFormat>("_FFXIV_TANGENT_2",
-            new AttributeFormat(DimensionType.VEC4, EncodingType.UNSIGNED_SHORT, true));
-    }
-
-    public Vector2 TexCoord0 = texCoord0;
-
-    public Vector4 FfxivColor = ffxivColor;
-
-    public Vector4 FfxivTangent2 = ffxivTangent2;
-
-    public int MaxColors
-        => 0;
-
-    public int MaxTextCoords
-        => 1;
-
-    private static readonly string[] CustomNames = ["_FFXIV_COLOR", "_FFXIV_TANGENT_2"];
-
-    public IEnumerable<string> CustomAttributes
-        => CustomNames;
-
-    public void Add(in VertexMaterialDelta delta)
-    {
-        TexCoord0 += delta.TexCoord0Delta;
-    }
-
-    public VertexMaterialDelta Subtract(IVertexMaterial baseValue)
-        => new(Vector4.Zero, Vector4.Zero, TexCoord0 - baseValue.GetTexCoord(0), Vector2.Zero);
-
-    public Vector2 GetTexCoord(int index)
-        => index switch
-        {
-            0 => TexCoord0,
-            _ => throw new ArgumentOutOfRangeException(nameof(index)),
-        };
-
-    public void SetTexCoord(int setIndex, Vector2 coord)
-    {
-        if (setIndex == 0)
-            TexCoord0 = coord;
-        if (setIndex >= 1)
-            throw new ArgumentOutOfRangeException(nameof(setIndex));
-    }
-
-    public bool TryGetCustomAttribute(string attributeName, out object? value)
-    {
-        switch (attributeName)
-        {
-            case "_FFXIV_COLOR":
-                value = FfxivColor;
-                return true;
-
-            case "_FFXIV_TANGENT_2":
-                value = FfxivTangent2;
-                return true;
-
-            default:
-                value = null;
-                return false;
-        }
-    }
-
-    public void SetCustomAttribute(string attributeName, object value)
-    {
-        switch (attributeName)
-        {
-            case "_FFXIV_COLOR" when value is Vector4 valueVector4:
-                FfxivColor = valueVector4;
-                break;
-            case "_FFXIV_TANGENT_2" when value is Vector4 valueVector4:
-                FfxivTangent2 = valueVector4;
-                break;
-        }
-    }
-
-    public Vector4 GetColor(int index)
+    void IVertexMaterial.SetTexCoord(int index, Vector2 value)
         => throw new ArgumentOutOfRangeException(nameof(index));
 
-    public void SetColor(int setIndex, Vector4 color)
-    { }
-
-    public void Validate()
+    public Vector4 Flow
     {
-        var components = new[]
-        {
-            FfxivColor.X,
-            FfxivColor.Y,
-            FfxivColor.Z,
-            FfxivColor.W,
-        };
-        if (components.Any(component => component < 0 || component > 1))
-            throw new ArgumentOutOfRangeException(nameof(FfxivColor));
-        var tangentComponents = new[]
-        {
-            FfxivTangent2.X,
-            FfxivTangent2.Y,
-            FfxivTangent2.Z,
-            FfxivTangent2.W,
-        };
-        if (tangentComponents.Any(component => component is < 0 or > 1))
-            throw new ArgumentOutOfRangeException(nameof(FfxivTangent2));
-    }
-}
-
-public struct VertexTexture1Color2Tangent2Ffxiv(Vector2 texCoord0, Vector4 ffxivColor0, Vector4 ffxivColor1, Vector4 ffxivTangent2) : IVertexCustom
-{
-    public IEnumerable<KeyValuePair<string, AttributeFormat>> GetEncodingAttributes()
-    {
-        yield return new KeyValuePair<string, AttributeFormat>("TEXCOORD_0",
-            new AttributeFormat(DimensionType.VEC2, EncodingType.FLOAT, false));
-        yield return new KeyValuePair<string, AttributeFormat>("_FFXIV_COLOR_0",
-            new AttributeFormat(DimensionType.VEC4, EncodingType.UNSIGNED_SHORT, true));
-        yield return new KeyValuePair<string, AttributeFormat>("_FFXIV_COLOR_1",
-            new AttributeFormat(DimensionType.VEC4, EncodingType.UNSIGNED_SHORT, true));
-        yield return new KeyValuePair<string, AttributeFormat>("_FFXIV_TANGENT_2",
-            new AttributeFormat(DimensionType.VEC4, EncodingType.UNSIGNED_SHORT, true));
+        get => throw new ArgumentOutOfRangeException(nameof(Flow));
+        set => throw new ArgumentOutOfRangeException(nameof(Flow));
     }
 
-    public Vector2 TexCoord0 = texCoord0;
-
-    public Vector4 FfxivColor0 = ffxivColor0;
-    public Vector4 FfxivColor1 = ffxivColor1;
-
-    public Vector4 FfxivTangent2 = ffxivTangent2;
-
-    public int MaxColors
-        => 0;
-
-    public int MaxTextCoords
-        => 1;
-
-    private static readonly string[] CustomNames = ["_FFXIV_COLOR_0", "_FFXIV_COLOR_1", "_FFXIV_TANGENT_2"];
-
-    public IEnumerable<string> CustomAttributes
-        => CustomNames;
-
-    public void Add(in VertexMaterialDelta delta)
-    {
-        TexCoord0 += delta.TexCoord0Delta;
-    }
-
-    public VertexMaterialDelta Subtract(IVertexMaterial baseValue)
-        => new(Vector4.Zero, Vector4.Zero, TexCoord0 - baseValue.GetTexCoord(0), Vector2.Zero);
-
-    public Vector2 GetTexCoord(int index)
-        => index switch
-        {
-            0 => TexCoord0,
-            _ => throw new ArgumentOutOfRangeException(nameof(index)),
-        };
-
-    public void SetTexCoord(int setIndex, Vector2 coord)
-    {
-        if (setIndex == 0)
-            TexCoord0 = coord;
-        if (setIndex >= 1)
-            throw new ArgumentOutOfRangeException(nameof(setIndex));
-    }
-
-    public bool TryGetCustomAttribute(string attributeName, out object? value)
-    {
-        switch (attributeName)
-        {
-            case "_FFXIV_COLOR_0":
-                value = FfxivColor0;
-                return true;
-            
-            case "_FFXIV_COLOR_1":
-                value = FfxivColor1;
-                return true;
-
-            case "_FFXIV_TANGENT_2":
-                value = FfxivTangent2;
-                return true;
-
-            default:
-                value = null;
-                return false;
-        }
-    }
-
-    public void SetCustomAttribute(string attributeName, object value)
-    {
-        switch (attributeName)
-        {
-            case "_FFXIV_COLOR_0" when value is Vector4 valueVector4:
-                FfxivColor0 = valueVector4;
-                break;
-            case "_FFXIV_COLOR_1" when value is Vector4 valueVector4:
-                FfxivColor1 = valueVector4;
-                break;
-            case "_FFXIV_TANGENT_2" when value is Vector4 valueVector4:
-                FfxivTangent2 = valueVector4;
-                break;
-        }
-    }
-
-    public Vector4 GetColor(int index)
+    Vector4 IVertexMaterial.GetColor(int index)
         => throw new ArgumentOutOfRangeException(nameof(index));
 
-    public void SetColor(int setIndex, Vector4 color)
+    void IVertexMaterial.SetColor(int index, Vector4 color)
     { }
 
-    public void Validate()
+    void IVertexCustom.Validate()
     {
-        var components = new[]
+        for (var i = 0; i < TVertexColor.MaxXivColors; ++i)
         {
-            FfxivColor0.X,
-            FfxivColor0.Y,
-            FfxivColor0.Z,
-            FfxivColor0.W,
-        };
-        if (components.Any(component => component is < 0 or > 1))
-            throw new ArgumentOutOfRangeException(nameof(FfxivColor0));
-        components =
-        [
-            FfxivColor1.X,
-            FfxivColor1.Y,
-            FfxivColor1.Z,
-            FfxivColor1.W,
-        ];
-        if (components.Any(component => component is < 0 or > 1))
-            throw new ArgumentOutOfRangeException(nameof(FfxivColor1));
-        components =
-        [
-            FfxivTangent2.X,
-            FfxivTangent2.Y,
-            FfxivTangent2.Z,
-            FfxivTangent2.W,
-        ];
-        if (components.Any(component => component is < 0 or > 1))
-            throw new ArgumentOutOfRangeException(nameof(FfxivTangent2));
-    }
-}
-
-
-public struct VertexTexture2ColorTangent2Ffxiv(Vector2 texCoord0, Vector2 texCoord1, Vector4 ffxivColor, Vector4 ffxivTangent2) : IVertexCustom
-{
-    public IEnumerable<KeyValuePair<string, AttributeFormat>> GetEncodingAttributes()
-    {
-        yield return new KeyValuePair<string, AttributeFormat>("TEXCOORD_0",
-            new AttributeFormat(DimensionType.VEC2, EncodingType.FLOAT, false));
-        yield return new KeyValuePair<string, AttributeFormat>("TEXCOORD_1",
-            new AttributeFormat(DimensionType.VEC2, EncodingType.FLOAT, false));
-        yield return new KeyValuePair<string, AttributeFormat>("_FFXIV_COLOR",
-            new AttributeFormat(DimensionType.VEC4, EncodingType.UNSIGNED_SHORT, true));
-        yield return new KeyValuePair<string, AttributeFormat>("_FFXIV_TANGENT_2",
-            new AttributeFormat(DimensionType.VEC4, EncodingType.UNSIGNED_SHORT, true));
-    }
-
-    public Vector2 TexCoord0  = texCoord0;
-    public Vector2 TexCoord1  = texCoord1;
-    public Vector4 FfxivColor = ffxivColor;
-
-    public Vector4 FfxivTangent2 = ffxivTangent2;
-
-    public int MaxColors
-        => 0;
-
-    public int MaxTextCoords
-        => 2;
-
-    private static readonly string[] CustomNames = ["_FFXIV_COLOR", "_FFXIV_TANGENT_2"];
-
-    public IEnumerable<string> CustomAttributes
-        => CustomNames;
-
-    public void Add(in VertexMaterialDelta delta)
-    {
-        TexCoord0 += delta.TexCoord0Delta;
-        TexCoord1 += delta.TexCoord1Delta;
-    }
-
-    public VertexMaterialDelta Subtract(IVertexMaterial baseValue)
-        => new(Vector4.Zero, Vector4.Zero, TexCoord0 - baseValue.GetTexCoord(0), TexCoord1 - baseValue.GetTexCoord(1));
-
-    public Vector2 GetTexCoord(int index)
-        => index switch
-        {
-            0 => TexCoord0,
-            1 => TexCoord1,
-            _ => throw new ArgumentOutOfRangeException(nameof(index)),
-        };
-
-    public void SetTexCoord(int setIndex, Vector2 coord)
-    {
-        if (setIndex == 0)
-            TexCoord0 = coord;
-        if (setIndex == 1)
-            TexCoord1 = coord;
-        if (setIndex >= 2)
-            throw new ArgumentOutOfRangeException(nameof(setIndex));
-    }
-
-    public bool TryGetCustomAttribute(string attributeName, out object? value)
-    {
-        switch (attributeName)
-        {
-            case "_FFXIV_COLOR":
-                value = FfxivColor;
-                return true;
-
-            case "_FFXIV_TANGENT_2":
-                value = FfxivTangent2;
-                return true;
-
-            default:
-                value = null;
-                return false;
+            var color = GetXivColor(i);
+            if (Vector4.GreaterThanAny(color, Vector4.One) || Vector4.LessThanAny(color, Vector4.Zero))
+                throw new ArgumentOutOfRangeException($"XivColor{i}");
         }
-    }
 
-    public void SetCustomAttribute(string attributeName, object value)
-    {
-        switch (attributeName)
-        {
-            case "_FFXIV_COLOR" when value is Vector4 valueVector4:
-                FfxivColor = valueVector4;
-                break;
-            case "_FFXIV_TANGENT_2" when value is Vector4 valueVector4:
-                FfxivTangent2 = valueVector4;
-                break;
-        }
-    }
+        if (!HasFlow)
+            return;
 
-    public Vector4 GetColor(int index)
-        => throw new ArgumentOutOfRangeException(nameof(index));
-
-    public void SetColor(int setIndex, Vector4 color)
-    { }
-
-    public void Validate()
-    {
-        var components = new[]
-        {
-            FfxivColor.X,
-            FfxivColor.Y,
-            FfxivColor.Z,
-            FfxivColor.W,
-        };
-        if (components.Any(component => component < 0 || component > 1))
-            throw new ArgumentOutOfRangeException(nameof(FfxivColor));
-        components =
-        [
-            FfxivTangent2.X,
-            FfxivTangent2.Y,
-            FfxivTangent2.Z,
-            FfxivTangent2.W,
-        ];
-        if (components.Any(component => component is < 0 or > 1))
-            throw new ArgumentOutOfRangeException(nameof(FfxivTangent2));
-    }
-}
-
-public struct VertexTexture2Color2Tangent2Ffxiv(Vector2 texCoord0, Vector2 texCoord1, Vector4 ffxivColor0, Vector4 ffxivColor1, Vector4 ffxivTangent2) : IVertexCustom
-{
-    public IEnumerable<KeyValuePair<string, AttributeFormat>> GetEncodingAttributes()
-    {
-        yield return new KeyValuePair<string, AttributeFormat>("TEXCOORD_0",
-            new AttributeFormat(DimensionType.VEC2, EncodingType.FLOAT, false));
-        yield return new KeyValuePair<string, AttributeFormat>("TEXCOORD_1",
-            new AttributeFormat(DimensionType.VEC2, EncodingType.FLOAT, false));
-        yield return new KeyValuePair<string, AttributeFormat>("_FFXIV_COLOR_0",
-            new AttributeFormat(DimensionType.VEC4, EncodingType.UNSIGNED_SHORT, true));
-        yield return new KeyValuePair<string, AttributeFormat>("_FFXIV_COLOR_1",
-            new AttributeFormat(DimensionType.VEC4, EncodingType.UNSIGNED_SHORT, true));
-        yield return new KeyValuePair<string, AttributeFormat>("_FFXIV_TANGENT_2",
-            new AttributeFormat(DimensionType.VEC4, EncodingType.UNSIGNED_SHORT, true));
-    }
-
-    public Vector2 TexCoord0   = texCoord0;
-    public Vector2 TexCoord1   = texCoord1;
-    public Vector4 FfxivColor0 = ffxivColor0;
-    public Vector4 FfxivColor1 = ffxivColor1;
-    public Vector4 FfxivTangent2 = ffxivTangent2;
-
-    public int MaxColors
-        => 0;
-
-    public int MaxTextCoords
-        => 2;
-
-    private static readonly string[] CustomNames = ["_FFXIV_COLOR_0", "_FFXIV_COLOR_1", "_FFXIV_TANGENT_2"];
-
-    public IEnumerable<string> CustomAttributes
-        => CustomNames;
-
-    public void Add(in VertexMaterialDelta delta)
-    {
-        TexCoord0 += delta.TexCoord0Delta;
-        TexCoord1 += delta.TexCoord1Delta;
-    }
-
-    public VertexMaterialDelta Subtract(IVertexMaterial baseValue)
-        => new(Vector4.Zero, Vector4.Zero, TexCoord0 - baseValue.GetTexCoord(0), TexCoord1 - baseValue.GetTexCoord(1));
-
-    public Vector2 GetTexCoord(int index)
-        => index switch
-        {
-            0 => TexCoord0,
-            1 => TexCoord1,
-            _ => throw new ArgumentOutOfRangeException(nameof(index)),
-        };
-
-    public void SetTexCoord(int setIndex, Vector2 coord)
-    {
-        if (setIndex == 0)
-            TexCoord0 = coord;
-        if (setIndex == 1)
-            TexCoord1 = coord;
-        if (setIndex >= 2)
-            throw new ArgumentOutOfRangeException(nameof(setIndex));
-    }
-
-    public bool TryGetCustomAttribute(string attributeName, out object? value)
-    {
-        switch (attributeName)
-        {
-            case "_FFXIV_COLOR_0":
-                value = FfxivColor0;
-                return true;
-            
-            case "_FFXIV_COLOR_1":
-                value = FfxivColor1;
-                return true;
-
-            case "_FFXIV_TANGENT_2":
-                value = FfxivTangent2;
-                return true;
-
-            default:
-                value = null;
-                return false;
-        }
-    }
-
-    public void SetCustomAttribute(string attributeName, object value)
-    {
-        switch (attributeName)
-        {
-            case "_FFXIV_COLOR_0" when value is Vector4 valueVector4:
-                FfxivColor0 = valueVector4;
-                break;
-            case "_FFXIV_COLOR_1" when value is Vector4 valueVector4:
-                FfxivColor1 = valueVector4;
-                break;
-            case "_FFXIV_TANGENT_2" when value is Vector4 valueVector4:
-                FfxivTangent2 = valueVector4;
-                break;
-        }
-    }
-
-    public Vector4 GetColor(int index)
-        => throw new ArgumentOutOfRangeException(nameof(index));
-
-    public void SetColor(int setIndex, Vector4 color)
-    { }
-
-    public void Validate()
-    {
-        var components = new[]
-        {
-            FfxivColor0.X,
-            FfxivColor0.Y,
-            FfxivColor0.Z,
-            FfxivColor0.W,
-        };
-        if (components.Any(component => component is < 0 or > 1))
-            throw new ArgumentOutOfRangeException(nameof(FfxivColor0));
-        components =
-        [
-            FfxivColor1.X,
-            FfxivColor1.Y,
-            FfxivColor1.Z,
-            FfxivColor1.W,
-        ];
-        if (components.Any(component => component is < 0 or > 1))
-            throw new ArgumentOutOfRangeException(nameof(FfxivColor1));
-        components = [
-            FfxivTangent2.X,
-            FfxivTangent2.Y,
-            FfxivTangent2.Z,
-            FfxivTangent2.W
-        ];
-        if (components.Any(component => component is < 0 or > 1))
-            throw new ArgumentOutOfRangeException(nameof(FfxivTangent2));
-    }
-
-}
-
-public struct VertexTexture3ColorTangent2Ffxiv(Vector2 texCoord0, Vector2 texCoord1, Vector2 texCoord2, Vector4 ffxivColor, Vector4 ffxivTangent2)
-    : IVertexCustom
-{
-    public IEnumerable<KeyValuePair<string, AttributeFormat>> GetEncodingAttributes()
-    {
-        yield return new KeyValuePair<string, AttributeFormat>("TEXCOORD_0",
-            new AttributeFormat(DimensionType.VEC2, EncodingType.FLOAT, false));
-        yield return new KeyValuePair<string, AttributeFormat>("TEXCOORD_1",
-            new AttributeFormat(DimensionType.VEC2, EncodingType.FLOAT, false));
-        yield return new KeyValuePair<string, AttributeFormat>("TEXCOORD_2",
-            new AttributeFormat(DimensionType.VEC2, EncodingType.FLOAT, false));
-        yield return new KeyValuePair<string, AttributeFormat>("_FFXIV_COLOR",
-            new AttributeFormat(DimensionType.VEC4, EncodingType.UNSIGNED_SHORT, true));
-        yield return new KeyValuePair<string, AttributeFormat>("_FFXIV_TANGENT_2",
-            new AttributeFormat(DimensionType.VEC4, EncodingType.UNSIGNED_SHORT, true));
-    }
-
-    public Vector2 TexCoord0  = texCoord0;
-    public Vector2 TexCoord1  = texCoord1;
-    public Vector2 TexCoord2  = texCoord2;
-    public Vector4 FfxivColor = ffxivColor;
-    public Vector4 FfxivTangent2 = ffxivTangent2;
-
-    public int MaxColors
-        => 0;
-
-    public int MaxTextCoords
-        => 3;
-
-    private static readonly string[] CustomNames = ["_FFXIV_COLOR", "_FFXIV_TANGENT_2"];
-
-    public IEnumerable<string> CustomAttributes
-        => CustomNames;
-
-    public void Add(in VertexMaterialDelta delta)
-    {
-        TexCoord0 += delta.TexCoord0Delta;
-        TexCoord1 += delta.TexCoord1Delta;
-        TexCoord2 += delta.TexCoord2Delta;
-    }
-
-    public VertexMaterialDelta Subtract(IVertexMaterial baseValue)
-        => new(Vector4.Zero, Vector4.Zero, TexCoord0 - baseValue.GetTexCoord(0), TexCoord1 - baseValue.GetTexCoord(1), TexCoord2 - baseValue.GetTexCoord(2), Vector2.Zero);
-
-    public Vector2 GetTexCoord(int index)
-        => index switch
-        {
-            0 => TexCoord0,
-            1 => TexCoord1,
-            2 => TexCoord2,
-            _ => throw new ArgumentOutOfRangeException(nameof(index)),
-        };
-
-    public void SetTexCoord(int setIndex, Vector2 coord)
-    {
-        if (setIndex == 0)
-            TexCoord0 = coord;
-        if (setIndex == 1)
-            TexCoord1 = coord;
-        if (setIndex == 2)
-            TexCoord2 = coord;
-        if (setIndex >= 3)
-            throw new ArgumentOutOfRangeException(nameof(setIndex));
-    }
-
-    public bool TryGetCustomAttribute(string attributeName, out object? value)
-    {
-        switch (attributeName)
-        {
-            case "_FFXIV_COLOR":
-                value = FfxivColor;
-                return true;
-
-            case "_FFXIV_TANGENT_2":
-                value = FfxivTangent2;
-                return true;
-
-            default:
-                value = null;
-                return false;
-        }
-    }
-
-    public void SetCustomAttribute(string attributeName, object value)
-    {
-        switch (attributeName)
-        {
-            case "_FFXIV_COLOR" when value is Vector4 valueVector4:
-                FfxivColor = valueVector4;
-                break;
-            case "_FFXIV_TANGENT_2" when value is Vector4 valueVector4:
-                FfxivTangent2 = valueVector4;
-                break;
-        }
-    }
-
-    public Vector4 GetColor(int index)
-        => throw new ArgumentOutOfRangeException(nameof(index));
-
-    public void SetColor(int setIndex, Vector4 color)
-    { }
-
-    public void Validate()
-    {
-        var components = new[]
-        {
-            FfxivColor.X,
-            FfxivColor.Y,
-            FfxivColor.Z,
-            FfxivColor.W,
-        };
-        if (components.Any(component => component is < 0f or > 1f))
-            throw new ArgumentOutOfRangeException(nameof(FfxivColor));
-        components =
-        [
-            FfxivTangent2.X,
-            FfxivTangent2.Y,
-            FfxivTangent2.Z,
-            FfxivTangent2.W,
-        ];
-        if (components.Any(component => component is < 0f or > 1f))
-            throw new ArgumentOutOfRangeException(nameof(FfxivTangent2));
-    }
-}
-
-public struct VertexTexture3Color2Tangent2Ffxiv(Vector2 texCoord0, Vector2 texCoord1, Vector2 texCoord2, Vector4 ffxivColor0, Vector4 ffxivColor1, Vector4 ffxivTangent2)
-    : IVertexCustom
-{
-    public IEnumerable<KeyValuePair<string, AttributeFormat>> GetEncodingAttributes()
-    {
-        yield return new KeyValuePair<string, AttributeFormat>("TEXCOORD_0",
-            new AttributeFormat(DimensionType.VEC2, EncodingType.FLOAT, false));
-        yield return new KeyValuePair<string, AttributeFormat>("TEXCOORD_1",
-            new AttributeFormat(DimensionType.VEC2, EncodingType.FLOAT, false));
-        yield return new KeyValuePair<string, AttributeFormat>("_FFXIV_COLOR_0",
-            new AttributeFormat(DimensionType.VEC4, EncodingType.UNSIGNED_SHORT, true));
-        yield return new KeyValuePair<string, AttributeFormat>("_FFXIV_COLOR_1",
-            new AttributeFormat(DimensionType.VEC4, EncodingType.UNSIGNED_SHORT, true));
-        yield return new KeyValuePair<string, AttributeFormat>("_FFXIV_TANGENT_2",
-            new AttributeFormat(DimensionType.VEC4, EncodingType.UNSIGNED_SHORT, true));
-    }
-
-    public Vector2 TexCoord0   = texCoord0;
-    public Vector2 TexCoord1   = texCoord1;
-    public Vector2 TexCoord2   = texCoord2;
-    public Vector4 FfxivColor0 = ffxivColor0;
-    public Vector4 FfxivColor1 = ffxivColor1;
-    public Vector4 FfxivTangent2 = ffxivTangent2;
-
-    public int MaxColors
-        => 0;
-
-    public int MaxTextCoords
-        => 3;
-
-    private static readonly string[] CustomNames = ["_FFXIV_COLOR_0", "_FFXIV_COLOR_1", "_FFXIV_TANGENT_2"];
-
-    public IEnumerable<string> CustomAttributes
-        => CustomNames;
-
-    public void Add(in VertexMaterialDelta delta)
-    {
-        TexCoord0 += delta.TexCoord0Delta;
-        TexCoord1 += delta.TexCoord1Delta;
-        TexCoord2 += delta.TexCoord2Delta;
-    }
-
-    public VertexMaterialDelta Subtract(IVertexMaterial baseValue)
-        => new(Vector4.Zero, Vector4.Zero, TexCoord0 - baseValue.GetTexCoord(0), TexCoord1 - baseValue.GetTexCoord(1), TexCoord2 - baseValue.GetTexCoord(2), Vector2.Zero);
-
-    public Vector2 GetTexCoord(int index)
-        => index switch
-        {
-            0 => TexCoord0,
-            1 => TexCoord1,
-            2 => TexCoord2,
-            _ => throw new ArgumentOutOfRangeException(nameof(index)),
-        };
-
-    public void SetTexCoord(int setIndex, Vector2 coord)
-    {
-        if (setIndex == 0)
-            TexCoord0 = coord;
-        if (setIndex == 1)
-            TexCoord1 = coord;
-        if (setIndex == 2)
-            TexCoord2 = coord;
-        if (setIndex >= 3)
-            throw new ArgumentOutOfRangeException(nameof(setIndex));
-    }
-
-    public bool TryGetCustomAttribute(string attributeName, out object? value)
-    {
-        switch (attributeName)
-        {
-            case "_FFXIV_COLOR_0":
-                value = FfxivColor0;
-                return true;
-            
-            case "_FFXIV_COLOR_1":
-                value = FfxivColor1;
-                return true;
-
-            case "_FFXIV_TANGENT_2":
-                value = FfxivTangent2;
-                return true;
-
-            default:
-                value = null;
-                return false;
-        }
-    }
-
-    public void SetCustomAttribute(string attributeName, object value)
-    {
-        switch (attributeName)
-        {
-            case "_FFXIV_COLOR_0" when value is Vector4 valueVector4:
-                FfxivColor0 = valueVector4;
-                break;
-            case "_FFXIV_COLOR_1" when value is Vector4 valueVector4:
-                FfxivColor1 = valueVector4;
-                break;
-            case "_FFXIV_TANGENT_2" when value is Vector4 valueVector4:
-                FfxivTangent2 = valueVector4;
-                break;
-        }
-    }
-
-    public Vector4 GetColor(int index)
-        => throw new ArgumentOutOfRangeException(nameof(index));
-
-    public void SetColor(int setIndex, Vector4 color)
-    { }
-
-    public void Validate()
-    {
-        var components = new[]
-        {
-            FfxivColor0.X,
-            FfxivColor0.Y,
-            FfxivColor0.Z,
-            FfxivColor0.W,
-        };
-        if (components.Any(component => component is < 0 or > 1))
-            throw new ArgumentOutOfRangeException(nameof(FfxivColor0));
-        components =
-        [
-            FfxivColor1.X,
-            FfxivColor1.Y,
-            FfxivColor1.Z,
-            FfxivColor1.W,
-        ];
-        if (components.Any(component => component is < 0 or > 1))
-            throw new ArgumentOutOfRangeException(nameof(FfxivColor1));
-        components =
-        [
-            FfxivTangent2.X,
-            FfxivTangent2.Y,
-            FfxivTangent2.Z,
-            FfxivTangent2.W,
-        ];
-        if (components.Any(component => component is < 0f or > 1f))
-            throw new ArgumentOutOfRangeException(nameof(FfxivTangent2));
-    }
-}
-
-// These last four aren't copies of any of the ones above, but ones that without Tangent2 already
-// have versions in the Library which are used in the switch, so I added them here.
-
-public struct VertexTangent2Ffxiv(Vector4 ffxivTangent2) : IVertexCustom
-{
-    public IEnumerable<KeyValuePair<string, AttributeFormat>> GetEncodingAttributes()
-    {
-        yield return new KeyValuePair<string, AttributeFormat>("_FFXIV_TANGENT_2",
-            new AttributeFormat(DimensionType.VEC4, EncodingType.UNSIGNED_SHORT, true));
-    }
-
-    public Vector4 FfxivTangent2 = ffxivTangent2;
-
-    public int MaxColors
-        => 0;
-
-    public int MaxTextCoords
-        => 0;
-
-    private static readonly string[] CustomNames = ["_FFXIV_TANGENT_2"];
-
-    public IEnumerable<string> CustomAttributes
-        => CustomNames;
-
-    public void Add(in VertexMaterialDelta delta)
-    { }
-
-    public VertexMaterialDelta Subtract(IVertexMaterial baseValue)
-        => new(Vector4.Zero, Vector4.Zero, Vector2.Zero, Vector2.Zero);
-
-    public Vector2 GetTexCoord(int index)
-        => throw new ArgumentOutOfRangeException(nameof(index));
-
-    public void SetTexCoord(int setIndex, Vector2 coord)
-    { }
-
-    public bool TryGetCustomAttribute(string attributeName, out object? value)
-    {
-        switch (attributeName)
-        {
-            case "_FFXIV_TANGENT_2":
-                value = FfxivTangent2;
-                return true;
-
-            default:
-                value = null;
-                return false;
-        }
-    }
-
-    public void SetCustomAttribute(string attributeName, object value)
-    {
-        if (attributeName == "_FFXIV_TANGENT_2" && value is Vector4 valueVector4)
-            FfxivTangent2 = valueVector4;
-    }
-
-    public Vector4 GetColor(int index)
-        => throw new ArgumentOutOfRangeException(nameof(index));
-
-    public void SetColor(int setIndex, Vector4 color)
-    { }
-
-    public void Validate()
-    {
-        var components = new[]
-        {
-            FfxivTangent2.X,
-            FfxivTangent2.Y,
-            FfxivTangent2.Z,
-            FfxivTangent2.W,
-        };
-        if (components.Any(component => component < 0 || component > 1))
-            throw new ArgumentOutOfRangeException(nameof(FfxivTangent2));
-    }
-}
-
-public struct VertexTexture1Tangent2Ffxiv(Vector2 texCoord0, Vector4 ffxivTangent2) : IVertexCustom
-{
-    public IEnumerable<KeyValuePair<string, AttributeFormat>> GetEncodingAttributes()
-    {
-        yield return new KeyValuePair<string, AttributeFormat>("TEXCOORD_0",
-            new AttributeFormat(DimensionType.VEC2, EncodingType.FLOAT, false));
-        yield return new KeyValuePair<string, AttributeFormat>("_FFXIV_TANGENT_2",
-            new AttributeFormat(DimensionType.VEC4, EncodingType.UNSIGNED_SHORT, true));
-    }
-
-    public Vector2 TexCoord0 = texCoord0;
-
-    public Vector4 FfxivTangent2 = ffxivTangent2;
-
-    public int MaxColors
-        => 0;
-
-    public int MaxTextCoords
-        => 1;
-
-    private static readonly string[] CustomNames = ["_FFXIV_TANGENT_2"];
-
-    public IEnumerable<string> CustomAttributes
-        => CustomNames;
-
-    public void Add(in VertexMaterialDelta delta)
-    {
-        TexCoord0 += delta.TexCoord0Delta;
-    }
-
-    public VertexMaterialDelta Subtract(IVertexMaterial baseValue)
-        => new(Vector4.Zero, Vector4.Zero, TexCoord0 - baseValue.GetTexCoord(0), Vector2.Zero);
-
-    public Vector2 GetTexCoord(int index)
-        => index switch
-        {
-            0 => TexCoord0,
-            _ => throw new ArgumentOutOfRangeException(nameof(index)),
-        };
-
-    public void SetTexCoord(int setIndex, Vector2 coord)
-    {
-        if (setIndex == 0)
-            TexCoord0 = coord;
-        if (setIndex >= 1)
-            throw new ArgumentOutOfRangeException(nameof(setIndex));
-    }
-
-    public bool TryGetCustomAttribute(string attributeName, out object? value)
-    {
-        switch (attributeName)
-        {
-            case "_FFXIV_TANGENT_2":
-                value = FfxivTangent2;
-                return true;
-
-            default:
-                value = null;
-                return false;
-        }
-    }
-
-    public void SetCustomAttribute(string attributeName, object value)
-    {
-        if (attributeName == "_FFXIV_TANGENT_2" && value is Vector4 valueVector4)
-            FfxivTangent2 = valueVector4;
-    }
-
-    public Vector4 GetColor(int index)
-        => throw new ArgumentOutOfRangeException(nameof(index));
-
-    public void SetColor(int setIndex, Vector4 color)
-    { }
-
-    public void Validate()
-    {
-        var components = new[]
-        {
-            FfxivTangent2.X,
-            FfxivTangent2.Y,
-            FfxivTangent2.Z,
-            FfxivTangent2.W,
-        };
-        if (components.Any(component => component < 0 || component > 1))
-            throw new ArgumentOutOfRangeException(nameof(FfxivTangent2));
-    }
-}
-
-public struct VertexTexture2Tangent2Ffxiv(Vector2 texCoord0, Vector2 texCoord1, Vector4 ffxivTangent2) : IVertexCustom
-{
-    public IEnumerable<KeyValuePair<string, AttributeFormat>> GetEncodingAttributes()
-    {
-        yield return new KeyValuePair<string, AttributeFormat>("TEXCOORD_0",
-            new AttributeFormat(DimensionType.VEC2, EncodingType.FLOAT, false));
-        yield return new KeyValuePair<string, AttributeFormat>("TEXCOORD_1",
-            new AttributeFormat(DimensionType.VEC2, EncodingType.FLOAT, false));
-        yield return new KeyValuePair<string, AttributeFormat>("_FFXIV_TANGENT_2",
-            new AttributeFormat(DimensionType.VEC4, EncodingType.UNSIGNED_SHORT, true));
-    }
-
-    public Vector2 TexCoord0 = texCoord0;
-    public Vector2 TexCoord1 = texCoord1;
-
-    public Vector4 FfxivTangent2 = ffxivTangent2;
-
-    public int MaxColors
-        => 0;
-
-    public int MaxTextCoords
-        => 2;
-
-    private static readonly string[] CustomNames = ["_FFXIV_TANGENT_2"];
-
-    public IEnumerable<string> CustomAttributes
-        => CustomNames;
-
-    public void Add(in VertexMaterialDelta delta)
-    {
-        TexCoord0 += delta.TexCoord0Delta;
-        TexCoord1 += delta.TexCoord1Delta;
-    }
-
-    public VertexMaterialDelta Subtract(IVertexMaterial baseValue)
-        => new(Vector4.Zero, Vector4.Zero, TexCoord0 - baseValue.GetTexCoord(0), TexCoord1 - baseValue.GetTexCoord(1));
-
-    public Vector2 GetTexCoord(int index)
-        => index switch
-        {
-            0 => TexCoord0,
-            1 => TexCoord1,
-            _ => throw new ArgumentOutOfRangeException(nameof(index)),
-        };
-
-    public void SetTexCoord(int setIndex, Vector2 coord)
-    {
-        if (setIndex == 0)
-            TexCoord0 = coord;
-        if (setIndex == 1)
-            TexCoord1 = coord;
-        if (setIndex >= 2)
-            throw new ArgumentOutOfRangeException(nameof(setIndex));
-    }
-
-    public bool TryGetCustomAttribute(string attributeName, out object? value)
-    {
-        switch (attributeName)
-        {
-            case "_FFXIV_TANGENT_2":
-                value = FfxivTangent2;
-                return true;
-
-            default:
-                value = null;
-                return false;
-        }
-    }
-
-    public void SetCustomAttribute(string attributeName, object value)
-    {
-        if (attributeName == "_FFXIV_TANGENT_2" && value is Vector4 valueVector4)
-            FfxivTangent2 = valueVector4;
-    }
-
-    public Vector4 GetColor(int index)
-        => throw new ArgumentOutOfRangeException(nameof(index));
-
-    public void SetColor(int setIndex, Vector4 color)
-    { }
-
-    public void Validate()
-    {
-        var components = new[]
-        {
-            FfxivTangent2.X,
-            FfxivTangent2.Y,
-            FfxivTangent2.Z,
-            FfxivTangent2.W,
-        };
-        if (components.Any(component => component < 0 || component > 1))
-            throw new ArgumentOutOfRangeException(nameof(FfxivTangent2));
-    }
-}
-
-public struct VertexTexture3Tangent2Ffxiv(Vector2 texCoord0, Vector2 texCoord1, Vector2 texCoord2, Vector4 ffxivTangent2) : IVertexCustom
-{
-    public IEnumerable<KeyValuePair<string, AttributeFormat>> GetEncodingAttributes()
-    {
-        yield return new KeyValuePair<string, AttributeFormat>("TEXCOORD_0",
-            new AttributeFormat(DimensionType.VEC2, EncodingType.FLOAT, false));
-        yield return new KeyValuePair<string, AttributeFormat>("TEXCOORD_1",
-            new AttributeFormat(DimensionType.VEC2, EncodingType.FLOAT, false));
-        yield return new KeyValuePair<string, AttributeFormat>("TEXCOORD_2",
-            new AttributeFormat(DimensionType.VEC2, EncodingType.FLOAT, false));
-        yield return new KeyValuePair<string, AttributeFormat>("_FFXIV_TANGENT_2",
-            new AttributeFormat(DimensionType.VEC4, EncodingType.UNSIGNED_SHORT, true));
-    }
-
-    public Vector2 TexCoord0 = texCoord0;
-    public Vector2 TexCoord1 = texCoord1;
-    public Vector2 TexCoord2 = texCoord2;
-
-    public Vector4 FfxivTangent2 = ffxivTangent2;
-
-    public int MaxColors
-        => 0;
-
-    public int MaxTextCoords
-        => 3;
-
-    private static readonly string[] CustomNames = ["_FFXIV_TANGENT_2"];
-
-    public IEnumerable<string> CustomAttributes
-        => CustomNames;
-
-    public void Add(in VertexMaterialDelta delta)
-    {
-        TexCoord0 += delta.TexCoord0Delta;
-        TexCoord1 += delta.TexCoord1Delta;
-        TexCoord2 += delta.TexCoord2Delta;
-    }
-
-    public VertexMaterialDelta Subtract(IVertexMaterial baseValue)
-        => new(Vector4.Zero, Vector4.Zero, TexCoord0 - baseValue.GetTexCoord(0), TexCoord1 - baseValue.GetTexCoord(1), TexCoord2 - baseValue.GetTexCoord(2), Vector2.Zero);
-
-    public Vector2 GetTexCoord(int index)
-        => index switch
-        {
-            0 => TexCoord0,
-            1 => TexCoord1,
-            2 => TexCoord2,
-            _ => throw new ArgumentOutOfRangeException(nameof(index)),
-        };
-
-    public void SetTexCoord(int setIndex, Vector2 coord)
-    {
-        if (setIndex == 0)
-            TexCoord0 = coord;
-        if (setIndex == 1)
-            TexCoord1 = coord;
-        if (setIndex == 2)
-            TexCoord2 = coord;
-        if (setIndex >= 3)
-            throw new ArgumentOutOfRangeException(nameof(setIndex));
-    }
-
-    public bool TryGetCustomAttribute(string attributeName, out object? value)
-    {
-        switch (attributeName)
-        {
-            case "_FFXIV_TANGENT_2":
-                value = FfxivTangent2;
-                return true;
-
-            default:
-                value = null;
-                return false;
-        }
-    }
-
-    public void SetCustomAttribute(string attributeName, object value)
-    {
-        if (attributeName == "_FFXIV_TANGENT_2" && value is Vector4 valueVector4)
-            FfxivTangent2 = valueVector4;
-    }
-
-    public Vector4 GetColor(int index)
-        => throw new ArgumentOutOfRangeException(nameof(index));
-
-    public void SetColor(int setIndex, Vector4 color)
-    { }
-
-    public void Validate()
-    {
-        var components = new[]
-        {
-            FfxivTangent2.X,
-            FfxivTangent2.Y,
-            FfxivTangent2.Z,
-            FfxivTangent2.W,
-        };
-        if (components.Any(component => component < 0 || component > 1))
-            throw new ArgumentOutOfRangeException(nameof(FfxivTangent2));
+        var flow = Flow;
+        if (Vector4.GreaterThanAny(flow, Vector4.One) || Vector4.LessThanAny(flow, Vector4.Zero))
+            throw new ArgumentOutOfRangeException(nameof(Flow));
     }
 }
