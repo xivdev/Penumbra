@@ -20,6 +20,9 @@ public sealed class ChangedItemsTab(
     Configuration config)
     : ITab<TabType>, IDisposable
 {
+    private const float ItemColumnWidth = 450f;
+    private const float DataColumnWidth = 140f;
+
     public ReadOnlySpan<byte> Label
         => "Changed Items"u8;
 
@@ -61,10 +64,9 @@ public sealed class ChangedItemsTab(
         public bool DrawFilter(ReadOnlySpan<byte> label, Vector2 availableRegion)
         {
             using var style = ImStyleSingle.FrameRounding.Push(0);
-            var varWidth = Im.ContentRegion.Available.X
-              - 450 * Im.Style.GlobalScale
-              - Im.Style.ItemSpacing.X;
-            Im.Item.SetNextWidth(450 * Im.Style.GlobalScale);
+            var varWidth = availableRegion.X
+              - ItemColumnWidth * Im.Style.GlobalScale;
+            Im.Item.SetNextWidth(ItemColumnWidth * Im.Style.GlobalScale - Im.Style.ItemInnerSpacing.X);
             var filter = _filterConfig.ChangedItemItemFilter;
             var ret    = Im.Input.Text("##changedItemsFilter"u8, ref filter, "Filter Item..."u8);
             if (ret)
@@ -113,43 +115,57 @@ public sealed class ChangedItemsTab(
             => _filterConfig.ChangedItemTypeFilterChanged -= OnChangedItemTypeFilterChanged;
     }
 
-    private readonly record struct Item(string Label, IIdentifiedObjectData Data, SingleArray<IMod> Mods)
+    private readonly struct Item(string label, IIdentifiedObjectData data, SingleArray<IMod> mods)
     {
-        public readonly string              Name         = Data.ToName(Label);
-        public readonly StringU8            ItemName     = new(Data.ToName(Label));
-        public readonly StringU8            Mod          = Mods.Count > 0 ? new StringU8(Mods[0].Name) : StringU8.Empty;
-        public readonly StringU8            ModelData    = new(Data.AdditionalData);
-        public readonly ChangedItemIconFlag CategoryIcon = Data.GetIcon().ToFlag();
+        public readonly StringPair            Name         = new(data.ToName(label));
+        public readonly StringU8              Mod          = mods.Count > 0 ? new StringU8(mods[0].Name) : StringU8.Empty;
+        public readonly StringU8              ModelData    = new(data.AdditionalData);
+        public readonly ChangedItemIconFlag   CategoryIcon = data.GetIcon().ToFlag();
+        public readonly IIdentifiedObjectData Data         = data;
+        public readonly SingleArray<IMod>     Mods         = mods;
 
-        public readonly StringU8 Tooltip = Mods.Count > 1
-            ? new StringU8($"Other mods affecting this item:\n{StringU8.Join((byte)'\n', Mods.Skip(1).Select(m => m.Name))}")
-            : StringU8.Empty;
+        public readonly Lazy<StringU8> Tooltip = mods.Count > 1
+            ? new Lazy<StringU8>(() => new StringU8($"Other mods affecting this item:\n{StringU8.Join((byte)'\n', mods.Skip(1).Select(m => m.Name))}"))
+            : StringU8.EmptyLazy;
     }
 
     private sealed class Cache : BasicFilterCache<Item>
     {
+        private readonly EphemeralConfig   _config;
         private readonly ActiveCollections _collections;
         private readonly CollectionChange  _collectionChange;
 
-        public Cache(ActiveCollections collections, CommunicatorService communicator, IFilter<Item> filter)
+        public Cache(EphemeralConfig config, ActiveCollections collections, CommunicatorService communicator, IFilter<Item> filter)
             : base(filter)
         {
+            _config           = config;
             _collections      = collections;
             _collectionChange = communicator.CollectionChange;
             _collectionChange.Subscribe(OnCollectionChange, CollectionChange.Priority.ChangedItemsTabCache);
+            _config.ChangedItemSortModsChanged += OnChangedItemSortModeChanged;
         }
+
+        private void OnChangedItemSortModeChanged(ChangedItemSortMode arg1, ChangedItemSortMode arg2)
+            => Dirty |= IManagedCache.DirtyFlags.Custom;
 
 
         private void OnCollectionChange(in CollectionChange.Arguments arguments)
             => FilterDirty = true;
 
         protected override IEnumerable<Item> GetItems()
-            => _collections.Current.ChangedItems.Select(kvp => new Item(kvp.Key, kvp.Value.Item2, kvp.Value.Item1));
+        {
+            var items = _collections.Current.ChangedItems.Select(kvp => new Item(kvp.Key, kvp.Value.Item2, kvp.Value.Item1));
+            if (_config.ChangedItemSortMode is ChangedItemSortMode.Item)
+                return items;
+
+            return items.OrderBy(i => i.Mod).ThenBy(i => i.Name);
+        }
 
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);
             _collectionChange.Unsubscribe(OnCollectionChange);
+            _config.ChangedItemSortModsChanged -= OnChangedItemSortModeChanged;
         }
     }
 
@@ -157,7 +173,13 @@ public sealed class ChangedItemsTab(
     {
         collectionHeader.Draw(true);
         drawer.DrawTypeFilter(true);
-        _filter.DrawFilter("##Filter"u8, Im.ContentRegion.Available);
+        _filter.DrawFilter("##Filter"u8, Im.ContentRegion.Available.AddX(-Im.Style.FrameHeight - Im.Style.ItemInnerSpacing.X));
+        Im.Line.SameInner();
+        if (Im.Checkbox("##sort"u8, config.Ephemeral.ChangedItemSortMode is ChangedItemSortMode.Mod))
+            config.Ephemeral.ChangedItemSortMode = config.Ephemeral.ChangedItemSortMode is ChangedItemSortMode.Mod
+                ? ChangedItemSortMode.Item
+                : ChangedItemSortMode.Mod;
+        Im.Tooltip.OnHover("Sort the changed items by Mod instead of by Item label."u8);
         using var child = Im.Child.Begin("##changedItemsChild"u8, Im.ContentRegion.Available);
         if (!child)
             return;
@@ -173,15 +195,15 @@ public sealed class ChangedItemsTab(
             return;
 
         var varWidth = Im.ContentRegion.Available.X
-          - 450 * Im.Style.GlobalScale
+          - ItemColumnWidth * Im.Style.GlobalScale
           - Im.Style.ItemSpacing.X;
         const TableColumnFlags flags = TableColumnFlags.NoResize | TableColumnFlags.WidthFixed;
-        table.SetupColumn("items"u8, flags, 450 * Im.Style.GlobalScale);
-        table.SetupColumn("mods"u8,  flags, varWidth - 140 * Im.Style.GlobalScale);
-        table.SetupColumn("id"u8,    flags, 140 * Im.Style.GlobalScale);
+        table.SetupColumn("items"u8, flags, ItemColumnWidth * Im.Style.GlobalScale);
+        table.SetupColumn("mods"u8,  flags, varWidth - DataColumnWidth * Im.Style.GlobalScale);
+        table.SetupColumn("id"u8,    flags, DataColumnWidth * Im.Style.GlobalScale);
 
         var cache = CacheManager.Instance.GetOrCreateCache(Im.Id.Current,
-            () => new Cache(collectionManager.Active, communicator, _filter));
+            () => new Cache(config.Ephemeral, collectionManager.Active, communicator, _filter));
         using var clipper = new Im.ListClipper(cache.Count, _buttonSize.Y);
         foreach (var (idx, item) in clipper.Iterate(cache).Index())
         {
@@ -196,7 +218,7 @@ public sealed class ChangedItemsTab(
         table.NextColumn();
         drawer.DrawCategoryIcon(item.CategoryIcon, _buttonSize.Y);
         Im.Line.NoSpacing();
-        var clicked = Im.Selectable(item.ItemName, false, SelectableFlags.None, _buttonSize with { X = 0 });
+        var clicked = Im.Selectable(item.Name.Utf8, false, SelectableFlags.None, _buttonSize with { X = 0 });
         drawer.ChangedItemHandling(item.Data, clicked);
 
         table.NextColumn();
@@ -221,8 +243,8 @@ public sealed class ChangedItemsTab(
 
         using var _ = Im.Tooltip.Begin();
         Im.Text("Hold Control and click to jump to mod.\n"u8);
-        if (!item.Tooltip.IsEmpty)
-            Im.Text(item.Tooltip);
+        if (item.Tooltip != StringU8.EmptyLazy)
+            Im.Text(item.Tooltip.Value);
     }
 
     public void Dispose()
