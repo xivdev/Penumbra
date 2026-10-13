@@ -4,8 +4,8 @@ using Lumina.Extensions;
 using Luna;
 using Penumbra.Import.Textures;
 using Penumbra.Util;
-using MdlFile = Penumbra.GameData.Files.MdlFile;
-using MtrlFile = Penumbra.GameData.Files.MtrlFile;
+using MdlFile = Penumbra.GameData.Files.Models.MdlFile;
+using MtrlFile = Penumbra.GameData.Files.Materials.MtrlFile;
 
 namespace Penumbra.Services;
 
@@ -251,7 +251,7 @@ public class MigrationManager(IoConfig config) : IService
         s.Position = 0;
         using var b       = new BinaryReader(s);
         var       version = b.ReadUInt32();
-        if (version == MdlFile.V5)
+        if (version is MdlFile.V5)
         {
             var data = s.ToArray();
             var mdl  = new MdlFile(data);

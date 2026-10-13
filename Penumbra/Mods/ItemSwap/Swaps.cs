@@ -1,5 +1,7 @@
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Files;
+using Penumbra.GameData.Files.Materials;
+using Penumbra.GameData.Files.Models;
 using Penumbra.Meta;
 using Penumbra.Meta.Manipulations;
 using Penumbra.String.Classes;

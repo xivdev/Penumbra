@@ -1,13 +1,13 @@
 using Lumina.Data.Parsing;
 using Penumbra.GameData.Files;
-using Penumbra.GameData.Files.ModelStructs;
+using Penumbra.GameData.Files.Models;
 using SharpGLTF.Schema2;
 
 namespace Penumbra.Import.Models.Import;
 
 public partial class ModelImporter(ModelRoot model, IoNotifier notifier)
 {
-    public const int BoneLimit = 128;
+    public const int BoneLimit     = 128;
     public const int MaterialLimit = 10;
 
     public static MdlFile Import(ModelRoot model, IoNotifier notifier)
@@ -54,7 +54,7 @@ public partial class ModelImporter(ModelRoot model, IoNotifier notifier)
         var shapeMeshes = new List<MdlStructs.ShapeMeshStruct>();
         foreach (var (keyName, keyMeshes) in _shapeMeshes)
         {
-            shapes.Add(new MdlFile.Shape()
+            shapes.Add(new MdlFile.Shape
             {
                 ShapeName = keyName,
                 // NOTE: these values are per-LoD.
@@ -103,8 +103,8 @@ public partial class ModelImporter(ModelRoot model, IoNotifier notifier)
             BoundingBoxes = _boundingBox.ToStruct(),
 
             // TODO 20260824 Would be good to calculate all of this up the tree.
-            Radius = 1,
-            BoneBoundingBoxes = Enumerable.Repeat(MdlFile.EmptyBoundingBox, _bones.Count).ToArray(),
+            Radius            = 1,
+            BoneBoundingBoxes = Enumerable.Repeat(MdlStructs.BoundingBoxStruct.Empty, _bones.Count).ToArray(),
             RemainingData     = [.._vertexBuffer, ..indexBuffer],
             Valid             = true,
         };
@@ -242,7 +242,7 @@ public partial class ModelImporter(ModelRoot model, IoNotifier notifier)
         boneIndices.CopyTo(boneIndicesArray);
 
         var boneTableIndex = _boneTables.Count;
-        _boneTables.Add(new BoneTableStruct()
+        _boneTables.Add(new BoneTableStruct
         {
             BoneIndex = boneIndicesArray,
             BoneCount = (byte)boneIndices.Count,

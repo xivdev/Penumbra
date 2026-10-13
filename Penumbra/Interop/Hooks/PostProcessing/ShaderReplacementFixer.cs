@@ -6,7 +6,7 @@ using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using Luna;
 using Penumbra.Communication;
 using Penumbra.GameData;
-using Penumbra.GameData.Files.MaterialStructs;
+using Penumbra.GameData.Files.Materials;
 using Penumbra.Interop.Hooks.Resources;
 using Penumbra.Interop.Structs;
 using Penumbra.Services;

@@ -1,7 +1,7 @@
 using Dalamud.Plugin.Services;
 using Luna;
 using Penumbra.Api.Enums;
-using Penumbra.GameData.Files;
+using Penumbra.GameData.Files.Materials;
 using Penumbra.GameData.Gui;
 using Penumbra.GameData.Interop;
 using Penumbra.Interop.Hooks.Objects;

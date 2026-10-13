@@ -1,6 +1,5 @@
 using Lumina.Data.Parsing;
-using Penumbra.GameData.Files;
-using Penumbra.GameData.Files.MaterialStructs;
+using Penumbra.GameData.Files.Materials;
 using Penumbra.UI.FileEditing.Materials;
 using SharpGLTF.Materials;
 using SixLabors.ImageSharp;

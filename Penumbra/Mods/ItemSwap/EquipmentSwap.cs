@@ -2,7 +2,7 @@ using ImSharp;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
-using Penumbra.GameData.Files;
+using Penumbra.GameData.Files.Materials;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta;

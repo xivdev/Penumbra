@@ -2,7 +2,7 @@ using Dalamud.Interface.DragDrop;
 using Dalamud.Plugin.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Collections.Manager;
-using Penumbra.GameData.Files;
+using Penumbra.GameData.Files.Models;
 using Penumbra.Import.Models;
 using Penumbra.UI.Classes;
 

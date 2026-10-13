@@ -2,7 +2,7 @@ using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Plugin.Services;
 using Luna.DirectX;
 using OtterTex;
-using Penumbra.GameData.Files.MaterialStructs;
+using Penumbra.GameData.Files.Materials;
 using TerraFX.Interop.DirectX;
 using TerraFX.Interop.Windows;
 using LunaDxImage = Luna.DirectX.Image;
