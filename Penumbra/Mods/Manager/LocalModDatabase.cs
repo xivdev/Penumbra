@@ -486,6 +486,12 @@ public sealed class LocalModDatabase(ServiceManager services) : IDisposable, ISe
                 changes                   |= ModDataChangeType.PreferredChangedItems;
             }
 
+            if (mod.IgnorePages != IgnorePages)
+            {
+                mod.IgnorePages =  IgnorePages;
+                changes         |= ModDataChangeType.IgnorePages;
+            }
+
             changes |= ModDataEditor.UpdateTags(mod, null, LocalTags);
 
             return changes;

@@ -125,7 +125,7 @@ public sealed class ModSettingsCache : BasicCache
             : (VisiblePages[0].Drawing, VisiblePages[0].VerticalLines);
 
         var id               = Im.Id.Get("Page"u8);
-        var currentIndex     = _config.DisplayPages ? -1 : list.Count;
+        var currentIndex     = _config.DisplayPages || VisiblePages.Count <= 1 ? -1 : list.Count;
         var parentLineOffset = _config.DisplayPages || VisiblePages.Count <= 1 ? 0 : CaretTipSpacing;
         var expanded         = Storage.GetBool(id, true);
 
@@ -151,7 +151,7 @@ public sealed class ModSettingsCache : BasicCache
             lastIndex = AddGroup(list, lines, group, currentIndex, 0, parentLineOffset) ?? lastIndex;
         AddSpace(page.Drawing);
 
-        if (!_config.DisplayPages)
+        if (!_config.DisplayPages && VisiblePages.Count > 1)
             AddOutgoingLine(lines, CaretTipSpacing, lastIndex, currentIndex);
     }
 
