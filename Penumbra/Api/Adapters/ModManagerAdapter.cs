@@ -19,7 +19,7 @@ public sealed class ModManagerAdapterFactory(IpcObjectManager ipcManager, ModMan
 public sealed partial class ModManagerAdapter(ModManagerAdapterFactory parent, CallerPlugin owner)
     : IpcObjectManager.BasicAdapter(parent, owner, nameof(ModManagerAdapter)), IAdapterFactory, IpcObjectManager.IBasicAdapter
 {
-    internal static readonly Version LocalVersion = new(1, 0);
+    internal static readonly Version LocalVersion = new(1, 1);
 
     [AdapterMethod(ModManagerWrapper.Method.Version, AlwaysAlive = true)]
     public override Version Version

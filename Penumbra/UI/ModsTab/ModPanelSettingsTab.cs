@@ -498,8 +498,7 @@ public class ModPanelSettingsTab(
             Im.Cursor.Y += Im.Style.ItemSpacing.Y;
             var id = new ModObjectIdentifier(_optionIdentifierInput, _optionNameInput);
             if (SettingPresetData.DrawAddOption(size.AddX(-Im.Style.IndentSpacing), groupData, ref _optionIdentifierInput, ref _optionNameInput,
-                    out var option,
-                    id.FindOption(actualGroup) is { } o ? ModObjectIdentifier.From(o) : null))
+                    out var option, id.FindOption(actualGroup) is { } o ? ModObjectIdentifier.From(o) : null))
                 presets.PresetManager.ChangeOption(presets.ModIdentifier, preset, groupIdentifier, option, OptionState.Ignored);
         }
 
