@@ -9,15 +9,12 @@ namespace Penumbra.Api;
 public sealed partial class ModAdapter(ModManagerAdapter parent, Mod mod)
     : IpcObjectManager.BasicAdapter(parent.Parent, parent.Owner, nameof(ModAdapter)), IpcObjectManager.IBasicAdapter
 {
-    [AdapterMethod(ModWrapper.Method.Version, AlwaysAlive = true)]
     public override Version Version
         => ModManagerAdapter.LocalVersion;
 
-    [AdapterMethod(ModWrapper.Method.IsDisposed, AlwaysAlive = true)]
     public override bool IsDisposed
         => Parent is null;
 
-    [AdapterMethod(ModWrapper.Method.DisposedEvent, AlwaysAlive = true)]
     public event Action? Disposed;
 
     protected override void InvokeDisposed()

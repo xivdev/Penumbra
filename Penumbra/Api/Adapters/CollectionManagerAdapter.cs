@@ -43,7 +43,7 @@ public sealed class CollectionManagerAdapterFactory(
 public sealed partial class CollectionManagerAdapter(CollectionManagerAdapterFactory parent, CallerPlugin owner)
     : IpcObjectManager.BasicAdapter(parent, owner, nameof(CollectionManagerAdapter)), IAdapterFactory, IpcObjectManager.IBasicAdapter
 {
-    internal static readonly Version LocalVersion = new(1, 0);
+    internal static readonly Version LocalVersion = new(2, 0);
 
     public IpcObjectManager IpcManager
         => Parent.IpcManager;
@@ -51,16 +51,13 @@ public sealed partial class CollectionManagerAdapter(CollectionManagerAdapterFac
     public new CollectionManagerAdapterFactory Parent
         => (CollectionManagerAdapterFactory)base.Parent!;
 
-    [AdapterMethod(CollectionManagerWrapper.Method.Version, AlwaysAlive = true)]
     public override Version Version
         => LocalVersion;
 
-    [AdapterMethod(CollectionManagerWrapper.Method.IsDisposed, AlwaysAlive = true)]
     public override bool IsDisposed
         => base.Parent is null;
 
     /// <inheritdoc cref="IIdDataShareAdapter.Disposed"/>
-    [AdapterMethod(CollectionManagerWrapper.Method.DisposedEvent, AlwaysAlive = true)]
     public event Action? Disposed;
 
     protected override void InvokeDisposed()
