@@ -35,14 +35,20 @@ public sealed class ChangedItemsTab(
 
     private sealed class ChangedItemFilter : IFilter<Item>, IDisposable
     {
-        private readonly ChangedItemDrawer _drawer;
-        private readonly FilterConfig      _filterConfig;
-        private          bool              _ownUpdate;
+        private readonly ChangedItemDrawer     _drawer;
+        private readonly FilterConfig          _filterConfig;
+        private readonly ChangedItemItemFilter _itemFilter;
+        private readonly ChangedItemModFilter  _modFilter;
+        private          bool                  _ownUpdate;
 
         public ChangedItemFilter(ChangedItemDrawer drawer, Configuration config)
         {
-            _drawer       = drawer;
-            _filterConfig = config.Filters;
+            _drawer                   =  drawer;
+            _filterConfig             =  config.Filters;
+            _itemFilter               =  new ChangedItemItemFilter(config);
+            _modFilter                =  new ChangedItemModFilter(config);
+            _modFilter.FilterChanged  += () => FilterChanged?.Invoke();
+            _itemFilter.FilterChanged += () => FilterChanged?.Invoke();
             if (!config.Ui.RememberChangedItemFilters)
                 ClearOnStart();
             _filterConfig.ChangedItemTypeFilterChanged += OnChangedItemTypeFilterChanged;
@@ -63,25 +69,12 @@ public sealed class ChangedItemsTab(
 
         public bool DrawFilter(ReadOnlySpan<byte> label, Vector2 availableRegion)
         {
-            using var style = ImStyleSingle.FrameRounding.Push(0);
-            var varWidth = availableRegion.X
-              - ItemColumnWidth * Im.Style.GlobalScale;
-            Im.Item.SetNextWidth(ItemColumnWidth * Im.Style.GlobalScale - Im.Style.ItemInnerSpacing.X);
-            var filter = _filterConfig.ChangedItemItemFilter;
-            var ret    = Im.Input.Text("##changedItemsFilter"u8, ref filter, "Filter Item..."u8);
-            if (ret)
-                _filterConfig.ChangedItemItemFilter = filter;
+            using var style     = ImStyleSingle.FrameRounding.Push(0);
+            var       leftWidth = new Vector2(ItemColumnWidth * Im.Style.GlobalScale - Im.Style.ItemInnerSpacing.X, Im.Style.FrameHeight);
+            var       varWidth  = new Vector2(availableRegion.X - leftWidth.X - Im.Style.ItemInnerSpacing.X,        Im.Style.FrameHeight);
+            var       ret       = _itemFilter.DrawFilter("Filter Item..."u8, leftWidth);
             Im.Line.Same();
-            Im.Item.SetNextWidth(varWidth);
-            filter = _filterConfig.ChangedItemModFilter;
-            if (Im.Input.Text("##changedItemsModFilter"u8, ref filter, "Filter Mods..."u8))
-            {
-                ret                                = true;
-                _filterConfig.ChangedItemModFilter = filter;
-            }
-
-            if (ret)
-                FilterChanged?.Invoke();
+            ret |= _modFilter.DrawFilter("Filter Mods..."u8, varWidth);
             return ret;
         }
 
@@ -99,8 +92,8 @@ public sealed class ChangedItemsTab(
 
         public void ClearOnStart()
         {
-            _filterConfig.ChangedItemModFilter  = string.Empty;
-            _filterConfig.ChangedItemItemFilter = string.Empty;
+            _itemFilter.Clear();
+            _modFilter.Clear();
             _ownUpdate                          = true;
             _filterConfig.ChangedItemTypeFilter = ChangedItemFlagExtensions.DefaultFlags;
             _ownUpdate                          = false;
@@ -113,6 +106,30 @@ public sealed class ChangedItemsTab(
 
         public void Dispose()
             => _filterConfig.ChangedItemTypeFilterChanged -= OnChangedItemTypeFilterChanged;
+
+        private sealed class ChangedItemItemFilter : TextFilterBase<string>
+        {
+            public ChangedItemItemFilter(Configuration config)
+            {
+                Set(config.Ui.RememberChangedItemFilters ? config.Filters.ChangedItemItemFilter : string.Empty);
+                FilterChanged += () => config.Filters.ChangedItemItemFilter = Text;
+            }
+
+            protected override string ToFilterString(in string item, int globalIndex)
+                => item;
+        }
+
+        private sealed class ChangedItemModFilter : TextFilterBase<string>
+        {
+            public ChangedItemModFilter(Configuration config)
+            {
+                Set(config.Ui.RememberChangedItemFilters ? config.Filters.ChangedItemModFilter : string.Empty);
+                FilterChanged += () => config.Filters.ChangedItemModFilter = Text;
+            }
+
+            protected override string ToFilterString(in string item, int globalIndex)
+                => item;
+        }
     }
 
     private readonly struct Item(string label, IIdentifiedObjectData data, SingleArray<IMod> mods)
@@ -125,7 +142,8 @@ public sealed class ChangedItemsTab(
         public readonly SingleArray<IMod>     Mods         = mods;
 
         public readonly Lazy<StringU8> Tooltip = mods.Count > 1
-            ? new Lazy<StringU8>(() => new StringU8($"Other mods affecting this item:\n{StringU8.Join((byte)'\n', mods.Skip(1).Select(m => m.Name))}"))
+            ? new Lazy<StringU8>(()
+                => new StringU8($"Other mods affecting this item:\n{StringU8.Join((byte)'\n', mods.Skip(1).Select(m => m.Name))}"))
             : StringU8.EmptyLazy;
     }
 
