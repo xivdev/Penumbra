@@ -76,7 +76,7 @@ public class ModSettings
                 var config = Settings[idx];
                 Settings[idx] = group.Type switch
                 {
-                    GroupType.Single => config.TurnMulti(group.Options.Count),
+                    GroupType.Single => config.TurnSingle(group.Options.Count),
                     GroupType.Multi  => Setting.Multi((int)config.Value),
                     _                => config,
                 };

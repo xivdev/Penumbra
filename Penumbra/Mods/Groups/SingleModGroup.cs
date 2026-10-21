@@ -78,7 +78,7 @@ public sealed class SingleModGroup(Mod mod) : ITexToolsGroup
             Priority        = Priority,
             Image           = Image,
             Page            = Page,
-            DefaultSettings = Setting.Multi((int)DefaultSettings.Value),
+            DefaultSettings = Options.Count > 0 ? Setting.Multi((int)DefaultSettings.Value) : Setting.Zero,
             Id              = Id,
             Condition       = Condition,
             Layout          = Layout,
