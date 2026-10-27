@@ -1,6 +1,6 @@
-global using ModIdentifier = (string Identifier, string Name);
 global using GroupSettingData =
     (System.Collections.Generic.Dictionary<(System.Guid Identifier, string? Name), byte> Options, bool DisableAllUnknown);
+global using ModIdentifier = (string Identifier, string Name);
 global using ModObjectIdentifier = (System.Guid Identifier, string? Name);
 global using SettingPresetData = (System.Collections.Generic.Dictionary<(System.Guid Identifier, string? Name),
         (System.Collections.Generic.Dictionary<(System.Guid Identifier, string? Name), byte> Options, bool DisableAllUnknown)> Settings, int
@@ -17,11 +17,12 @@ using Penumbra.Services;
 
 namespace Penumbra.Mods.Settings;
 
-public sealed class SettingPresetManager : IDisposable, IService
+public sealed class SettingPresetManager : IDisposable, IService, IReadOnlyDictionary<Guid, (Mod?, SettingPreset)>
 {
-    private readonly LocalModDatabase    _database;
-    private readonly CommunicatorService _communicator;
-    public readonly  List<SettingPreset> GenericPresets = [];
+    private readonly LocalModDatabase                        _database;
+    private readonly CommunicatorService                     _communicator;
+    public readonly  List<SettingPreset>                     GenericPresets;
+    private readonly Dictionary<Guid, (Mod?, SettingPreset)> _presets = [];
 
     public SettingPresetManager(ModManager mods, CommunicatorService communicator, LocalModDatabase database)
     {
@@ -29,21 +30,39 @@ public sealed class SettingPresetManager : IDisposable, IService
         _database     = database;
         _communicator.ModOptionChanged.Subscribe(OnModOptionChange, ModOptionChanged.Priority.SettingPresetManager);
         GenericPresets = _database.GetGenericPresets();
+        GatherPresets(mods);
+    }
+
+    private void GatherPresets(ModManager mods)
+    {
+        foreach (var preset in GenericPresets)
+            _presets.Add(preset.Identifier, (null, preset));
+        foreach (var mod in mods)
+        {
+            foreach (var preset in mod.Presets)
+                _presets.Add(preset.Identifier, (mod, preset));
+        }
     }
 
     public event Action<SettingPreset>? Deleted;
 
     public void AddPreset(Mod mod, ModSettings? settings, string name)
+        => AddPreset(mod, SettingPresetData.FromMod(mod, settings), name);
+
+    public void AddPreset(Mod mod, SettingPresetData settings, string name)
     {
-        var preset = new SettingPreset(Guid.NewGuid(), SettingPresetData.FromMod(mod, settings)) { Name = name };
+        var preset = new SettingPreset(Guid.NewGuid(), settings) { Name = name };
         mod.Presets.Add(preset);
         _database.UpsertFullPreset(mod.Identifier, preset);
+        _presets.Add(preset.Identifier, (mod, preset));
     }
 
-    public void AddGenericPreset(SettingPreset preset)
+    public void AddGenericPreset(string name, SettingPresetData data)
     {
+        var preset = new SettingPreset(Guid.NewGuid(), data) { Name = name };
         GenericPresets.Add(preset);
         _database.UpsertFullPreset(string.Empty, preset);
+        _presets.Add(preset.Identifier, (null, preset));
     }
 
     public void DeletePreset(Mod mod, SettingPreset preset)
@@ -53,6 +72,7 @@ public sealed class SettingPresetManager : IDisposable, IService
 
         Deleted?.Invoke(preset);
         _database.DeletePreset(preset.Identifier);
+        _presets.Remove(preset.Identifier);
     }
 
     public void DeleteGeneric(SettingPreset preset)
@@ -62,6 +82,7 @@ public sealed class SettingPresetManager : IDisposable, IService
 
         Deleted?.Invoke(preset);
         _database.DeletePreset(preset.Identifier);
+        _presets.Remove(preset.Identifier);
     }
 
     public void Update(string modIdentifier, SettingPreset preset, in SettingPresetData newData)
@@ -95,15 +116,6 @@ public sealed class SettingPresetManager : IDisposable, IService
         {
             LastEdit = preset.LastApplication.ToUnixTimeMilliseconds(),
         });
-    }
-
-    public void ChangeLastEdit(string modIdentifier, SettingPreset preset, string newName)
-    {
-        if (preset.UpdateName(newName))
-            _database.UpsertPresetProperty(modIdentifier, preset, p => new LocalModDatabase.PresetData
-            {
-                LastEdit = preset.LastEdit.ToUnixTimeMilliseconds(),
-            });
     }
 
     public void ChangeName(string modIdentifier, SettingPreset preset, string newName)
@@ -290,4 +302,28 @@ public sealed class SettingPresetManager : IDisposable, IService
 
     public void Dispose()
         => _communicator.ModOptionChanged.Unsubscribe(OnModOptionChange);
+
+    public IEnumerator<KeyValuePair<Guid, (Mod?, SettingPreset)>> GetEnumerator()
+        => _presets.GetEnumerator();
+
+    IEnumerator IEnumerable.GetEnumerator()
+        => GetEnumerator();
+
+    public int Count
+        => _presets.Count;
+
+    public bool ContainsKey(Guid key)
+        => _presets.ContainsKey(key);
+
+    public bool TryGetValue(Guid key, out (Mod?, SettingPreset) value)
+        => _presets.TryGetValue(key, out value);
+
+    public (Mod?, SettingPreset) this[Guid key]
+        => _presets[key];
+
+    public IEnumerable<Guid> Keys
+        => _presets.Keys;
+
+    public IEnumerable<(Mod?, SettingPreset)> Values
+        => _presets.Values;
 }

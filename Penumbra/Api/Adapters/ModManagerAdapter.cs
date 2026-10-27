@@ -87,5 +87,5 @@ public sealed partial class ModManagerAdapter(ModManagerAdapterFactory parent, C
         => this.Create(Owner, mod, callerName);
 
     public IpcObjectManager.IBasicAdapter? CreateAdapter(CallerPlugin owner, object? mod)
-        => mod is not Mod m ? null : new ModAdapter(this, m);
+        => mod is Mod m ? new ModAdapter(this, m) : null;
 }

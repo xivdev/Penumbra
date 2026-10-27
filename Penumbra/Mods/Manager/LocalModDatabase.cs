@@ -320,7 +320,7 @@ public sealed class LocalModDatabase(ServiceManager services) : IDisposable, ISe
         }
     }
 
-    
+
     internal class PresetData()
     {
         [BsonId]
@@ -386,7 +386,6 @@ public sealed class LocalModDatabase(ServiceManager services) : IDisposable, ISe
 
     internal class ModData()
     {
-        
         [BsonId]
         public string Id { get; private set; } = string.Empty;
 

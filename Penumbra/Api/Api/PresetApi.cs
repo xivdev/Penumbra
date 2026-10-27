@@ -1,3 +1,4 @@
+using Dalamud.Plugin.Ipc;
 using ImSharp;
 using Luna;
 using Penumbra.Api.Enums;
@@ -7,8 +8,12 @@ using Penumbra.Mods.Manager;
 
 namespace Penumbra.Api.Api;
 
-public class PresetApi(ApiHelpers helpers, CollectionManager collections, ModManager mods, MainConfig config) : IPenumbraApiPresets, IApiService
+public class PresetApi(ApiHelpers helpers, CollectionManager collections, ModManager mods, PresetManagerAdapterFactory adapterFactory)
+    : IPenumbraApiPresets, IApiService
 {
+    public IIdDataShareAdapter GetPresetManagerAdapter(CallerPlugin owner)
+        => adapterFactory.Create(owner)!;
+
     public (PenumbraApiEc, SettingPresetData?) GetPreset(Guid collectionId, in ModIdentifier mod, PresetQueryMode mode,
         int key)
     {
@@ -37,48 +42,11 @@ public class PresetApi(ApiHelpers helpers, CollectionManager collections, ModMan
 
     public PenumbraApiEc ApplyPreset(Guid collectionId, in ModIdentifier mod, in SettingPresetData preset,
         PresetApplyMode mode, int key, string source)
-    {
-        var args = ApiHelpers.Args("CollectionId", collectionId, "ModDirectory", mod.Identifier, "ModName", mod.Name, "Mode", mode, "Key", key,
-            "Source", source);
-        if (!collections.Storage.ById(collectionId, out var collection))
-            return ApiHelpers.Return(PenumbraApiEc.CollectionMissing, args);
-
-        return ApplyPresetBase(args, collection, mod.Identifier, mod.Name, preset, mode, key, source);
-    }
+        => adapterFactory.ApplyPreset(collectionId, in mod, in preset, mode, key, source);
 
     public PenumbraApiEc ApplyPresetPlayer(int objectIndex, in ModIdentifier mod, in SettingPresetData preset,
         PresetApplyMode mode, int key, string source)
-    {
-        var args = ApiHelpers.Args("ObjectIndex", objectIndex, "ModDirectory", mod.Identifier, "ModName", mod.Name, "Mode", mode, "Key", key,
-            "Source", source);
-        if (!helpers.AssociatedCollection(objectIndex, out var collection))
-            return ApiHelpers.Return(PenumbraApiEc.InvalidArgument, args);
-
-        return ApplyPresetBase(args, collection, mod.Identifier, mod.Name, preset, mode, key, source);
-    }
-
-    private PenumbraApiEc ApplyPresetBase(Lazy<string> args, ModCollection collection, string modDirectory, string modName,
-        in SettingPresetData preset, PresetApplyMode mode, int key, string source)
-    {
-        if (!mods.TryGetMod(modDirectory, modName, out var mod))
-            return ApiHelpers.Return(PenumbraApiEc.ModMissing, args);
-
-        var temporary = mode is PresetApplyMode.Auto
-            ? config.DefaultTemporaryMode || collection.Settings.Settings[mod.Index].TempSettings is not null
-            : mode is not PresetApplyMode.Permanent;
-
-        if (collection.Identity.Index is 0)
-            return ApiHelpers.Return(PenumbraApiEc.InvalidArgument, args);
-
-        if (collection.Identity.Index < 0 && temporary)
-            return ApiHelpers.Return(PenumbraApiEc.TemporarySettingImpossible, args);
-
-        if (temporary && !collections.Editor.CanSetTemporarySettings(collection, mod, key))
-            return ApiHelpers.Return(PenumbraApiEc.TemporarySettingDisallowed, args);
-
-        collections.Editor.ApplyPreset(collection, mod, preset, temporary, source, key);
-        return ApiHelpers.Return(PenumbraApiEc.Success, args);
-    }
+        => adapterFactory.ApplyPresetPlayer(objectIndex, in mod, in preset, mode, key, source);
 
     private (PenumbraApiEc, SettingPresetData?) GetPresetBase(Lazy<string> args, ModCollection collection, string modDirectory, string modName,
         PresetQueryMode mode, int key)
