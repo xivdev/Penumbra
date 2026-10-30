@@ -150,6 +150,10 @@ internal partial record ResolveContext
 
     private unsafe ImcEntry ResolveImcData(ResourceHandle* imc)
     {
+        // Models with no IMC file, such as weapon bodies the game doesn't ship, have no IMC handle.
+        if (imc is null)
+            return default;
+
         var imcFileData = imc->GetDataSpan();
         if (imcFileData.IsEmpty)
         {
