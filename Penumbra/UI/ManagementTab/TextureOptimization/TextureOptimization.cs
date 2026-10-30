@@ -20,14 +20,14 @@ public sealed class TextureOptimization(ModGroupEditor groupEditor, TextureManag
             Depth    = 1,
             MipCount = 1,
             Format   = TexFile.TextureFormat.B8G8R8A8,
-            Type     = TexFile.Attribute.TextureType1D,
+            Type     = TexFile.Attribute.TextureType2D,
         };
         header.OffsetToSurface[0] = 80;
         for (var i = 1; i < 13; ++i)
             header.OffsetToSurface[i] = 0;
         header.LodOffset[0] = 0;
-        header.LodOffset[1] = 1;
-        header.LodOffset[2] = 2;
+        header.LodOffset[1] = 0;
+        header.LodOffset[2] = 0;
         var       ret = new byte[84];
         using var s   = new MemoryStream(ret);
         using var w   = new BinaryWriter(s);
