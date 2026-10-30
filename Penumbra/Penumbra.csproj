@@ -57,6 +57,8 @@
         <PackageReference Include="SharpGLTF.Core" Version="1.0.6" />
         <PackageReference Include="SharpGLTF.Toolkit" Version="1.0.6" />
         <PackageReference Include="PeNet" Version="6.1.2" />
+        <!-- Avoid security vulnerability in PeNet reference version. -->
+        <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
         <PackageReference Include="LiteDB" Version="5.0.21" />
     </ItemGroup>
 
