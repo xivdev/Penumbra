@@ -1,6 +1,5 @@
 using System.Buffers;
 using ImSharp;
-using Rgba32 = SixLabors.ImageSharp.PixelFormats.Rgba32;
 
 namespace Penumbra.Import.Textures;
 

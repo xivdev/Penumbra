@@ -1,5 +1,4 @@
 using ImSharp;
-using Rgba32 = SixLabors.ImageSharp.PixelFormats.Rgba32;
 
 namespace Penumbra.Import.Textures;
 
@@ -110,7 +109,7 @@ public partial class CombinedTexture
             return Vector4.Zero;
 
         var rgba        = new Rgba32(bytes[offset], bytes[offset + 1], bytes[offset + 2], bytes[offset + 3]);
-        var transformed = Vector4.Transform(rgba.ToVector4(), transform) + constant;
+        var transformed = Vector4.Transform(rgba.ToVector(), transform) + constant;
 
         transformed.X = Math.Clamp(transformed.X, 0, 1);
         transformed.Y = Math.Clamp(transformed.Y, 0, 1);

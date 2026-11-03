@@ -53,11 +53,15 @@
           "SharpGLTF.Runtime": "1.0.6"
         }
       },
-      "SixLabors.ImageSharp": {
+      "SkiaSharp": {
         "type": "Direct",
-        "requested": "[3.1.11, )",
-        "resolved": "3.1.11",
-        "contentHash": "JfPLyigLthuE50yi6tMt7Amrenr/fA31t2CvJyhy/kQmfulIBAqo5T/YFUSRHtuYPXRSaUHygFeh6Qd933EoSw=="
+        "requested": "[4.154.0, )",
+        "resolved": "4.154.0",
+        "contentHash": "R3BuszJ3tUFmni37nZIRawXL0yx+XHyx7xi1716/0TybuEQFhnBx48Ig3rFpeVFQVytpGpJZZ+NLW9d9UPG7EA==",
+        "dependencies": {
+          "SkiaSharp.NativeAssets.Win32": "4.154.0",
+          "SkiaSharp.NativeAssets.macOS": "4.154.0"
+        }
       },
       "FlatSharp.Compiler": {
         "type": "Transitive",
@@ -126,6 +130,16 @@
         "dependencies": {
           "SharpGLTF.Core": "1.0.6"
         }
+      },
+      "SkiaSharp.NativeAssets.macOS": {
+        "type": "Transitive",
+        "resolved": "4.154.0",
+        "contentHash": "GgYL4ML3HT4CW33oXMHdp7BSRU87bPUfWBXdYgNduGlt4GAbAM/3eXcjjUdilS0H1r2R5iBhwvExCfSYGwFKlw=="
+      },
+      "SkiaSharp.NativeAssets.Win32": {
+        "type": "Transitive",
+        "resolved": "4.154.0",
+        "contentHash": "GXgoY77GCXdPcveNAmy8o3gVit8sp6YtnI88h5camLPfihjulwJUajZXKhgVuZ8RhuwSTgfyt/00Dx8HRUSeAA=="
       },
       "System.IO.Hashing": {
         "type": "Transitive",
