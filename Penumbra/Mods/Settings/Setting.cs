@@ -41,8 +41,17 @@ public readonly record struct Setting(ulong Value)
     public static Setting AllBits(int count)
         => new((1ul << Math.Clamp(count, 0, 63)) - 1);
 
-    public Setting TurnMulti(int count)
-        => new(Math.Max((ulong)Math.Min(count - 1, BitOperations.TrailingZeroCount(Value)), 0));
+    public Setting TurnSingle(int count)
+    {
+        if (count is 0)
+            return Zero;
+
+        var log2 = BitOperations.TrailingZeroCount(Value);
+        if (log2 < count)
+            return new Setting((ulong)log2);
+
+        return Zero;
+    }
 
     public Setting RemoveSingle(int singleIdx)
     {

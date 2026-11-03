@@ -1,4 +1,4 @@
-using Penumbra.GameData.Files;
+using Penumbra.GameData.Files.Models;
 using SharpGLTF.Materials;
 using SharpGLTF.Scenes;
 using SharpGLTF.Transforms;

@@ -1,8 +1,8 @@
 using ImSharp;
 using Luna;
-using Penumbra.GameData.Files.MaterialStructs;
+using Penumbra.GameData.Files.Materials;
 using Penumbra.String.Classes;
-using static Penumbra.GameData.Files.MaterialStructs.SamplerFlags;
+using static Penumbra.GameData.Files.Materials.SamplerFlags;
 using static Penumbra.GameData.Files.ShpkFile;
 
 namespace Penumbra.UI.FileEditing.Materials;

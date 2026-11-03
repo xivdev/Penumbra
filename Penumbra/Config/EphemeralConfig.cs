@@ -11,6 +11,12 @@ using TabType = Penumbra.Api.Enums.TabType;
 
 namespace Penumbra;
 
+public enum ChangedItemSortMode
+{
+    Item,
+    Mod,
+}
+
 public sealed partial class EphemeralConfig : ConfigurationFile<FilenameService>
 {
     #region Selection
@@ -59,6 +65,9 @@ public sealed partial class EphemeralConfig : ConfigurationFile<FilenameService>
     [ConfigProperty]
     private TwoPanelWidth _modTabScale = new(0.3f, ScalingMode.Percentage);
 
+    [ConfigProperty(EventName = "ChangedItemSortModsChanged")]
+    private ChangedItemSortMode _changedItemSortMode = ChangedItemSortMode.Item;
+
     /// <inheritdoc/>
     public EphemeralConfig(SaveService save, PenumbraMessager messages)
         : base(save, messages)
@@ -85,6 +94,7 @@ public sealed partial class EphemeralConfig : ConfigurationFile<FilenameService>
                 CollectionsTabScale.WriteJson(j, "CollectionsTabScale"u8);
             if (tmp.MarkUsed(ModTabScale.Mode is not ScalingMode.Percentage || ModTabScale.Width is not 0.3f))
                 ModTabScale.WriteJson(j, "ModTabScale"u8);
+            tmp.WriteEnumIfNot("ChangedItemSortMode"u8, ChangedItemSortMode, ChangedItemSortMode.Item);
         }
 
         using (var tmp = j.TemporaryObject("Selection"u8))
@@ -118,6 +128,7 @@ public sealed partial class EphemeralConfig : ConfigurationFile<FilenameService>
         {
             CollectionsTabScale = TwoPanelWidth.ReadJson(ui, "CollectionsTabScale"u8, CollectionsTabScale);
             ModTabScale         = TwoPanelWidth.ReadJson(ui, "ModTabScale"u8,         ModTabScale);
+            ChangedItemSortMode = ui.EnumOrDefault("ChangedItemSortMode"u8, ChangedItemSortMode);
         }
 
         if (j.TryReadObject("Selection"u8, out var selection))

@@ -90,7 +90,7 @@ public partial class TexToolsImporter
         var oldName = _currentModDirectory.FullName;
 
         // Try renaming the folder three times because sometimes we get AccessDenied here for some unknown reason.
-        const int numTries = 3;
+        const int numTries = 5;
         for (var i = 1;; ++i)
         {
             // Use either the top-level directory as the mods base name, or the (fixed for path) name in the json.
@@ -114,7 +114,7 @@ public partial class TexToolsImporter
                     throw;
 
                 Penumbra.Log.Warning($"Error when renaming the extracted mod, try {i}/{numTries}: {ex.Message}.");
-                Thread.Sleep(100 * i);
+                Thread.Sleep(200 * i);
                 continue;
             }
 

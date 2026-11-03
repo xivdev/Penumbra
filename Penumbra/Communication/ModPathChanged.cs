@@ -49,6 +49,9 @@ public sealed class ModPathChanged(LunaLogger log)
         /// <seealso cref="UI.AdvancedWindow.ModEditWindow.OnModPathChange"/>
         ModEditWindow = 0,
 
+        /// <seealso cref="UI.Classes.ModComboWithAll.OnModPathChange"/>
+        ModComboWithAll = 0,
+
         /// <seealso cref="Collections.Manager.CollectionStorage.OnModPathChange"/>
         CollectionStorage = 10,
 

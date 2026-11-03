@@ -1,5 +1,5 @@
 using Lumina.Data.Parsing;
-using Penumbra.GameData.Files.ModelStructs;
+using Penumbra.GameData.Files.Models;
 using SharpGLTF.Schema2;
 
 namespace Penumbra.Import.Models.Import;

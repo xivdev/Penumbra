@@ -99,13 +99,16 @@ public abstract class ModFileScanner<T>(ModManager mods, LunaLogger log) : Objec
 
     protected abstract T Create(string fileName, Mod mod);
 
+    protected virtual IEnumerable<Mod> ScannedMods
+        => Mods;
+
     public override Task Scan()
     {
         StableList.Clear();
         Cancel();
         Log.Information("Starting new Scan...");
         Timer.Restart();
-        var mods  = Mods.ToArray();
+        var mods  = ScannedMods.ToArray();
         var token = CancelSource.Token;
         ScanTask = Task.Run(() =>
         {

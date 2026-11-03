@@ -150,6 +150,7 @@ public sealed class IpcProviders : IDisposable, IApiService, IRequiredService
             IpcSubscribers.GetPresetPlayer.Provider(pi, api.Presets),
             IpcSubscribers.ApplyPreset.Provider(pi, api.Presets),
             IpcSubscribers.ApplyPresetPlayer.Provider(pi, api.Presets),
+            IpcSubscribers.GetPresetManagerAdapter.Provider(pi, api.Presets),
         ];
         if (_characterUtility.Ready)
             _initializedProvider.Invoke();

@@ -77,7 +77,7 @@ public sealed class MultiModGroup(Mod mod) : ITexToolsGroup
             Priority        = Priority,
             Image           = Image,
             Page            = Page,
-            DefaultSettings = DefaultSettings.TurnMulti(OptionData.Count),
+            DefaultSettings = DefaultSettings.TurnSingle(OptionData.Count),
             Id              = Id,
             Condition       = Condition,
             Layout          = Layout,

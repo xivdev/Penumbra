@@ -1,5 +1,5 @@
 using Lumina.Data.Parsing;
-using Penumbra.GameData.Files;
+using Penumbra.GameData.Files.Models;
 
 namespace Penumbra.Import.Models.Import;
 

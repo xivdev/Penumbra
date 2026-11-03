@@ -1,8 +1,7 @@
 using Dalamud.Plugin.Services;
 using ImSharp;
 using Luna;
-using Penumbra.GameData.Files;
-using Penumbra.GameData.Files.MaterialStructs;
+using Penumbra.GameData.Files.Materials;
 using Penumbra.GameData.Gui;
 using Penumbra.GameData.Interop;
 using Penumbra.Interop.Hooks.Objects;

@@ -2,6 +2,7 @@ using Luna;
 using Penumbra.Communication;
 using Penumbra.Import.Textures;
 using Penumbra.Mods.Manager;
+using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.ManagementTab;
 
@@ -11,10 +12,11 @@ public sealed class TextureOptimizationTab(
     UiNavigator navigator,
     EditingConfig config,
     TextureOptimization optimization,
+    ModComboWithAll combo,
     ManagementLog<TextureOptimization> log)
     : ITab<ManagementTabType>
 {
-    private readonly TextureOptimizationTable _table = new(mods, textures, optimization, navigator, config, log);
+    private readonly TextureOptimizationTable _table = new(mods, textures, optimization, navigator, config, log, combo);
 
     public ReadOnlySpan<byte> Label
         => "Texture Optimization"u8;

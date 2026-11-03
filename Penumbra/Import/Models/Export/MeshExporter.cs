@@ -3,7 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Lumina.Extensions;
 using Penumbra.GameData.Files;
-using Penumbra.GameData.Files.ModelStructs;
+using Penumbra.GameData.Files.Models;
 using SharpGLTF.Geometry;
 using SharpGLTF.Geometry.VertexTypes;
 using SharpGLTF.Materials;

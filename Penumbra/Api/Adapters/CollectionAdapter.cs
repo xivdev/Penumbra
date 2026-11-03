@@ -18,15 +18,12 @@ public sealed partial class CollectionAdapter(CollectionManagerAdapter parent, M
     private new CollectionManagerAdapterFactory Parent
         => (CollectionManagerAdapterFactory)base.Parent!;
 
-    [AdapterMethod(CollectionWrapper.Method.Version, AlwaysAlive = true)]
     public override Version Version
         => CollectionManagerAdapter.LocalVersion;
 
-    [AdapterMethod(CollectionWrapper.Method.IsDisposed, AlwaysAlive = true)]
     public override bool IsDisposed
         => base.Parent is null;
 
-    [AdapterMethod(CollectionWrapper.Method.DisposedEvent, AlwaysAlive = true)]
     public event Action? Disposed;
 
     protected override void InvokeDisposed()

@@ -1,5 +1,5 @@
 using Luna;
-using Penumbra.GameData.Files;
+using Penumbra.GameData.Files.Models;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Mods.Editor;

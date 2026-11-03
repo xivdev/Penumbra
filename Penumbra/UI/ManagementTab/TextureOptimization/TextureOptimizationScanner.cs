@@ -3,12 +3,16 @@ using OtterTex;
 using Penumbra.Import.Textures;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
+using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.ManagementTab;
 
-public sealed class TextureOptimizationScanner(ModManager mods, EditingConfig config, ManagementLog<TextureOptimization> log)
+public sealed class TextureOptimizationScanner(ModManager mods, EditingConfig config, ModComboWithAll combo, ManagementLog<TextureOptimization> log)
     : ModFileScanner<OptimizableTexture>(mods, log)
 {
+    protected override IEnumerable<Mod> ScannedMods
+        => combo.Selection is null ? base.ScannedMods : [combo.Selection];
+
     protected override unsafe OptimizableTexture Create(string fileName, Mod mod)
     {
         try

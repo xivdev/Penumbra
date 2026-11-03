@@ -1,5 +1,5 @@
 using Lumina.Data.Parsing;
-using Penumbra.GameData.Files;
+using Penumbra.GameData.Files.Models;
 using SharpGLTF.Schema2;
 
 namespace Penumbra.Import.Models.Import;
@@ -28,22 +28,7 @@ public class VertexAttribute
 
     /// <summary> Size in bytes of a single vertex's attribute value. </summary>
     public byte Size
-        => (MdlFile.VertexType)Element.Type switch
-        {
-            MdlFile.VertexType.Single1 => 4,
-            MdlFile.VertexType.Single2 => 8,
-            MdlFile.VertexType.Single3 => 12,
-            MdlFile.VertexType.Single4 => 16,
-            MdlFile.VertexType.UByte4  => 4,
-            MdlFile.VertexType.Short2  => 4,
-            MdlFile.VertexType.Short4  => 8,
-            MdlFile.VertexType.NByte4  => 4,
-            MdlFile.VertexType.Half2   => 4,
-            MdlFile.VertexType.Half4   => 8,
-            MdlFile.VertexType.UShort4 => 8,
-
-            _ => throw new Exception($"Unhandled vertex type {(MdlFile.VertexType)Element.Type}"),
-        };
+        => (byte)((MdlFile.VertexType)Element.Type).Size;
 
     private VertexAttribute(
         MdlStructs.VertexElement element,

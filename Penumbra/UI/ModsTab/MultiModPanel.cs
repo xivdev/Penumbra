@@ -1,11 +1,13 @@
 using ImSharp;
 using Luna;
+using Penumbra.Collections.Manager;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 
 namespace Penumbra.UI.ModsTab;
 
-public class MultiModPanel(ModFileSystem fileSystem, ModDataEditor editor, PredefinedTagManager tagManager) : IUiService
+public class MultiModPanel(ModFileSystem fileSystem, ModDataEditor editor, PredefinedTagManager tagManager, CollectionManager collections)
+    : IUiService
 {
     public void Draw()
     {
@@ -16,6 +18,7 @@ public class MultiModPanel(ModFileSystem fileSystem, ModDataEditor editor, Prede
         var treeNodePos = Im.Cursor.Position;
         DrawModList();
         DrawCounts(treeNodePos);
+        DrawMultiToggleOptions();
         DrawMultiTagger();
     }
 
@@ -76,6 +79,53 @@ public class MultiModPanel(ModFileSystem fileSystem, ModDataEditor editor, Prede
             }
         }
 
+        Im.Separator();
+    }
+
+    private void DrawMultiToggleOptions()
+    {
+        var total = fileSystem.Selection.DataNodes.Count;
+        if (total is 0)
+            return;
+
+        var buttonWidth = new Vector2((Im.ContentRegion.Available.X - 2 * Im.Style.ItemInnerSpacing.X) / 3, Im.Style.FrameHeight);
+        var current     = collections.Active.Current;
+        var enabled     = 0;
+        var disabled    = 0;
+        foreach (var mod in fileSystem.Selection.DataNodes)
+        {
+            var settings = current.GetOwnSettings(((Mod)mod.Value).Index);
+            switch (settings)
+            {
+                case null:               break;
+                case { Enabled: true }:  ++enabled; break;
+                case { Enabled: false }: ++disabled; break;
+            }
+        }
+
+        var inherited = total - enabled - disabled;
+
+        if (ImEx.Button("Enable All"u8, buttonWidth,
+                enabled == total
+                    ? $"All selected mods are already enabled in {current.Identity.Name}."
+                    : $"Enable {total - enabled} mods that are not currently enabled in {current.Identity.Name}.", enabled == total))
+            collections.Editor.SetMultipleModStates(current, fileSystem.Selection.DataNodes.Select(n => (Mod)n.Value), true);
+
+        Im.Line.SameInner();
+        if (ImEx.Button("Disable All"u8, buttonWidth,
+                disabled == total
+                    ? $"All selected mods are already disabled in {current.Identity.Name}."
+                    : $"Disable {total - disabled} mods that are not currently disabled in {current.Identity.Name}.",
+                disabled == total))
+            collections.Editor.SetMultipleModStates(current, fileSystem.Selection.DataNodes.Select(n => (Mod)n.Value), false);
+
+        Im.Line.SameInner();
+        if (ImEx.Button("Inherit All"u8, buttonWidth,
+                inherited == total
+                    ? $"All selected mods are already inherited in {current.Identity.Name}."
+                    : $"Inherit {total - inherited} mods that are not currently enabled in {current.Identity.Name}.",
+                inherited == total))
+            collections.Editor.SetMultipleModInheritances(current, fileSystem.Selection.DataNodes.Select(n => (Mod)n.Value), true);
         Im.Separator();
     }
 

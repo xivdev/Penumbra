@@ -58,7 +58,7 @@ public sealed class OptimizableTexture : BaseScannedFile
         SolidColor       = solidColor;
         Width            = width;
         Height           = height;
-        MipMaps          = 0;
+        MipMaps          = mips;
     }
 
     public override bool DataPredicate()

@@ -3,7 +3,7 @@ using ImSharp;
 using Lumina.Data.Parsing;
 using Luna;
 using Penumbra.GameData;
-using Penumbra.GameData.Files;
+using Penumbra.GameData.Files.Models;
 using Penumbra.Import.Models.Import;
 using Penumbra.String.Classes;
 using Penumbra.UI.Classes;

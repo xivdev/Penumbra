@@ -2,21 +2,19 @@ using Luna;
 using Luna.Generators;
 using Penumbra.Api.Wrappers;
 using Penumbra.Mods;
+using Penumbra.Mods.Settings;
 
 namespace Penumbra.Api;
 
 public sealed partial class ModAdapter(ModManagerAdapter parent, Mod mod)
     : IpcObjectManager.BasicAdapter(parent.Parent, parent.Owner, nameof(ModAdapter)), IpcObjectManager.IBasicAdapter
 {
-    [AdapterMethod(ModWrapper.Method.Version, AlwaysAlive = true)]
     public override Version Version
         => ModManagerAdapter.LocalVersion;
 
-    [AdapterMethod(ModWrapper.Method.IsDisposed, AlwaysAlive = true)]
     public override bool IsDisposed
         => Parent is null;
 
-    [AdapterMethod(ModWrapper.Method.DisposedEvent, AlwaysAlive = true)]
     public event Action? Disposed;
 
     protected override void InvokeDisposed()
@@ -95,6 +93,20 @@ public sealed partial class ModAdapter(ModManagerAdapter parent, Mod mod)
     [AdapterMethod(ModWrapper.Method.RequiredFeatures)]
     private ulong RequiredFeatures
         => (ulong)_mod.RequiredFeatures;
+
+    [AdapterMethod(ModWrapper.Method.FindGroup)]
+    private (int GroupIndex, ModObjectIdentifier Group) FindGroup(ModObjectIdentifier group)
+        => group.FindGroup(_mod) is { } g ? (g.Index, ModObjectIdentifier.From(g)) : (-1, default);
+
+    [AdapterMethod(ModWrapper.Method.FindOption)]
+    private (int OptionIndex, ModObjectIdentifier Option) FindOption(ModObjectIdentifier optionIdentifier, int groupIndex)
+    {
+        if (groupIndex < 0 || groupIndex >= _mod.Groups.Count)
+            return (-1, default);
+
+        var group = _mod.Groups[groupIndex];
+        return optionIdentifier.FindOption(group) is { } o ? (o.Index, ModObjectIdentifier.From(o)) : (-1, default);
+    }
 
     protected override void DisposeInternal()
         => _mod = null!;

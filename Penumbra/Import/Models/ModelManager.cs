@@ -6,6 +6,8 @@ using Penumbra.GameData;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Files;
+using Penumbra.GameData.Files.Materials;
+using Penumbra.GameData.Files.Models;
 using Penumbra.GameData.Structs;
 using Penumbra.Import.Models.Export;
 using Penumbra.Import.Models.Import;

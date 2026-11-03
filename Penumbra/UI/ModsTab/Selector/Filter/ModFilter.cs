@@ -74,13 +74,12 @@ public sealed class ModFilter : TokenizedFilter<ModFilterTokenType, ModFileSyste
         Im.BulletText("and either contains a changed item with 'camise' in it's name, or has 'top' in the mod's name."u8);
     }
 
+    public override ColorParameter ActiveBorderColor
+        => ColorId.ModTextFilterBorder.Value;
+
     public override bool DrawFilter(ReadOnlySpan<byte> label, Vector2 availableRegion)
     {
-        bool ret;
-        using (ImStyleBorder.Frame.Push(ColorId.ModTextFilterBorder.Vector, Im.Style.GlobalScale, Text.Length > 0))
-        {
-            ret = base.DrawFilter(label, availableRegion with { X = availableRegion.X - Im.Style.FrameHeight });
-        }
+        var ret = base.DrawFilter(label, availableRegion with { X = availableRegion.X - Im.Style.FrameHeight });
 
         Im.Line.NoSpacing();
         ret |= DrawFilterCombo();

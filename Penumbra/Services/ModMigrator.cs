@@ -3,7 +3,7 @@ using Luna;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Files;
-using Penumbra.GameData.Files.MaterialStructs;
+using Penumbra.GameData.Files.Materials;
 using Penumbra.GameData.Structs;
 using Penumbra.Import.Textures;
 using Penumbra.Mods;

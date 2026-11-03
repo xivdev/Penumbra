@@ -2,7 +2,7 @@ using Dalamud.Interface;
 using ImSharp;
 using Luna;
 using Penumbra.GameData.Files;
-using Penumbra.GameData.Files.MaterialStructs;
+using Penumbra.GameData.Files.Materials;
 using Penumbra.GameData.Structs;
 using Penumbra.Services;
 

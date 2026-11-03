@@ -1,5 +1,5 @@
 using ImSharp;
-using Penumbra.GameData.Files.MaterialStructs;
+using Penumbra.GameData.Files.Materials;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.Hooks.Objects;
 using Penumbra.Interop.MaterialPreview;

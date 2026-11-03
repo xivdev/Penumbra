@@ -44,6 +44,9 @@ public class ResourceTreeViewer(
 
     private Task<ResourceTree[]>? _task;
 
+    private readonly OnScreenItemFilter _itemFilter = new(config);
+    private readonly TreeNameFilter     _treeFilter = new(config);
+
     public void Draw()
     {
         DrawModifiedGameFilesWarning();
@@ -167,6 +170,30 @@ public class ResourceTreeViewer(
         Im.Separator();
     }
 
+    private sealed class TreeNameFilter : TextFilterBase<string>
+    {
+        public TreeNameFilter(Configuration config)
+        {
+            Set(config.Ui.RememberOnScreenFilters ? config.Filters.OnScreenCharacterFilter : string.Empty);
+            FilterChanged += () => config.Filters.OnScreenCharacterFilter = Text;
+        }
+
+        protected override string ToFilterString(in string item, int globalIndex)
+            => item;
+    }
+
+    private sealed class OnScreenItemFilter : TextFilterBase<string>
+    {
+        public OnScreenItemFilter(Configuration config)
+        {
+            Set(config.Ui.RememberOnScreenFilters ? config.Filters.OnScreenItemFilter : string.Empty);
+            FilterChanged += () => config.Filters.OnScreenItemFilter = Text;
+        }
+
+        protected override string ToFilterString(in string item, int globalIndex)
+            => item;
+    }
+
     private void DrawControls()
     {
         var yOffset = (ChangedItemDrawer.TypeFilterIconSize.Y - Im.Style.FrameHeight) / 2f;
@@ -206,23 +233,12 @@ public class ResourceTreeViewer(
 
         using (ImStyleSingle.FrameRounding.Push(0))
         {
-            var fieldWidth = (Im.ContentRegion.Available.X - checkSpacing * 2.0f - Im.Style.FrameHeightWithSpacing) / 2.0f;
-            Im.Item.SetNextWidth(fieldWidth);
-            var filter = config.Filters.OnScreenCharacterFilter;
-            if (Im.Input.Text("##TreeNameFilter"u8, ref filter, "Filter by Character/Entity Name..."u8))
-            {
-                filterChanged                          = true;
-                config.Filters.OnScreenCharacterFilter = filter;
-            }
+            var fieldWidth = new Vector2((Im.ContentRegion.Available.X - checkSpacing * 2.0f - Im.Style.FrameHeightWithSpacing) / 2.0f,
+                Im.Style.FrameHeight);
+            filterChanged |= _treeFilter.DrawFilter("Filter by Character/Entity Name..."u8, fieldWidth);
 
             Im.Line.Same(0, checkSpacing);
-            Im.Item.SetNextWidth(fieldWidth);
-            filter = config.Filters.OnScreenItemFilter;
-            if (Im.Input.Text("##NodeFilter"u8, ref filter, "Filter by Item/Part Name or Path..."u8))
-            {
-                filterChanged                     = true;
-                config.Filters.OnScreenItemFilter = filter;
-            }
+            filterChanged |= _itemFilter.DrawFilter("Filter by Item/Part Name or Path..."u8, fieldWidth);
         }
 
         Im.Line.Same(0, checkSpacing);

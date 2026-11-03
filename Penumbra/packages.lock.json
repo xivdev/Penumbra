@@ -63,6 +63,12 @@
           "SkiaSharp.NativeAssets.macOS": "4.154.0"
         }
       },
+      "System.Security.Cryptography.Pkcs": {
+        "type": "Direct",
+        "requested": "[10.0.13, )",
+        "resolved": "10.0.13",
+        "contentHash": "a+EovgC1fBnwdlQ6cn3j4JFBfKqiFaFvoAhjisOoSvazLAcIznaBzPQP0oYnvccmeXfqUH1KebVZOxSeH6rMaw=="
+      },
       "FlatSharp.Compiler": {
         "type": "Transitive",
         "resolved": "7.9.0",
@@ -146,11 +152,6 @@
         "resolved": "9.0.8",
         "contentHash": "5TJUS9EIYrp0VEcm06EPYxXmLmsVUakewFnM/CAxQfvlasI9fGkTKM9afSf2dodZcMCzFna/o7Fn+gYRt3uTiA=="
       },
-      "System.Security.Cryptography.Pkcs": {
-        "type": "Transitive",
-        "resolved": "10.0.7",
-        "contentHash": "dbdKfF3eA5l+CXiAbDxiCxdezoxeanbue1ck8m49ih1L9uZG6ry8Ul8On6vpragyMDJJP4rQHUY/SWgk66tCYA=="
-      },
       "Unosquare.Swan.Lite": {
         "type": "Transitive",
         "resolved": "3.1.0",
@@ -180,7 +181,7 @@
           "FlatSharp.Compiler": "[7.9.0, )",
           "FlatSharp.Runtime": "[7.9.0, )",
           "Luna": "[1.0.0, )",
-          "Penumbra.Api": "[5.19.1, )",
+          "Penumbra.Api": "[5.20.0, )",
           "Penumbra.String": "[1.0.8, )"
         }
       },

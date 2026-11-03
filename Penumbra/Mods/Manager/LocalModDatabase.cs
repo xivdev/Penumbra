@@ -320,7 +320,7 @@ public sealed class LocalModDatabase(ServiceManager services) : IDisposable, ISc
         }
     }
 
-    
+
     internal class PresetData()
     {
         [BsonId]
@@ -386,7 +386,6 @@ public sealed class LocalModDatabase(ServiceManager services) : IDisposable, ISc
 
     internal class ModData()
     {
-        
         [BsonId]
         public string Id { get; private set; } = string.Empty;
 
@@ -484,6 +483,12 @@ public sealed class LocalModDatabase(ServiceManager services) : IDisposable, ISc
             {
                 mod.PreferredChangedItems =  PreferredChangedItems.Select(i => new CustomItemId(i)).ToHashSet();
                 changes                   |= ModDataChangeType.PreferredChangedItems;
+            }
+
+            if (mod.IgnorePages != IgnorePages)
+            {
+                mod.IgnorePages =  IgnorePages;
+                changes         |= ModDataChangeType.IgnorePages;
             }
 
             changes |= ModDataEditor.UpdateTags(mod, null, LocalTags);
