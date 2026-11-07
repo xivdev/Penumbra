@@ -8,7 +8,6 @@ using Penumbra.Interop.Services;
 using Penumbra.Meta.Files;
 using Penumbra.Mods;
 using Penumbra.Mods.Groups;
-using Penumbra.Services;
 using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManager;
 
 namespace Penumbra.Meta;
@@ -20,7 +19,6 @@ public sealed class MetaFileManager : IScopedService
     internal readonly ResidentResourceManager ResidentResources;
     internal readonly IDataManager            GameData;
     internal readonly ActiveCollectionData    ActiveCollections;
-    internal readonly ValidityChecker         ValidityChecker;
     internal readonly ObjectIdentification    Identifier;
     internal readonly FileCompactor           Compactor;
     internal readonly ImcChecker              ImcChecker;
@@ -29,9 +27,8 @@ public sealed class MetaFileManager : IScopedService
     internal readonly IFileAllocator          XivFileAllocator;
     internal readonly IFileAllocator          XivDefaultAllocator;
 
-
     public MetaFileManager(CharacterUtility characterUtility, ResidentResourceManager residentResources, IDataManager gameData,
-        ActiveCollectionData activeCollections, Configuration config, ValidityChecker validityChecker, ObjectIdentification identifier,
+        ActiveCollectionData activeCollections, Configuration config, ObjectIdentification identifier,
         FileCompactor compactor, HookManager interop, AtchManager atchManager)
     {
         CharacterUtility    = characterUtility;
@@ -39,7 +36,6 @@ public sealed class MetaFileManager : IScopedService
         GameData            = gameData;
         ActiveCollections   = activeCollections;
         Config              = config;
-        ValidityChecker     = validityChecker;
         Identifier          = identifier;
         Compactor           = compactor;
         AtchManager         = atchManager;

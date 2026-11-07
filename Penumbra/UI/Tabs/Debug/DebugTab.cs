@@ -8,7 +8,6 @@ using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using ImSharp;
 using Luna;
-using Microsoft.Extensions.DependencyInjection;
 using Penumbra.Api;
 using Penumbra.Api.Enums;
 using Penumbra.Api.IpcTester;
@@ -65,7 +64,7 @@ public sealed class DebugTab : Window, ITab<TabType>
     private readonly Configuration                 _config;
     private readonly CollectionManager             _collectionManager;
     private readonly ModManager                    _modManager;
-    private readonly ValidityChecker               _validityChecker;
+    private readonly PenumbraLoader                _loader;
     private readonly HttpApi                       _httpApi;
     private readonly ActorManager                  _actors;
     private readonly StainAccessor                 _stains;
@@ -105,7 +104,7 @@ public sealed class DebugTab : Window, ITab<TabType>
     private readonly HookManagerDrawer             _hookManager;
 
     public DebugTab(Configuration config, CollectionManager collectionManager, ObjectManager objects, IDataManager dataManager,
-        ValidityChecker validityChecker, ModManager modManager, HttpApi httpApi, ActorManager actors, StainAccessor stains,
+        ModManager modManager, HttpApi httpApi, ActorManager actors, StainAccessor stains,
         ResourceManagerService resourceManager, ResourceLoader resourceLoader, CollectionResolver collectionResolver,
         DrawObjectState drawObjectState, PathState pathState, SubfileHelper subfileHelper, IdentifiedCollectionCache identifiedCollectionCache,
         CutsceneService cutsceneService, ModImportManager modImporter, ImportPopup importPopup, FrameworkManager framework,
@@ -114,7 +113,7 @@ public sealed class DebugTab : Window, ITab<TabType>
         LunaDxTester lunaDxTester, HookOverrideDrawer hookOverrides, RsfService rsfService, GlobalVariablesDrawer globalVariablesDrawer,
         ActionTmbListDrawer actionTmbs, ObjectIdentification objectIdentification, RenderTargetDrawer renderTargetDrawer,
         ModMigratorDebug modMigratorDebug, ShapeInspector shapeInspector, FileWatcher.FileWatcherDrawer fileWatcherDrawer,
-        DragDropManager dragDropManager, IpcObjectManager ipcObjects, HookManagerDrawer hookManager)
+        DragDropManager dragDropManager, IpcObjectManager ipcObjects, HookManagerDrawer hookManager, PenumbraLoader loader)
         : base("Penumbra Debug Window", WindowFlags.NoCollapse)
     {
         IsOpen = true;
@@ -125,7 +124,6 @@ public sealed class DebugTab : Window, ITab<TabType>
         };
         _config                    = config;
         _collectionManager         = collectionManager;
-        _validityChecker           = validityChecker;
         _modManager                = modManager;
         _httpApi                   = httpApi;
         _actors                    = actors;
@@ -162,6 +160,7 @@ public sealed class DebugTab : Window, ITab<TabType>
         _dragDropManager           = dragDropManager;
         _ipcObjects                = ipcObjects;
         _hookManager               = hookManager;
+        _loader                    = loader;
         _objects                   = objects;
         _dataManager               = dataManager;
     }
@@ -319,8 +318,8 @@ public sealed class DebugTab : Window, ITab<TabType>
         {
             if (table)
             {
-                table.DrawDataPair("Penumbra Version"u8,              $"{_validityChecker.Version} {DebugVersionString}");
-                table.DrawDataPair("Git Commit Hash"u8,               _validityChecker.CommitHash);
+                table.DrawDataPair("Penumbra Version"u8,              $"{_loader.Version} {DebugVersionString}");
+                table.DrawDataPair("Git Commit Hash"u8,               _loader.CommitHash);
                 table.DrawDataPair("Selected Collection"u8,           _collectionManager.Active.Current.Identity.Name);
                 table.DrawDataPair("    has Cache"u8,                 _collectionManager.Active.Current.HasCache.ToString());
                 table.DrawDataPair("Base Collection"u8,               _collectionManager.Active.Default.Identity.Name);

@@ -24,19 +24,19 @@ public sealed class CrashHandlerService : IDisposable, IScopedService
     private readonly ActorManager        _actors;
     private readonly ResourceLoader      _resourceLoader;
     private readonly AdvancedConfig      _config;
-    private readonly ValidityChecker     _validityChecker;
+    private readonly PenumbraLoader      _loader;
 
     private string _tempExecutableDirectory = string.Empty;
 
     public CrashHandlerService(FilenameService files, CommunicatorService communicator, ActorManager actors, ResourceLoader resourceLoader,
-        AdvancedConfig config, ValidityChecker validityChecker)
+        AdvancedConfig config, PenumbraLoader loader)
     {
         _files                         =  files;
         _communicator                  =  communicator;
         _actors                        =  actors;
         _resourceLoader                =  resourceLoader;
         _config                        =  config;
-        _validityChecker               =  validityChecker;
+        _loader                        =  loader;
         _config.UseCrashHandlerChanged += OnUseCrashHandlerChanged;
 
         if (_config.UseCrashHandler is true)
@@ -154,8 +154,8 @@ public sealed class CrashHandlerService : IDisposable, IScopedService
             };
             info.ArgumentList.Add(_files.LogFileName);
             info.ArgumentList.Add(Environment.ProcessId.ToString());
-            info.ArgumentList.Add($"{_validityChecker.Version} ({_validityChecker.CommitHash})");
-            info.ArgumentList.Add(_validityChecker.GameVersion);
+            info.ArgumentList.Add($"{_loader.Version} ({_loader.CommitHash})");
+            info.ArgumentList.Add(_loader.GameVersion);
             _child = Process.Start(info);
             if (_child is null)
                 throw new Exception("Child Process could not be created.");
@@ -181,8 +181,7 @@ public sealed class CrashHandlerService : IDisposable, IScopedService
             JsonObject jObj;
             lock (_eventWriter)
             {
-                jObj = reader.Dump("Manual Dump", Environment.ProcessId, 0, $"{_validityChecker.Version} ({_validityChecker.CommitHash})",
-                    _validityChecker.GameVersion);
+                jObj = reader.Dump("Manual Dump", Environment.ProcessId, 0, $"{_loader.Version} ({_loader.CommitHash})", _loader.GameVersion);
             }
 
             var       logFile = _files.LogFileName;
