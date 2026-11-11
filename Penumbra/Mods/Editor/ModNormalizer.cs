@@ -270,6 +270,7 @@ public sealed class ModNormalizer(ModManager modManager, Configuration config, S
                     HandleSubMod(groupDir, data, _redirections[groupIdx + 1][dataIdx]);
             }
 
+            CopyModImage();
             return true;
         }
         catch (Exception e)
@@ -297,6 +298,26 @@ public sealed class ModNormalizer(ModManager modManager, Configuration config, S
                 ++Step;
             }
         }
+    }
+
+    /// <summary> The mod image is usually not used by any option, so keep it at its current path if it is inside a subdirectory. </summary>
+    private void CopyModImage()
+    {
+        if (Mod.GetImageFile() is not { Exists: true } image)
+            return;
+
+        // Files in the mod root are not moved, and the new structure may only contain directories.
+        var relPath = Path.GetRelativePath(Mod.ModPath.FullName, image.FullName);
+        if (Path.GetDirectoryName(relPath) is not { Length: > 0 })
+            return;
+
+        // The image may itself be used by an option, and option files take precedence anyway.
+        var newFullPath = Path.Combine(_normalizationDirName, relPath);
+        if (File.Exists(newFullPath))
+            return;
+
+        Directory.CreateDirectory(Path.GetDirectoryName(newFullPath)!);
+        File.Copy(image.FullName, newFullPath);
     }
 
     private bool MoveOldFiles()
