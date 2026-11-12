@@ -7,7 +7,8 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.Mods.Editor;
 
-public sealed class ModNormalizer(ModManager modManager, Configuration config, SaveService saveService) : IScopedService
+public sealed class ModNormalizer(ModManager modManager, Configuration config, SaveService saveService, FrameworkManager framework)
+    : IScopedService
 {
     private readonly List<List<Dictionary<Utf8GamePath, FullPath>>> _redirections = [];
 
@@ -71,8 +72,8 @@ public sealed class ModNormalizer(ModManager modManager, Configuration config, S
                 containers[container] = mod.ModPath.FullName;
             else
             {
-                var groupDir  = ModCreator.NewOptionDirectory(mod.ModPath, container.Group.Name, config.Io.ReplaceNonAsciiOnImport);
-                var optionDir = ModCreator.NewOptionDirectory(groupDir,    container.GetDirectoryName(),  config.Io.ReplaceNonAsciiOnImport);
+                var groupDir  = ModCreator.NewOptionDirectory(mod.ModPath, container.Group.Name,         config.Io.ReplaceNonAsciiOnImport);
+                var optionDir = ModCreator.NewOptionDirectory(groupDir,    container.GetDirectoryName(), config.Io.ReplaceNonAsciiOnImport);
                 containers[container] = optionDir.FullName;
             }
         }
@@ -162,7 +163,7 @@ public sealed class ModNormalizer(ModManager modManager, Configuration config, S
             }
 
             Penumbra.Log.Debug("[Normalization] Applying new redirections...");
-            ApplyRedirections();
+            ApplyRedirections().Wait();
         }
         catch (Exception e)
         {
@@ -238,8 +239,8 @@ public sealed class ModNormalizer(ModManager modManager, Configuration config, S
             for (var i = _redirections.Count; i < Mod.Groups.Count + 1; ++i)
                 _redirections.Add([]);
 
-            if (_redirections[0].Count == 0)
-                _redirections[0].Add(new Dictionary<Utf8GamePath, FullPath>(Mod.Default.Files.Count));
+            if (_redirections[0].Count is 0)
+                _redirections[0].Add([with(Mod.Default.Files.Count)]);
             else
             {
                 _redirections[0][0].Clear();
@@ -369,13 +370,15 @@ public sealed class ModNormalizer(ModManager modManager, Configuration config, S
         return false;
     }
 
-    private void ApplyRedirections()
+    private async Task ApplyRedirections()
     {
-        modManager.OptionEditor.SetFiles(Mod.Default, _redirections[0][0]);
-        foreach (var (groupIdx, group) in Mod.Groups.Index())
-            foreach (var (containerIdx, container) in group.DataContainers.Index())
-                modManager.OptionEditor.SetFiles(container, _redirections[groupIdx + 1][containerIdx]);
-
+        await framework.Framework.RunOnFrameworkThread(() =>
+        {
+            modManager.OptionEditor.SetFiles(Mod.Default, _redirections[0][0]);
+            foreach (var (groupIdx, group) in Mod.Groups.Index())
+                foreach (var (containerIdx, container) in group.DataContainers.Index())
+                    modManager.OptionEditor.SetFiles(container, _redirections[groupIdx + 1][containerIdx]);
+        });
         ++Step;
     }
 }
