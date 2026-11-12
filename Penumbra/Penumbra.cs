@@ -27,9 +27,16 @@ namespace Penumbra;
 
 public sealed class Penumbra : IPluginDefinition<Penumbra>, IAsyncDisposable
 {
-    public static MainLogger       Log      { get; private set; } = null!;
-    public static PenumbraMessager Messager { get; private set; } = null!;
-    public static DynamisIpc       Dynamis  { get; private set; } = null!;
+    private readonly PluginLoader<Penumbra> _loader;
+    public static    MainLogger             Log      { get; private set; } = null!;
+    public static    PenumbraMessager       Messager { get; private set; } = null!;
+    public static    DynamisIpc             Dynamis  { get; private set; } = null!;
+
+    public Penumbra(PluginLoader<Penumbra> loader)
+    {
+        _loader = loader;
+        _loader.Services.EnterScope();
+    }
 
     public static ServiceManager CreateServiceManager(IDalamudPluginInterface pluginInterface, MainLogger log)
     {
@@ -75,7 +82,7 @@ public sealed class Penumbra : IPluginDefinition<Penumbra>, IAsyncDisposable
         => Task.FromResult<IIntermediaryPlugin<Penumbra>>(new PenumbraIntermediary((PenumbraLoader)loader));
 
     public static Task<Penumbra> LaunchPluginAsync(PluginLoader<Penumbra> loader, CancellationToken cancel)
-        => Task.FromResult(new Penumbra());
+        => Task.FromResult(new Penumbra(loader));
 
     public Task LoadGameDataAsync(PluginLoader<Penumbra> loader, CancellationToken cancel)
         => Task.CompletedTask;
@@ -100,13 +107,13 @@ public sealed class Penumbra : IPluginDefinition<Penumbra>, IAsyncDisposable
     {
         return Task.Run(() =>
         {
-            var tempModManager = loader.Services.GetService<TempModManager>();
+            _ = loader.Services.GetService<TempModManager>();
             cancel.ThrowIfCancellationRequested();
-            var modManager = loader.Services.GetService<ModManager>();
+            _ = loader.Services.GetService<ModManager>();
             cancel.ThrowIfCancellationRequested();
             var collectionManager = loader.Services.GetService<CollectionManager>();
             cancel.ThrowIfCancellationRequested();
-            var tempCollectionManager = loader.Services.GetService<TempCollectionManager>();
+            _ = loader.Services.GetService<TempCollectionManager>();
             cancel.ThrowIfCancellationRequested();
             collectionManager.Caches.CreateNecessaryCaches();
         }, cancel);
@@ -116,13 +123,13 @@ public sealed class Penumbra : IPluginDefinition<Penumbra>, IAsyncDisposable
     {
         return Task.Run(() =>
         {
-            var characterUtility = loader.Services.GetService<CharacterUtility>();
+            _ = loader.Services.GetService<CharacterUtility>();
             cancel.ThrowIfCancellationRequested();
-            var residentResources = loader.Services.GetService<ResidentResourceManager>();
+            _ = loader.Services.GetService<ResidentResourceManager>();
             cancel.ThrowIfCancellationRequested();
-            var redrawService = loader.Services.GetService<RedrawService>();
+            _ = loader.Services.GetService<RedrawService>();
             cancel.ThrowIfCancellationRequested();
-            var resolver = loader.Services.GetService<PathResolver>();
+            _ = loader.Services.GetService<PathResolver>();
             cancel.ThrowIfCancellationRequested();
             loader.Services.EnsureRequiredServices(cancel);
         }, cancel);
@@ -130,13 +137,13 @@ public sealed class Penumbra : IPluginDefinition<Penumbra>, IAsyncDisposable
 
     public async Task CreateUiAsync(PluginLoader<Penumbra> loader, CancellationToken cancel)
     {
-        var substitution = loader.Services.GetService<DalamudSubstitutionProvider>();
+        _ = loader.Services.GetService<DalamudSubstitutionProvider>();
         cancel.ThrowIfCancellationRequested();
         await Task.WhenAll(loader.Services.GetServicesImplementing<IAwaitedService>().Select(s => s.Awaiter)).ConfigureAwait(false);
         cancel.ThrowIfCancellationRequested();
         await Task.Run(() =>
         {
-            var system = loader.Services.GetService<PenumbraWindowSystem>();
+            _ = loader.Services.GetService<PenumbraWindowSystem>();
             cancel.ThrowIfCancellationRequested();
             loader.Services.GetService<CommandHandler>();
             cancel.ThrowIfCancellationRequested();
@@ -182,5 +189,5 @@ public sealed class Penumbra : IPluginDefinition<Penumbra>, IAsyncDisposable
     }
 
     public ValueTask DisposeAsync()
-        => ValueTask.CompletedTask;
+        => _loader.Services.ExitScope();
 }

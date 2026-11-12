@@ -1,16 +1,20 @@
 using Luna;
+using Penumbra.Services;
 
 namespace Penumbra;
 
 public sealed class PenumbraIntermediary(PenumbraLoader parent) : IIntermediaryPlugin<Penumbra>
 {
-    public PenumbraLoader Parent { get; } = parent;
+    public PenumbraLoader    Parent    { get; } = parent;
+    public ValidationService Validator { get; } = new(parent);
+
+    public string MainWindowLabel { get; } = $"{parent.PluginName} v{parent.Version}###{parent.PluginName}";
 
     PluginLoader<Penumbra> IIntermediaryPlugin<Penumbra>.Parent
         => Parent;
 
     public Task<bool> ValidateAsync(CancellationToken cancel)
-        => Task.FromResult(true);
+        => Task.FromResult(Validator.Validate());
 
     public Task OnValidationFailedAsync(CancellationToken cancel)
         => throw new Exception("INVALID!");

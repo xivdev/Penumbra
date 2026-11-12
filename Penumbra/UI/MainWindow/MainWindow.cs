@@ -10,25 +10,60 @@ using Window = Luna.Window;
 
 namespace Penumbra.UI.MainWindow;
 
+public sealed class ErrorWindow : Window
+{
+    private readonly PenumbraIntermediary _intermediary;
+    private readonly PenumbraSupportInfo  _supportInfo;
+
+    public ErrorWindow(PenumbraIntermediary intermediary, SupportInfoProvider supportInfo)
+        : base(intermediary.MainWindowLabel)
+    {
+        _intermediary = intermediary;
+        _supportInfo  = supportInfo;
+    }
+
+    public override void Draw()
+    {
+        throw new NotImplementedException();
+    }
+
+    private void DrawProblemWindow(Utf8StringHandler<TextStringHandlerBuffer> text)
+    {
+        using var color = ImGuiColor.Text.Push(Colors.RegexWarningBorder);
+        Im.Line.New();
+        Im.Line.New();
+        Im.TextWrapped(ref text);
+        color.Pop();
+
+        Im.Line.New();
+        Im.Line.New();
+        SupportButton.Discord(Penumbra.Messager, 0);
+        Im.Line.Same();
+        _supportInfo.DrawSupportButton();
+        Im.Line.New();
+        Im.Line.New();
+    }
+}
+
 public sealed class MainWindow : Window
 {
     private readonly IDalamudPluginInterface _pluginInterface;
     private readonly Configuration           _config;
-    private readonly ValidityChecker         _validityChecker;
+    private readonly ValidationService       _validationService;
     private readonly GlobalModImporter       _globalModImporter;
     private readonly UiNavigator             _navigator;
     private readonly PenumbraSupportInfo     _supportInfoProvider;
     private readonly MainTabBar              _configTabs;
     private          string?                 _lastException;
 
-    public MainWindow(IDalamudPluginInterface pi, Configuration config, ValidityChecker checker,
+    public MainWindow(IDalamudPluginInterface pi, Configuration config, ValidationService checker,
         TutorialService tutorial, GlobalModImporter globalModImporter, UiNavigator navigator, PenumbraSupportInfo supportInfoProvider,
         MainTabBar configTabs)
         : base(checker.GetMainWindowLabel())
     {
         _pluginInterface     = pi;
         _config              = config;
-        _validityChecker     = checker;
+        _validationService   = checker;
         _globalModImporter   = globalModImporter;
         _navigator           = navigator;
         _supportInfoProvider = supportInfoProvider;
@@ -61,18 +96,18 @@ public sealed class MainWindow : Window
         _globalModImporter.DrawWindowTarget();
         try
         {
-            if (!_validityChecker.IsValidSourceRepo)
+            if (!_validationService.IsValidSourceRepo)
                 DrawProblemWindow(
                     $"You are loading a release version of Penumbra from the repository \"{_pluginInterface.SourceRepository}\" instead of the official repository.\n"
-                  + $"Please use the official repository at {ValidityChecker.Repository} or the suite repository at {ValidityChecker.SeaOfStars}.\n\n"
+                  + $"Please use the official repository at {ValidationService.Repository} or the suite repository at {ValidationService.SeaOfStars}.\n\n"
                   + "If you are developing for Penumbra and see this, you should compile your version in debug mode to avoid it.");
-            else if (_validityChecker.IsNotInstalledPenumbra)
+            else if (_validationService.IsNotInstalledPenumbra)
                 DrawProblemWindow(
                     $"You are loading a release version of Penumbra from \"{_pluginInterface.AssemblyLocation.Directory?.FullName ?? "Unknown"}\" instead of the installedPlugins directory.\n\n"
                   + "You should not install Penumbra manually, but rather add the plugin repository under settings and then install it via the plugin installer.\n\n"
                   + "If you do not know how to do this, please take a look at the readme in Penumbras github repository or join us in discord.\n"
                   + "If you are developing for Penumbra and see this, you should compile your version in debug mode to avoid it.");
-            else if (_validityChecker.DevPenumbraExists)
+            else if (_validationService.DevPenumbraExists)
                 DrawProblemWindow(
                     $"You are loading a installed version of Penumbra from \"{_pluginInterface.AssemblyLocation.Directory?.FullName ?? "Unknown"}\", "
                   + "but also still have some remnants of a custom install of Penumbra in your devPlugins folder.\n\n"
