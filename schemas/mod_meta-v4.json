@@ -34,7 +34,7 @@
             "type": [ "string", "null" ]
         },
         "Image": {
-            "description": "Relative path to a preview image for the mod. Unused by Penumbra, present for round-trip import/export of TexTools-generated mods.",
+            "description": "Relative path to a thumbnail image for the mod, shown in the mod panel. Must point inside the mod directory.",
             "type": [ "string", "null" ]
         },
         "Version": {

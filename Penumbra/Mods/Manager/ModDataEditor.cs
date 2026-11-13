@@ -109,6 +109,16 @@ public sealed class ModDataEditor(SaveService saveService, CommunicatorService c
         communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.Website, mod, null));
     }
 
+    public void ChangeModImage(Mod mod, string newImage)
+    {
+        if (mod.Image == newImage)
+            return;
+
+        mod.Image = newImage;
+        saveService.QueueSave(new ModMeta(saveService, mod));
+        communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.Image, mod, null));
+    }
+
     public void ChangeRequiredFeatures(Mod mod, FeatureFlags flags)
     {
         if (mod.RequiredFeatures == flags)

@@ -172,6 +172,7 @@ public sealed class ModFileSystemCache : FileSystemCache<ModFileSystemCache.ModD
             Im.Tree.Leaf(Name, flags);
             if (Im.Item.MiddleClicked())
                 OnMiddleClick(cache);
+            ((ModFileSystemDrawer)cache.Parent).Thumbnails.DrawTooltip(Node.Value);
             DrawPriority(cache);
         }
 

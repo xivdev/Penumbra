@@ -17,10 +17,13 @@ public class ModPanelHeader : IDisposable
 
     private readonly CommunicatorService _communicator;
     private readonly ModSelection        _modSelection;
+    private readonly ModThumbnailService _thumbnails;
     private          float               _lastPreSettingsHeight;
 
-    public ModPanelHeader(IDalamudPluginInterface pi, CommunicatorService communicator, ModSelection modSelection)
+    public ModPanelHeader(IDalamudPluginInterface pi, CommunicatorService communicator, ModSelection modSelection,
+        ModThumbnailService thumbnails)
     {
+        _thumbnails   = thumbnails;
         _communicator = communicator;
         _modSelection = modSelection;
         _nameFont     = pi.UiBuilder.FontAtlas.NewGameFontHandle(new GameFontStyle(GameFontFamilyAndSize.Jupiter23));
@@ -29,7 +32,7 @@ public class ModPanelHeader : IDisposable
 
     /// <summary>
     /// Draw the header for the current mod,
-    /// consisting of its name, version, author and website, if they exist.
+    /// consisting of its name, version, author, website and thumbnail, if they exist.
     /// </summary>
     public void Draw()
     {
@@ -48,7 +51,9 @@ public class ModPanelHeader : IDisposable
             DrawSecondRow(offset);
         }
 
-        _communicator.PreSettingsTabBarDraw.Invoke(new PreSettingsTabBarDraw.Arguments(_mod!, Im.Item.Size.X, _nameWidth));
+        var headerWidth = Im.Item.Size.X;
+        _thumbnails.Draw(_mod!);
+        _communicator.PreSettingsTabBarDraw.Invoke(new PreSettingsTabBarDraw.Arguments(_mod!, headerWidth, _nameWidth));
         _lastPreSettingsHeight = Im.Cursor.Position.Y;
     }
 
