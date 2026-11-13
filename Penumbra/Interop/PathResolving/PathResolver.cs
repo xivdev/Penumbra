@@ -2,6 +2,7 @@ using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
+using Penumbra.Enums;
 using Penumbra.Interop.Hooks.ResourceLoading;
 using Penumbra.Interop.Processing;
 using Penumbra.String.Classes;
@@ -11,6 +12,7 @@ namespace Penumbra.Interop.PathResolving;
 public sealed class PathResolver : IDisposable, Luna.IScopedService
 {
     private readonly MainConfig        _config;
+    private readonly AdvancedConfig    _advancedConfig;
     private readonly CollectionManager _collectionManager;
     private readonly ResourceLoader    _loader;
 
@@ -21,11 +23,12 @@ public sealed class PathResolver : IDisposable, Luna.IScopedService
     private readonly CollectionResolver        _collectionResolver;
     private readonly GamePathPreProcessService _preprocessor;
 
-    public PathResolver(MainConfig config, CollectionManager collectionManager, ResourceLoader loader,
+    public PathResolver(MainConfig config, AdvancedConfig advancedConfig, CollectionManager collectionManager, ResourceLoader loader,
         SubfileHelper subfileHelper, PathState pathState, MetaState metaState, CollectionResolver collectionResolver, GameState gameState,
         GamePathPreProcessService preprocessor)
     {
         _config             = config;
+        _advancedConfig     = advancedConfig;
         _collectionManager  = collectionManager;
         _subfileHelper      = subfileHelper;
         _pathState          = pathState;
@@ -55,16 +58,19 @@ public sealed class PathResolver : IDisposable, Luna.IScopedService
 
             _ => category switch
             {
+                // Disallow user-configured categories.
+                _ when category.FitsFlag(_advancedConfig.BlockedCategories) => (null, ResolveData.Invalid),
+
                 // Only Interface collection.
                 ResourceCategory.Ui => ResolveUi(path),
                 // Never allow changing scripts.
                 ResourceCategory.UiScript   => (null, ResolveData.Invalid),
                 ResourceCategory.GameScript => (null, ResolveData.Invalid),
                 // Use actual resolving.
-                ResourceCategory.Chara  => Resolve(path, resourceType),
+                ResourceCategory.Chara  => Resolve(path, category, resourceType),
                 ResourceCategory.Shader => ResolveShader(path, resourceType),
-                ResourceCategory.Vfx    => Resolve(path, resourceType),
-                ResourceCategory.Sound  => Resolve(path, resourceType),
+                ResourceCategory.Vfx    => Resolve(path, category, resourceType),
+                ResourceCategory.Sound  => Resolve(path, category, resourceType),
                 // EXD Modding in general should probably be prohibited but is currently used for fan translations.
                 // We prevent WebURL specifically because it technically allows launching arbitrary programs / to execute arbitrary code.
                 ResourceCategory.Exd => path.Path.StartsWith("exd/weburl"u8) ? (null, ResolveData.Invalid) : DefaultResolver(path),
@@ -81,17 +87,20 @@ public sealed class PathResolver : IDisposable, Luna.IScopedService
     private (FullPath?, ResolveData) ResolveShader(Utf8GamePath gamePath, ResourceType type)
     {
         if (type is not ResourceType.Shpk)
-            return Resolve(gamePath, type);
+            return Resolve(gamePath, ResourceCategory.Shader, type);
 
         if (gamePath.Path.EndsWith("occlusion.shpk"u8)
          || gamePath.Path.EndsWith("stockings.shpk"u8))
             return (null, ResolveData.Invalid);
 
-        return Resolve(gamePath, type);
+        return Resolve(gamePath, ResourceCategory.Shader, type);
     }
 
-    public (FullPath?, ResolveData) Resolve(Utf8GamePath gamePath, ResourceType type)
+    public (FullPath?, ResolveData) Resolve(Utf8GamePath gamePath, ResourceCategory category, ResourceType type)
     {
+        if (category.FitsFlag(_advancedConfig.BaseOnlyCategories))
+            return DefaultResolver(gamePath);
+
         // Check if the path was marked for a specific collection,
         // or if it is a file loaded by a material, and if we are currently in a material load,
         // or if it is a face decal path and the current mod collection is set.

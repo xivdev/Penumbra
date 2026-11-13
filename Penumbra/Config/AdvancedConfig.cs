@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Luna;
 using Luna.Generators;
+using Penumbra.Enums;
 using Penumbra.Files;
 using Penumbra.Import.Textures;
 using Penumbra.Services;
@@ -52,6 +53,12 @@ public sealed partial class AdvancedConfig : ConfigurationFile<FilenameService>
     [ConfigProperty]
     private bool _hdrRenderTargets = true;
 
+    [ConfigProperty]
+    private ResourceCategoryFlag _blockedCategories = 0;
+
+    [ConfigProperty]
+    private ResourceCategoryFlag _baseOnlyCategories = 0;
+
     /// <inheritdoc/>
     public AdvancedConfig(SaveService saveService, PenumbraMessager messager)
         : base(saveService, messager)
@@ -72,6 +79,8 @@ public sealed partial class AdvancedConfig : ConfigurationFile<FilenameService>
         j.WriteIfNot("EnableHttpApi"u8,             EnableHttpApi,             true);
         j.WriteIfNot("KeepDefaultMetaChanges"u8,    KeepDefaultMetaChanges,    false);
         j.WriteIfNot("HdrRenderTargets"u8,          HdrRenderTargets,          true);
+        j.WriteUnsignedIfNot("BlockedCategories"u8,  BlockedCategories,  (ResourceCategoryFlag)0);
+        j.WriteUnsignedIfNot("BaseOnlyCategories"u8, BaseOnlyCategories, (ResourceCategoryFlag)0);
     }
 
     protected override void LoadData(in JsonElement j)
@@ -87,6 +96,8 @@ public sealed partial class AdvancedConfig : ConfigurationFile<FilenameService>
         EnableHttpApi = j.PropertyOrDefault("EnableHttpApi"u8, EnableHttpApi);
         KeepDefaultMetaChanges = j.PropertyOrDefault("KeepDefaultMetaChanges"u8, KeepDefaultMetaChanges);
         HdrRenderTargets = j.PropertyOrDefault("HdrRenderTargets"u8, HdrRenderTargets);
+        BlockedCategories = (ResourceCategoryFlag)j.PropertyOrDefault("BlockedCategories"u8, (ushort)BlockedCategories);
+        BaseOnlyCategories = (ResourceCategoryFlag)j.PropertyOrDefault("BaseOnlyCategories"u8, (ushort)BaseOnlyCategories);
     }
 
     public override string ToFilePath(FilenameService fileNames)
