@@ -64,7 +64,7 @@ public sealed class DebugTab : Window, ITab<TabType>
     private readonly Configuration                 _config;
     private readonly CollectionManager             _collectionManager;
     private readonly ModManager                    _modManager;
-    private readonly PenumbraLoader                _loader;
+    private readonly IPluginLoader                 _loader;
     private readonly HttpApi                       _httpApi;
     private readonly ActorManager                  _actors;
     private readonly StainAccessor                 _stains;
@@ -113,7 +113,7 @@ public sealed class DebugTab : Window, ITab<TabType>
         LunaDxTester lunaDxTester, HookOverrideDrawer hookOverrides, RsfService rsfService, GlobalVariablesDrawer globalVariablesDrawer,
         ActionTmbListDrawer actionTmbs, ObjectIdentification objectIdentification, RenderTargetDrawer renderTargetDrawer,
         ModMigratorDebug modMigratorDebug, ShapeInspector shapeInspector, FileWatcher.FileWatcherDrawer fileWatcherDrawer,
-        DragDropManager dragDropManager, IpcObjectManager ipcObjects, HookManagerDrawer hookManager, PenumbraLoader loader)
+        DragDropManager dragDropManager, IpcObjectManager ipcObjects, HookManagerDrawer hookManager, IPluginLoader loader)
         : base("Penumbra Debug Window", WindowFlags.NoCollapse)
     {
         IsOpen = true;

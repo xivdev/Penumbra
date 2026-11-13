@@ -45,20 +45,20 @@ public sealed class Penumbra : IPluginDefinition<Penumbra>, IAsyncDisposable
             .AddExistingService(log)
             .AddGenericSingleton(typeof(ManagementLog<>));
 
-        services.AddSingleton(p => p.GetRequiredService<UiConfig>().ColorCache);
         services.AddSingleton(MessageService (p) => p.GetRequiredService<PenumbraMessager>());
         services.AddIServices(typeof(EquipItem).Assembly);
         services.AddIServices(typeof(Penumbra).Assembly);
         services.AddIServices(typeof(IService).Assembly);
 
-        services.AddSingleton(p =>
+        services.AddScoped(p => p.GetRequiredService<UiConfig>().ColorCache);
+        services.AddScoped(p =>
             {
                 var cutsceneService = p.GetRequiredService<CutsceneService>();
                 return new CutsceneResolver(cutsceneService.GetParentIndex);
             })
-            .AddSingleton(p => p.GetRequiredService<MetaFileManager>().ImcChecker)
-            .AddSingleton(s => (ModStorage)s.GetRequiredService<ModManager>())
-            .AddSingleton<IPenumbraApi>(x => x.GetRequiredService<PenumbraApi>());
+            .AddScoped(p => p.GetRequiredService<MetaFileManager>().ImcChecker)
+            .AddScoped(s => (ModStorage)s.GetRequiredService<ModManager>())
+            .AddScoped<IPenumbraApi>(x => x.GetRequiredService<PenumbraApi>());
         return services;
     }
 
@@ -179,7 +179,6 @@ public sealed class Penumbra : IPluginDefinition<Penumbra>, IAsyncDisposable
                 if (args.Data is IdentifiedItem { Item.Id.IsItem: true })
                     Im.Text("Left Click to create an item link in chat."u8);
             }, ChangedItemHover.Priority.Link);
-
             communicator.ChangedItemClick.Subscribe((in args) =>
             {
                 if (args is { Button: MouseButton.Left, Data: IdentifiedItem item } && itemSheet.GetRow(item.Item.ItemId.Id) is { } i)

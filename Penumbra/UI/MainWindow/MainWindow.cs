@@ -1,6 +1,4 @@
 using Dalamud.Interface.Windowing;
-using Dalamud.Plugin;
-using ImSharp;
 using Luna;
 using Penumbra.Communication;
 using Penumbra.Services;
@@ -10,64 +8,22 @@ using Window = Luna.Window;
 
 namespace Penumbra.UI.MainWindow;
 
-public sealed class ErrorWindow : Window
-{
-    private readonly PenumbraIntermediary _intermediary;
-    private readonly PenumbraSupportInfo  _supportInfo;
-
-    public ErrorWindow(PenumbraIntermediary intermediary, SupportInfoProvider supportInfo)
-        : base(intermediary.MainWindowLabel)
-    {
-        _intermediary = intermediary;
-        _supportInfo  = supportInfo;
-    }
-
-    public override void Draw()
-    {
-        throw new NotImplementedException();
-    }
-
-    private void DrawProblemWindow(Utf8StringHandler<TextStringHandlerBuffer> text)
-    {
-        using var color = ImGuiColor.Text.Push(Colors.RegexWarningBorder);
-        Im.Line.New();
-        Im.Line.New();
-        Im.TextWrapped(ref text);
-        color.Pop();
-
-        Im.Line.New();
-        Im.Line.New();
-        SupportButton.Discord(Penumbra.Messager, 0);
-        Im.Line.Same();
-        _supportInfo.DrawSupportButton();
-        Im.Line.New();
-        Im.Line.New();
-    }
-}
-
 public sealed class MainWindow : Window
 {
-    private readonly IDalamudPluginInterface _pluginInterface;
-    private readonly Configuration           _config;
-    private readonly ValidationService       _validationService;
-    private readonly GlobalModImporter       _globalModImporter;
-    private readonly UiNavigator             _navigator;
-    private readonly PenumbraSupportInfo     _supportInfoProvider;
-    private readonly MainTabBar              _configTabs;
-    private          string?                 _lastException;
+    private readonly Configuration     _config;
+    private readonly GlobalModImporter _globalModImporter;
+    private readonly UiNavigator       _navigator;
+    private readonly MainTabBar        _configTabs;
+    private          string?           _lastException;
 
-    public MainWindow(IDalamudPluginInterface pi, Configuration config, ValidationService checker,
-        TutorialService tutorial, GlobalModImporter globalModImporter, UiNavigator navigator, PenumbraSupportInfo supportInfoProvider,
-        MainTabBar configTabs)
-        : base(checker.GetMainWindowLabel())
+    public MainWindow(IPluginLoader loader, Configuration config, TutorialService tutorial, GlobalModImporter globalModImporter,
+        UiNavigator navigator, MainTabBar configTabs)
+        : base(loader.GetWindowLabel("PenumbraConfigWindow"))
     {
-        _pluginInterface     = pi;
-        _config              = config;
-        _validationService   = checker;
-        _globalModImporter   = globalModImporter;
-        _navigator           = navigator;
-        _supportInfoProvider = supportInfoProvider;
-        _configTabs          = configTabs;
+        _config            = config;
+        _globalModImporter = globalModImporter;
+        _navigator         = navigator;
+        _configTabs        = configTabs;
 
         _navigator.ToggleMainWindow += OnToggleMainWindow;
         RespectCloseHotkey          =  true;
@@ -96,31 +52,12 @@ public sealed class MainWindow : Window
         _globalModImporter.DrawWindowTarget();
         try
         {
-            if (!_validationService.IsValidSourceRepo)
-                DrawProblemWindow(
-                    $"You are loading a release version of Penumbra from the repository \"{_pluginInterface.SourceRepository}\" instead of the official repository.\n"
-                  + $"Please use the official repository at {ValidationService.Repository} or the suite repository at {ValidationService.SeaOfStars}.\n\n"
-                  + "If you are developing for Penumbra and see this, you should compile your version in debug mode to avoid it.");
-            else if (_validationService.IsNotInstalledPenumbra)
-                DrawProblemWindow(
-                    $"You are loading a release version of Penumbra from \"{_pluginInterface.AssemblyLocation.Directory?.FullName ?? "Unknown"}\" instead of the installedPlugins directory.\n\n"
-                  + "You should not install Penumbra manually, but rather add the plugin repository under settings and then install it via the plugin installer.\n\n"
-                  + "If you do not know how to do this, please take a look at the readme in Penumbras github repository or join us in discord.\n"
-                  + "If you are developing for Penumbra and see this, you should compile your version in debug mode to avoid it.");
-            else if (_validationService.DevPenumbraExists)
-                DrawProblemWindow(
-                    $"You are loading a installed version of Penumbra from \"{_pluginInterface.AssemblyLocation.Directory?.FullName ?? "Unknown"}\", "
-                  + "but also still have some remnants of a custom install of Penumbra in your devPlugins folder.\n\n"
-                  + "This can cause some issues, so please go to your \"%%appdata%%\\XIVLauncher\\devPlugins\" folder and delete the Penumbra folder from there.\n\n"
-                  + "If you are developing for Penumbra, try to avoid mixing versions. This warning will not appear if compiled in Debug mode.");
-            else
-                _configTabs.Draw();
-
+            _configTabs.Draw();
             _lastException = null;
         }
         catch (Exception e)
         {
-            if (_lastException != null)
+            if (_lastException is not null)
             {
                 var text = e.ToString();
                 if (text == _lastException)
@@ -135,23 +72,6 @@ public sealed class MainWindow : Window
 
             Penumbra.Log.Error($"Exception thrown during UI Render:\n{_lastException}");
         }
-    }
-
-    private void DrawProblemWindow(Utf8StringHandler<TextStringHandlerBuffer> text)
-    {
-        using var color = ImGuiColor.Text.Push(Colors.RegexWarningBorder);
-        Im.Line.New();
-        Im.Line.New();
-        Im.TextWrapped(ref text);
-        color.Pop();
-
-        Im.Line.New();
-        Im.Line.New();
-        SupportButton.Discord(Penumbra.Messager, 0);
-        Im.Line.Same();
-        _supportInfoProvider.DrawSupportButton();
-        Im.Line.New();
-        Im.Line.New();
     }
 
     private void OnToggleMainWindow(bool open)

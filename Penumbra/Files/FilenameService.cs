@@ -8,11 +8,14 @@ namespace Penumbra.Files;
 
 public sealed class FilenameService(IDalamudPluginInterface pi, LocalModDatabase database) : BaseFilePathProvider(pi)
 {
+    public const string DatabaseName           = "mod_data.db";
+    public const string LocalDataDirectoryName = "mod_data";
+
     public readonly struct MigrationPaths(string configDirectory)
     {
         public readonly string Ephemeral          = Path.Combine(configDirectory, "ephemeral_config.json");
         public readonly string FileSystem         = Path.Combine(configDirectory, "sort_order.json");
-        public readonly string LocalDataDirectory = Path.Combine(configDirectory, "mod_data");
+        public readonly string LocalDataDirectory = Path.Combine(configDirectory, LocalDataDirectoryName);
         public readonly string UiConfigFile       = Path.Combine(configDirectory, "ui_config.json");
         public readonly string FilterFile         = Path.Combine(configDirectory, "filters.json");
 
@@ -66,7 +69,7 @@ public sealed class FilenameService(IDalamudPluginInterface pi, LocalModDatabase
     public readonly ConfigPaths     Config                = new(Path.Combine(pi.ConfigDirectory.FullName, "config"));
     public readonly MigrationPaths  Migration             = new(pi.ConfigDirectory.FullName);
     public readonly string          CollectionDirectory   = Path.Combine(pi.ConfigDirectory.FullName, "collections");
-    public readonly string          LocalModDatabase      = Path.Combine(pi.ConfigDirectory.FullName, "mod_data.db");
+    public readonly string          LocalModDatabase      = Path.Combine(pi.ConfigDirectory.FullName, DatabaseName);
     public readonly string          ActiveCollectionsFile = Path.Combine(pi.ConfigDirectory.FullName, "active_collections.json");
     public readonly string          PredefinedTagFile     = Path.Combine(pi.ConfigDirectory.FullName, "predefined_tags.json");
     public readonly string          SettingPresetFile     = Path.Combine(pi.ConfigDirectory.FullName, "setting_presets.json");

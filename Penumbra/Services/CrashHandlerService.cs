@@ -24,12 +24,12 @@ public sealed class CrashHandlerService : IDisposable, IScopedService
     private readonly ActorManager        _actors;
     private readonly ResourceLoader      _resourceLoader;
     private readonly AdvancedConfig      _config;
-    private readonly PenumbraLoader      _loader;
+    private readonly IPluginLoader       _loader;
 
     private string _tempExecutableDirectory = string.Empty;
 
     public CrashHandlerService(FilenameService files, CommunicatorService communicator, ActorManager actors, ResourceLoader resourceLoader,
-        AdvancedConfig config, PenumbraLoader loader)
+        AdvancedConfig config, IPluginLoader loader)
     {
         _files                         =  files;
         _communicator                  =  communicator;

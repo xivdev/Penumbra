@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Dalamud.Plugin;
 using LiteDB;
 using Luna;
 using Penumbra.Api.Preset;
@@ -7,15 +8,15 @@ using Penumbra.GameData.Structs;
 
 namespace Penumbra.Mods.Manager;
 
-public sealed class LocalModDatabase(ServiceManager services) : IDisposable, IScopedService
+public sealed class LocalModDatabase(IDalamudPluginInterface pi) : IDisposable, IScopedService
 {
     private readonly Lock                         _lock = new();
     private          LiteDatabase?                _database;
     private          ILiteCollection<ModData>?    _collection;
     private          ILiteCollection<PresetData>? _presets;
 
-    public string FilePath
-        => field ??= services.GetService<FilenameService>().LocalModDatabase;
+    public readonly string FilePath      = Path.Combine(pi.ConfigDirectory.FullName, FilenameService.DatabaseName);
+    public readonly string MigrationPath = Path.Combine(pi.ConfigDirectory.FullName, FilenameService.LocalDataDirectoryName);
 
     [MemberNotNull(nameof(_presets), nameof(_collection))]
     private (ILiteCollection<ModData> Data, ILiteCollection<PresetData> Presets) Check([CallerMemberName] string callerName = "")
@@ -219,13 +220,12 @@ public sealed class LocalModDatabase(ServiceManager services) : IDisposable, ISc
 
     public void Migrate()
     {
-        var oldPath = services.GetService<FilenameService>().Migration.LocalDataDirectory;
-        if (!Directory.Exists(oldPath))
+        if (!Directory.Exists(MigrationPath))
             return;
 
         using (Transaction())
         {
-            foreach (var file in Directory.GetFiles(oldPath, "*.json"))
+            foreach (var file in Directory.GetFiles(MigrationPath, "*.json"))
             {
                 var id = Path.GetFileNameWithoutExtension(file);
                 try
@@ -311,12 +311,12 @@ public sealed class LocalModDatabase(ServiceManager services) : IDisposable, ISc
 
         try
         {
-            Directory.Delete(oldPath, true);
-            Penumbra.Log.Information($"Deleted old local mod data directory at {oldPath}.");
+            Directory.Delete(MigrationPath, true);
+            Penumbra.Log.Information($"Deleted old local mod data directory at {MigrationPath}.");
         }
         catch (Exception ex)
         {
-            Penumbra.Log.Error($"Failed to delete old local mod data directory at {oldPath}:\n{ex}");
+            Penumbra.Log.Error($"Failed to delete old local mod data directory at {MigrationPath}:\n{ex}");
         }
     }
 

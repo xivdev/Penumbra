@@ -12,7 +12,7 @@ public enum ValidationError
     InvalidInstall = 0x04,
 }
 
-public sealed class ValidationService(PenumbraLoader parent) : ISingletonService
+public sealed class ValidationService(IPluginLoader parent) : ISingletonService
 {
     public const string Repository = "https://raw.githubusercontent.com/xivdev/Penumbra/master/repo.json";
     public const string SeaOfStars = "https://raw.githubusercontent.com/Ottermandias/SeaOfStars/main/repo.json";
@@ -24,6 +24,7 @@ public sealed class ValidationService(PenumbraLoader parent) : ISingletonService
 
     public bool Validate()
     {
+        Error = ValidationError.None;
         if (!CheckDevPluginPenumbra(parent.PluginInterface))
             Error |= ValidationError.DevPluginExists;
 
@@ -54,7 +55,7 @@ public sealed class ValidationService(PenumbraLoader parent) : ISingletonService
     }
 
     // Check if the loaded version of Penumbra itself is in devPlugins.
-    private static bool CheckInstallValidity(PenumbraLoader parent)
+    private static bool CheckInstallValidity(IPluginLoader parent)
     {
         if (parent.Source is PluginLoadSource.Dev)
             return true;
@@ -64,7 +65,7 @@ public sealed class ValidationService(PenumbraLoader parent) : ISingletonService
     }
 
     // Check if the loaded version of Penumbra is installed from a valid source repo.
-    private static bool CheckSourceRepo(PenumbraLoader parent)
+    private static bool CheckSourceRepo(IPluginLoader parent)
     {
         if (parent.Source is PluginLoadSource.Dev)
             return true;
