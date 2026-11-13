@@ -150,6 +150,10 @@ internal partial record ResolveContext
 
     private unsafe ImcEntry ResolveImcData(ResourceHandle* imc)
     {
+        // This should not happen without active use of non-existent items.
+        if (imc is null)
+            return default;
+
         var imcFileData = imc->GetDataSpan();
         if (imcFileData.IsEmpty)
         {
