@@ -1,6 +1,7 @@
 using ImSharp;
 using JetBrains.Annotations;
 using Luna;
+using Penumbra.Enums;
 using Penumbra.Import.Textures;
 using Penumbra.Interop.Hooks.PostProcessing;
 using Penumbra.Interop.Services;
@@ -32,6 +33,8 @@ public sealed class AdvancedSettings(
         DrawMinimumDimensionConfig();
         DrawHdrRenderTargets();
         DrawAuxiliaryDeviceMode();
+        DrawResourceCategoryRule(ResourceCategoryFlag.Shader, "##shaderSecurity"u8, "Shader Mod Security"u8,
+            "Set loading rules of Shader (mostly .shpk and .shcd) mods, for security and/or stability purposes.\n\nWarning: This will cause modded materials that rely on custom shaders to render incorrectly, or disappear entirely."u8);
         if (SettingsTab.Checkbox("Auto Deduplicate on Import"u8,
                 "Automatically deduplicate mod files on import. This will make mod file sizes smaller, but deletes (binary identical) files."u8,
                 config.AutoDeduplicateOnImport))
@@ -186,6 +189,48 @@ public sealed class AdvancedSettings(
 
         LunaStyle.DrawAlignedHelpMarkerLabel("Hardware Acceleration Mode for Texture Compression"u8,
             "How to manage hardware acceleration for texture compression.\nChange this if you run into ReShade issues after compressing textures."u8);
+    }
+
+    private void DrawResourceCategoryRule(ResourceCategoryFlag categories, ReadOnlySpan<byte> comboLabel, ReadOnlySpan<byte> label,
+        ReadOnlySpan<byte> tooltip)
+    {
+        var isBlocked  = config.BlockedCategories.HasFlag(categories);
+        var isBaseOnly = config.BaseOnlyCategories.HasFlag(categories);
+
+        Im.Item.SetNextWidth(UiHelpers.InputTextWidth.X);
+        using (var combo = Im.Combo.Begin(comboLabel,
+                   isBlocked ? "Use No Mods"u8 : isBaseOnly ? "Restrict to Base Collection"u8 : "Load Normally"u8))
+        {
+            if (combo)
+            {
+                if (Im.Selectable("Use No Mods"u8, isBlocked))
+                {
+                    config.BlockedCategories  |= categories;
+                    config.BaseOnlyCategories &= ~categories;
+                }
+
+                Im.Tooltip.OnHover("Prevent loading this type of mods entirely, and only use the vanilla files."u8);
+
+                if (Im.Selectable("Restrict to Base Collection"u8, !isBlocked && isBaseOnly))
+                {
+                    config.BlockedCategories  &= ~categories;
+                    config.BaseOnlyCategories |= categories;
+                }
+
+                Im.Tooltip.OnHover(
+                    "Only load this type of mods from the collection you assigned to Base,\nregardless of Penumbra's ability to use a more specialized collection.\n\nSome special cases, such as Interface mods, may still override this setting."u8);
+
+                if (Im.Selectable("Load Normally"u8, !isBlocked && !isBaseOnly))
+                {
+                    config.BlockedCategories  &= ~categories;
+                    config.BaseOnlyCategories &= ~categories;
+                }
+
+                Im.Tooltip.OnHover("Load this type of mods normally, using the collection assigned to the character if possible."u8);
+            }
+        }
+
+        LunaStyle.DrawAlignedHelpMarkerLabel(label, tooltip);
     }
 
     /// <summary> Draw a checkbox for the HTTP API that creates and destroys the web server when toggled. </summary>
