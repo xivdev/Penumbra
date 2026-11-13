@@ -15,7 +15,7 @@ public sealed class PenumbraIntermediary(PenumbraLoader parent) : IIntermediaryP
         => Parent;
 
     public Task<bool> ValidateAsync(CancellationToken cancel)
-        => Task.FromResult(Validator.Validate() && false);
+        => Task.FromResult(Validator.Validate());
 
     public Task OnValidationFailedAsync(CancellationToken cancel)
     {
