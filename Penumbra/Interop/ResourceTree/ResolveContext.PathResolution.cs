@@ -57,7 +57,7 @@ internal partial record ResolveContext
             return GenderRace.MidlanderMale;
 
         var characterRaceCode = (GenderRace)((Human*)CharacterBase)->RaceSexId;
-        if (characterRaceCode == GenderRace.MidlanderMale)
+        if (characterRaceCode is GenderRace.MidlanderMale)
             return GenderRace.MidlanderMale;
 
         var accessory = !IsEquipmentSlot(slotIndex);
@@ -72,7 +72,7 @@ internal partial record ResolveContext
             return characterRaceCode;
 
         var fallbackRaceCode = characterRaceCode.Fallback();
-        if (fallbackRaceCode == GenderRace.MidlanderMale)
+        if (fallbackRaceCode is GenderRace.MidlanderMale)
             return GenderRace.MidlanderMale;
 
         entry = metaCache?.GetEqdpEntry(fallbackRaceCode, accessory, primaryId)
@@ -121,7 +121,7 @@ internal partial record ResolveContext
     {
         var setIdHigh = Equipment.Set.Id / 100;
         // All MCH (20??) weapons' materials C are one and the same
-        if (setIdHigh is 20 && mtrlFileName[14] == (byte)'c')
+        if (setIdHigh is 20 && mtrlFileName[14] is (byte)'c')
             return Utf8GamePath.FromString(GamePaths.Mtrl.Weapon(2001, 1, 1, "c"), out var path) ? path : Utf8GamePath.Empty;
 
         // Some offhands share materials with the corresponding mainhand
