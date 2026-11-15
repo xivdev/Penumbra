@@ -63,8 +63,20 @@ public sealed class PenumbraSupportInfo(IPluginLoader mainLoader)
         AddProperty("Game Data Files",       gameData.HasModifiedGameDataFiles ? "Modified" : "Pristine");
         AddProperty("Auto-Deduplication",    config.Advanced.AutoDeduplicateOnImport);
         AddProperty("Auto-UI-Reduplication", config.Advanced.AutoReduplicateUiOnImport);
-        AddProperty("Debug Mode",            config.Advanced.DebugMode);
-        AddProperty("Penumbra Reloads",      hdrEnabler.PenumbraReloadCount);
+        var blockedCategories  = config.Advanced.BlockedCategories;
+        var baseOnlyCategories = config.Advanced.BaseOnlyCategories;
+        if (baseOnlyCategories is not 0 || blockedCategories is not 0)
+        {
+            AddProperty("Resource Categories", (baseOnlyCategories, blockedCategories) switch
+            {
+                (0, _) => $"Blocked: `{(ushort)blockedCategories:X4}`",
+                (_, 0) => $"Base Only: `{(ushort)baseOnlyCategories:X4}`",
+                (_, _) => $"Blocked: `{(ushort)blockedCategories:X4}`, Base Only: `{(ushort)baseOnlyCategories:X4}`",
+            });
+        }
+
+        AddProperty("Debug Mode",       config.Advanced.DebugMode);
+        AddProperty("Penumbra Reloads", hdrEnabler.PenumbraReloadCount);
         AddProperty("HDR Enabled (from Start)",
             $"{config.Advanced.HdrRenderTargets} ({hdrEnabler is { FirstLaunchHdrState: true, FirstLaunchHdrHookOverrideState: true }}){(hdrEnabler.HdrEnabledSuccess ? ", Detour Called" : ", **NEVER CALLED**")}");
         AddProperty("Custom Shapes Enabled", config.Advanced.EnableCustomShapes);
