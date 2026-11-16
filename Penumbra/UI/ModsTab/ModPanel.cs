@@ -3,6 +3,7 @@ using ImSharp;
 using Luna;
 using Penumbra.Mods;
 using Penumbra.Services;
+using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.ModsTab;
 
@@ -15,12 +16,12 @@ public class ModPanel : IDisposable, IPanel
     private          bool           _resetCursor;
 
     public ModPanel(IDalamudPluginInterface pi, ModSelection selection, ModPanelTabBar tabs,
-        MultiModPanel multiModPanel, CommunicatorService communicator)
+        MultiModPanel multiModPanel, CommunicatorService communicator, ModThumbnailService thumbnails)
     {
         _selection     = selection;
         _tabs          = tabs;
         _multiModPanel = multiModPanel;
-        _header        = new ModPanelHeader(pi, communicator, selection);
+        _header        = new ModPanelHeader(pi, communicator, selection, thumbnails);
         _selection.Subscribe(OnSelectionChange, ModSelection.Priority.ModPanel);
         OnSelectionChange(new ModSelection.Arguments(null, _selection.Mod));
     }

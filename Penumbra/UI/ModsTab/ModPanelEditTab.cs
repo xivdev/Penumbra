@@ -9,6 +9,7 @@ using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Settings;
 using Penumbra.Services;
+using Penumbra.UI.Classes;
 using Penumbra.UI.ModsTab.Settings;
 
 namespace Penumbra.UI.ModsTab;
@@ -21,6 +22,8 @@ public class ModPanelEditTab(
     Services.PenumbraMessager messager,
     FilenameService filenames,
     ModExportManager modExportManager,
+    FileDialogService fileDialog,
+    ModThumbnailService thumbnails,
     PredefinedTagManager predefinedTagManager,
     ModGroupEditDrawer groupEditDrawer,
     DescriptionEditPopup descriptionPopup,
@@ -306,6 +309,43 @@ public class ModPanelEditTab(
             Process.Start(new ProcessStartInfo(modExportManager.ExportDirectory.FullName) { UseShellExecute = true });
     }
 
+    /// <summary> Edit the thumbnail of the mod, either by path relative to the mod directory or by importing a file. </summary>
+    private void EditImage()
+    {
+        if (Input.Text("##modImage"u8, Input.Image, Input.None, Mod.Image, out var newImage,
+                UiHelpers.InputTextMinusButtonInner - 2 * (UiHelpers.IconButtonSize.X + Im.Style.ItemInnerSpacing.X)))
+        {
+            // Absolute paths are copied into the mod directory, since images outside of it are never loaded.
+            if (Path.IsPathRooted(newImage))
+                thumbnails.Import(Mod, newImage);
+            else
+                modManager.DataEditor.ChangeModImage(Mod, newImage);
+        }
+
+        Im.Line.SameInner();
+        if (ImEx.Icon.Button(LunaStyle.FolderIcon, "Choose an image file to use as thumbnail. Files outside the mod directory are copied into it."u8))
+        {
+            var mod = Mod;
+            fileDialog.OpenFilePicker("Choose Mod Thumbnail", "Images{.png,.jpg,.jpeg,.webp,.bmp,.gif}", (success, files) =>
+            {
+                if (success && files.Count > 0)
+                    thumbnails.Import(mod, files[0]);
+            }, 1, mod.ModPath.FullName, false);
+        }
+
+        Im.Line.SameInner();
+        if (ImEx.Icon.Button(FontAwesomeIcon.Paste.Icon(), "Use the image in your clipboard as thumbnail."u8,
+                !thumbnails.CanPaste))
+            _ = thumbnails.Paste(Mod);
+
+        Im.Line.SameInner();
+        if (ImEx.Icon.Button(LunaStyle.DeleteIcon, "Remove the thumbnail from this mod. This does not delete the image file."u8,
+                Mod.Image.Length is 0))
+            modManager.DataEditor.ChangeModImage(Mod, string.Empty);
+        Im.Line.SameInner();
+        ImEx.TextFrameAligned("Thumbnail"u8);
+    }
+
     /// <summary> Anything about editing the regular meta information about the mod. </summary>
     private void EditRegularMeta()
     {
@@ -322,6 +362,8 @@ public class ModPanelEditTab(
         if (Input.Text("Website"u8, Input.Website, Input.None, Mod.Website, out var newWebsite,
                 UiHelpers.InputTextWidth.X))
             modManager.DataEditor.ChangeModWebsite(Mod, newWebsite);
+
+        EditImage();
 
         Guid? guid = Mod.StableIdentifier;
         if (ImEx.GuidInput("##modGuid"u8, ref guid, UiHelpers.InputTextMinusButtonInner) && guid.HasValue)
@@ -453,7 +495,8 @@ public class ModPanelEditTab(
         public const int Author  = -3;
         public const int Version = -4;
         public const int Website = -5;
-        public const int Path    = -6;
+        public const int Image   = -6;
+        public const int Path    = -7;
 
         // Temporary strings
         private static string? _currentEdit;

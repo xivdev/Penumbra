@@ -18,10 +18,11 @@ public sealed class ModFileSystemDrawer : FileSystemDrawer<ModFileSystemCache.Mo
     public readonly FileDialogService   FileService;
     public readonly TutorialService     Tutorial;
     public readonly CommunicatorService Communicator;
+    public readonly ModThumbnailService Thumbnails;
 
     public ModFileSystemDrawer(PenumbraMessager messager, ModFileSystem fileSystem, ModManager modManager,
         CollectionManager collectionManager, Configuration config, ModImportManager modImport, FileDialogService fileService,
-        TutorialService tutorial, CommunicatorService communicator)
+        TutorialService tutorial, CommunicatorService communicator, ModThumbnailService thumbnails)
         : base(messager, fileSystem, new ModFilter(modManager, collectionManager.Active, config))
     {
         ModManager        = modManager;
@@ -31,6 +32,7 @@ public sealed class ModFileSystemDrawer : FileSystemDrawer<ModFileSystemCache.Mo
         FileService       = fileService;
         Tutorial          = tutorial;
         Communicator      = communicator;
+        Thumbnails        = thumbnails;
         SortMode          = Config.Ui.SortMode;
 
         Config.Ui.ShowRenameChanged += SetRenameFields;

@@ -136,6 +136,23 @@ public sealed class Mod : IMod, IFileSystemValue<Mod>
         return flags;
     }
 
+    /// <summary>
+    /// Get the file of the mod's image, or null if it has none or <see cref="Image"/> does not point into the mod directory.
+    /// </summary>
+    public FileInfo? GetImageFile()
+    {
+        if (Image.Length is 0 || System.IO.Path.IsPathRooted(Image))
+            return null;
+
+        var file = new FileInfo(System.IO.Path.Combine(ModPath.FullName, Image));
+        return IsInModDirectory(file.FullName) ? file : null;
+    }
+
+    /// <summary> Whether the given full path lies inside the mod directory. </summary>
+    public bool IsInModDirectory(string fullPath)
+        => fullPath.StartsWith(System.IO.Path.TrimEndingDirectorySeparator(ModPath.FullName) + System.IO.Path.DirectorySeparatorChar,
+            StringComparison.OrdinalIgnoreCase);
+
     public AppliedModData GetData(ModSettings? settings = null)
     {
         if (settings is not { Enabled: true })
